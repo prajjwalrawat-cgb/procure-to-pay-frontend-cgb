@@ -1,0 +1,43 @@
+/* ProcureFlow base layer. Imported by both portals after Tailwind directives.
+   Tokens mirrored as CSS variables (Master Context §6). */
+:root {
+  --pf-paper: #fafaf7;
+  --pf-canvas: #f5f5f1;
+  --pf-panel: #ffffff;
+  --pf-ink: #0a0a0a;
+  --pf-text: #2e2e2c;
+  --pf-muted: #78786f;
+  --pf-faint: #a3a39b;
+  --pf-line: #e8e8e1;
+  --pf-accent: #059669;
+  --pf-accent-2: #047857;
+  --pf-accent-wash: #ecfdf5;
+  --pf-danger: #e11d48;
+  --pf-warn: #d97706;
+  --pf-info: #0284c7;
+  --pf-violet: #7c3aed;
+}
+
+html {
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+body {
+  background-color: var(--pf-paper);
+  color: var(--pf-text);
+  letter-spacing: -0.005em;
+  font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  letter-spacing: -0.02em;
+}
+
+/* IDs, amounts, hashes, timestamps always use the mono face + tabular figures. */
+.font-numeric {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
