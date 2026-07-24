@@ -1,0 +1,6 @@
+/* ProcureFlow token layer (CSS variables + numeric helper). Must precede rules. */
+@import '../components/ui/styles.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
