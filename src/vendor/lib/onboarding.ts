@@ -18,6 +18,7 @@ export interface WizardState {
 export interface ResumeResponse {
   vendorId: string;
   onboardingId: string;
+  categoryKey: string;
   wizardState: WizardState;
 }
 

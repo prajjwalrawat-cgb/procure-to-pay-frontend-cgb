@@ -16,7 +16,12 @@ export function middleware(request: NextRequest): NextResponse {
 
   // --- Vendor zone ---
   if (pathname === '/vendor' || pathname.startsWith('/vendor/')) {
-    const isVendorAuth = pathname === '/vendor/login' || pathname === '/vendor/signup';
+    // Public vendor pages reachable without a session: sign-in, self-signup, and
+    // the emailed magic set-password link (invited vendors have no session yet).
+    const isVendorAuth =
+      pathname === '/vendor/login' ||
+      pathname === '/vendor/signup' ||
+      pathname === '/vendor/accept-invite';
     const hasVendorSession = Boolean(request.cookies.get(VENDOR_COOKIE)?.value);
 
     if (!hasVendorSession && !isVendorAuth) {
@@ -35,8 +40,11 @@ export function middleware(request: NextRequest): NextResponse {
   // --- Buyer zone ---
   const hasBuyerSession = Boolean(request.cookies.get(BUYER_COOKIE)?.value);
   const isBuyerLogin = pathname === '/login';
+  // Public buyer pages reachable without a session (invited users set their
+  // password here before they can log in).
+  const isBuyerPublic = isBuyerLogin || pathname === '/accept-invite';
 
-  if (!hasBuyerSession && !isBuyerLogin) {
+  if (!hasBuyerSession && !isBuyerPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);

@@ -57,8 +57,8 @@ export function InviteVendorDialog({
       <DialogContent>
         <DialogTitle>Invite vendor</DialogTitle>
         <DialogDescription>
-          Sends an onboarding invitation. The vendor completes the 6-step wizard, then it
-          lands in the review queue.
+          Emails the vendor a secure link to set their password and complete the 6-step
+          onboarding wizard. It then lands in the review queue.
         </DialogDescription>
         <div className="mt-4 space-y-3">
           <div>

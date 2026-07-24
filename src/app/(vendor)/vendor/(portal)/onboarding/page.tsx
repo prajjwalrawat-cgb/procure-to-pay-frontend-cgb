@@ -9,7 +9,12 @@ import {
   Input,
   Pill,
 } from '@/components/ui';
-import type { SaveStepInput } from '@/lib/shared';
+import {
+  VENDOR_CATEGORY_CONFIGS,
+  VENDOR_DOCUMENT_TYPE,
+  type SaveStepInput,
+  type VendorDocumentType,
+} from '@/lib/shared';
 import { useState } from 'react';
 
 import {
@@ -72,6 +77,8 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   const [cocName, setCocName] = useState('');
   const [cocDesignation, setCocDesignation] = useState('');
   const [cocAgreed, setCocAgreed] = useState(false);
+  const [uploadedDocs, setUploadedDocs] = useState<Set<string>>(() => new Set());
+  const [showOtherDocs, setShowOtherDocs] = useState(false);
 
   if (isLoading) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
   if (error || !data)
@@ -155,9 +162,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     }
   };
 
-  const uploadStatutoryDoc = (
-    docType: 'GST_CERT' | 'PAN_CARD' | 'CANCELLED_CHEQUE',
-  ): void => {
+  const uploadStatutoryDoc = (docType: VendorDocumentType): void => {
     uploadDoc.mutate(
       {
         docType,
@@ -168,11 +173,38 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         mimeType: 'application/pdf',
       },
       {
-        onSuccess: () => toast(`${docType.replace(/_/g, ' ')} uploaded`, 'success'),
+        onSuccess: () => {
+          setUploadedDocs((prev) => new Set(prev).add(docType));
+          toast(`${docType.replace(/_/g, ' ')} uploaded`, 'success');
+        },
         onError: (e) => toast(e.message, 'error'),
       },
     );
   };
+
+  const renderDocButton = (d: VendorDocumentType): React.JSX.Element => {
+    const done = uploadedDocs.has(d);
+    return (
+      <Button
+        key={d}
+        variant={done ? 'accent' : 'default'}
+        onClick={() => uploadStatutoryDoc(d)}
+        disabled={uploadDoc.isPending}
+      >
+        {done ? '✓ ' : ''}
+        {d.replace(/_/g, ' ')}
+      </Button>
+    );
+  };
+
+  // Documents the invited vendor's category actually requires (from the config
+  // keyed on the onboarding's categoryKey). Everything else is offered behind a
+  // toggle so the common case shows only the handful that matter.
+  const categoryCfg = VENDOR_CATEGORY_CONFIGS.find(
+    (c) => c.categoryKey === data?.categoryKey,
+  );
+  const requiredDocs = categoryCfg?.requiredDocuments ?? [];
+  const otherDocs = VENDOR_DOCUMENT_TYPE.filter((d) => !requiredDocs.includes(d));
 
   const acknowledge = (): void => {
     if (!cocAgreed) {
@@ -348,21 +380,36 @@ export default function OnboardingWizardPage(): React.JSX.Element {
           )}
 
           {step === 4 && (
-            <div className="space-y-2">
-              <p className="text-muted text-[13px]">
-                Upload your statutory documents (demo — no file picker):
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {(['GST_CERT', 'PAN_CARD', 'CANCELLED_CHEQUE'] as const).map((d) => (
-                  <Button
-                    key={d}
-                    variant="default"
-                    onClick={() => uploadStatutoryDoc(d)}
-                    disabled={uploadDoc.isPending}
-                  >
-                    Upload {d.replace(/_/g, ' ')}
-                  </Button>
-                ))}
+            <div className="space-y-4">
+              {requiredDocs.length > 0 ? (
+                <div>
+                  <p className="text-muted mb-2 text-[13px]">
+                    Required documents{categoryCfg ? ` for ${categoryCfg.displayName}` : ''}{' '}
+                    (demo — each button attaches a placeholder file):
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {requiredDocs.map((d) => renderDocButton(d))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted text-[13px]">
+                  Upload your documents (demo — each button attaches a placeholder file):
+                </p>
+              )}
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowOtherDocs((v) => !v)}
+                  className="text-brand text-[12px] font-medium hover:underline"
+                >
+                  {showOtherDocs ? '− Hide other documents' : '+ Add other documents'}
+                </button>
+                {showOtherDocs && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {otherDocs.map((d) => renderDocButton(d))}
+                  </div>
+                )}
               </div>
             </div>
           )}

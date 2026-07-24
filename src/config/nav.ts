@@ -15,6 +15,7 @@ import {
   Settings,
   ShieldCheck,
   Truck,
+  Users,
   Wallet,
 } from 'lucide-react';
 
@@ -63,6 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     heading: 'System',
     items: [
+      { label: 'Team', href: '/team', icon: Users },
       { label: 'Integrations', href: '/integrations', icon: Plug },
       { label: 'Settings', href: '/settings', icon: Settings, slice: 11 },
     ],
