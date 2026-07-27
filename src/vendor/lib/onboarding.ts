@@ -6,7 +6,11 @@ import {
   useQueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import type { SaveStepInput, VendorDocumentUpload } from '@/lib/shared';
+import type {
+  SaveStepInput,
+  VendorDocumentType,
+  VendorDocumentUpload,
+} from '@/lib/shared';
 
 import { apiFetch } from '@/vendor/lib/api-client';
 
@@ -15,11 +19,23 @@ export interface WizardState {
   completionPct: number;
   steps: Record<string, { done: boolean; data: Record<string, unknown> }>;
 }
+export interface UploadedDocument {
+  id: string;
+  docType: string;
+  filename: string;
+  sizeBytes: number;
+  verificationStatus: string;
+  uploadedAt: string;
+  /** Presigned GET URL; '' when the object could not be signed. */
+  url: string;
+}
+
 export interface ResumeResponse {
   vendorId: string;
   onboardingId: string;
   categoryKey: string;
   wizardState: WizardState;
+  documents: UploadedDocument[];
 }
 
 export const onboardingKeys = {
@@ -58,6 +74,38 @@ export function useUploadOnboardingDoc(): ReturnType<
         method: 'POST',
         body: JSON.stringify(input),
       }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: onboardingKeys.resume }),
+  });
+}
+
+export interface UploadedDocResult {
+  id: string;
+  s3Key: string;
+  filename: string;
+  sizeBytes: number;
+  url: string;
+}
+
+/** Upload the vendor's actual file (multipart) — the API stores it in S3 and
+ *  records the document. Replaces the placeholder-metadata flow. */
+export function useUploadOnboardingDocFile(): ReturnType<
+  typeof useMutation<
+    UploadedDocResult,
+    Error,
+    { docType: VendorDocumentType; file: File }
+  >
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ docType, file }: { docType: VendorDocumentType; file: File }) => {
+      const form = new FormData();
+      form.append('docType', docType);
+      form.append('file', file);
+      return apiFetch<UploadedDocResult>('/vendor/onboarding/documents/upload', {
+        method: 'POST',
+        body: form,
+      });
+    },
     onSuccess: () => void qc.invalidateQueries({ queryKey: onboardingKeys.resume }),
   });
 }

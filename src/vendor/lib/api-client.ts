@@ -5,11 +5,14 @@ import { useSessionStore } from '@/vendor/store/session-store';
 
 /** Authenticated fetch for the vendor portal; refreshes the token once on 401. */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData must set its own Content-Type so the multipart boundary is included;
+  // forcing application/json here would make the body unparseable server-side.
+  const isFormData = init.body instanceof FormData;
   const doFetch = (token: string | null): Promise<Response> =>
     fetch(`${API_URL}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init.headers,
       },

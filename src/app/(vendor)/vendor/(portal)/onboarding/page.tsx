@@ -15,16 +15,27 @@ import {
   type SaveStepInput,
   type VendorDocumentType,
 } from '@/lib/shared';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   useAcknowledgeCoc,
   useOnboarding,
   useSaveStep,
   useSubmitOnboarding,
-  useUploadOnboardingDoc,
+  useUploadOnboardingDocFile,
+  type UploadedDocResult,
 } from '@/vendor/lib/onboarding';
 import { useToastStore } from '@/vendor/store/toast-store';
+
+/** Mirrors the API's MIME allow-list (upload-options.ts) so the picker only
+ *  offers file types the server will accept. */
+const ACCEPTED_DOC_TYPES = '.pdf,.png,.jpg,.jpeg,.tif,.tiff';
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const STEP_NAMES = [
   'Company basics',
@@ -64,7 +75,7 @@ function Field({
 export default function OnboardingWizardPage(): React.JSX.Element {
   const { data, isLoading, error } = useOnboarding();
   const saveStep = useSaveStep();
-  const uploadDoc = useUploadOnboardingDoc();
+  const uploadDoc = useUploadOnboardingDocFile();
   const ackCoc = useAcknowledgeCoc();
   const submit = useSubmitOnboarding();
   const toast = useToastStore((s) => s.push);
@@ -77,8 +88,31 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   const [cocName, setCocName] = useState('');
   const [cocDesignation, setCocDesignation] = useState('');
   const [cocAgreed, setCocAgreed] = useState(false);
-  const [uploadedDocs, setUploadedDocs] = useState<Set<string>>(() => new Set());
+  // Locally-uploaded docs give instant feedback; the server list is the source
+  // of truth once the resume query refetches, so ticks survive a refresh.
+  const [localDocs, setLocalDocs] = useState<Map<string, UploadedDocResult>>(
+    () => new Map(),
+  );
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [showOtherDocs, setShowOtherDocs] = useState(false);
+
+  const uploadedDocs = useMemo(() => {
+    const merged = new Map<string, UploadedDocResult>();
+    // documents arrive newest-first, so the first entry per type is current.
+    for (const d of data?.documents ?? []) {
+      if (!merged.has(d.docType)) {
+        merged.set(d.docType, {
+          id: d.id,
+          s3Key: '',
+          filename: d.filename,
+          sizeBytes: d.sizeBytes,
+          url: d.url,
+        });
+      }
+    }
+    for (const [k, v] of localDocs) merged.set(k, v);
+    return merged;
+  }, [data, localDocs]);
 
   if (isLoading) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
   if (error || !data)
@@ -162,38 +196,72 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     }
   };
 
-  const uploadStatutoryDoc = (docType: VendorDocumentType): void => {
+  const uploadStatutoryDoc = (docType: VendorDocumentType, file: File): void => {
+    setUploadingDoc(docType);
     uploadDoc.mutate(
+      { docType, file },
       {
-        docType,
-        s3Key: `vendor-uploads/${docType}-${Date.now()}.pdf`,
-        filename: `${docType}.pdf`,
-        sizeBytes: 102400,
-        fileHash: `hash-${docType}`,
-        mimeType: 'application/pdf',
-      },
-      {
-        onSuccess: () => {
-          setUploadedDocs((prev) => new Set(prev).add(docType));
+        onSuccess: (res) => {
+          setLocalDocs((prev) => new Map(prev).set(docType, res));
           toast(`${docType.replace(/_/g, ' ')} uploaded`, 'success');
         },
         onError: (e) => toast(e.message, 'error'),
+        onSettled: () => setUploadingDoc(null),
       },
     );
   };
 
+  /** One file picker per document type, plus a View link once uploaded so the
+   *  vendor can confirm the right file went up. The hidden input is driven by
+   *  the label, so the row stays keyboard-accessible without a custom widget. */
   const renderDocButton = (d: VendorDocumentType): React.JSX.Element => {
-    const done = uploadedDocs.has(d);
+    const done = uploadedDocs.get(d);
+    const busy = uploadingDoc === d;
+    const label = d.replace(/_/g, ' ');
     return (
-      <Button
+      <div
         key={d}
-        variant={done ? 'accent' : 'default'}
-        onClick={() => uploadStatutoryDoc(d)}
-        disabled={uploadDoc.isPending}
+        className={`border-border flex items-center gap-2 rounded-md border px-3 py-2 text-[13px] transition-colors ${
+          done ? 'border-brand/40 bg-brand/5' : ''
+        } ${busy ? 'opacity-60' : ''}`}
       >
-        {done ? '✓ ' : ''}
-        {d.replace(/_/g, ' ')}
-      </Button>
+        <label className={busy ? 'pointer-events-none' : 'cursor-pointer'}>
+          <input
+            type="file"
+            className="sr-only"
+            accept={ACCEPTED_DOC_TYPES}
+            disabled={uploadDoc.isPending}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              // Reset so re-picking the same file still fires onChange.
+              e.target.value = '';
+              if (file) uploadStatutoryDoc(d, file);
+            }}
+          />
+          <span className="font-medium hover:underline">
+            {done ? '✓ ' : ''}
+            {label}
+          </span>
+        </label>
+        {busy && <span className="text-muted">uploading…</span>}
+        {done && (
+          <>
+            <span className="text-muted max-w-[180px] truncate text-[12px]">
+              {done.filename} · {formatBytes(done.sizeBytes)}
+            </span>
+            {done.url && (
+              <a
+                href={done.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand text-[12px] font-medium hover:underline"
+              >
+                View
+              </a>
+            )}
+          </>
+        )}
+      </div>
     );
   };
 
@@ -385,7 +453,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 <div>
                   <p className="text-muted mb-2 text-[13px]">
                     Required documents{categoryCfg ? ` for ${categoryCfg.displayName}` : ''}{' '}
-                    (demo — each button attaches a placeholder file):
+                    — select a file for each (PDF or image, max 10 MB):
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {requiredDocs.map((d) => renderDocButton(d))}
@@ -393,7 +461,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 </div>
               ) : (
                 <p className="text-muted text-[13px]">
-                  Upload your documents (demo — each button attaches a placeholder file):
+                  Upload your documents (PDF or image, max 10 MB):
                 </p>
               )}
 

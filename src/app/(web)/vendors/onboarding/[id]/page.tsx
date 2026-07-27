@@ -151,9 +151,32 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                         <span className="text-ink font-medium">
                           {d.docType.replace(/_/g, ' ')}
                         </span>
-                        <span className="text-muted ml-2">{d.filename}</span>
+                        {d.url ? (
+                          <a
+                            href={d.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand ml-2 font-medium hover:underline"
+                          >
+                            {d.filename}
+                          </a>
+                        ) : (
+                          <span className="text-muted ml-2">
+                            {d.filename} (file unavailable)
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
+                        {d.url && (
+                          <a
+                            href={d.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand text-[12px] font-medium hover:underline"
+                          >
+                            View
+                          </a>
+                        )}
                         <Pill variant={DOC_VARIANT[d.verificationStatus] ?? 'gray'}>
                           {d.verificationStatus.replace(/_/g, ' ')}
                         </Pill>
