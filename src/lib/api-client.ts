@@ -40,11 +40,14 @@ function refreshAccessToken(): Promise<string | null> {
  * and retries. No token is ever read from or written to localStorage.
  */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData must set its own Content-Type so the multipart boundary is
+  // included; forcing application/json would make the server reject the upload.
+  const isFormData = init.body instanceof FormData;
   const doFetch = (token: string | null): Promise<Response> =>
     fetch(`${API_URL}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init.headers,
       },

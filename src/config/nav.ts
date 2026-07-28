@@ -17,6 +17,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Warehouse,
 } from 'lucide-react';
 
 /**
@@ -36,6 +37,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Purchase Orders', href: '/purchase-orders', icon: FileText, slice: 4 },
       { label: 'Goods Receipt', href: '/goods-receipt', icon: PackageCheck },
       { label: 'Returns (RMA)', href: '/rma', icon: RotateCcw },
+      { label: 'Inventory', href: '/inventory', icon: Warehouse },
     ],
   },
   {
@@ -99,6 +101,31 @@ export const LIVE_ROUTES = [
     label: 'Returns (RMA)',
     href: '/rma',
     keywords: 'rma return material authorisation credit note',
+  },
+  {
+    label: 'Inventory',
+    href: '/inventory',
+    keywords: 'stock warehouse sku product location rack on hand low stock',
+  },
+  {
+    label: 'Inventory ledger',
+    href: '/inventory/ledger',
+    keywords: 'stock ledger movements daily in out vendor inward sales team report',
+  },
+  {
+    label: 'Bulk upload',
+    href: '/inventory/bulk-upload',
+    keywords: 'import csv xlsx bulk upload migration product master stock ledger',
+  },
+  {
+    label: 'Internal issue',
+    href: '/inventory/issues',
+    keywords: 'issue photoshoot sales team stock out balance return',
+  },
+  {
+    label: 'Fulfil order',
+    href: '/inventory/fulfill',
+    keywords: 'dispatch amazon shopify order courier tracking fulfilment',
   },
   { label: 'Invoices', href: '/invoices', keywords: 'invoice bills' },
   {

@@ -1,0 +1,225 @@
+'use client';
+
+import { Button, Pill } from '@/components/ui';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import { useAdjustStock, useCreateProduct, useLocations } from '@/lib/api/inventory';
+import {
+  Field,
+  FormResult,
+  LocationSelect,
+  TextArea,
+  TextInput,
+} from '../../_components/form-controls';
+
+/**
+ * Add a single product by hand — the counterpart to Bulk upload for the
+ * day-to-day case of one new SKU arriving.
+ *
+ * `code` is never entered: it is generated server-side as {CATEGORY}-{000123}.
+ * Opening stock is optional and, when given, posts as an ADJUSTMENT ledger entry
+ * rather than a column on the product, so it stays visible in history.
+ */
+export default function NewProductPage(): React.JSX.Element {
+  const router = useRouter();
+  const create = useCreateProduct();
+  const adjust = useAdjustStock();
+  const locations = useLocations();
+
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [colour, setColour] = useState('');
+  const [unit, setUnit] = useState('pcs');
+  const [reorderPoint, setReorderPoint] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [remark, setRemark] = useState('');
+  const [openingStock, setOpeningStock] = useState('');
+  const [locationId, setLocationId] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const needsLocation = Number(openingStock) > 0;
+  const ready = name.trim() && category.trim() && (!needsLocation || locationId);
+
+  async function submit(): Promise<void> {
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await create.mutateAsync({
+        name: name.trim(),
+        category: category.trim(),
+        colour: colour.trim() || null,
+        unit: unit.trim() || 'pcs',
+        reorderPoint: reorderPoint ? Number(reorderPoint) : null,
+        imageUrl: imageUrl.trim() || null,
+        expiryOrWarrantyDate: expiry ? new Date(expiry).toISOString() : null,
+        remark: remark.trim() || null,
+      });
+
+      // Opening stock is a ledger entry, never a stored column.
+      if (needsLocation) {
+        await adjust.mutateAsync({
+          productId: res.id,
+          locationId,
+          signedQty: Number(openingStock),
+          reason: 'opening-stock',
+        });
+      }
+
+      setSuccess(`Created ${res.code}. Redirecting to stock overview…`);
+      setTimeout(() => router.push('/inventory'), 1200);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create the product');
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
+            New product
+          </h1>
+          <p className="text-muted text-[13px]">
+            Add one SKU by hand · use Bulk upload for a whole sheet
+          </p>
+        </div>
+        <Link href="/inventory">
+          <Button variant="ghost" size="sm">
+            Cancel
+          </Button>
+        </Link>
+      </div>
+
+      <div className="border-line bg-panel rounded-lg border p-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <Field label="Product name" required>
+              <TextInput
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Candle Holder"
+              />
+            </Field>
+          </div>
+
+          <Field
+            label="Category"
+            required
+            hint="Drives the product-code prefix, e.g. Home Decor → HD-000123."
+          >
+            <TextInput
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Home Decor"
+              list="inventory-categories"
+            />
+          </Field>
+          <datalist id="inventory-categories">
+            {['Home Decor', 'Stationery', 'Rainwear', 'Box', 'Uncategorized'].map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+
+          <Field label="Colour" hint="Part of the duplicate-detection key.">
+            <TextInput
+              value={colour}
+              onChange={(e) => setColour(e.target.value)}
+              placeholder="Brass"
+            />
+          </Field>
+
+          <Field label="Unit">
+            <TextInput value={unit} onChange={(e) => setUnit(e.target.value)} />
+          </Field>
+          <Field label="Reorder point" hint="Flags the row as low stock at or below this.">
+            <TextInput
+              type="number"
+              min={0}
+              value={reorderPoint}
+              onChange={(e) => setReorderPoint(e.target.value)}
+            />
+          </Field>
+
+          <div className="col-span-2">
+            <Field label="Image link">
+              <TextInput
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://drive.google.com/…"
+              />
+            </Field>
+          </div>
+
+          <Field label="Expiry / warranty date">
+            <TextInput
+              type="date"
+              value={expiry}
+              onChange={(e) => setExpiry(e.target.value)}
+            />
+          </Field>
+          <div />
+
+          <div className="col-span-2">
+            <Field label="Remark">
+              <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
+            </Field>
+          </div>
+        </div>
+
+        <div className="border-line mt-5 border-t pt-4">
+          <h2 className="text-faint mb-3 text-[11px] font-medium uppercase tracking-wide">
+            Opening stock (optional)
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Quantity on hand">
+              <TextInput
+                type="number"
+                min={0}
+                value={openingStock}
+                onChange={(e) => setOpeningStock(e.target.value)}
+              />
+            </Field>
+            <Field label="At location" required={needsLocation}>
+              <LocationSelect value={locationId} onChange={setLocationId} />
+            </Field>
+          </div>
+          {(locations.data?.items ?? []).length === 0 && (
+            <p className="mt-2 text-[12px] text-amber-700">
+              No locations exist yet.{' '}
+              <Link href="/inventory/locations" className="underline">
+                Create one first
+              </Link>{' '}
+              if you want to record opening stock.
+            </p>
+          )}
+          <p className="text-faint mt-2 text-[11px]">
+            Recorded as an ADJUSTMENT ledger entry, so it stays visible in history and
+            can never drift from the ledger.
+          </p>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between">
+          <FormResult error={error} success={success} />
+          <Button
+            variant="accent"
+            size="sm"
+            disabled={!ready || create.isPending || adjust.isPending}
+            onClick={() => void submit()}
+          >
+            {create.isPending || adjust.isPending ? 'Creating…' : 'Create product'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <Pill variant="gray">
+          The product code is generated automatically — you never type it
+        </Pill>
+      </div>
+    </div>
+  );
+}
