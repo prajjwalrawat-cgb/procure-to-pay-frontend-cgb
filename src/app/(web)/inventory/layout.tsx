@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-/** The seven inventory screens, in the order a warehouse day runs. */
+/** The inventory screens, in the order a warehouse day runs. */
 const TABS = [
   { href: '/inventory', label: 'Stock' },
   { href: '/inventory/receive', label: 'Receive & QC' },
   { href: '/inventory/issues', label: 'Internal issues' },
   { href: '/inventory/fulfill', label: 'Fulfil orders' },
   { href: '/inventory/returns', label: 'Returns' },
+  { href: '/inventory/adjustments', label: 'Adjustments' },
   { href: '/inventory/ledger', label: 'Ledger' },
   { href: '/inventory/locations', label: 'Locations' },
   { href: '/inventory/bulk-upload', label: 'Bulk upload' },

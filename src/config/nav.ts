@@ -118,6 +118,12 @@ export const LIVE_ROUTES = [
     keywords: 'import csv xlsx bulk upload migration product master stock ledger',
   },
   {
+    label: 'Stock adjustment',
+    href: '/inventory/adjustments',
+    keywords:
+      'adjust adjustment correct correction fix wrong count stock take shortfall damage write off written off scrap',
+  },
+  {
     label: 'Internal issue',
     href: '/inventory/issues',
     keywords: 'issue photoshoot sales team stock out balance return',

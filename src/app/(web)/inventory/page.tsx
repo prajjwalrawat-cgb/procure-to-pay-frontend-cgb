@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { useLocations, useProducts } from '@/lib/api/inventory';
 import { ProductDrawer } from './_components/product-drawer';
+import { ProductThumb } from './_components/product-thumb';
 
 /**
  * Stock overview — the module's landing screen. Product list with per-location
@@ -89,6 +90,7 @@ export default function InventoryPage(): React.JSX.Element {
         <table className="w-full text-[13px]">
           <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
             <tr>
+              <th className="w-12 px-3 py-2 text-right font-medium">S. No.</th>
               <th className="px-3 py-2 font-medium">Product</th>
               <th className="px-3 py-2 font-medium">Category</th>
               <th className="px-3 py-2 font-medium">Locations</th>
@@ -99,14 +101,14 @@ export default function InventoryPage(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={6} className="text-muted px-3 py-8 text-center">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && items.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={6} className="text-muted px-3 py-8 text-center">
                   {q || locationId || lowStock ? (
                     'No products match this view.'
                   ) : (
@@ -135,23 +137,19 @@ export default function InventoryPage(): React.JSX.Element {
                 </td>
               </tr>
             )}
-            {items.map((p) => (
+            {items.map((p, i) => (
               <tr
                 key={p.id}
                 onClick={() => setSelected(p.id)}
                 className="border-line hover:bg-canvas/60 cursor-pointer border-t"
               >
+                {/* Position in the current view, so it renumbers with filters. */}
+                <td className="font-numeric text-faint px-3 py-2 text-right text-[12px]">
+                  {i + 1}
+                </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2.5">
-                    {p.imageUrl ? (
-                      // Drive links are not image-servable, so show a marker
-                      // rather than a broken <img>.
-                      <span className="border-line bg-canvas text-faint flex h-8 w-8 shrink-0 items-center justify-center rounded border text-[10px]">
-                        IMG
-                      </span>
-                    ) : (
-                      <span className="border-line bg-canvas flex h-8 w-8 shrink-0 rounded border" />
-                    )}
+                    <ProductThumb url={p.imageUrl} alt={p.name} />
                     <div className="min-w-0">
                       <div className="text-ink truncate font-medium">{p.name}</div>
                       <div className="font-numeric text-faint text-[11px]">

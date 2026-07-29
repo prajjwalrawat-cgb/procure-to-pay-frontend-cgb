@@ -15,6 +15,7 @@ import type {
   ImportRowResolve,
   IssueCreateInput,
   IssueReturnInput,
+  LedgerEntryView,
   LedgerQuery,
   LedgerResponse,
   LocationCreateInput,
@@ -27,6 +28,7 @@ import type {
   ProductListQuery,
   ProductListResponse,
   ProductStockResponse,
+  ProductUpdateInput,
   ReceiptCreateInput,
   ReceiptQcInput,
   RestockDecisionInput,
@@ -42,6 +44,7 @@ export const inventoryKeys = {
   stock: (id: string) => ['inventory', 'stock', id] as const,
   locations: ['inventory', 'locations'] as const,
   ledger: (q: Partial<LedgerQuery>) => ['inventory', 'ledger', q] as const,
+  ledgerEntry: (id: string) => ['inventory', 'ledger-entry', id] as const,
   pending: ['inventory', 'pending-dispositions'] as const,
   imports: ['inventory', 'imports'] as const,
   importBatch: (id: string) => ['inventory', 'imports', id] as const,
@@ -99,6 +102,19 @@ export function useLedger(query: Partial<LedgerQuery> = {}): UseQueryResult<Ledg
   });
 }
 
+/**
+ * One ledger entry, for the correction flow. Read-only by design — there is no
+ * matching update hook because the ledger is insert-only; a mistake is fixed by
+ * posting an offsetting ADJUSTMENT that links back via `correctionOfId`.
+ */
+export function useLedgerEntry(id: string | null): UseQueryResult<LedgerEntryView> {
+  return useQuery({
+    queryKey: inventoryKeys.ledgerEntry(id ?? ''),
+    queryFn: () => apiFetch<LedgerEntryView>(`/inventory/ledger/${id}`),
+    enabled: !!id,
+  });
+}
+
 export function usePendingDispositions(): UseQueryResult<PendingDispositionResponse> {
   return useQuery({
     queryKey: inventoryKeys.pending,
@@ -131,6 +147,26 @@ export function useCreateProduct() {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  );
+}
+
+/**
+ * Edit a product's descriptive fields. Deliberately cannot touch stock: the
+ * quantities are derived from the ledger, and `code` is server-generated.
+ */
+export function useUpdateProduct() {
+  return useInventoryMutation(({ id, ...body }: ProductUpdateInput & { id: string }) =>
+    apiFetch<{ ok: true }>(`/inventory/products/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+/** Retire a product. History stays in the ledger; it just stops being offered. */
+export function useDeactivateProduct() {
+  return useInventoryMutation((id: string) =>
+    apiFetch<{ ok: true }>(`/inventory/products/${id}/deactivate`, { method: 'POST' }),
   );
 }
 

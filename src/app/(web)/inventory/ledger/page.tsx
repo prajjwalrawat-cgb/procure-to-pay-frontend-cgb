@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { useLedger, useLocations } from '@/lib/api/inventory';
+import { txnLabel, txnVariant } from '../_components/txn-display';
 
 type ViewKey = (typeof LEDGER_SAVED_VIEWS)[number]['key'] | 'all';
 
@@ -108,19 +109,20 @@ export default function LedgerPage(): React.JSX.Element {
               <th className="px-3 py-2 font-medium">Counterparty</th>
               <th className="px-3 py-2 text-right font-medium">Qty</th>
               <th className="px-3 py-2 font-medium">Status</th>
+              <th className="w-20 px-3 py-2" />
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
+                <td colSpan={8} className="text-muted px-3 py-8 text-center">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && items.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
+                <td colSpan={8} className="text-muted px-3 py-8 text-center">
                   No movements in this view.
                 </td>
               </tr>
@@ -199,6 +201,16 @@ function LedgerRow({ entry: e }: { entry: LedgerEntryView }): React.JSX.Element 
           </Pill>
         )}
       </td>
+      <td className="px-3 py-2 text-right">
+        {/* The entry itself can never be edited — this opens a compensating entry. */}
+        <Link
+          href={`/inventory/adjustments?correct=${e.id}`}
+          className="text-accent-2 text-[12px] font-medium hover:underline"
+          title="Post an offsetting adjustment for this entry"
+        >
+          Correct
+        </Link>
+      </td>
     </tr>
   );
 }
@@ -226,37 +238,3 @@ function FilterTab({
   );
 }
 
-const TXN_LABELS: Record<string, string> = {
-  VENDOR_INWARD: 'Vendor inward',
-  VENDOR_RETURN_OUT: 'Vendor return',
-  SAMPLE_INWARD: 'Sample inward',
-  INTERNAL_ISSUE: 'Internal issue',
-  INTERNAL_RETURN: 'Internal return',
-  CUSTOMER_ORDER_OUT: 'Order out',
-  CUSTOMER_RETURN_IN: 'Customer return',
-  DAMAGE_WRITE_OFF: 'Damage write-off',
-  ADJUSTMENT: 'Adjustment',
-};
-
-function txnLabel(t: string): string {
-  return TXN_LABELS[t] ?? t;
-}
-
-function txnVariant(t: string): 'success' | 'danger' | 'warn' | 'info' | 'violet' | 'gray' {
-  switch (t) {
-    case 'VENDOR_INWARD':
-    case 'SAMPLE_INWARD':
-    case 'INTERNAL_RETURN':
-      return 'success';
-    case 'CUSTOMER_ORDER_OUT':
-    case 'INTERNAL_ISSUE':
-      return 'info';
-    case 'DAMAGE_WRITE_OFF':
-    case 'VENDOR_RETURN_OUT':
-      return 'danger';
-    case 'CUSTOMER_RETURN_IN':
-      return 'warn';
-    default:
-      return 'gray';
-  }
-}

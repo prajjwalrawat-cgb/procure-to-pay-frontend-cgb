@@ -1,8 +1,12 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { Button, Pill } from '@/components/ui';
+import type { ProductDetailResponse } from '@/lib/shared';
+import { useState } from 'react';
 
-import { useProduct } from '@/lib/api/inventory';
+import { useDeactivateProduct, useProduct, useUpdateProduct } from '@/lib/api/inventory';
+import { Field, FormResult, TextArea, TextInput } from './form-controls';
+import { ProductThumb } from './product-thumb';
 
 /**
  * Product detail drawer — the one place a warehouse user can confirm that
@@ -10,6 +14,9 @@ import { useProduct } from '@/lib/api/inventory';
  * sheet is answerable here: the ones superseded by `code` (legacy Product ID /
  * SKU) are shown explicitly rather than quietly dropped, and the six derived
  * figures come from `product_stock_summary`, not from stored Product columns.
+ *
+ * Keyed on the product so opening a different one always starts in read mode
+ * with a clean form.
  */
 export function ProductDrawer({
   productId,
@@ -18,8 +25,19 @@ export function ProductDrawer({
   productId: string | null;
   onClose: () => void;
 }): React.JSX.Element | null {
-  const { data, isLoading } = useProduct(productId);
   if (!productId) return null;
+  return <Drawer key={productId} productId={productId} onClose={onClose} />;
+}
+
+function Drawer({
+  productId,
+  onClose,
+}: {
+  productId: string;
+  onClose: () => void;
+}): React.JSX.Element {
+  const { data, isLoading } = useProduct(productId);
+  const [editing, setEditing] = useState(false);
 
   return (
     <>
@@ -40,26 +58,44 @@ export function ProductDrawer({
               {data?.colour ? ` · ${data.colour}` : ''}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-muted hover:text-ink shrink-0 text-[13px]"
-          >
-            Close
-          </button>
+          <div className="flex shrink-0 items-center gap-3">
+            {data && !editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="text-accent-2 text-[13px] font-medium hover:underline"
+              >
+                Edit
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-muted hover:text-ink text-[13px]"
+            >
+              Close
+            </button>
+          </div>
         </header>
 
-        {data && (
+        {data && editing && (
+          <EditForm product={data} onDone={() => setEditing(false)} />
+        )}
+
+        {data && !editing && (
           <div className="flex flex-col gap-5 px-5 py-4">
             {data.imageUrl && (
-              <a
-                href={data.imageUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-accent-2 text-[12px] hover:underline"
-              >
-                Open product image ↗
-              </a>
+              <div className="flex items-center gap-3">
+                <ProductThumb url={data.imageUrl} alt={data.name} size={72} />
+                <a
+                  href={data.imageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-accent-2 text-[12px] hover:underline"
+                >
+                  Open product image ↗
+                </a>
+              </div>
             )}
 
             {/* Every derived Master Inventory Sheet column, from the ledger view. */}
@@ -83,6 +119,16 @@ export function ProductDrawer({
                   At or below the reorder point of {data.reorderPoint}.
                 </p>
               )}
+              <p className="text-faint mt-1.5 text-[11px]">
+                Summed from the ledger, so they are not editable. Use{' '}
+                <a
+                  href="/inventory/adjustments"
+                  className="text-accent-2 hover:underline"
+                >
+                  Adjustments
+                </a>{' '}
+                to correct a figure.
+              </p>
             </section>
 
             <section>
@@ -175,6 +221,165 @@ export function ProductDrawer({
         )}
       </aside>
     </>
+  );
+}
+
+/** `YYYY-MM-DD` for a date input, from a nullable ISO timestamp. */
+function toDateInput(iso: string | null): string {
+  return iso ? new Date(iso).toISOString().slice(0, 10) : '';
+}
+
+/**
+ * Edits the descriptive fields only. `code` is server-generated so it has no
+ * input, and there is deliberately no stock field — see the drawer docblock.
+ */
+function EditForm({
+  product,
+  onDone,
+}: {
+  product: ProductDetailResponse;
+  onDone: () => void;
+}): React.JSX.Element {
+  const [name, setName] = useState(product.name);
+  const [category, setCategory] = useState(product.category);
+  const [colour, setColour] = useState(product.colour ?? '');
+  const [unit, setUnit] = useState(product.unit);
+  const [reorderPoint, setReorderPoint] = useState(
+    product.reorderPoint === null ? '' : String(product.reorderPoint),
+  );
+  const [imageUrl, setImageUrl] = useState(product.imageUrl ?? '');
+  const [expiry, setExpiry] = useState(toDateInput(product.expiryOrWarrantyDate));
+  const [remark, setRemark] = useState(product.remark ?? '');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const update = useUpdateProduct();
+  const deactivate = useDeactivateProduct();
+
+  async function save(): Promise<void> {
+    setError(null);
+    setSuccess(null);
+    try {
+      await update.mutateAsync({
+        id: product.id,
+        name: name.trim(),
+        category: category.trim(),
+        colour: colour.trim() || null,
+        unit: unit.trim(),
+        // Blank clears the value; the API rejects '' because it must be a URL.
+        imageUrl: imageUrl.trim() || null,
+        reorderPoint: reorderPoint === '' ? null : Number(reorderPoint),
+        expiryOrWarrantyDate: expiry ? new Date(expiry).toISOString() : null,
+        remark: remark.trim() || null,
+      });
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save the product');
+    }
+  }
+
+  async function toggleActive(): Promise<void> {
+    setError(null);
+    setSuccess(null);
+    try {
+      if (product.active) {
+        await deactivate.mutateAsync(product.id);
+        setSuccess('Product retired. Its ledger history is unchanged.');
+      } else {
+        await update.mutateAsync({ id: product.id, active: true });
+        setSuccess('Product reactivated.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not change the status');
+    }
+  }
+
+  const busy = update.isPending || deactivate.isPending;
+  const ready = !!name.trim() && !!category.trim() && !!unit.trim();
+
+  return (
+    <div className="flex flex-col gap-4 px-5 py-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
+          <Field label="Name" required>
+            <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Category" required>
+          <TextInput value={category} onChange={(e) => setCategory(e.target.value)} />
+        </Field>
+        <Field label="Colour">
+          <TextInput value={colour} onChange={(e) => setColour(e.target.value)} />
+        </Field>
+        <Field label="Unit" required>
+          <TextInput value={unit} onChange={(e) => setUnit(e.target.value)} />
+        </Field>
+        <Field label="Reorder point" hint="Blank means no low-stock alert.">
+          <TextInput
+            type="number"
+            min={0}
+            step={1}
+            value={reorderPoint}
+            onChange={(e) => setReorderPoint(e.target.value)}
+          />
+        </Field>
+        <div className="col-span-2">
+          <Field label="Image URL">
+            <TextInput
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://…"
+            />
+          </Field>
+        </div>
+        <Field label="Expiry / warranty date">
+          <TextInput
+            type="date"
+            value={expiry}
+            onChange={(e) => setExpiry(e.target.value)}
+          />
+        </Field>
+        <div className="col-span-2">
+          <Field label="Remark">
+            <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
+          </Field>
+        </div>
+      </div>
+
+      <p className="text-faint text-[11px]">
+        Product code {product.code} is generated by the system and cannot be
+        changed. Stock quantities are not editable here.
+      </p>
+
+      <FormResult error={error} success={success} />
+
+      <div className="border-line flex items-center justify-between border-t pt-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void toggleActive()}
+          className={
+            'text-[12px] font-medium hover:underline ' +
+            (product.active ? 'text-red-600' : 'text-emerald-700')
+          }
+        >
+          {product.active ? 'Retire product' : 'Reactivate product'}
+        </button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" disabled={busy} onClick={onDone}>
+            Cancel
+          </Button>
+          <Button
+            variant="accent"
+            size="sm"
+            disabled={!ready || busy}
+            onClick={() => void save()}
+          >
+            {update.isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
