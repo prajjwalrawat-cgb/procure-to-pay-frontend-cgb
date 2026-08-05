@@ -10,6 +10,9 @@ import {
   Pill,
 } from '@/components/ui';
 import {
+  gstStateName,
+  ONBOARDING_STEP_SCHEMAS,
+  SELECTABLE_GST_STATES,
   VENDOR_CATEGORY_CONFIGS,
   VENDOR_DOCUMENT_TYPE,
   type SaveStepInput,
@@ -17,6 +20,7 @@ import {
 } from '@/lib/shared';
 import { useMemo, useState } from 'react';
 
+import { ApiError, zodFieldErrors, zodSummary } from '@/lib/api-error';
 import {
   useAcknowledgeCoc,
   useOnboarding,
@@ -52,22 +56,84 @@ function Field({
   onChange,
   placeholder,
   type = 'text',
+  error,
+  hint,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
+  /** Why the field was rejected — shown under the input, in red. */
+  error?: string;
+  /** Always-on guidance for fields whose format isn't obvious (PAN, state code). */
+  hint?: string;
 }): React.JSX.Element {
   return (
     <div>
-      <label className="text-muted mb-1 block text-[12px] font-medium">{label}</label>
+      <label className="mb-1 block text-[12px] font-medium text-muted">{label}</label>
       <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-invalid={!!error}
       />
+      {error ? (
+        <p className="mt-1 text-[12px] text-danger">{error}</p>
+      ) : (
+        hint && <p className="mt-1 text-[12px] text-faint">{hint}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * State picker. The stored value is the 2-digit GST code — it drives CGST+SGST
+ * vs IGST in determineTaxKind — but a vendor knows their state by name, so the
+ * list is labelled "Delhi (07)" and sorted alphabetically.
+ */
+function StateCodeField({
+  value,
+  onChange,
+  error,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  error?: string;
+}): React.JSX.Element {
+  const options = useMemo(
+    () => [...SELECTABLE_GST_STATES].sort((a, b) => a.name.localeCompare(b.name)),
+    [],
+  );
+  // A saved record may carry a retired code (25, 28). Keep it selected and
+  // labelled rather than silently resetting the field to blank on load.
+  const isRetired = !!value && !options.some((s) => s.code === value);
+
+  return (
+    <div>
+      <label className="mb-1 block text-[12px] font-medium text-muted">State</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!error}
+        className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-[13px] text-text ${
+          error ? 'border-danger' : ''
+        }`}
+      >
+        <option value="">Select state…</option>
+        {isRetired && (
+          <option value={value}>
+            {gstStateName(value) ?? value} ({value})
+          </option>
+        )}
+        {options.map((s) => (
+          <option key={s.code} value={s.code}>
+            {s.name} ({s.code})
+          </option>
+        ))}
+      </select>
+      {error && <p className="mt-1 text-[12px] text-danger">{error}</p>}
     </div>
   );
 }
@@ -83,6 +149,8 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   const [step, setStep] = useState(1);
   // Step field state (flat; only the fields we send per step).
   const [f, setF] = useState<Record<string, string>>({});
+  // Per-field rejection reasons for the current step, keyed by field name.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isMsme, setIsMsme] = useState(false);
   const [isRelatedParty, setIsRelatedParty] = useState(false);
   const [cocName, setCocName] = useState('');
@@ -114,20 +182,43 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     return merged;
   }, [data, localDocs]);
 
-  if (isLoading) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
+  if (isLoading) return <p className="p-6 text-[13px] text-muted">Loading…</p>;
   if (error || !data)
     return (
       <div className="p-6">
-        <p className="text-muted text-[13px]">
+        <p className="text-[13px] text-muted">
           No onboarding in progress for this account.
         </p>
       </div>
     );
 
-  const set = (k: string) => (v: string) => setF((prev) => ({ ...prev, [k]: v }));
+  const set =
+    (k: string) =>
+    (v: string): void => {
+      setF((prev) => ({ ...prev, [k]: v }));
+      // Editing a rejected field clears its error — keeping it would keep the
+      // input red while the user is fixing exactly what it complained about.
+      setFieldErrors((prev) => {
+        if (!prev[k]) return prev;
+        const { [k]: _removed, ...rest } = prev;
+        return rest;
+      });
+    };
   const completionPct = data.wizardState?.completionPct ?? 0;
 
   const persist = (stepNumber: number, payload: SaveStepInput): void => {
+    // Validate against this step's schema before sending. The API enforces the
+    // same rules, but it answers with a generic 422 whose per-field detail used
+    // to be dropped — checking here names the offending field immediately.
+    const schema = ONBOARDING_STEP_SCHEMAS[stepNumber];
+    const parsed = schema?.safeParse(payload);
+    if (parsed && !parsed.success) {
+      setFieldErrors(zodFieldErrors(parsed.error));
+      toast(zodSummary(parsed.error, 'Check the highlighted fields'), 'error');
+      return;
+    }
+    setFieldErrors({});
+
     saveStep.mutate(
       { stepNumber, data: payload },
       {
@@ -135,7 +226,12 @@ export default function OnboardingWizardPage(): React.JSX.Element {
           toast(`Step ${stepNumber} saved`, 'success');
           setStep(Math.min(6, stepNumber + 1));
         },
-        onError: (e) => toast(e.message, 'error'),
+        onError: (e) => {
+          // Server-only rejections (PAN/GSTIN verification, penny-drop mismatch)
+          // still land on the right input.
+          if (e instanceof ApiError) setFieldErrors(e.fieldErrors);
+          toast(e.message, 'error');
+        },
       },
     );
   };
@@ -246,7 +342,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         {busy && <span className="text-muted">uploading…</span>}
         {done && (
           <>
-            <span className="text-muted max-w-[180px] truncate text-[12px]">
+            <span className="max-w-[180px] truncate text-[12px] text-muted">
               {done.filename} · {formatBytes(done.sizeBytes)}
             </span>
             {done.url && (
@@ -298,15 +394,15 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-[760px]">
       <div className="mb-4">
-        <h1 className="text-ink text-[20px] font-semibold">Vendor onboarding</h1>
-        <p className="text-muted text-[13px]">
+        <h1 className="text-[20px] font-semibold text-ink">Vendor onboarding</h1>
+        <p className="text-[13px] text-muted">
           Complete all steps, acknowledge the code of conduct, then submit.
         </p>
         <div className="mt-3 flex items-center gap-2">
-          <div className="bg-canvas h-1.5 w-48 overflow-hidden rounded-full">
+          <div className="h-1.5 w-48 overflow-hidden rounded-full bg-canvas">
             <div className="bg-brand h-full" style={{ width: `${completionPct}%` }} />
           </div>
-          <span className="text-muted text-[12px] tabular-nums">
+          <span className="text-[12px] tabular-nums text-muted">
             {completionPct}% complete
           </span>
         </div>
@@ -320,7 +416,10 @@ export default function OnboardingWizardPage(): React.JSX.Element {
           return (
             <button
               key={n}
-              onClick={() => setStep(n)}
+              onClick={() => {
+                setStep(n);
+                setFieldErrors({});
+              }}
               className={`rounded-md px-2.5 py-1 text-[12px] ${
                 step === n ? 'bg-ink text-white' : done ? 'text-accent-2' : 'text-muted'
               }`}
@@ -344,47 +443,61 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 label="Legal entity name"
                 value={f.legalEntityName ?? ''}
                 onChange={set('legalEntityName')}
+                error={fieldErrors.legalEntityName}
               />
               <Field
                 label="Business PAN"
                 value={f.businessPan ?? ''}
                 onChange={set('businessPan')}
-                placeholder="AAAAA0000A"
+                placeholder="AFMFS3755D"
+                error={fieldErrors.businessPan}
+                hint="10 characters. Not your GSTIN — the PAN is characters 3–12 of it."
               />
               <Field
                 label="Address"
                 value={f.addressLine1 ?? ''}
                 onChange={set('addressLine1')}
+                error={fieldErrors.addressLine1}
               />
               <div className="grid grid-cols-3 gap-2">
-                <Field label="City" value={f.city ?? ''} onChange={set('city')} />
                 <Field
-                  label="State code"
+                  label="City"
+                  value={f.city ?? ''}
+                  onChange={set('city')}
+                  error={fieldErrors.city}
+                />
+                <StateCodeField
                   value={f.stateCode ?? ''}
                   onChange={set('stateCode')}
-                  placeholder="AS"
+                  error={fieldErrors.stateCode}
                 />
                 <Field
                   label="Pincode"
                   value={f.pincode ?? ''}
                   onChange={set('pincode')}
+                  placeholder="110055"
+                  error={fieldErrors.pincode}
                 />
               </div>
               <Field
                 label="Contact name"
                 value={f.primaryContactName ?? ''}
                 onChange={set('primaryContactName')}
+                error={fieldErrors.primaryContactName}
               />
               <Field
                 label="Contact email"
                 type="email"
                 value={f.primaryContactEmail ?? ''}
                 onChange={set('primaryContactEmail')}
+                placeholder="name@company.com"
+                error={fieldErrors.primaryContactEmail}
               />
               <Field
                 label="Contact phone"
                 value={f.primaryContactPhone ?? ''}
                 onChange={set('primaryContactPhone')}
+                error={fieldErrors.primaryContactPhone}
               />
             </>
           )}
@@ -395,7 +508,9 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 label="GSTIN"
                 value={f.gstin ?? ''}
                 onChange={set('gstin')}
-                placeholder="18AAACG3030G1Z3"
+                placeholder="07AFMFS3755D1ZS"
+                error={fieldErrors.gstin}
+                hint="15 characters: state code + PAN + 3 more"
               />
               <label className="flex items-center gap-2 text-[13px]">
                 <input
@@ -410,9 +525,10 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   label="Udyam number"
                   value={f.udyamNumber ?? ''}
                   onChange={set('udyamNumber')}
+                  error={fieldErrors.udyamNumber}
                 />
               )}
-              <p className="text-muted text-[12px]">
+              <p className="text-[12px] text-muted">
                 GSTIN & PAN are auto-verified against mock government APIs on save.
               </p>
             </>
@@ -424,24 +540,30 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 label="Bank name"
                 value={f.bankName ?? ''}
                 onChange={set('bankName')}
+                error={fieldErrors.bankName}
               />
               <Field
                 label="Account number"
                 value={f.accountNumber ?? ''}
                 onChange={set('accountNumber')}
+                error={fieldErrors.accountNumber}
               />
               <Field
                 label="IFSC"
                 value={f.ifsc ?? ''}
                 onChange={set('ifsc')}
                 placeholder="HDFC0001234"
+                error={fieldErrors.ifsc}
+                hint="11 characters"
               />
               <Field
                 label="Account holder name"
                 value={f.holderName ?? ''}
                 onChange={set('holderName')}
+                error={fieldErrors.holderName}
+                hint="Must match the name registered at the bank"
               />
-              <p className="text-muted text-[12px]">
+              <p className="text-[12px] text-muted">
                 A penny-drop name match runs automatically on save.
               </p>
             </>
@@ -451,16 +573,17 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             <div className="space-y-4">
               {requiredDocs.length > 0 ? (
                 <div>
-                  <p className="text-muted mb-2 text-[13px]">
-                    Required documents{categoryCfg ? ` for ${categoryCfg.displayName}` : ''}{' '}
-                    — select a file for each (PDF or image, max 10 MB):
+                  <p className="mb-2 text-[13px] text-muted">
+                    Required documents
+                    {categoryCfg ? ` for ${categoryCfg.displayName}` : ''} — select a file
+                    for each (PDF or image, max 10 MB):
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {requiredDocs.map((d) => renderDocButton(d))}
                   </div>
                 </div>
               ) : (
-                <p className="text-muted text-[13px]">
+                <p className="text-[13px] text-muted">
                   Upload your documents (PDF or image, max 10 MB):
                 </p>
               )}
@@ -522,13 +645,13 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   onChange={set('relatedPartyDisclosure')}
                 />
               )}
-              <p className="text-muted text-[12px]">
+              <p className="text-[12px] text-muted">
                 By saving this step you self-declare no sanctions exposure. Sanctions
                 screening runs automatically.
               </p>
 
               {/* CoC + submit */}
-              <div className="border-line mt-4 space-y-3 border-t pt-4">
+              <div className="mt-4 space-y-3 border-t border-line pt-4">
                 <CardTitle>Code of conduct</CardTitle>
                 <Field label="Your name" value={cocName} onChange={setCocName} />
                 <Field
@@ -555,7 +678,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             </>
           )}
 
-          <div className="border-line mt-4 flex justify-between border-t pt-4">
+          <div className="mt-4 flex justify-between border-t border-line pt-4">
             <Button
               variant="ghost"
               onClick={() => setStep(Math.max(1, step - 1))}
@@ -582,7 +705,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       </Card>
 
       {completionPct === 100 && (
-        <p className="text-accent-2 mt-3 text-[13px]">
+        <p className="mt-3 text-[13px] text-accent-2">
           <Pill variant="success">Ready</Pill> All steps complete — acknowledge the CoC
           and submit.
         </p>

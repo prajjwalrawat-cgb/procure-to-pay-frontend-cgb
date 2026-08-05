@@ -1,6 +1,7 @@
 'use client';
 
 import { API_URL } from './env';
+import { toApiError } from './api-error';
 import { useSessionStore } from '@/store/session-store';
 
 /**
@@ -61,10 +62,8 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     if (next) res = await doFetch(next);
   }
 
-  if (!res.ok) {
-    const problem = await res.json().catch(() => ({}));
-    throw new Error(problem.detail ?? `Request failed: ${res.status}`);
-  }
+  // ApiError, not Error — a 422 carries per-field issues the form needs to show.
+  if (!res.ok) throw await toApiError(res, 'Request failed');
   return res.json() as Promise<T>;
 }
 
@@ -89,8 +88,7 @@ export async function openAuthedAsset(path: string): Promise<void> {
   }
   if (!res.ok) {
     win?.close();
-    const problem = await res.json().catch(() => ({}));
-    throw new Error(problem.detail ?? `Download failed: ${res.status}`);
+    throw await toApiError(res, 'Download failed');
   }
   const url = URL.createObjectURL(await res.blob());
   if (win) win.location.href = url;

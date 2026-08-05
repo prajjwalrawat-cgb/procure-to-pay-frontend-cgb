@@ -8,11 +8,31 @@ import {
   DialogTitle,
   Input,
 } from '@/components/ui';
-import { VENDOR_CATEGORY_CONFIGS } from '@/lib/shared';
+import { InviteVendorInputSchema, VENDOR_CATEGORY_CONFIGS } from '@/lib/shared';
 import { useState } from 'react';
 
+import { ApiError, zodFieldErrors, zodSummary } from '@/lib/api-error';
 import { useInviteVendor } from '@/lib/api/vendors';
 import { useToastStore } from '@/store/toast-store';
+
+/** Label + input + the reason it was rejected, if any. */
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div>
+      <label className="mb-1 block text-[12px] font-medium text-muted">{label}</label>
+      {children}
+      {error && <p className="mt-1 text-[12px] text-danger">{error}</p>}
+    </div>
+  );
+}
 
 export function InviteVendorDialog({
   open,
@@ -27,29 +47,45 @@ export function InviteVendorDialog({
   const [categoryKey, setCategoryKey] = useState(
     VENDOR_CATEGORY_CONFIGS[0]?.categoryKey ?? '',
   );
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const invite = useInviteVendor();
   const toast = useToastStore((s) => s.push);
 
   const submit = (): void => {
-    invite.mutate(
-      {
-        legalEntityName,
-        name: name || legalEntityName,
-        email,
-        categoryKey,
-        source: 'BUYER_INVITE_SPOT',
+    const input = {
+      legalEntityName: legalEntityName.trim(),
+      name: (name || legalEntityName).trim(),
+      email: email.trim(),
+      categoryKey,
+      source: 'BUYER_INVITE_SPOT' as const,
+    };
+
+    // Validate with the same schema the API enforces, so a typo like a missing
+    // "@" is caught here with the field flagged instead of costing a round trip
+    // that comes back as an anonymous 422.
+    const parsed = InviteVendorInputSchema.safeParse(input);
+    if (!parsed.success) {
+      setErrors(zodFieldErrors(parsed.error));
+      toast(zodSummary(parsed.error, 'Check the highlighted fields'), 'error');
+      return;
+    }
+    setErrors({});
+
+    invite.mutate(input, {
+      onSuccess: () => {
+        toast('Vendor invited — onboarding started', 'success');
+        setLegalEntityName('');
+        setName('');
+        setEmail('');
+        onClose();
       },
-      {
-        onSuccess: () => {
-          toast('Vendor invited — onboarding started', 'success');
-          setLegalEntityName('');
-          setName('');
-          setEmail('');
-          onClose();
-        },
-        onError: (e) => toast(e.message || 'Could not invite vendor', 'error'),
+      onError: (e) => {
+        // The API may reject for reasons the client schema can't know (duplicate
+        // email, unknown category) — surface those against the field too.
+        if (e instanceof ApiError) setErrors(e.fieldErrors);
+        toast(e.message || 'Could not invite vendor', 'error');
       },
-    );
+    });
   };
 
   return (
@@ -61,45 +97,36 @@ export function InviteVendorDialog({
           onboarding wizard. It then lands in the review queue.
         </DialogDescription>
         <div className="mt-4 space-y-3">
-          <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
-              Legal entity name
-            </label>
+          <Field label="Legal entity name" error={errors.legalEntityName}>
             <Input
               value={legalEntityName}
               onChange={(e) => setLegalEntityName(e.target.value)}
               placeholder="Acme Industries Pvt Ltd"
+              aria-invalid={!!errors.legalEntityName}
             />
-          </div>
-          <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
-              Display name (optional)
-            </label>
+          </Field>
+          <Field label="Display name (optional)" error={errors.name}>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Acme"
+              aria-invalid={!!errors.name}
             />
-          </div>
-          <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
-              Contact email
-            </label>
+          </Field>
+          <Field label="Contact email" error={errors.email}>
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="sales@acme.example"
+              aria-invalid={!!errors.email}
             />
-          </div>
-          <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
-              Category
-            </label>
+          </Field>
+          <Field label="Category" error={errors.categoryKey}>
             <select
               value={categoryKey}
               onChange={(e) => setCategoryKey(e.target.value)}
-              className="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+              className="bg-surface w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
             >
               {VENDOR_CATEGORY_CONFIGS.map((c) => (
                 <option key={c.categoryKey} value={c.categoryKey}>
@@ -107,7 +134,7 @@ export function InviteVendorDialog({
                 </option>
               ))}
             </select>
-          </div>
+          </Field>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="default" onClick={onClose}>
