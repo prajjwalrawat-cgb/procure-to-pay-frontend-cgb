@@ -1,10 +1,24 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  Input,
+  Pill,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { useOnboardingQueue, type OnboardingTab } from '@/lib/api/vendors';
+import type { OnboardingListItem } from '@/lib/shared';
+import {
+  useCancelOnboarding,
+  useOnboardingQueue,
+  type OnboardingTab,
+} from '@/lib/api/vendors';
+import { useToastStore } from '@/store/toast-store';
 
 const TABS: { key: OnboardingTab; label: string }[] = [
   { key: 'my_review', label: 'Awaiting my review' },
@@ -22,8 +36,75 @@ function slaVariant(breachAt: string | null): 'success' | 'warn' | 'danger' | 'g
   return 'success';
 }
 
+/** Confirms a withdrawal and captures the reason that lands in the audit log. */
+function CancelInviteDialog({
+  row,
+  onClose,
+}: {
+  row: OnboardingListItem | null;
+  onClose: () => void;
+}): React.JSX.Element {
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  const cancel = useCancelOnboarding();
+  const toast = useToastStore((s) => s.push);
+
+  const submit = (): void => {
+    if (!row) return;
+    if (reason.trim().length < 3) {
+      setError('Give a reason — it is recorded in the audit log');
+      return;
+    }
+    setError('');
+    cancel.mutate(
+      { onboardingId: row.id, reason: reason.trim() },
+      {
+        onSuccess: () => {
+          toast(`Invitation to ${row.vendorName} withdrawn`, 'success');
+          setReason('');
+          onClose();
+        },
+        onError: (e) => toast(e.message || 'Could not cancel the invitation', 'error'),
+      },
+    );
+  };
+
+  return (
+    <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogTitle>Cancel invitation</DialogTitle>
+        <DialogDescription>
+          Withdraws the invitation to <strong>{row?.vendorName}</strong>. They never set a
+          password, so nothing they can use goes away — the link simply stops working and
+          the vendor record is archived. Nothing is deleted, and the reason is recorded in
+          the audit log.
+        </DialogDescription>
+        <div className="mt-4">
+          <label className="text-muted mb-1 block text-[12px] font-medium">Reason</label>
+          <Input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Duplicate invite — vendor already onboarding under VN-XXXXXX"
+            aria-invalid={!!error}
+          />
+          {error && <p className="text-danger mt-1 text-[12px]">{error}</p>}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="default" onClick={onClose}>
+            Keep invitation
+          </Button>
+          <Button variant="danger" onClick={submit} disabled={cancel.isPending}>
+            {cancel.isPending ? 'Cancelling…' : 'Cancel invitation'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function OnboardingQueuePage(): React.JSX.Element {
   const [tab, setTab] = useState<OnboardingTab>('my_review');
+  const [cancelling, setCancelling] = useState<OnboardingListItem | null>(null);
   const { data, isLoading } = useOnboardingQueue(tab);
 
   return (
@@ -72,6 +153,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                 <th className="px-3 py-2 text-left font-medium">Docs</th>
                 <th className="px-3 py-2 text-left font-medium">Days open</th>
                 <th className="px-3 py-2 text-left font-medium">SLA</th>
+                <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -92,6 +174,11 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                     {o.stalled && (
                       <Pill variant="warn" className="ml-2">
                         Stalled
+                      </Pill>
+                    )}
+                    {o.reviewDecision === 'CANCELLED' && (
+                      <Pill variant="gray" className="ml-2">
+                        Cancelled
                       </Pill>
                     )}
                   </td>
@@ -119,12 +206,24 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                       {o.slaBreachAt ? new Date(o.slaBreachAt).toLocaleDateString() : '—'}
                     </Pill>
                   </td>
+                  <td className="px-3 py-2 text-right">
+                    {o.canCancel && (
+                      <button
+                        onClick={() => setCancelling(o)}
+                        className="text-muted hover:text-danger text-[12px] font-medium"
+                      >
+                        Cancel invite
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <CancelInviteDialog row={cancelling} onClose={() => setCancelling(null)} />
     </div>
   );
 }

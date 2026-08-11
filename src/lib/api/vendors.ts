@@ -11,6 +11,7 @@ import type {
   InviteVendorInput,
   OnboardingDetailResponse,
   OnboardingListResponse,
+  RenameVendorInput,
   SuspendVendorInput,
   Vendor360Response,
   VendorListResponse,
@@ -98,6 +99,36 @@ export function useOnboardingDecision(
       apiFetch<{ ok: true }>(`/vendors/onboarding/${onboardingId}/decision`, {
         method: 'POST',
         body: JSON.stringify(input),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: vendorKeys.all }),
+  });
+}
+
+/** Correct a vendor's display and/or legal entity name. */
+export function useRenameVendor(
+  vendorId: string,
+): ReturnType<typeof useMutation<{ ok: true }, Error, RenameVendorInput>> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RenameVendorInput) =>
+      apiFetch<{ ok: true }>(`/vendors/${vendorId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: vendorKeys.all }),
+  });
+}
+
+/** Withdraw an invitation the vendor never submitted (mistaken or duplicate). */
+export function useCancelOnboarding(): ReturnType<
+  typeof useMutation<{ ok: true }, Error, { onboardingId: string; reason: string }>
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { onboardingId: string; reason: string }) =>
+      apiFetch<{ ok: true }>(`/vendors/onboarding/${input.onboardingId}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: input.reason }),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: vendorKeys.all }),
   });

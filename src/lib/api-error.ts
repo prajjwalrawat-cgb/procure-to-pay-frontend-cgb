@@ -20,7 +20,9 @@ interface ProblemBody {
   title?: string;
   status?: number;
   detail?: string;
-  context?: { issues?: ProblemIssue[] };
+  /** `issues` is the validation-error shape; domain errors put their own keys
+   *  here too (e.g. the duplicate-invite guard's `existingVendorId`). */
+  context?: { issues?: ProblemIssue[] } & Record<string, unknown>;
 }
 
 /** Field path → the label the user actually sees on the form. */
@@ -101,6 +103,9 @@ export class ApiError extends Error {
   readonly issues: ProblemIssue[];
   /** `{ email: 'Enter a valid email address…' }` — ready to hang off an input. */
   readonly fieldErrors: Record<string, string>;
+  /** Whatever else the domain error attached — the payload a 409 uses to tell
+   *  the UI *which* existing record it collided with. */
+  readonly context: Record<string, unknown>;
 
   constructor(status: number, body: ProblemBody, fallback: string) {
     const issues = (body.context?.issues ?? []).filter(
@@ -113,6 +118,7 @@ export class ApiError extends Error {
     this.title = body.title ?? fallback;
     this.detail = body.detail ?? fallback;
     this.issues = issues;
+    this.context = body.context ?? {};
     this.fieldErrors = Object.fromEntries(
       // First issue per field wins — later ones are usually the same cause.
       issues

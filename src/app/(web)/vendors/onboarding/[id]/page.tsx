@@ -1,6 +1,18 @@
 'use client';
 
-import { Button, Card, CardContent, CardHeader, CardTitle, Pill } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  Input,
+  Pill,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -8,6 +20,7 @@ import { useState } from 'react';
 import {
   useOnboardingDecision,
   useOnboardingDetail,
+  useRenameVendor,
   useReturnForInfo,
   useReviewScreening,
   useVerifyDocument,
@@ -28,6 +41,92 @@ const DOC_VARIANT: Record<string, 'success' | 'warn' | 'danger' | 'gray'> = {
   EXPIRED: 'danger',
 };
 
+/**
+ * Corrects a vendor's name. The legal entity name is what PAN/GST verification
+ * matched against, so the API freezes it once the vendor is activated — until
+ * then a buyer can fix both here.
+ */
+function RenameVendorDialog({
+  open,
+  vendorId,
+  currentName,
+  currentLegalName,
+  onClose,
+}: {
+  open: boolean;
+  vendorId: string;
+  currentName: string;
+  currentLegalName: string | null;
+  onClose: () => void;
+}): React.JSX.Element {
+  const [name, setName] = useState(currentName);
+  const [legalEntityName, setLegalEntityName] = useState(currentLegalName ?? '');
+  const rename = useRenameVendor(vendorId);
+  const toast = useToastStore((s) => s.push);
+
+  const submit = (): void => {
+    rename.mutate(
+      {
+        name: name.trim(),
+        // Only send the legal name when there is one to send, so a vendor who
+        // has not reached wizard step 1 yet is not given an empty string.
+        ...(legalEntityName.trim() ? { legalEntityName: legalEntityName.trim() } : {}),
+      },
+      {
+        onSuccess: () => {
+          toast('Vendor name updated', 'success');
+          onClose();
+        },
+        onError: (e) => toast(e.message || 'Could not update the name', 'error'),
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogTitle>Edit vendor name</DialogTitle>
+        <DialogDescription>
+          The display name is the label used across lists and reports. The legal entity
+          name is the registered name that PAN and GST checks match against — it can only
+          be corrected before the vendor is activated. The change is recorded in the audit
+          log.
+        </DialogDescription>
+        <div className="mt-4 space-y-3">
+          <div>
+            <label className="text-muted mb-1 block text-[12px] font-medium">
+              Display name
+            </label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-muted mb-1 block text-[12px] font-medium">
+              Legal entity name
+            </label>
+            <Input
+              value={legalEntityName}
+              onChange={(e) => setLegalEntityName(e.target.value)}
+              placeholder="Lohith Material Pvt Ltd"
+            />
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="default" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={submit}
+            disabled={rename.isPending || name.trim().length < 2}
+          >
+            {rename.isPending ? 'Saving…' : 'Save name'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function OnboardingReviewPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -38,6 +137,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const reviewScreening = useReviewScreening(id);
   const toast = useToastStore((s) => s.push);
   const [comment, setComment] = useState('');
+  const [renaming, setRenaming] = useState(false);
 
   if (isLoading || !data) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
 
@@ -86,6 +186,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           </h1>
           {data.isMsme && <Pill variant="info">MSME</Pill>}
           <Pill variant="gray">{data.lifecycleStatus.replace(/_/g, ' ')}</Pill>
+          <button
+            onClick={() => setRenaming(true)}
+            className="text-muted hover:text-ink text-[12px] font-medium underline"
+          >
+            Edit name
+          </button>
         </div>
         <p className="text-muted text-[13px]">
           {data.legalEntityName} · {data.category ?? '—'} · {data.completionPct}% complete
@@ -362,6 +468,18 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           </Card>
         </div>
       </div>
+
+      {renaming && (
+        // Keyed on the current values so the inputs start from what is on screen
+        // after a save, rather than the values captured on first render.
+        <RenameVendorDialog
+          open={renaming}
+          vendorId={data.vendorId}
+          currentName={data.vendorName}
+          currentLegalName={data.legalEntityName}
+          onClose={() => setRenaming(false)}
+        />
+      )}
     </div>
   );
 }
