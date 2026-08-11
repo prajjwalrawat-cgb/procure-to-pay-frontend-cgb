@@ -13,12 +13,13 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/vendor/lib/api-client';
+import type { WizardState } from './wizard-hydrate';
 
-export interface WizardState {
-  currentStep: number;
-  completionPct: number;
-  steps: Record<string, { done: boolean; data: Record<string, unknown> }>;
-}
+// Pure form-rebuilding logic lives apart from these network hooks so it can be
+// unit-tested without pulling in the api client.
+export { hydrateWizardForm } from './wizard-hydrate';
+export type { HydratedWizard, WizardState } from './wizard-hydrate';
+
 export interface UploadedDocument {
   id: string;
   docType: string;

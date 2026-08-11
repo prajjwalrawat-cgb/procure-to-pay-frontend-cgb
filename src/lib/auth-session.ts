@@ -1,0 +1,87 @@
+'use client';
+
+/**
+ * Shared session plumbing for both portals' API clients.
+ *
+ * Two rules live here, and they depend on each other:
+ *
+ * 1. Refreshing must be single-flight. The refresh token rotates, so if several
+ *    requests each refreshed on their own 401 only the first would succeed and
+ *    the rest would be told the session is dead.
+ * 2. When a refresh genuinely fails the session is over, so the app must stop
+ *    pretending otherwise. Previously the failure just fell through to a thrown
+ *    error: the store still held the user, the shell still rendered as
+ *    signed-in, and every action produced a bearer-token error. A vendor who
+ *    left the onboarding wizard open for days hit exactly that.
+ *
+ * Rule 2 is only safe because of rule 1 — without single-flight, a routine
+ * concurrent refresh would log people out mid-session.
+ */
+
+/** Builds a single-flight refresher for one portal's refresh endpoint. */
+export function createRefresher(opts: {
+  endpoint: string;
+  /** Store the new token. Read the user from the store here, not at build time. */
+  onToken: (accessToken: string) => void;
+}): () => Promise<string | null> {
+  let inFlight: Promise<string | null> | null = null;
+
+  return () => {
+    if (!inFlight) {
+      inFlight = (async (): Promise<string | null> => {
+        try {
+          const res = await fetch(opts.endpoint, { method: 'POST' });
+          if (!res.ok) return null;
+          const { accessToken } = (await res.json()) as { accessToken: string };
+          opts.onToken(accessToken);
+          return accessToken;
+        } catch {
+          return null;
+        } finally {
+          // Allow a fresh attempt on the next expiry once this one settles.
+          inFlight = null;
+        }
+      })();
+    }
+    return inFlight;
+  };
+}
+
+/** Set once we start navigating away, so parallel 401s don't each redirect. */
+let redirecting = false;
+
+/**
+ * The access token expired and the refresh token could not renew it, so the
+ * session is genuinely over. Clear it and send the user to the right login,
+ * remembering where they were so they can be returned there.
+ */
+export function endSession(loginPath: string, clear: () => void): void {
+  clear();
+  if (typeof window === 'undefined' || redirecting) return;
+
+  const { pathname, search } = window.location;
+  // Already on the login page — nothing to bounce, and no loop to start.
+  if (pathname === loginPath) return;
+
+  redirecting = true;
+  const next = encodeURIComponent(`${pathname}${search}`);
+  window.location.replace(`${loginPath}?next=${next}`);
+}
+
+/**
+ * Safe post-login destination from a `?next=` param. Only same-origin paths are
+ * honoured: an absolute URL would let a crafted link bounce someone to another
+ * site carrying the trust of having just signed in.
+ */
+export function safeNextPath(next: string | null, fallback: string): string {
+  if (!next) return fallback;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(next);
+  } catch {
+    return fallback;
+  }
+  // Must be a rooted path, and not protocol-relative ("//evil.com").
+  if (!decoded.startsWith('/') || decoded.startsWith('//')) return fallback;
+  return decoded;
+}

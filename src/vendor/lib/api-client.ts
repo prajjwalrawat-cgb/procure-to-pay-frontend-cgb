@@ -2,7 +2,29 @@
 
 import { API_URL } from './env';
 import { toApiError } from '@/lib/api-error';
+import { createRefresher, endSession } from '@/lib/auth-session';
 import { useSessionStore } from '@/vendor/store/session-store';
+
+/**
+ * Single-flight refresh — concurrent 401s must share one call, because the
+ * refresh token rotates and only the first would otherwise succeed.
+ */
+const refreshAccessToken = createRefresher({
+  endpoint: '/api/vendor/auth/refresh',
+  onToken: (accessToken) => {
+    const { user, setSession } = useSessionStore.getState();
+    if (user) setSession(accessToken, user);
+  },
+});
+
+/**
+ * Refresh failed, so the session really is over. Vendors hit this after leaving
+ * the onboarding wizard open for days; without it the portal keeps rendering as
+ * signed-in and only reveals the problem as a bearer-token error on submit.
+ */
+function expired(): void {
+  endSession('/vendor/login', useSessionStore.getState().clear);
+}
 
 /** Authenticated fetch for the vendor portal; refreshes the token once on 401. */
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -19,16 +41,13 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       },
     });
 
-  const { accessToken, setSession, user } = useSessionStore.getState();
+  const { accessToken } = useSessionStore.getState();
   let res = await doFetch(accessToken);
 
   if (res.status === 401) {
-    const refreshed = await fetch(`/api/vendor/auth/refresh`, { method: 'POST' });
-    if (refreshed.ok) {
-      const { accessToken: next } = (await refreshed.json()) as { accessToken: string };
-      if (user) setSession(next, user);
-      res = await doFetch(next);
-    }
+    const next = await refreshAccessToken();
+    if (next) res = await doFetch(next);
+    else expired();
   }
 
   // ApiError, not Error — a 422 carries per-field issues the wizard needs to show.
@@ -44,15 +63,12 @@ export async function openAuthedAsset(path: string): Promise<void> {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
 
-  const { accessToken, setSession, user } = useSessionStore.getState();
+  const { accessToken } = useSessionStore.getState();
   let res = await doFetch(accessToken);
   if (res.status === 401) {
-    const refreshed = await fetch(`/api/vendor/auth/refresh`, { method: 'POST' });
-    if (refreshed.ok) {
-      const { accessToken: next } = (await refreshed.json()) as { accessToken: string };
-      if (user) setSession(next, user);
-      res = await doFetch(next);
-    }
+    const next = await refreshAccessToken();
+    if (next) res = await doFetch(next);
+    else expired();
   }
   if (!res.ok) {
     win?.close();

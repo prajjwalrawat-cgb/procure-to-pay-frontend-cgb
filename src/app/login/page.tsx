@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { safeNextPath } from '@/lib/auth-session';
 import { useSessionStore } from '@/store/session-store';
 
 interface LoginResult {
@@ -41,7 +42,11 @@ export default function LoginPage(): React.JSX.Element {
         return;
       }
       setSession(data.accessToken, data.user);
-      router.replace('/');
+      // Return the user to whatever an expired session interrupted — read at
+      // submit time rather than via useSearchParams, which would opt this page
+      // out of static rendering and require a Suspense boundary.
+      const next = new URLSearchParams(window.location.search).get('next');
+      router.replace(safeNextPath(next, '/'));
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {

@@ -18,10 +18,11 @@ import {
   type SaveStepInput,
   type VendorDocumentType,
 } from '@/lib/shared';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiError, zodFieldErrors, zodSummary } from '@/lib/api-error';
 import {
+  hydrateWizardForm,
   useAcknowledgeCoc,
   useOnboarding,
   useSaveStep,
@@ -163,6 +164,20 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   );
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [showOtherDocs, setShowOtherDocs] = useState(false);
+
+  // Seed the inputs from what the server already holds. Done once per
+  // onboarding, not on every refetch: saving a step invalidates this query, and
+  // re-seeding then would overwrite whatever the vendor has since typed.
+  const seededFor = useRef<string | null>(null);
+  const onboardingId = data?.onboardingId ?? null;
+  useEffect(() => {
+    if (!onboardingId || seededFor.current === onboardingId) return;
+    seededFor.current = onboardingId;
+    const hydrated = hydrateWizardForm(data?.wizardState);
+    setF(hydrated.fields);
+    setIsMsme(hydrated.isMsme);
+    setIsRelatedParty(hydrated.isRelatedParty);
+  }, [onboardingId, data?.wizardState]);
 
   const uploadedDocs = useMemo(() => {
     const merged = new Map<string, UploadedDocResult>();

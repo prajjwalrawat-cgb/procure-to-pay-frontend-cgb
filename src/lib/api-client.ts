@@ -2,6 +2,7 @@
 
 import { API_URL } from './env';
 import { toApiError } from './api-error';
+import { createRefresher, endSession } from './auth-session';
 import { useSessionStore } from '@/store/session-store';
 
 /**
@@ -12,27 +13,17 @@ import { useSessionStore } from '@/store/session-store';
  * 401 and bounce the user to login. Instead they all await the one in-flight
  * refresh and share its new access token.
  */
-let refreshInFlight: Promise<string | null> | null = null;
+const refreshAccessToken = createRefresher({
+  endpoint: '/api/auth/refresh',
+  onToken: (accessToken) => {
+    const { user, setSession } = useSessionStore.getState();
+    if (user) setSession(accessToken, user);
+  },
+});
 
-function refreshAccessToken(): Promise<string | null> {
-  if (!refreshInFlight) {
-    refreshInFlight = (async (): Promise<string | null> => {
-      try {
-        const res = await fetch('/api/auth/refresh', { method: 'POST' });
-        if (!res.ok) return null;
-        const { accessToken } = (await res.json()) as { accessToken: string };
-        const { user, setSession } = useSessionStore.getState();
-        if (user) setSession(accessToken, user);
-        return accessToken;
-      } catch {
-        return null;
-      } finally {
-        // Allow a fresh refresh on the next expiry once this one settles.
-        refreshInFlight = null;
-      }
-    })();
-  }
-  return refreshInFlight;
+/** The refresh token is gone too — end the session rather than look signed in. */
+function expired(): void {
+  endSession('/login', useSessionStore.getState().clear);
 }
 
 /**
@@ -60,6 +51,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (res.status === 401) {
     const next = await refreshAccessToken();
     if (next) res = await doFetch(next);
+    else expired();
   }
 
   // ApiError, not Error — a 422 carries per-field issues the form needs to show.
@@ -85,6 +77,7 @@ export async function openAuthedAsset(path: string): Promise<void> {
   if (res.status === 401) {
     const next = await refreshAccessToken();
     if (next) res = await doFetch(next);
+    else expired();
   }
   if (!res.ok) {
     win?.close();
