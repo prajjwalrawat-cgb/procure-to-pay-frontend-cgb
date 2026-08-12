@@ -23,9 +23,20 @@ import {
   useSubmitRequisition,
 } from '@/lib/api/requisitions';
 import { inr } from '@/lib/format';
+import { percentToRate, rateToPercent } from '@/lib/rate';
 import { NON_CATALOG_REASONS, PRIORITIES } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
 
+/**
+ * A wizard line. `itemId` distinguishes the two kinds of line:
+ *   `null`        — non-catalogued; requires a reason code.
+ *   `''`          — catalogued, but no item picked from the catalogue yet.
+ *   an item id    — catalogued and bound to that item.
+ *
+ * `discountPct` and `taxRate` are held as **percentages** here ('18'), because
+ * that is what the inputs are labelled; `buildBody` converts them to the
+ * fractions the API expects.
+ */
 interface DraftLine {
   key: string;
   itemId: string | null;
@@ -117,13 +128,16 @@ export default function NewRequisitionPage(): React.JSX.Element {
     plantId &&
     neededBy &&
     justification.trim().length >= 20;
+  // A catalogued line whose item was never picked still has itemId === '', which
+  // is not null — so it must be checked for truthiness, not against null, or the
+  // wizard lets a half-bound line through to a 422 on submit.
   const step2Valid =
     lines.length > 0 &&
     lines.every(
       (l) =>
         l.itemDesc.trim().length > 0 &&
         num(l.qty) > 0 &&
-        (l.itemId !== null || l.reasonCode !== ''),
+        (l.itemId === null ? l.reasonCode !== '' : l.itemId !== ''),
     );
 
   const buildBody = (): RequisitionCreateInput => ({
@@ -140,11 +154,15 @@ export default function NewRequisitionPage(): React.JSX.Element {
       uom: l.uom,
       qty: l.qty,
       unitPrice: l.unitPrice,
-      discountPct: l.discountPct || '0',
-      taxRate: l.taxRate || '0',
+      discountPct: percentToRate(l.discountPct),
+      taxRate: percentToRate(l.taxRate),
       hsnCode: l.hsnCode || null,
       preferredVendorId: l.preferredVendorId || null,
-      reasonCode: l.itemId ? null : (l.reasonCode as RequisitionLineInput['reasonCode']),
+      // `step2Valid` already guarantees a reason code on non-catalogued lines;
+      // the fallback keeps an empty string — which the enum rejects — off the wire.
+      reasonCode: l.itemId
+        ? null
+        : ((l.reasonCode || 'OTHER') as RequisitionLineInput['reasonCode']),
     })),
   });
 
@@ -180,11 +198,11 @@ export default function NewRequisitionPage(): React.JSX.Element {
     <div className="mx-auto max-w-4xl pb-8">
       <Link
         href="/requisitions"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisitions
       </Link>
-      <h1 className="tracking-heading text-ink mb-4 text-[20px] font-semibold">
+      <h1 className="mb-4 text-[20px] font-semibold tracking-heading text-ink">
         New requisition
       </h1>
 
@@ -215,13 +233,13 @@ export default function NewRequisitionPage(): React.JSX.Element {
               >
                 {label}
               </span>
-              {n < STEPS.length && <span className="bg-line h-px w-6" />}
+              {n < STEPS.length && <span className="h-px w-6 bg-line" />}
             </div>
           );
         })}
       </div>
 
-      <div className="border-line bg-panel rounded-lg border p-5">
+      <div className="rounded-lg border border-line bg-panel p-5">
         {step === 1 && (
           <StepBasics
             title={title}
@@ -454,7 +472,7 @@ function BudgetChip({
   if (!costCenterId) return null;
   if (error || !budget) {
     return (
-      <div className="bg-canvas text-muted rounded-sm px-3 py-2 text-[12px]">
+      <div className="rounded-sm bg-canvas px-3 py-2 text-[12px] text-muted">
         Budget data unavailable for this cost centre.
       </div>
     );
@@ -535,7 +553,7 @@ function StepLines({
         >
           <Plus className="h-3.5 w-3.5" /> Add non-catalogued item
         </Button>
-        <span className="font-numeric text-ink ml-auto text-[14px] font-semibold">
+        <span className="font-numeric ml-auto text-[14px] font-semibold text-ink">
           PR total {inr(total.toFixed(2))}
         </span>
       </div>
@@ -558,13 +576,18 @@ function LineEditor({
 }): React.JSX.Element {
   const isCatalogued = line.itemId !== null;
   return (
-    <div className="border-line bg-canvas/40 rounded-lg border p-3">
+    <div className="rounded-lg border border-line bg-canvas/40 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-faint text-[11px] font-semibold uppercase tracking-wide">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
           Line {index + 1}
           {!isCatalogued && (
             <Pill variant="warn" className="ml-2">
               Non-catalogued
+            </Pill>
+          )}
+          {isCatalogued && line.skuCode && (
+            <Pill variant="info" className="ml-2">
+              {line.skuCode}
             </Pill>
           )}
         </span>
@@ -587,15 +610,32 @@ function LineEditor({
               skuCode: item.skuCode,
               itemDesc: item.name,
               hsnCode: item.hsnCode,
-              taxRate: item.gstRate,
+              taxRate: rateToPercent(item.gstRate),
               uom: item.primaryUom,
               unitPrice: item.lastPaidPrice ?? line.unitPrice,
               preferredVendorId: item.preferredVendor?.id ?? '',
             })
           }
-          onType={(v) => update({ itemDesc: v })}
+          // Editing the description unbinds the line from the item it was
+          // picked from — otherwise the PR keeps that item's id and SKU while
+          // describing something else entirely.
+          onType={(v) => update({ itemDesc: v, itemId: '', skuCode: null })}
         />
-      ) : (
+      ) : null}
+      {isCatalogued && !line.itemId && (
+        <p className="mt-1 text-[11px] text-muted">
+          Choose a match from the list — typing a description on its own does not link an
+          item.{' '}
+          <button
+            type="button"
+            onClick={() => update({ itemId: null, skuCode: null })}
+            className="font-medium text-accent-2 underline"
+          >
+            Not in the catalogue?
+          </button>
+        </p>
+      )}
+      {!isCatalogued && (
         <div className="grid gap-2 md:grid-cols-2">
           <input
             value={line.itemDesc}
@@ -669,7 +709,7 @@ function LineEditor({
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <label className="flex flex-1 items-center gap-2">
-          <span className="text-muted text-[11px]">Preferred vendor</span>
+          <span className="text-[11px] text-muted">Preferred vendor</span>
           <select
             value={line.preferredVendorId}
             onChange={(e) => update({ preferredVendorId: e.target.value })}
@@ -684,7 +724,7 @@ function LineEditor({
             ))}
           </select>
         </label>
-        <span className="font-numeric text-ink text-[13px] font-semibold">
+        <span className="font-numeric text-[13px] font-semibold text-ink">
           {inr(lineTotal(line).toFixed(2))}
         </span>
       </div>
@@ -718,7 +758,7 @@ function ItemPicker({
         className={inputCls}
       />
       {open && items.length > 0 && (
-        <div className="border-line bg-panel absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-sm border shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-sm border border-line bg-panel shadow-lg">
           {items.map((it) => (
             <button
               key={it.id}
@@ -728,14 +768,14 @@ function ItemPicker({
                 onPick(it);
                 setOpen(false);
               }}
-              className="hover:bg-canvas flex w-full items-center justify-between px-3 py-2 text-left text-[12px]"
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-[12px] hover:bg-canvas"
             >
               <span>
                 <span className="font-numeric text-faint">{it.skuCode}</span>{' '}
                 <span className="text-text">{it.name}</span>
               </span>
               <span className="text-muted">
-                {it.hsnCode} · {it.gstRate}%
+                {it.hsnCode} · {rateToPercent(it.gstRate)}%
               </span>
             </button>
           ))}
@@ -749,9 +789,9 @@ function ItemPicker({
 
 function StepAttachments(): React.JSX.Element {
   return (
-    <div className="border-line text-muted flex flex-col items-center gap-2 rounded-lg border border-dashed py-12 text-center">
-      <UploadCloud className="text-faint h-8 w-8" />
-      <div className="text-text text-[13px] font-medium">Drop files to attach</div>
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line py-12 text-center text-muted">
+      <UploadCloud className="h-8 w-8 text-faint" />
+      <div className="text-[13px] font-medium text-text">Drop files to attach</div>
       <p className="text-[12px]">
         Quotes, specs and drawings. Upload is stubbed for this slice — you can continue
         without attachments.
@@ -791,7 +831,7 @@ function StepReview(props: {
       </div>
 
       <div>
-        <h3 className="text-ink mb-2 text-[13px] font-semibold">Budget check</h3>
+        <h3 className="mb-2 text-[13px] font-semibold text-ink">Budget check</h3>
         <BudgetChip
           costCenterId={props.costCenterId}
           total={props.total}
@@ -819,9 +859,9 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-muted flex items-center gap-2 text-[12px] font-medium">
+      <span className="flex items-center gap-2 text-[12px] font-medium text-muted">
         {label}
-        {hint && <span className="text-faint text-[11px]">· {hint}</span>}
+        {hint && <span className="text-[11px] text-faint">· {hint}</span>}
       </span>
       {children}
     </label>
@@ -837,7 +877,7 @@ function SmallField({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-faint text-[10px] uppercase tracking-wide">{label}</span>
+      <span className="text-[10px] uppercase tracking-wide text-faint">{label}</span>
       {children}
     </label>
   );
@@ -853,11 +893,11 @@ function ReviewRow({
   strong?: boolean;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-canvas/40 flex items-center justify-between rounded-sm border px-3 py-2">
-      <span className="text-muted text-[12px]">{label}</span>
+    <div className="flex items-center justify-between rounded-sm border border-line bg-canvas/40 px-3 py-2">
+      <span className="text-[12px] text-muted">{label}</span>
       <span
         className={
-          'font-numeric text-[13px] ' + (strong ? 'text-ink font-semibold' : 'text-text')
+          'font-numeric text-[13px] ' + (strong ? 'font-semibold text-ink' : 'text-text')
         }
       >
         {value}
