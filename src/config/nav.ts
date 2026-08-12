@@ -7,6 +7,7 @@ import {
   FileText,
   Gavel,
   LayoutDashboard,
+  Package,
   PackageCheck,
   Plug,
   ReceiptText,
@@ -52,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
     heading: 'Manage',
     items: [
       { label: 'Vendors', href: '/vendors', icon: Truck, slice: 7 },
+      { label: 'Item Master', href: '/items', icon: Package },
       { label: 'Contracts', href: '/contracts', icon: ScrollText },
       { label: 'Approval Matrix', href: '/approvals', icon: ShieldCheck },
     ],
@@ -132,6 +134,11 @@ export const LIVE_ROUTES = [
     label: 'Fulfil order',
     href: '/inventory/fulfill',
     keywords: 'dispatch amazon shopify order courier tracking fulfilment',
+  },
+  {
+    label: 'Item Master',
+    href: '/items',
+    keywords: 'item master catalogue catalog sku hsn gst uom material product code',
   },
   { label: 'Invoices', href: '/invoices', keywords: 'invoice bills' },
   {
