@@ -1,18 +1,26 @@
 'use client';
 
 import { Button, Pill } from '@/components/ui';
-import { ArrowLeft } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, FileText, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import type { BudgetCheckResult, LiveApprovalStep } from '@/lib/shared';
+import { useRef, useState } from 'react';
+import type {
+  BudgetCheckResult,
+  LiveApprovalStep,
+  RequisitionAttachmentType,
+  RequisitionAttachmentView,
+} from '@/lib/shared';
+import { REQUISITION_ATTACHMENT_TYPE } from '@/lib/shared';
 
 import {
   useAddRequisitionComment,
   useCancelRequisition,
   useDecideRequisition,
+  useDeleteRequisitionAttachment,
   useRequisition,
   useSubmitRequisition,
+  useUploadRequisitionAttachment,
   useWithdrawRequisition,
 } from '@/lib/api/requisitions';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
@@ -236,6 +244,14 @@ export default function RequisitionDetailPage(): React.JSX.Element {
             )}
           </section>
 
+          {/* Attachments */}
+          <AttachmentsSection
+            id={id}
+            attachments={data.attachments}
+            status={data.status}
+            canAttach={data.canAttach}
+          />
+
           {/* Activity + comments */}
           <section>
             <h2 className="text-ink mb-2 text-[14px] font-semibold">Activity</h2>
@@ -450,6 +466,199 @@ export default function RequisitionDetailPage(): React.JSX.Element {
         </div>
       </div>
     </div>
+  );
+}
+
+const DOC_TYPE_LABEL: Record<RequisitionAttachmentType, string> = {
+  QUOTE: 'Quotation',
+  PROFORMA_INVOICE: 'Proforma invoice (PI)',
+  SPECIFICATION: 'Specification',
+  DRAWING: 'Drawing',
+  OTHER: 'Other',
+};
+
+const ACCEPT = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff'];
+const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
+/** Once approved, documents may be added by an approver but never removed. */
+const DELETE_LOCKED_STATES = [
+  'APPROVED',
+  'PARTIALLY_ISSUED',
+  'FULLY_ISSUED',
+  'CANCELLED',
+  'CLOSED',
+];
+const POST_APPROVAL_STATES = ['APPROVED', 'PARTIALLY_ISSUED', 'FULLY_ISSUED'];
+
+function fileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Supporting documents on an existing PR. Uploading here is the path for a
+ * vendor PI that arrives after the requisition was already raised — which is
+ * the common case when the PI comes over WhatsApp.
+ */
+function AttachmentsSection(props: {
+  id: string;
+  attachments: RequisitionAttachmentView[];
+  status: string;
+  canAttach: boolean;
+}): React.JSX.Element {
+  const toast = useToastStore((s) => s.push);
+  const upload = useUploadRequisitionAttachment(props.id);
+  const remove = useDeleteRequisitionAttachment(props.id);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [docType, setDocType] = useState<RequisitionAttachmentType>('PROFORMA_INVOICE');
+
+  const canDelete = !DELETE_LOCKED_STATES.includes(props.status);
+  const postApproval = POST_APPROVAL_STATES.includes(props.status);
+
+  const onPick = (files: FileList | null): void => {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        toast(`${file.name} is larger than 15 MB.`, 'error');
+        continue;
+      }
+      if (!ACCEPT.includes(file.type)) {
+        toast(`${file.name} must be a PDF, JPG, PNG or TIFF.`, 'error');
+        continue;
+      }
+      upload.mutate(
+        { file, docType },
+        {
+          onSuccess: () => toast(`${file.name} attached`, 'success'),
+          onError: (e) => toast((e as Error).message, 'error'),
+        },
+      );
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="text-ink mb-2 text-[14px] font-semibold">Attachments</h2>
+
+      {props.attachments.length === 0 ? (
+        <div className="text-muted mb-3 text-[12px]">
+          No quotations, proforma invoices or specs attached yet.
+        </div>
+      ) : (
+        <div className="border-line divide-line mb-3 divide-y rounded-lg border">
+          {props.attachments.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 px-3 py-2">
+              <FileText className="text-faint h-4 w-4 shrink-0" />
+              <div className="min-w-0 flex-1">
+                {a.url ? (
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent-2 block truncate text-[13px] underline underline-offset-2"
+                  >
+                    {a.filename}
+                  </a>
+                ) : (
+                  <span className="text-text block truncate text-[13px]">
+                    {a.filename}
+                  </span>
+                )}
+                <div className="text-muted text-[11px]">
+                  {DOC_TYPE_LABEL[a.docType] ?? a.docType} ·{' '}
+                  <span className="font-numeric">{fileSize(a.sizeBytes)}</span> ·{' '}
+                  {a.uploadedByName ?? 'Unknown'} ·{' '}
+                  <span className="font-numeric">
+                    {new Date(a.uploadedAt).toLocaleDateString('en-IN')}
+                  </span>
+                </div>
+                {a.addedAfterApproval && (
+                  <div className="text-warn mt-0.5 flex items-center gap-1 text-[11px] font-medium">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    Added after approval — the approver did not see this document
+                  </div>
+                )}
+              </div>
+              {canDelete && (
+                <button
+                  type="button"
+                  aria-label={`Remove ${a.filename}`}
+                  disabled={remove.isPending}
+                  onClick={() =>
+                    remove.mutate(a.id, {
+                      onSuccess: () => toast('Attachment removed', 'success'),
+                      onError: (e) => toast((e as Error).message, 'error'),
+                    })
+                  }
+                  className="text-faint hover:text-danger"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {props.canAttach && postApproval && (
+        <p className="text-warn mb-2 flex items-start gap-1 text-[11px]">
+          <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
+          This requisition is already approved. Anything you attach now will be marked
+          as added after approval.
+        </p>
+      )}
+
+      {!props.canAttach && !DELETE_LOCKED_STATES.includes(props.status) && (
+        <p className="text-faint text-[11px]">
+          Only the requester or an approver on this requisition can attach documents.
+        </p>
+      )}
+
+      {!props.canAttach && postApproval && (
+        <p className="text-faint text-[11px]">
+          This requisition is approved — only an approver on it can attach further
+          documents. Send the file to your approver instead.
+        </p>
+      )}
+
+      {props.canAttach && (
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Document type"
+            value={docType}
+            onChange={(e) => setDocType(e.target.value as RequisitionAttachmentType)}
+            className="border-line bg-panel rounded-sm border px-2 py-2 text-[12px]"
+          >
+            {REQUISITION_ATTACHMENT_TYPE.map((t) => (
+              <option key={t} value={t}>
+                {DOC_TYPE_LABEL[t]}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="sm"
+            variant="default"
+            disabled={upload.isPending}
+            onClick={() => inputRef.current?.click()}
+          >
+            <UploadCloud className="mr-1 h-3.5 w-3.5" />
+            {upload.isPending ? 'Uploading…' : 'Attach file'}
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept={ACCEPT.join(',')}
+            className="hidden"
+            onChange={(e) => {
+              onPick(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        </div>
+      )}
+    </section>
   );
 }
 

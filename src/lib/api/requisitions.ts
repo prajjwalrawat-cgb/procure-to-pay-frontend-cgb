@@ -9,6 +9,8 @@ import {
 import type {
   BudgetCheckResult,
   ItemListResponse,
+  RequisitionAttachmentType,
+  RequisitionAttachmentView,
   RequisitionCreateInput,
   RequisitionDecisionInput,
   RequisitionDetailResponse,
@@ -153,6 +155,51 @@ export function useDecideRequisition(id: string) {
       invalidate(qc, id);
       void qc.invalidateQueries({ queryKey: ['inbox'] });
     },
+  });
+}
+
+// ── Attachments ──────────────────────────────────────────────────────────────
+
+export interface StagedAttachment {
+  file: File;
+  docType: RequisitionAttachmentType;
+  note?: string | null;
+}
+
+/**
+ * Uploads one document. The API caps each request at a single file, so a
+ * multi-file selection is sent as one call per file.
+ */
+export async function uploadRequisitionAttachment(
+  requisitionId: string,
+  staged: StagedAttachment,
+): Promise<RequisitionAttachmentView> {
+  const form = new FormData();
+  form.append('file', staged.file);
+  form.append('docType', staged.docType);
+  if (staged.note) form.append('note', staged.note);
+  return apiFetch<RequisitionAttachmentView>(
+    `/requisitions/${requisitionId}/attachments/upload`,
+    { method: 'POST', body: form },
+  );
+}
+
+export function useUploadRequisitionAttachment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (staged: StagedAttachment) => uploadRequisitionAttachment(id, staged),
+    onSuccess: () => qc.invalidateQueries({ queryKey: requisitionKeys.detail(id) }),
+  });
+}
+
+export function useDeleteRequisitionAttachment(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (attachmentId: string) =>
+      apiFetch<{ ok: true }>(`/requisitions/${id}/attachments/${attachmentId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: requisitionKeys.detail(id) }),
   });
 }
 
