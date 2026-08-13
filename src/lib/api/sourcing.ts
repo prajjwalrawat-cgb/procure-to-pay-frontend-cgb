@@ -86,6 +86,23 @@ export function useInvite(
   });
 }
 
+/** Withdraw an invitation before publish (the API refuses it after). */
+export function useRemoveInvitation(
+  id: string,
+): ReturnType<
+  typeof useMutation<{ ok: true }, Error, { invitationId: string; reason: string }>
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { invitationId: string; reason: string }) =>
+      apiFetch<{ ok: true }>(`/rfq/${id}/invitations/${input.invitationId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ reason: input.reason }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: sourcingKeys.detail(id) }),
+  });
+}
+
 export function usePublish(
   id: string,
 ): ReturnType<typeof useMutation<{ status: string }, Error, RfqPublishInput>> {
