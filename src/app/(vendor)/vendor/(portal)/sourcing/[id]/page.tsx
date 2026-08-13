@@ -2,13 +2,15 @@
 
 import { Button, Input, Pill } from '@/components/ui';
 import { useParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { QuoteLineInput, SpecCompliance } from '@/lib/shared';
 
 import {
   useCreateQuote,
+  useMyQuote,
   useSubmitQuote,
   useUpdateQuote,
+  useUploadQuoteFile,
   useVendorRfq,
 } from '@/vendor/lib/sourcing';
 import { useToastStore } from '@/vendor/store/toast-store';
@@ -16,12 +18,49 @@ import { useToastStore } from '@/vendor/store/toast-store';
 interface LineDraft {
   rfqLineId: string;
   itemDesc: string;
+  /** What the buyer asked for — shown beside the inputs, never edited here. */
+  qtyRequired: string;
+  uom: string;
+  hsnCode: string | null;
   qtyQuoted: string;
   unitPriceNative: string;
   taxRate: string;
   deliveryLeadDays: string;
   specCompliance: SpecCompliance;
   deviationNotes: string;
+}
+
+const COMPLIANCE_HINT: Record<SpecCompliance, string> = {
+  FULL: 'Meets the specification as written.',
+  PARTIAL: 'Meets it in part — say what differs in the notes.',
+  DEVIATION: 'Offering an alternative — describe it in the notes.',
+};
+
+const DOC_TYPES = [
+  { value: 'COMMERCIAL_BID', label: 'Quotation / commercial bid' },
+  { value: 'TECH_SPEC', label: 'Technical specification' },
+  { value: 'CERTIFICATION', label: 'Certificate' },
+  { value: 'REFERENCE', label: 'Reference' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+function money(n: number): string {
+  return n.toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+}
+
+function fileSize(bytes: number): string {
+  return bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Days until the bid closes — the one number a vendor cares about most. */
+function daysLeft(deadline: string | null): { text: string; urgent: boolean } | null {
+  if (!deadline) return null;
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (ms <= 0) return { text: 'Bidding has closed', urgent: true };
+  const days = Math.ceil(ms / 86_400_000);
+  return { text: days === 1 ? 'Closes tomorrow' : `Closes in ${days} days`, urgent: days <= 2 };
 }
 
 export default function VendorRfqDetailPage(): React.JSX.Element {
@@ -32,30 +71,49 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
   const [quoteId, setQuoteId] = useState<string | null>(null);
   const submitQuote = useSubmitQuote(quoteId ?? '');
   const updateQuote = useUpdateQuote(quoteId ?? '');
+  const uploadFile = useUploadQuoteFile(quoteId ?? '');
+  const { data: quote } = useMyQuote(quoteId ?? '');
   const [validityDays, setValidityDays] = useState('30');
+  const [docType, setDocType] = useState('COMMERCIAL_BID');
   const [proof, setProof] = useState<string | null>(null);
-
   const [lines, setLines] = useState<LineDraft[]>([]);
 
-  useMemo(() => {
-    if (rfq && lines.length === 0) {
-      setLines(
-        rfq.lines.map((l) => ({
-          rfqLineId: l.id,
-          itemDesc: l.itemDesc,
-          qtyQuoted: l.qtyRequired,
-          unitPriceNative: '',
-          taxRate: l.taxRate,
-          deliveryLeadDays: '',
-          specCompliance: 'FULL',
-          deviationNotes: '',
-        })),
-      );
-    }
+  // Seed the draft from the RFQ once, so re-fetches never overwrite typing.
+  useEffect(() => {
+    if (!rfq || lines.length > 0) return;
+    setLines(
+      rfq.lines.map((l) => ({
+        rfqLineId: l.id,
+        itemDesc: l.itemDesc,
+        qtyRequired: l.qtyRequired,
+        uom: l.uom,
+        hsnCode: l.hsnCode,
+        qtyQuoted: l.qtyRequired,
+        unitPriceNative: '',
+        taxRate: l.taxRate,
+        deliveryLeadDays: '',
+        specCompliance: 'FULL',
+        deviationNotes: '',
+      })),
+    );
   }, [rfq, lines.length]);
 
   if (isLoading || !rfq)
     return <div className="text-muted p-8 text-center">Loading…</div>;
+
+  const lineTotal = (l: LineDraft): number => {
+    const qty = Number(l.qtyQuoted) || 0;
+    const price = Number(l.unitPriceNative) || 0;
+    return qty * price;
+  };
+  const subtotal = lines.reduce((sum, l) => sum + lineTotal(l), 0);
+  const taxTotal = lines.reduce(
+    (sum, l) => sum + lineTotal(l) * (Number(l.taxRate) || 0),
+    0,
+  );
+  const priced = lines.every((l) => Number(l.unitPriceNative) > 0);
+  const closing = daysLeft(rfq.bidDeadline ?? null);
+  const submitted = !!proof || quote?.status === 'SUBMITTED';
 
   const startQuote = (): void => {
     createQuote.mutate(
@@ -63,7 +121,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
       {
         onSuccess: (r) => {
           setQuoteId(r.id);
-          toast('Quote draft started', 'success');
+          toast('Quote draft started — nothing is visible to the buyer yet', 'success');
         },
         onError: (e) => toast(e.message, 'error'),
       },
@@ -83,19 +141,21 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
       deviationNotes: l.deviationNotes || null,
     }));
     updateQuote.mutate(
+      { validityDays: Number(validityDays) || 30, paymentTermsOffered: 'NET_45', lines: payload },
       {
-        validityDays: Number(validityDays) || 30,
-        paymentTermsOffered: 'NET_45',
-        lines: payload,
-      },
-      {
-        onSuccess: () => toast('Quote saved', 'success'),
+        onSuccess: () => toast('Draft saved', 'success'),
         onError: (e) => toast(e.message, 'error'),
       },
     );
   };
 
   const submit = (): void => {
+    // Sealed and final: there is no edit after this, so make the vendor say so.
+    const ok = window.confirm(
+      'Submit your sealed quote?\n\nThe buyer cannot see it until the open ceremony, ' +
+        'and you cannot edit it afterwards — you would have to withdraw and re-quote.',
+    );
+    if (!ok) return;
     submitQuote.mutate(undefined, {
       onSuccess: (r) => {
         setProof(r.short);
@@ -105,133 +165,259 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
     });
   };
 
+  const onFile = (file: File | undefined): void => {
+    if (!file || !quoteId) return;
+    uploadFile.mutate(
+      { file, docType, envelope: docType === 'TECH_SPEC' ? 'TECHNICAL' : 'COMMERCIAL' },
+      {
+        onSuccess: (r) => toast(`${r.filename} attached`, 'success'),
+        onError: (e) => toast(e.message, 'error'),
+      },
+    );
+  };
+
   return (
-    <div className="mx-auto max-w-[900px]">
+    <div className="mx-auto max-w-[980px] pb-24">
       <div className="mb-4">
-        <span className="text-accent font-mono text-[12px]">{rfq.number}</span>
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-accent font-mono text-[12px]">{rfq.number}</span>
+          <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
+          {closing && (
+            <Pill variant={closing.urgent ? 'danger' : 'success'} dot>
+              {closing.text}
+            </Pill>
+          )}
+        </div>
+        <h1 className="tracking-heading text-ink mt-1 text-[20px] font-semibold">
           {rfq.title}
         </h1>
         <p className="text-muted text-[13px]">
-          {rfq.category} · {rfq.rfqType.replace(/_/g, ' ').toLowerCase()} · INCOTERM{' '}
-          {rfq.incotermDefault} · {rfq.paymentTermsDefault}
+          {rfq.category} · INCOTERM {rfq.incotermDefault} · {rfq.paymentTermsDefault} ·
+          quote in {rfq.currency ?? 'INR'}
         </p>
       </div>
 
       {proof && (
         <div className="border-accent bg-accent-wash mb-4 rounded-lg border p-4 text-[13px]">
-          Quote submitted. Proof-of-submission hash:{' '}
-          <span className="font-mono">{proof}</span>. Retain for your records.
+          <strong>Quote submitted.</strong> Proof-of-submission hash:{' '}
+          <span className="font-mono">{proof}</span>. Keep it — it proves what you sent
+          and when, before any envelope was opened.
         </div>
       )}
 
-      <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-        <h2 className="text-ink mb-3 text-[14px] font-semibold">Your quote</h2>
-        {!quoteId ? (
+      {!quoteId ? (
+        <Section title="Your quote">
+          <p className="text-muted mb-3 text-[13px]">
+            Start a draft to price each line. Nothing reaches the buyer until you submit,
+            and even then it stays sealed until the open ceremony.
+          </p>
           <Button variant="primary" onClick={startQuote} disabled={createQuote.isPending}>
-            Start quote
+            {createQuote.isPending ? 'Starting…' : 'Start quote'}
           </Button>
-        ) : (
-          <>
-            <table className="w-full text-[13px]">
-              <thead className="text-muted text-left">
-                <tr>
-                  <th className="py-1">Item</th>
-                  <th className="py-1">Qty</th>
-                  <th className="py-1">Unit price</th>
-                  <th className="py-1">Lead (d)</th>
-                  <th className="py-1">Compliance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lines.map((l, i) => (
-                  <tr key={l.rfqLineId} className="border-line border-t">
-                    <td className="py-1">{l.itemDesc}</td>
-                    <td className="py-1">
-                      <Input
-                        className="w-20"
-                        value={l.qtyQuoted}
-                        onChange={(e) => upd(setLines, i, 'qtyQuoted', e.target.value)}
-                      />
-                    </td>
-                    <td className="py-1">
-                      <Input
-                        className="w-24"
-                        value={l.unitPriceNative}
-                        onChange={(e) =>
-                          upd(setLines, i, 'unitPriceNative', e.target.value)
-                        }
-                      />
-                    </td>
-                    <td className="py-1">
-                      <Input
-                        className="w-16"
-                        value={l.deliveryLeadDays}
-                        onChange={(e) =>
-                          upd(setLines, i, 'deliveryLeadDays', e.target.value)
-                        }
-                      />
-                    </td>
-                    <td className="py-1">
-                      <select
-                        className="border-line bg-panel h-8 rounded border px-1"
-                        value={l.specCompliance}
-                        onChange={(e) =>
-                          upd(
-                            setLines,
-                            i,
-                            'specCompliance',
-                            e.target.value as SpecCompliance,
-                          )
-                        }
-                      >
-                        <option>FULL</option>
-                        <option>PARTIAL</option>
-                        <option>DEVIATION</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-muted text-[12px]">Validity (days)</span>
+        </Section>
+      ) : (
+        <>
+          <Section title="Your quote">
+            {lines.map((l, i) => (
+              <div key={l.rfqLineId} className="border-line mb-3 rounded-md border p-3">
+                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-ink text-[13px] font-medium">{l.itemDesc}</span>
+                  <span className="text-muted text-[12px]">
+                    asked: {l.qtyRequired} {l.uom}
+                    {l.hsnCode ? ` · HSN ${l.hsnCode}` : ''} · tax{' '}
+                    {(Number(l.taxRate) * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                  <LabelledInput
+                    label={`Qty (${l.uom})`}
+                    value={l.qtyQuoted}
+                    onChange={(v) => upd(setLines, i, 'qtyQuoted', v)}
+                    disabled={submitted}
+                  />
+                  <LabelledInput
+                    label="Unit price ₹"
+                    value={l.unitPriceNative}
+                    onChange={(v) => upd(setLines, i, 'unitPriceNative', v)}
+                    disabled={submitted}
+                  />
+                  <LabelledInput
+                    label="Lead time (days)"
+                    value={l.deliveryLeadDays}
+                    onChange={(v) => upd(setLines, i, 'deliveryLeadDays', v)}
+                    disabled={submitted}
+                  />
+                  <label className="block">
+                    <span className="text-muted mb-1 block text-[12px]">Compliance</span>
+                    <select
+                      className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+                      value={l.specCompliance}
+                      disabled={submitted}
+                      onChange={(e) =>
+                        upd(setLines, i, 'specCompliance', e.target.value as SpecCompliance)
+                      }
+                    >
+                      <option value="FULL">Full</option>
+                      <option value="PARTIAL">Partial</option>
+                      <option value="DEVIATION">Deviation</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="mt-2 flex flex-wrap items-end justify-between gap-2">
+                  <label className="block flex-1">
+                    <span className="text-muted mb-1 block text-[12px]">
+                      {COMPLIANCE_HINT[l.specCompliance]}
+                    </span>
+                    <Input
+                      value={l.deviationNotes}
+                      disabled={submitted || l.specCompliance === 'FULL'}
+                      placeholder={
+                        l.specCompliance === 'FULL'
+                          ? 'No notes needed'
+                          : 'Describe what differs from the specification'
+                      }
+                      onChange={(e) => upd(setLines, i, 'deviationNotes', e.target.value)}
+                    />
+                  </label>
+                  <span className="text-ink font-numeric text-[13px]">
+                    {money(lineTotal(l))}
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            <div className="border-line mt-3 flex flex-col items-end gap-1 border-t pt-3 text-[13px]">
+              <span className="text-muted">Subtotal {money(subtotal)}</span>
+              <span className="text-muted">Tax {money(taxTotal)}</span>
+              <span className="text-ink font-numeric text-[15px] font-semibold">
+                Total {money(subtotal + taxTotal)}
+              </span>
+            </div>
+          </Section>
+
+          <Section title="Attachments">
+            <p className="text-muted mb-3 text-[13px]">
+              Attach your own quotation document, technical specs or certificates. PDF or
+              image, up to 10 MB each.
+            </p>
+            {(quote?.attachments ?? []).map((a) => (
+              <div
+                key={a.id}
+                className="border-line flex items-center justify-between border-t py-2 text-[13px] first:border-0"
+              >
+                <span className="truncate">{a.filename}</span>
+                <span className="text-muted shrink-0 text-[12px]">
+                  {a.docType.replace(/_/g, ' ').toLowerCase()} · {fileSize(a.sizeBytes)}
+                </span>
+              </div>
+            ))}
+            {!submitted && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <select
+                  className="border-line bg-panel h-9 rounded-md border px-2 text-[13px]"
+                  value={docType}
+                  onChange={(e) => setDocType(e.target.value)}
+                >
+                  {DOC_TYPES.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="file"
+                  accept="application/pdf,image/*"
+                  disabled={uploadFile.isPending}
+                  onChange={(e) => {
+                    onFile(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                  className="text-[12px]"
+                />
+                {uploadFile.isPending && (
+                  <span className="text-muted text-[12px]">Uploading…</span>
+                )}
+              </div>
+            )}
+          </Section>
+        </>
+      )}
+
+      <Section title="Public Q&amp;A">
+        {rfq.questions.length === 0 && (
+          <p className="text-muted text-[13px]">No public answers yet.</p>
+        )}
+        {rfq.questions.map((q) => (
+          <div key={q.id} className="border-line border-t py-2 text-[13px] first:border-0">
+            <p>{q.questionText}</p>
+            {q.answerText && <p className="text-accent-2">↳ {q.answerText}</p>}
+          </div>
+        ))}
+      </Section>
+
+      {quoteId && !submitted && (
+        <div className="border-line bg-panel fixed inset-x-0 bottom-0 border-t">
+          <div className="mx-auto flex max-w-[980px] flex-wrap items-center gap-3 px-4 py-3">
+            <label className="flex items-center gap-2 text-[12px]">
+              <span className="text-muted">Validity (days)</span>
               <Input
                 className="w-20"
                 value={validityDays}
                 onChange={(e) => setValidityDays(e.target.value)}
               />
-              <Button
-                variant="accent"
-                onClick={saveLines}
-                disabled={updateQuote.isPending}
-              >
-                Save
-              </Button>
-              <Button variant="primary" onClick={submit} disabled={submitQuote.isPending}>
-                Submit sealed quote
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="border-line bg-panel rounded-lg border p-4">
-        <h2 className="text-ink mb-2 text-[14px] font-semibold">Public Q&amp;A</h2>
-        {rfq.questions.length === 0 && (
-          <p className="text-muted text-[13px]">No public answers yet.</p>
-        )}
-        {rfq.questions.map((q) => (
-          <div
-            key={q.id}
-            className="border-line border-t py-2 text-[13px] first:border-0"
-          >
-            <p>{q.questionText}</p>
-            {q.answerText && <p className="text-accent-2">↳ {q.answerText}</p>}
+            </label>
+            <span className="text-muted ml-auto text-[13px]">
+              Total {money(subtotal + taxTotal)}
+            </span>
+            <Button variant="accent" onClick={saveLines} disabled={updateQuote.isPending}>
+              {updateQuote.isPending ? 'Saving…' : 'Save draft'}
+            </Button>
+            <Button
+              variant="primary"
+              onClick={submit}
+              disabled={submitQuote.isPending || !priced}
+              title={priced ? undefined : 'Enter a unit price on every line first'}
+            >
+              {submitQuote.isPending ? 'Submitting…' : 'Submit sealed quote'}
+            </Button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div className="border-line bg-panel mb-4 rounded-lg border p-4">
+      <h2 className="text-ink mb-3 text-[14px] font-semibold">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function LabelledInput({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}): React.JSX.Element {
+  return (
+    <label className="block">
+      <span className="text-muted mb-1 block text-[12px]">{label}</span>
+      <Input value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
+    </label>
   );
 }
 
