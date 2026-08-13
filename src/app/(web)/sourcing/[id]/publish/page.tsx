@@ -4,11 +4,94 @@ import { Button, Input, Pill } from '@/components/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { useInvite, usePublish, useRfq } from '@/lib/api/sourcing';
+import {
+  useInvite,
+  usePublish,
+  useRemoveInvitation,
+  useRfq,
+} from '@/lib/api/sourcing';
+import { useVendorList } from '@/lib/api/vendors';
 import { useToastStore } from '@/store/toast-store';
 
 function plusDays(d: number): string {
   return new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 16);
+}
+
+/**
+ * Picks vendors to invite by name.
+ *
+ * The API takes vendor ids, which used to mean pasting `ven_01…` strings in by
+ * hand. It also refuses a vendor with no verified bank account unless the
+ * invitation is explicitly preliminary, so unverified vendors are marked here
+ * rather than failing on submit.
+ */
+function VendorPicker({
+  invitedIds,
+  onPick,
+}: {
+  invitedIds: Set<string>;
+  onPick: (vendorId: string) => void;
+}): React.JSX.Element {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const { data, isLoading } = useVendorList('active');
+
+  const q = query.trim().toLowerCase();
+  const matches = (data?.items ?? [])
+    .filter((v) => !invitedIds.has(v.id))
+    .filter(
+      (v) =>
+        !q ||
+        v.name.toLowerCase().includes(q) ||
+        v.code.toLowerCase().includes(q) ||
+        (v.legalEntityName ?? '').toLowerCase().includes(q),
+    )
+    .slice(0, 30);
+
+  return (
+    <div className="relative">
+      <Input
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={isLoading ? 'Loading active vendors…' : 'Search vendors by name…'}
+      />
+      {open && (
+        <div className="border-line bg-panel absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border shadow-lg">
+          {matches.length === 0 ? (
+            <p className="text-muted px-3 py-2 text-[12px]">No active vendor matches.</p>
+          ) : (
+            matches.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onPick(v.id);
+                  setQuery('');
+                  setOpen(false);
+                }}
+                className="hover:bg-canvas flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px]"
+              >
+                <span className="truncate">
+                  <span className="text-text">{v.name}</span>{' '}
+                  <span className="font-numeric text-faint">{v.code}</span>
+                </span>
+                <span className="text-muted shrink-0">
+                  {v.isMsme ? 'MSME · ' : ''}
+                  {v.category ?? '—'}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function PublishPage(): React.JSX.Element {
@@ -17,9 +100,10 @@ export default function PublishPage(): React.JSX.Element {
   const toast = useToastStore((s) => s.push);
   const { data: rfq } = useRfq(id);
   const invite = useInvite(id);
+  const remove = useRemoveInvitation(id);
   const publish = usePublish(id);
 
-  const [vendorIds, setVendorIds] = useState('');
+  const [preliminary, setPreliminary] = useState(false);
   const [qa, setQa] = useState(plusDays(3));
   const [bid, setBid] = useState(plusDays(10));
   const [tech, setTech] = useState(plusDays(11));
@@ -29,16 +113,29 @@ export default function PublishPage(): React.JSX.Element {
 
   const twoEnvelope = rfq?.rfqType === 'TWO_ENVELOPE';
 
-  const addVendors = (): void => {
-    const ids = vendorIds.split(/[\s,]+/).filter(Boolean);
-    if (ids.length === 0) return;
-    invite.mutate(
-      { vendorIds: ids, source: 'DIRECTORY', isPreliminaryInvitation: false },
+  /** The API records a reason on every withdrawal — it is an audited change to
+   *  who was given the chance to bid, not just a UI tidy-up. */
+  const removeVendor = (invitationId: string, vendorName: string): void => {
+    const reason = window.prompt(`Why is ${vendorName} being removed from this RFQ?`);
+    if (reason == null || reason.trim().length === 0) return;
+    remove.mutate(
+      { invitationId, reason: reason.trim() },
       {
-        onSuccess: (r) => {
-          toast(`${r.added} vendor(s) invited`, 'success');
-          setVendorIds('');
-        },
+        onSuccess: () => toast(`${vendorName} removed`, 'success'),
+        onError: (e) => toast(e.message, 'error'),
+      },
+    );
+  };
+
+  const addVendor = (vendorId: string): void => {
+    invite.mutate(
+      {
+        vendorIds: [vendorId],
+        source: 'DIRECTORY',
+        isPreliminaryInvitation: preliminary,
+      },
+      {
+        onSuccess: (r) => toast(`${r.added} vendor(s) invited`, 'success'),
         onError: (e) => toast(e.message, 'error'),
       },
     );
@@ -80,17 +177,30 @@ export default function PublishPage(): React.JSX.Element {
             <Pill variant="gray">{i.source.toLowerCase()}</Pill>
             <span>{i.vendorName}</span>
             {i.isMsme && <Pill variant="violet">MSME</Pill>}
+            <button
+              type="button"
+              onClick={() => removeVendor(i.id, i.vendorName)}
+              disabled={remove.isPending}
+              className="text-muted hover:text-danger ml-auto text-[12px]"
+            >
+              Remove
+            </button>
           </div>
         ))}
-        <div className="mt-2 flex gap-2">
-          <Input
-            placeholder="vendor IDs (space/comma separated)"
-            value={vendorIds}
-            onChange={(e) => setVendorIds(e.target.value)}
+        <div className="mt-2">
+          <VendorPicker
+            invitedIds={new Set((rfq?.invitations ?? []).map((i) => i.vendorId))}
+            onPick={addVendor}
           />
-          <Button variant="accent" onClick={addVendors} disabled={invite.isPending}>
-            Invite
-          </Button>
+          <label className="text-muted mt-2 flex items-center gap-2 text-[12px]">
+            <input
+              type="checkbox"
+              checked={preliminary}
+              onChange={(e) => setPreliminary(e.target.checked)}
+            />
+            Preliminary invitation — allows a vendor whose bank account is not yet
+            verified (they can quote, but cannot be awarded until it is)
+          </label>
         </div>
         {(rfq?.invitations.length ?? 0) < 2 && (
           <label className="text-muted mt-2 flex items-center gap-2 text-[12px]">

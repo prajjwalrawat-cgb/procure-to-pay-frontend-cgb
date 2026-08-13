@@ -72,6 +72,42 @@ export function useDecline(
   });
 }
 
+/** The vendor's own quote, including whatever they have attached so far. */
+export function useMyQuote(quoteId: string): UseQueryResult<QuoteView> {
+  return useQuery({
+    queryKey: vendorSourcingKeys.quote(quoteId),
+    queryFn: () => apiFetch<QuoteView>(`/vendor/quotes/${quoteId}`),
+    enabled: !!quoteId,
+  });
+}
+
+/** Uploads the vendor's quotation document against a draft quote. */
+export function useUploadQuoteFile(
+  quoteId: string,
+): ReturnType<
+  typeof useMutation<
+    { id: string; filename: string; sizeBytes: number },
+    Error,
+    { file: File; docType: string; envelope: string }
+  >
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { file: File; docType: string; envelope: string }) => {
+      const form = new FormData();
+      form.append('file', input.file);
+      form.append('docType', input.docType);
+      form.append('envelope', input.envelope);
+      return apiFetch<{ id: string; filename: string; sizeBytes: number }>(
+        `/vendor/quotes/${quoteId}/attachments/upload`,
+        { method: 'POST', body: form },
+      );
+    },
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: vendorSourcingKeys.quote(quoteId) }),
+  });
+}
+
 export function useCreateQuote(): ReturnType<
   typeof useMutation<{ id: string }, Error, QuoteCreateInput>
 > {

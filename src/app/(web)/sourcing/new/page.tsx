@@ -10,6 +10,8 @@ import type {
 } from '@/lib/shared';
 
 import { useCreateRfq } from '@/lib/api/sourcing';
+import { useRequisitionList } from '@/lib/api/requisitions';
+import { inr } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 const DEFAULT_CRITERIA: EvaluationCriterionInput[] = [
@@ -36,6 +38,105 @@ const emptyLine: LineForm = {
   hsnCode: '',
   unitWeightKg: '',
 };
+
+/**
+ * Picks the PR this RFQ sources for.
+ *
+ * Only APPROVED / PARTIALLY_ISSUED requisitions can be linked — the API rejects
+ * anything else with "Only an approved (or partially issued) PR can seed an
+ * RFQ" — so the list offers exactly those rather than letting the buyer pick a
+ * draft and find out on submit.
+ */
+function RequisitionPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+}): React.JSX.Element {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const { data, isLoading } = useRequisitionList('active');
+
+  const linkable = (data?.items ?? []).filter(
+    (r) => r.status === 'APPROVED' || r.status === 'PARTIALLY_ISSUED',
+  );
+  const q = query.trim().toLowerCase();
+  const matches = q
+    ? linkable.filter(
+        (r) =>
+          r.number.toLowerCase().includes(q) ||
+          r.title.toLowerCase().includes(q) ||
+          r.costCenter.code.toLowerCase().includes(q),
+      )
+    : linkable;
+  const selected = linkable.find((r) => r.id === value);
+
+  if (selected) {
+    return (
+      <div className="border-line bg-surface flex items-center justify-between rounded-md border px-3 py-2">
+        <span className="text-[13px]">
+          <span className="font-numeric text-ink">{selected.number}</span>{' '}
+          <span className="text-muted">{selected.title}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className="text-muted hover:text-danger text-[12px]"
+        >
+          Clear
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={isLoading ? 'Loading approved PRs…' : 'Search by PR number or title…'}
+      />
+      {open && (
+        <div className="border-line bg-panel absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border shadow-lg">
+          {matches.length === 0 ? (
+            <p className="text-muted px-3 py-2 text-[12px]">
+              No approved requisition matches. Leave this blank to raise a standalone
+              RFQ.
+            </p>
+          ) : (
+            matches.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(r.id);
+                  setQuery('');
+                  setOpen(false);
+                }}
+                className="hover:bg-canvas flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px]"
+              >
+                <span className="truncate">
+                  <span className="font-numeric text-faint">{r.number}</span>{' '}
+                  <span className="text-text">{r.title}</span>
+                </span>
+                <span className="text-muted shrink-0">
+                  {r.costCenter.code} · {inr(r.totalAmount)}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function NewRfqPage(): React.JSX.Element {
   const router = useRouter();
@@ -149,11 +250,12 @@ export default function NewRfqPage(): React.JSX.Element {
             />
           </Field>
           <Field label="Link PR (optional)">
-            <Input
-              value={requisitionId}
-              onChange={(e) => setRequisitionId(e.target.value)}
-              placeholder="pr_…"
-            />
+            <RequisitionPicker value={requisitionId} onChange={setRequisitionId} />
+            <p className="text-muted mt-1 text-[12px]">
+              {requisitionId
+                ? 'The award will raise a PO against this requisition and draw down its quantities.'
+                : 'Leave blank only for a buy with no requisition behind it — the award then creates a standalone spot-buy PO.'}
+            </p>
           </Field>
         </div>
       </Section>
