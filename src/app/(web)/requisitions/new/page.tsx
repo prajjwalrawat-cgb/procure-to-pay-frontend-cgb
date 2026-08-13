@@ -1,26 +1,30 @@
 'use client';
 
 import { Button, Pill } from '@/components/ui';
-import { ArrowLeft, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { ArrowLeft, FileText, Plus, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CostCenterRef,
   ItemListItem,
   PlantRef,
+  RequisitionAttachmentType,
   RequisitionCreateInput,
   RequisitionLineInput,
   VendorRef,
 } from '@/lib/shared';
+import { REQUISITION_ATTACHMENT_TYPE } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
 import { useCostCenters, usePlants, useVendors } from '@/lib/api/refs';
 import {
+  uploadRequisitionAttachment,
   useBudgetCheck,
   useCreateRequisition,
   useItemSearch,
   useSubmitRequisition,
+  type StagedAttachment,
 } from '@/lib/api/requisitions';
 import { inr } from '@/lib/format';
 import { percentToRate, rateToPercent } from '@/lib/rate';
@@ -110,6 +114,11 @@ export default function NewRequisitionPage(): React.JSX.Element {
   const [priority, setPriority] = useState('STANDARD');
   const [justification, setJustification] = useState('');
   const [lines, setLines] = useState<DraftLine[]>([blankLine(true)]);
+  const [staged, setStaged] = useState<StagedAttachment[]>([]);
+  // `create.isPending` goes false as soon as the PR exists, but the wizard is
+  // still busy pushing attachments — without this the buttons re-enable and a
+  // second click would create a duplicate requisition.
+  const [flushing, setFlushing] = useState(false);
 
   const total = useMemo(() => lines.reduce((s, l) => s + lineTotal(l), 0), [lines]);
   const budget = useBudgetCheck(costCenterId || null, total.toFixed(2));
@@ -166,9 +175,34 @@ export default function NewRequisitionPage(): React.JSX.Element {
     })),
   });
 
+  /**
+   * Flush staged attachments once the PR id exists. A failed upload must not
+   * lose the requisition itself, so this reports which files failed and lets the
+   * caller continue — the user can re-attach them from the PR detail page.
+   */
+  const flushAttachments = async (requisitionId: string): Promise<void> => {
+    if (staged.length === 0) return;
+    setFlushing(true);
+    try {
+      const results = await Promise.allSettled(
+        staged.map((s) => uploadRequisitionAttachment(requisitionId, s)),
+      );
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      if (failed > 0) {
+        toast(
+          `${failed} of ${staged.length} attachment(s) failed to upload — add them from the requisition page.`,
+          'error',
+        );
+      }
+    } finally {
+      setFlushing(false);
+    }
+  };
+
   const onSaveDraft = (): void => {
     create.mutate(buildBody(), {
-      onSuccess: (res) => {
+      onSuccess: async (res) => {
+        await flushAttachments(res.id);
         toast('Draft saved', 'success');
         router.push(`/requisitions/${res.id}`);
       },
@@ -180,6 +214,9 @@ export default function NewRequisitionPage(): React.JSX.Element {
     create.mutate(buildBody(), {
       onSuccess: async (res) => {
         setCreatedId(res.id);
+        // Attachments go up before submit so an approver never opens a PR whose
+        // supporting quote or PI is still in flight.
+        await flushAttachments(res.id);
         // Submit against the freshly-returned id directly — the pre-bound
         // useSubmitRequisition hook still holds the previous (empty) id this tick.
         try {
@@ -272,7 +309,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
             vendors={vendors}
           />
         )}
-        {step === 3 && <StepAttachments />}
+        {step === 3 && <StepAttachments staged={staged} setStaged={setStaged} />}
         {step === 4 && (
           <StepReview
             title={title}
@@ -280,6 +317,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
             priority={priority}
             neededBy={neededBy}
             lineCount={lines.length}
+            attachmentCount={staged.length}
             total={total}
             budget={budget.data ?? null}
             budgetError={budget.isError}
@@ -312,7 +350,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
             <Button
               variant="default"
               size="sm"
-              disabled={create.isPending || !step1Valid || !step2Valid}
+              disabled={create.isPending || flushing || !step1Valid || !step2Valid}
               onClick={onSaveDraft}
             >
               Save as draft
@@ -321,11 +359,15 @@ export default function NewRequisitionPage(): React.JSX.Element {
               variant="accent"
               size="sm"
               disabled={
-                create.isPending || submit.isPending || !step1Valid || !step2Valid
+                create.isPending ||
+                submit.isPending ||
+                flushing ||
+                !step1Valid ||
+                !step2Valid
               }
               onClick={onSubmitForApproval}
             >
-              Submit for approval
+              {flushing ? 'Uploading attachments…' : 'Submit for approval'}
             </Button>
           </div>
         )}
@@ -787,14 +829,158 @@ function ItemPicker({
 
 // ── Step 3 ───────────────────────────────────────────────────────────────────
 
-function StepAttachments(): React.JSX.Element {
+const DOC_TYPE_LABEL: Record<RequisitionAttachmentType, string> = {
+  QUOTE: 'Quotation',
+  PROFORMA_INVOICE: 'Proforma invoice (PI)',
+  SPECIFICATION: 'Specification',
+  DRAWING: 'Drawing',
+  OTHER: 'Other',
+};
+
+const ACCEPT = ['application/pdf', 'image/png', 'image/jpeg', 'image/tiff'];
+const MAX_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
+function fileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Files are staged in memory here and flushed to the API only after the PR has
+ * been created — the upload route is keyed on the requisition id, and no id
+ * exists until the wizard's final step.
+ */
+function StepAttachments(props: {
+  staged: StagedAttachment[];
+  setStaged: React.Dispatch<React.SetStateAction<StagedAttachment[]>>;
+}): React.JSX.Element {
+  const [dragging, setDragging] = useState(false);
+  const [rejected, setRejected] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const add = (files: FileList | null): void => {
+    if (!files) return;
+    const accepted: StagedAttachment[] = [];
+    const bad: string[] = [];
+    for (const file of Array.from(files)) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        bad.push(`${file.name} — larger than 15 MB`);
+      } else if (!ACCEPT.includes(file.type)) {
+        bad.push(`${file.name} — only PDF, JPG, PNG or TIFF`);
+      } else {
+        // Default to OTHER and let the requester classify: a wrong doc type is
+        // worse than an unclassified one when an approver is reading the PR.
+        accepted.push({ file, docType: 'OTHER' });
+      }
+    }
+    setRejected(bad);
+    if (accepted.length > 0) props.setStaged((prev) => [...prev, ...accepted]);
+  };
+
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-line py-12 text-center text-muted">
-      <UploadCloud className="h-8 w-8 text-faint" />
-      <div className="text-[13px] font-medium text-text">Drop files to attach</div>
-      <p className="text-[12px]">
-        Quotes, specs and drawings. Upload is stubbed for this slice — you can continue
-        without attachments.
+    <div className="flex flex-col gap-4">
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          add(e.dataTransfer.files);
+        }}
+        className={
+          'flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center transition-colors ' +
+          (dragging ? 'border-accent bg-accent-wash' : 'border-line')
+        }
+      >
+        <UploadCloud className="h-8 w-8 text-faint" />
+        <div className="text-[13px] font-medium text-text">
+          Drop files to attach, or{' '}
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="text-accent-2 underline underline-offset-2"
+          >
+            browse
+          </button>
+        </div>
+        <p className="text-[12px] text-muted">
+          Quotations, vendor proforma invoices (PI), specs and drawings.
+          <br />
+          PDF, JPG, PNG or TIFF · up to 15 MB each.
+        </p>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept={ACCEPT.join(',')}
+          className="hidden"
+          onChange={(e) => {
+            add(e.target.files);
+            e.target.value = '';
+          }}
+        />
+      </div>
+
+      {rejected.length > 0 && (
+        <ul className="flex flex-col gap-1 text-[12px] text-danger">
+          {rejected.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ul>
+      )}
+
+      {props.staged.length > 0 && (
+        <div className="divide-y divide-line rounded-lg border border-line">
+          {props.staged.map((s, i) => (
+            <div key={`${s.file.name}-${i}`} className="flex items-center gap-3 px-3 py-2">
+              <FileText className="h-4 w-4 shrink-0 text-faint" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] text-text">{s.file.name}</div>
+                <div className="font-numeric text-[11px] text-muted">
+                  {fileSize(s.file.size)}
+                </div>
+              </div>
+              <select
+                aria-label={`Document type for ${s.file.name}`}
+                value={s.docType}
+                onChange={(e) =>
+                  props.setStaged((prev) =>
+                    prev.map((x, xi) =>
+                      xi === i
+                        ? { ...x, docType: e.target.value as RequisitionAttachmentType }
+                        : x,
+                    ),
+                  )
+                }
+                className="rounded-sm border border-line bg-panel px-2 py-1 text-[12px]"
+              >
+                {REQUISITION_ATTACHMENT_TYPE.map((t) => (
+                  <option key={t} value={t}>
+                    {DOC_TYPE_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                aria-label={`Remove ${s.file.name}`}
+                onClick={() => props.setStaged((prev) => prev.filter((_, xi) => xi !== i))}
+                className="text-faint hover:text-danger"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-[11px] text-faint">
+        Files upload once the requisition is created. A proforma invoice attached here is
+        price evidence for these lines — the vendor&apos;s tax invoice is entered later
+        under Invoices.
       </p>
     </div>
   );
@@ -808,6 +994,7 @@ function StepReview(props: {
   priority: string;
   neededBy: string;
   lineCount: number;
+  attachmentCount: number;
   total: number;
   budget: import('@/lib/shared').BudgetCheckResult | null;
   budgetError: boolean;
@@ -827,6 +1014,7 @@ function StepReview(props: {
           }
         />
         <ReviewRow label="Lines" value={String(props.lineCount)} />
+        <ReviewRow label="Attachments" value={String(props.attachmentCount)} />
         <ReviewRow label="PR total" value={inr(props.total.toFixed(2))} strong />
       </div>
 
