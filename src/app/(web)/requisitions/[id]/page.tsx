@@ -413,6 +413,14 @@ export default function RequisitionDetailPage(): React.JSX.Element {
             </>
           ) : (
             <div className="ml-auto flex items-center gap-2">
+              {/* A draft with no permitted actions would otherwise render an
+                  empty bar, leaving the user with no idea why. */}
+              {data.status === 'DRAFT' && !data.canSubmit && !data.canEdit && (
+                <span className="text-faint text-[12px]">
+                  You can view this draft but not submit it — ask a Procurement Head or
+                  an admin.
+                </span>
+              )}
               {data.canWithdraw && (
                 <Button
                   variant="ghost"
@@ -433,7 +441,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                   Cancel
                 </Button>
               )}
-              {data.status === 'DRAFT' && (
+              {data.canEdit && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -442,7 +450,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                   Edit
                 </Button>
               )}
-              {data.status === 'DRAFT' && (
+              {data.canSubmit && (
                 <Button
                   variant="accent"
                   size="sm"
