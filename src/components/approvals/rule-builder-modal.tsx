@@ -41,11 +41,44 @@ export interface RuleDraft {
   steps: ApprovalStep[];
 }
 
-const SAMPLES: { label: string; amount: string }[] = [
-  { label: '₹2L invoice (low)', amount: '200000' },
-  { label: '₹12L invoice (mid)', amount: '1200000' },
-  { label: '₹1.2Cr invoice (high)', amount: '12000000' },
+interface Sample {
+  label: string;
+  doc: Record<string, unknown>;
+}
+
+const VALUE_SAMPLES: Sample[] = [
+  { label: '₹2L (low)', doc: { total_amount: '200000', net_amount: '200000' } },
+  { label: '₹12L (mid)', doc: { total_amount: '1200000', net_amount: '1200000' } },
+  { label: '₹1.2Cr (high)', doc: { total_amount: '12000000', net_amount: '12000000' } },
 ];
+
+/** Sample documents a rule is dry-run against. Value-routed types share the
+ *  amount ladder; the vendor types route on flags, so they get their own. */
+function samplesFor(docType: DocumentType): Sample[] {
+  if (docType === 'VENDOR_ONBOARDING') {
+    return [
+      {
+        label: 'Standard vendor',
+        doc: { is_related_party: false, has_flagged_screening: false, is_msme: false },
+      },
+      {
+        label: 'Flagged screening',
+        doc: { is_related_party: false, has_flagged_screening: true, risk_grade: 'HIGH' },
+      },
+      {
+        label: 'Related party',
+        doc: { is_related_party: true, has_flagged_screening: false },
+      },
+    ];
+  }
+  if (docType === 'VENDOR_CHANGE') {
+    return [
+      { label: 'Bank details change', doc: { requires_reverification: true } },
+      { label: 'Contact change', doc: { requires_reverification: false } },
+    ];
+  }
+  return VALUE_SAMPLES;
+}
 
 export function RuleBuilderModal({
   docType,
@@ -61,6 +94,7 @@ export function RuleBuilderModal({
   saving: boolean;
 }): React.JSX.Element {
   const fields = APPROVAL_FIELDS[docType] ?? [];
+  const samples = useMemo(() => samplesFor(docType), [docType]);
   const [name, setName] = useState(initial?.name ?? '');
   const [priority, setPriority] = useState(initial?.priority ?? 10);
   const [combinator, setCombinator] = useState<'all' | 'any'>(
@@ -77,7 +111,7 @@ export function RuleBuilderModal({
   );
 
   const runSimulate = async (): Promise<void> => {
-    const sample = SAMPLES[simIndex];
+    const sample = samples[simIndex];
     if (!sample) return;
     const result = await simulateRule({
       documentType: docType,
@@ -85,10 +119,9 @@ export function RuleBuilderModal({
       steps: draft.steps,
       sampleDocument: {
         documentType: docType,
-        total_amount: sample.amount,
-        net_amount: sample.amount,
         currency: 'INR',
         vendor: { is_msme: false },
+        ...sample.doc,
       },
     });
     setSim(result);
@@ -207,7 +240,7 @@ export function RuleBuilderModal({
               onChange={(e) => setSimIndex(Number(e.target.value))}
               className="border-line mb-2 w-full rounded-sm border px-2 py-1 text-[12px]"
             >
-              {SAMPLES.map((s, i) => (
+              {samples.map((s, i) => (
                 <option key={s.label} value={i}>
                   {s.label}
                 </option>

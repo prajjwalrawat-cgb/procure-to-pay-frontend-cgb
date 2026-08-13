@@ -29,10 +29,7 @@ test('matrix builder: view rules, build, simulate, save, activate', async ({ pag
   await page.getByTestId('rule-name').fill('MD approval above ₹1Cr');
 
   // Test with the hypothetical ₹1.2Cr sample → the chain resolves.
-  await page
-    .getByRole('combobox')
-    .last()
-    .selectOption({ label: '₹1.2Cr invoice (high)' });
+  await page.getByRole('combobox').last().selectOption({ label: '₹1.2Cr (high)' });
   await page.getByRole('button', { name: 'Simulate' }).click();
   await expect(page.getByTestId('sim-result')).toBeVisible();
 

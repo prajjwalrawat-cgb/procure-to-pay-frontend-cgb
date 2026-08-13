@@ -1,6 +1,7 @@
 'use client';
 
 import type { ApprovalMatrixView, ApprovalStep, DocumentType } from '@/lib/shared';
+import { PERMISSIONS, ROLE_PERMISSIONS, type RoleName } from '@/lib/shared';
 import { Button, Pill, Tabs, TabsList, TabsTrigger } from '@/components/ui';
 import { useState } from 'react';
 
@@ -16,24 +17,35 @@ import {
   useMatrixVersions,
   useUpdateMatrix,
 } from '@/lib/api/approvals';
+import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
-const TABS: {
-  key: string;
-  label: string;
-  docType: DocumentType | null;
-  slice?: number;
-}[] = [
+/** One tab per document type the approval engine routes, in procure→pay order. */
+const TABS: { key: string; label: string; docType: DocumentType }[] = [
+  { key: 'requisitions', label: 'Requisitions', docType: 'REQUISITION' },
+  { key: 'purchase-orders', label: 'Purchase orders', docType: 'PURCHASE_ORDER' },
   { key: 'invoices', label: 'Invoices', docType: 'INVOICE' },
   { key: 'payment-runs', label: 'Payment runs', docType: 'PAYMENT_RUN' },
-  { key: 'purchase-orders', label: 'Purchase orders', docType: null, slice: 4 },
-  { key: 'contracts', label: 'Contracts', docType: null, slice: 9 },
-  { key: 'onboarding', label: 'Vendor onboarding', docType: null, slice: 7 },
+  { key: 'awards', label: 'Sourcing awards', docType: 'RFQ_AWARD' },
+  { key: 'onboarding', label: 'Vendor onboarding', docType: 'VENDOR_ONBOARDING' },
+  { key: 'vendor-changes', label: 'Vendor changes', docType: 'VENDOR_CHANGE' },
+  { key: 'contracts', label: 'Contracts', docType: 'CONTRACT' },
+  { key: 'amendments', label: 'Contract amendments', docType: 'CONTRACT_AMENDMENT' },
 ];
+
+/** Roles holding `approval_matrix:write` — admin and finance head. Derived from
+ *  the shared grant table so the UI cannot drift from the API guard. */
+function useCanEditMatrix(): boolean {
+  const roles = useSessionStore((s) => s.user?.roles ?? []);
+  return roles.some((r) =>
+    (ROLE_PERMISSIONS[r as RoleName] ?? []).includes(PERMISSIONS.APPROVAL_MATRIX_WRITE),
+  );
+}
 
 export default function ApprovalsPage(): React.JSX.Element {
   const [tab, setTab] = useState('invoices');
   const active = TABS.find((t) => t.key === tab) ?? TABS[0];
+  const canEdit = useCanEditMatrix();
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -45,10 +57,16 @@ export default function ApprovalsPage(): React.JSX.Element {
           Rules are evaluated by priority; the first match routes the document. Editing a
           rule creates a new version — in-flight documents keep their snapshot.
         </p>
+        {!canEdit && (
+          <p className="text-faint mt-1 text-[12px]">
+            Read-only — only an Admin or the Finance Head can add, edit or deactivate
+            rules.
+          </p>
+        )}
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-5">
+        <TabsList className="mb-5 flex-wrap">
           {TABS.map((t) => (
             <TabsTrigger key={t.key} value={t.key}>
               {t.label}
@@ -57,18 +75,22 @@ export default function ApprovalsPage(): React.JSX.Element {
         </TabsList>
       </Tabs>
 
-      {active?.docType ? (
-        <MatrixTab docType={active.docType} />
-      ) : (
-        <div className="border-line bg-panel text-muted rounded-lg border border-dashed p-8 text-center text-[13px]">
-          Configure when Slice {active?.slice} lands.
-        </div>
-      )}
+      <MatrixTab
+        key={active?.docType ?? 'INVOICE'}
+        docType={active?.docType ?? 'INVOICE'}
+        canEdit={canEdit}
+      />
     </div>
   );
 }
 
-function MatrixTab({ docType }: { docType: DocumentType }): React.JSX.Element {
+function MatrixTab({
+  docType,
+  canEdit,
+}: {
+  docType: DocumentType;
+  canEdit: boolean;
+}): React.JSX.Element {
   const { data, isLoading } = useMatrices(docType);
   const create = useCreateMatrix(docType);
   const update = useUpdateMatrix(docType);
@@ -122,9 +144,11 @@ function MatrixTab({ docType }: { docType: DocumentType }): React.JSX.Element {
           {data?.items.length ?? 0} active rule
           {(data?.items.length ?? 0) === 1 ? '' : 's'}
         </div>
-        <Button variant="accent" size="sm" onClick={() => setEditing('new')}>
-          Add rule
-        </Button>
+        {canEdit && (
+          <Button variant="accent" size="sm" onClick={() => setEditing('new')}>
+            Add rule
+          </Button>
+        )}
       </div>
 
       {isLoading && <div className="text-muted text-[13px]">Loading rules…</div>}
@@ -134,6 +158,7 @@ function MatrixTab({ docType }: { docType: DocumentType }): React.JSX.Element {
           <RuleCard
             key={rule.id}
             rule={rule}
+            canEdit={canEdit}
             onEdit={() => setEditing(rule)}
             onDuplicate={() =>
               action.mutate(
@@ -152,7 +177,9 @@ function MatrixTab({ docType }: { docType: DocumentType }): React.JSX.Element {
         ))}
         {data && data.items.length === 0 && !isLoading && (
           <div className="text-muted text-[13px]">
-            No active rules. Add one to start routing.
+            No active rules — documents of this type cannot be submitted for approval
+            until one exists.
+            {canEdit ? ' Add one to start routing.' : ''}
           </div>
         )}
       </div>
@@ -192,12 +219,14 @@ function MatrixTab({ docType }: { docType: DocumentType }): React.JSX.Element {
 
 function RuleCard({
   rule,
+  canEdit,
   onEdit,
   onDuplicate,
   onDeactivate,
   onHistory,
 }: {
   rule: ApprovalMatrixView;
+  canEdit: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
   onDeactivate: () => void;
@@ -218,18 +247,24 @@ function RuleCard({
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={onEdit}>
-            Edit
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onDuplicate}>
-            Duplicate
-          </Button>
+          {canEdit && (
+            <Button variant="ghost" size="sm" onClick={onEdit}>
+              Edit
+            </Button>
+          )}
+          {canEdit && (
+            <Button variant="ghost" size="sm" onClick={onDuplicate}>
+              Duplicate
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={onHistory}>
             History
           </Button>
-          <Button variant="ghost" size="sm" onClick={onDeactivate}>
-            Deactivate
-          </Button>
+          {canEdit && (
+            <Button variant="ghost" size="sm" onClick={onDeactivate}>
+              Deactivate
+            </Button>
+          )}
         </div>
       </div>
 
