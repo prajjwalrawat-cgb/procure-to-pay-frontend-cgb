@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
+import { rateToPercent } from '@/lib/rate';
 import { API_URL } from '@/vendor/lib/env';
 import {
   useAcknowledgePo,
@@ -94,14 +95,14 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="text-muted mx-auto max-w-4xl px-1 py-10 text-[13px]">Loading…</div>
+      <div className="mx-auto max-w-4xl px-1 py-10 text-[13px] text-muted">Loading…</div>
     );
   }
   if (!po) {
     return (
       <div className="mx-auto max-w-4xl">
         <BackLink />
-        <p className="text-muted mt-4 text-[13px]">Purchase order not found.</p>
+        <p className="mt-4 text-[13px] text-muted">Purchase order not found.</p>
       </div>
     );
   }
@@ -114,7 +115,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       <div className="mb-5 mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="tracking-heading font-numeric text-ink text-[20px] font-semibold">
+            <h1 className="font-numeric text-[20px] font-semibold tracking-heading text-ink">
               {po.number}
             </h1>
             <Pill variant={STATUS_VARIANT[po.status] ?? 'gray'} dot>
@@ -126,7 +127,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               </Pill>
             )}
           </div>
-          <p className="text-muted mt-1 text-[12px]">
+          <p className="mt-1 text-[12px] text-muted">
             Ordered {fmtDate(po.orderedDate)} · Expected{' '}
             {fmtDate(po.expectedDeliveryDate)}
           </p>
@@ -166,14 +167,14 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       </div>
 
       {po.acknowledgedAt && (
-        <div className="bg-accent-wash text-accent-2 mb-5 rounded-sm px-3 py-2 text-[12px]">
+        <div className="mb-5 rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
           You acknowledged this purchase order on {fmtDateTime(po.acknowledgedAt)}.
         </div>
       )}
 
       {/* Delivery & terms */}
-      <section className="border-line bg-panel mb-4 rounded-lg border p-4">
-        <h2 className="text-ink mb-3 text-[14px] font-semibold">Delivery &amp; terms</h2>
+      <section className="mb-4 rounded-lg border border-line bg-panel p-4">
+        <h2 className="mb-3 text-[14px] font-semibold text-ink">Delivery &amp; terms</h2>
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
           <Field label="Delivery address" value={formatAddress(po.deliveryAddress)} />
           <Field label="Delivery terms" value={po.deliveryTerms ?? '—'} />
@@ -182,12 +183,12 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       </section>
 
       {/* Line items */}
-      <section className="border-line bg-panel mb-4 rounded-lg border p-4">
-        <h2 className="text-ink mb-3 text-[14px] font-semibold">Line items</h2>
-        <div className="border-line overflow-hidden rounded-lg border">
+      <section className="mb-4 rounded-lg border border-line bg-panel p-4">
+        <h2 className="mb-3 text-[14px] font-semibold text-ink">Line items</h2>
+        <div className="overflow-hidden rounded-lg border border-line">
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
-              <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+              <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
                 <tr>
                   <th className="px-3 py-2 font-medium">#</th>
                   <th className="px-3 py-2 font-medium">Description</th>
@@ -201,23 +202,23 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               </thead>
               <tbody>
                 {po.lines.map((l) => (
-                  <tr key={l.lineNo} className="border-line border-t">
-                    <td className="font-numeric text-muted px-3 py-2">{l.lineNo}</td>
-                    <td className="text-text px-3 py-2">{l.itemDesc}</td>
-                    <td className="font-numeric text-muted px-3 py-2">
+                  <tr key={l.lineNo} className="border-t border-line">
+                    <td className="font-numeric px-3 py-2 text-muted">{l.lineNo}</td>
+                    <td className="px-3 py-2 text-text">{l.itemDesc}</td>
+                    <td className="font-numeric px-3 py-2 text-muted">
                       {l.hsnCode ?? '—'}
                     </td>
-                    <td className="text-muted px-3 py-2">{l.uom}</td>
-                    <td className="font-numeric text-text px-3 py-2 text-right">
+                    <td className="px-3 py-2 text-muted">{l.uom}</td>
+                    <td className="font-numeric px-3 py-2 text-right text-text">
                       {l.qtyOrdered}
                     </td>
-                    <td className="font-numeric text-text px-3 py-2 text-right">
+                    <td className="font-numeric px-3 py-2 text-right text-text">
                       {inr(l.unitPrice)}
                     </td>
-                    <td className="font-numeric text-muted px-3 py-2 text-right">
-                      {l.taxRate}%
+                    <td className="font-numeric px-3 py-2 text-right text-muted">
+                      {rateToPercent(l.taxRate)}%
                     </td>
-                    <td className="font-numeric text-ink px-3 py-2 text-right">
+                    <td className="font-numeric px-3 py-2 text-right text-ink">
                       {inr(l.lineTotal)}
                     </td>
                   </tr>
@@ -240,9 +241,9 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               </dt>
               <dd className="font-numeric text-text">{inr(po.amounts.taxAmount)}</dd>
             </div>
-            <div className="border-line flex justify-between border-t pt-1.5">
-              <dt className="text-ink font-semibold">Total</dt>
-              <dd className="font-numeric text-ink font-semibold">
+            <div className="flex justify-between border-t border-line pt-1.5">
+              <dt className="font-semibold text-ink">Total</dt>
+              <dd className="font-numeric font-semibold text-ink">
                 {inr(po.amounts.total)}
               </dd>
             </div>
@@ -251,18 +252,18 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       </section>
 
       {/* Queries */}
-      <section className="border-line bg-panel rounded-lg border p-4">
-        <h2 className="text-ink mb-3 text-[14px] font-semibold">Your queries</h2>
+      <section className="rounded-lg border border-line bg-panel p-4">
+        <h2 className="mb-3 text-[14px] font-semibold text-ink">Your queries</h2>
         {po.queries.length === 0 ? (
-          <p className="text-muted text-[13px]">
+          <p className="text-[13px] text-muted">
             No queries raised on this purchase order.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {po.queries.map((q) => (
-              <li key={q.id} className="border-line bg-canvas/50 rounded-sm border p-3">
-                <p className="text-text whitespace-pre-wrap text-[13px]">{q.body}</p>
-                <p className="text-faint mt-1.5 text-[11px]">
+              <li key={q.id} className="rounded-sm border border-line bg-canvas/50 p-3">
+                <p className="whitespace-pre-wrap text-[13px] text-text">{q.body}</p>
+                <p className="mt-1.5 text-[11px] text-faint">
                   {q.source} · {fmtDateTime(q.createdAt)}
                 </p>
               </li>
@@ -284,7 +285,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
             onChange={(e) => setQueryBody(e.target.value)}
             rows={5}
             placeholder="Type your message…"
-            className="border-line bg-canvas text-text focus-visible:ring-accent mt-4 w-full resize-none rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2"
+            className="mt-4 w-full resize-none rounded-sm border border-line bg-canvas px-3 py-2 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <div className="mt-4 flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setQueryOpen(false)}>
@@ -309,7 +310,7 @@ function BackLink(): React.JSX.Element {
   return (
     <Link
       href="/vendor/purchase-orders"
-      className="text-muted inline-flex items-center gap-1 text-[12px]"
+      className="inline-flex items-center gap-1 text-[12px] text-muted"
     >
       <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
     </Link>
@@ -319,8 +320,8 @@ function BackLink(): React.JSX.Element {
 function Field({ label: l, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div>
-      <dt className="text-faint text-[11px] uppercase tracking-wide">{l}</dt>
-      <dd className="text-text mt-0.5 text-[13px]">{value}</dd>
+      <dt className="text-[11px] uppercase tracking-wide text-faint">{l}</dt>
+      <dd className="mt-0.5 text-[13px] text-text">{value}</dd>
     </div>
   );
 }

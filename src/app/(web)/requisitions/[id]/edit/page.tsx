@@ -10,6 +10,7 @@ import type { RequisitionLineInput, RequisitionUpdateInput } from '@/lib/shared'
 import { useCostCenters, usePlants } from '@/lib/api/refs';
 import { useRequisition, useUpdateRequisition } from '@/lib/api/requisitions';
 import { inr } from '@/lib/format';
+import { percentToRate, rateToPercent } from '@/lib/rate';
 import { PRIORITIES } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
 
@@ -68,8 +69,9 @@ export default function EditRequisitionPage(): React.JSX.Element {
         uom: l.uom,
         qty: l.qty,
         unitPrice: l.unitPrice,
-        discountPct: l.discountPct,
-        taxRate: l.taxRate,
+        // The API sends fractions; the "Disc %" / "Tax %" inputs show percentages.
+        discountPct: rateToPercent(l.discountPct),
+        taxRate: rateToPercent(l.taxRate),
         hsnCode: l.hsnCode ?? '',
         preferredVendorId: l.preferredVendor?.id ?? null,
         reasonCode: l.reasonCode,
@@ -80,23 +82,23 @@ export default function EditRequisitionPage(): React.JSX.Element {
   }, [data, hydrated]);
 
   if (isLoading || !data) {
-    return <div className="text-muted p-8 text-center">Loading…</div>;
+    return <div className="p-8 text-center text-muted">Loading…</div>;
   }
 
   // DRAFT-only guard (backend enforces this too).
   if (data.status !== 'DRAFT') {
     return (
       <div className="mx-auto max-w-2xl p-8 text-center">
-        <p className="text-ink text-[15px] font-semibold">
+        <p className="text-[15px] font-semibold text-ink">
           This requisition can’t be edited.
         </p>
-        <p className="text-muted mt-1 text-[13px]">
+        <p className="mt-1 text-[13px] text-muted">
           Only <b>Draft</b> requisitions are editable — {data.number} is{' '}
           <Pill variant="gray">{data.status}</Pill>.
         </p>
         <Link
           href={`/requisitions/${id}`}
-          className="text-accent mt-3 inline-block text-[13px]"
+          className="mt-3 inline-block text-[13px] text-accent"
         >
           ← Back to {data.number}
         </Link>
@@ -121,7 +123,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
         qty: '1',
         unitPrice: '0',
         discountPct: '0',
-        taxRate: '0.18',
+        taxRate: '18',
         hsnCode: '',
         preferredVendorId: null,
         reasonCode: 'OTHER',
@@ -131,7 +133,10 @@ export default function EditRequisitionPage(): React.JSX.Element {
 
   const num = (s: string): number => Number(s) || 0;
   const lineTotal = (l: EditLine): number =>
-    num(l.qty) * num(l.unitPrice) * (1 - num(l.discountPct)) * (1 + num(l.taxRate));
+    num(l.qty) *
+    num(l.unitPrice) *
+    (1 - num(l.discountPct) / 100) *
+    (1 + num(l.taxRate) / 100);
   const prTotal = lines.reduce((sum, l) => sum + lineTotal(l), 0);
 
   const valid =
@@ -159,8 +164,8 @@ export default function EditRequisitionPage(): React.JSX.Element {
         uom: l.uom,
         qty: l.qty || '0',
         unitPrice: l.unitPrice || '0',
-        discountPct: l.discountPct || '0',
-        taxRate: l.taxRate || '0',
+        discountPct: percentToRate(l.discountPct),
+        taxRate: percentToRate(l.taxRate),
         hsnCode: l.hsnCode || null,
         preferredVendorId: l.preferredVendorId,
         reasonCode: l.itemId
@@ -181,11 +186,11 @@ export default function EditRequisitionPage(): React.JSX.Element {
     <div className="mx-auto max-w-4xl pb-8">
       <Link
         href={`/requisitions/${id}`}
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
       >
         <ArrowLeft size={14} /> Back to {data.number}
       </Link>
-      <h1 className="tracking-heading text-ink mb-4 text-[20px] font-semibold">
+      <h1 className="mb-4 text-[20px] font-semibold tracking-heading text-ink">
         Edit {data.number} <Pill variant="gray">Draft</Pill>
       </h1>
 
@@ -196,7 +201,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cost centre">
             <select
-              className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
               value={costCenterId}
               onChange={(e) => setCostCenterId(e.target.value)}
             >
@@ -209,7 +214,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
           </Field>
           <Field label="Plant">
             <select
-              className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
               value={plantId}
               onChange={(e) => setPlantId(e.target.value)}
             >
@@ -229,14 +234,14 @@ export default function EditRequisitionPage(): React.JSX.Element {
           <Field label="Needed by">
             <input
               type="date"
-              className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
               value={neededBy}
               onChange={(e) => setNeededBy(e.target.value)}
             />
           </Field>
           <Field label="Priority">
             <select
-              className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
@@ -250,7 +255,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
         </div>
         <Field label="Business justification · min 20 characters">
           <textarea
-            className="border-line bg-panel w-full rounded-md border p-2 text-[13px]"
+            className="w-full rounded-md border border-line bg-panel p-2 text-[13px]"
             rows={2}
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
@@ -260,7 +265,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
 
       <Section title="Line items">
         {lines.map((l) => (
-          <div key={l.key} className="border-line mb-3 rounded-md border p-3">
+          <div key={l.key} className="mb-3 rounded-md border border-line p-3">
             <div className="mb-2 flex items-center justify-between">
               <Input
                 className="flex-1"
@@ -321,7 +326,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
                 />
               </Labelled>
             </div>
-            <div className="text-muted mt-1 text-right text-[12px] tabular-nums">
+            <div className="mt-1 text-right text-[12px] tabular-nums text-muted">
               Line total {inr(String(lineTotal(l)))}
             </div>
           </div>
@@ -330,7 +335,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
           <Button variant="ghost" onClick={addLine}>
             <Plus size={14} /> Add line
           </Button>
-          <span className="text-ink text-[14px] font-semibold tabular-nums">
+          <span className="text-[14px] font-semibold tabular-nums text-ink">
             PR total {inr(String(prTotal))}
           </span>
         </div>
@@ -356,8 +361,8 @@ function Section({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-3 text-[14px] font-semibold">{title}</h2>
+    <div className="mb-4 rounded-lg border border-line bg-panel p-4">
+      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -372,7 +377,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="mb-3 block">
-      <span className="text-muted mb-1 block text-[12px]">{label}</span>
+      <span className="mb-1 block text-[12px] text-muted">{label}</span>
       {children}
     </label>
   );
@@ -387,7 +392,7 @@ function Labelled({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="text-faint mb-0.5 block text-[10px] uppercase">{label}</span>
+      <span className="mb-0.5 block text-[10px] uppercase text-faint">{label}</span>
       {children}
     </label>
   );
