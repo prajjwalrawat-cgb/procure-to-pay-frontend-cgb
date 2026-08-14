@@ -18,6 +18,8 @@ import {
   useOnboardingQueue,
   type OnboardingTab,
 } from '@/lib/api/vendors';
+import { useHasPermission } from '@/lib/permissions';
+import { PERMISSIONS } from '@/lib/shared';
 import { useToastStore } from '@/store/toast-store';
 
 const TABS: { key: OnboardingTab; label: string }[] = [
@@ -105,7 +107,16 @@ function CancelInviteDialog({
 export default function OnboardingQueuePage(): React.JSX.Element {
   const [tab, setTab] = useState<OnboardingTab>('my_review');
   const [cancelling, setCancelling] = useState<OnboardingListItem | null>(null);
-  const { data, isLoading } = useOnboardingQueue(tab);
+  const canReview = useHasPermission(PERMISSIONS.VENDOR_ONBOARDING_REVIEW);
+
+  // Viewers who are never routed an onboarding (finance watching the pipeline)
+  // have nothing in "Awaiting my review" — drop the tab and land them on the
+  // live queue. Derived rather than stored, because the session roles arrive
+  // after the first render and would otherwise pin a reviewer to the fallback.
+  const tabs = canReview ? TABS : TABS.filter((t) => t.key !== 'my_review');
+  const activeTab: OnboardingTab =
+    tab === 'my_review' && !canReview ? 'in_progress' : tab;
+  const { data, isLoading, isError } = useOnboardingQueue(activeTab);
 
   return (
     <div className="mx-auto max-w-[1400px]">
@@ -122,12 +133,12 @@ export default function OnboardingQueuePage(): React.JSX.Element {
       </div>
 
       <div className="border-line mb-4 flex gap-1 border-b">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-3 py-2 text-[13px] font-medium ${
-              tab === t.key
+              activeTab === t.key
                 ? 'text-ink border-ink border-b-2'
                 : 'text-muted hover:text-ink'
             }`}
@@ -139,6 +150,10 @@ export default function OnboardingQueuePage(): React.JSX.Element {
 
       {isLoading ? (
         <p className="text-muted text-[13px]">Loading…</p>
+      ) : isError ? (
+        <p className="text-muted text-[13px]">
+          Could not load the onboarding queue — your role may not have access to it.
+        </p>
       ) : !data || data.items.length === 0 ? (
         <p className="text-muted text-[13px]">Nothing in this view.</p>
       ) : (
