@@ -28,6 +28,7 @@ import {
   useSaveStep,
   useSubmitOnboarding,
   useUploadOnboardingDocFile,
+  type ResumeResponse,
   type UploadedDocResult,
 } from '@/vendor/lib/onboarding';
 import { useToastStore } from '@/vendor/store/toast-store';
@@ -139,6 +140,44 @@ function StateCodeField({
   );
 }
 
+/** The banner for a wizard that is no longer the vendor's to act on — approved,
+ *  awaiting a reviewer, or handed back for more information. */
+function onboardingStatus(data: ResumeResponse): {
+  pill: string;
+  title: string;
+  body: string;
+  tone: 'success' | 'info';
+} | null {
+  if (data.lifecycleStatus === 'ACTIVE') {
+    return {
+      pill: 'Approved',
+      title: 'Your account is approved and active',
+      body:
+        'Onboarding is complete — you can receive purchase orders and submit invoices. ' +
+        'To change these details, contact your buyer to raise a change request.',
+      tone: 'success',
+    };
+  }
+  if (data.reviewDecision === 'RETURNED_FOR_INFO') {
+    return {
+      pill: 'Action needed',
+      title: 'Your buyer needs more information',
+      body: 'Update the details below and submit again.',
+      tone: 'info',
+    };
+  }
+  if (data.submittedAt) {
+    const on = new Date(data.submittedAt).toLocaleDateString('en-IN');
+    return {
+      pill: 'Under review',
+      title: `Submitted on ${on} — awaiting your buyer's review`,
+      body: 'Nothing more to do for now. We will email you when a decision is made.',
+      tone: 'info',
+    };
+  }
+  return null;
+}
+
 export default function OnboardingWizardPage(): React.JSX.Element {
   const { data, isLoading, error } = useOnboarding();
   const saveStep = useSaveStep();
@@ -220,6 +259,12 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       });
     };
   const completionPct = data.wizardState?.completionPct ?? 0;
+  // The server decides whether this onboarding may still be changed; the page
+  // only renders that decision. Approved vendors and submissions awaiting a
+  // reviewer are read-only — re-submitting an approved vendor would drop them
+  // out of ACTIVE and block new purchase orders against them.
+  const editable = data.editable;
+  const status = onboardingStatus(data);
 
   const persist = (stepNumber: number, payload: SaveStepInput): void => {
     // Validate against this step's schema before sending. The API enforces the
@@ -411,17 +456,44 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       <div className="mb-4">
         <h1 className="text-[20px] font-semibold text-ink">Vendor onboarding</h1>
         <p className="text-[13px] text-muted">
-          Complete all steps, acknowledge the code of conduct, then submit.
+          {editable
+            ? 'Complete all steps, acknowledge the code of conduct, then submit.'
+            : 'Your submitted details, read-only.'}
         </p>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="h-1.5 w-48 overflow-hidden rounded-full bg-canvas">
-            <div className="bg-brand h-full" style={{ width: `${completionPct}%` }} />
+        {editable && (
+          <div className="mt-3 flex items-center gap-2">
+            <div className="h-1.5 w-48 overflow-hidden rounded-full bg-canvas">
+              <div className="bg-brand h-full" style={{ width: `${completionPct}%` }} />
+            </div>
+            <span className="text-[12px] tabular-nums text-muted">
+              {completionPct}% complete
+            </span>
           </div>
-          <span className="text-[12px] tabular-nums text-muted">
-            {completionPct}% complete
-          </span>
-        </div>
+        )}
       </div>
+
+      {status && (
+        <div
+          className={`mb-4 rounded-lg border p-4 ${
+            status.tone === 'success'
+              ? 'border-accent-2/30 bg-accent-wash'
+              : 'border-line bg-panel'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Pill variant={status.tone === 'success' ? 'success' : 'info'}>
+              {status.pill}
+            </Pill>
+            <span className="text-[14px] font-semibold text-ink">{status.title}</span>
+          </div>
+          <p className="mt-1.5 text-[13px] text-muted">{status.body}</p>
+          {data.reviewNotes && (
+            <p className="mt-1.5 text-[13px] text-muted">
+              Reviewer note: {data.reviewNotes}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Step tabs */}
       <div className="mb-4 flex flex-wrap gap-1">
@@ -701,25 +773,27 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             >
               Back
             </Button>
-            <div className="flex gap-2">
-              <Button
-                variant="primary"
-                onClick={saveCurrent}
-                disabled={saveStep.isPending}
-              >
-                Save step
-              </Button>
-              {step === 6 && (
-                <Button variant="accent" onClick={doSubmit} disabled={submit.isPending}>
-                  Submit for review
+            {editable && (
+              <div className="flex gap-2">
+                <Button
+                  variant="primary"
+                  onClick={saveCurrent}
+                  disabled={saveStep.isPending}
+                >
+                  Save step
                 </Button>
-              )}
-            </div>
+                {step === 6 && (
+                  <Button variant="accent" onClick={doSubmit} disabled={submit.isPending}>
+                    Submit for review
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {completionPct === 100 && (
+      {editable && completionPct === 100 && (
         <p className="mt-3 text-[13px] text-accent-2">
           <Pill variant="success">Ready</Pill> All steps complete — acknowledge the CoC
           and submit.
