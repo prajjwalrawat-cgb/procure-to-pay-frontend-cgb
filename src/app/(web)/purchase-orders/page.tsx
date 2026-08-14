@@ -1,7 +1,7 @@
 'use client';
 
-import { Pill } from '@/components/ui';
-import { MoreHorizontal } from 'lucide-react';
+import { Button, Pill } from '@/components/ui';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -32,6 +32,12 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
             Issued & in-flight orders · Star Cement Ltd
           </p>
         </div>
+        {/* Spot buy — no requisition behind it; see /purchase-orders/new. */}
+        <Link href="/purchase-orders/new">
+          <Button variant="accent" size="sm">
+            <Plus className="h-3.5 w-3.5" /> New PO
+          </Button>
+        </Link>
       </div>
 
       <div className="border-line mb-3 flex items-center gap-1 border-b">

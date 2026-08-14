@@ -15,7 +15,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { rateToPercent } from '@/lib/rate';
-import { API_URL } from '@/vendor/lib/env';
+import { openAuthedAsset } from '@/vendor/lib/api-client';
 import {
   useAcknowledgePo,
   useRaisePoQuery,
@@ -136,15 +136,22 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {po.pdfAvailable && (
-            <a
-              href={`${API_URL}/vendor/purchase-orders/${po.id}/pdf`}
-              target="_blank"
-              rel="noreferrer"
+            // A plain link cannot carry the in-memory access token, so the API
+            // would 401 — fetch it authenticated and open the blob instead.
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() =>
+                openAuthedAsset(`/vendor/purchase-orders/${po.id}/pdf`).catch((e) =>
+                  pushToast(
+                    e instanceof Error ? e.message : 'Could not open the PDF',
+                    'error',
+                  ),
+                )
+              }
             >
-              <Button variant="default" size="sm">
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Download PDF
-              </Button>
-            </a>
+              <Download className="mr-1.5 h-3.5 w-3.5" /> Download PDF
+            </Button>
           )}
           <Button variant="default" size="sm" onClick={() => setQueryOpen(true)}>
             <MessageSquarePlus className="mr-1.5 h-3.5 w-3.5" /> Raise query
@@ -250,6 +257,25 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
           </dl>
         </div>
       </section>
+
+      {/* Terms & conditions — the same rows printed on the PO PDF. Shown on
+          screen because acknowledging the order accepts them, and a supplier
+          should not have to open an attachment to find out what they are. */}
+      {po.terms.length > 0 && (
+        <section className="mb-4 rounded-lg border border-line bg-panel p-4">
+          <h2 className="mb-3 text-[14px] font-semibold text-ink">Terms &amp; conditions</h2>
+          <ol className="flex flex-col gap-2 text-[13px]">
+            {po.terms.map((t, i) => (
+              <li key={t.id}>
+                <span className="font-medium text-text">
+                  {i + 1}. {t.title}
+                </span>
+                <p className="pl-4 text-[12px] text-muted">{t.contentText}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {/* Queries */}
       <section className="rounded-lg border border-line bg-panel p-4">
