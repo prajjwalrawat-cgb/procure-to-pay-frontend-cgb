@@ -37,6 +37,14 @@ export interface ResumeResponse {
   categoryKey: string;
   wizardState: WizardState;
   documents: UploadedDocument[];
+  /** Vendor lifecycle — 'ACTIVE' means onboarding is already approved. */
+  lifecycleStatus: string;
+  submittedAt: string | null;
+  reviewDecision: string | null;
+  reviewNotes: string | null;
+  /** Server's verdict on whether the wizard may still be edited and submitted.
+   *  False once approved or while a submission is awaiting review. */
+  editable: boolean;
 }
 
 export const onboardingKeys = {
