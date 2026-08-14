@@ -25,6 +25,8 @@ import {
   useReviewScreening,
   useVerifyDocument,
 } from '@/lib/api/vendors';
+import { useHasPermission } from '@/lib/permissions';
+import { PERMISSIONS } from '@/lib/shared';
 import { useToastStore } from '@/store/toast-store';
 
 const LIGHT_VARIANT: Record<'green' | 'amber' | 'red', 'success' | 'warn' | 'danger'> = {
@@ -138,6 +140,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const toast = useToastStore((s) => s.push);
   const [comment, setComment] = useState('');
   const [renaming, setRenaming] = useState(false);
+  // The dossier is readable by anyone with VENDOR_ONBOARDING_READ (finance
+  // watches the pipeline), so each write control is gated on its own
+  // permission. The decision panel is gated server-side by `canReview`.
+  const canRename = useHasPermission(PERMISSIONS.VENDOR_UPDATE);
+  const canVerifyDocs = useHasPermission(PERMISSIONS.VENDOR_DOC_VERIFY);
+  const canReviewScreening = useHasPermission(PERMISSIONS.VENDOR_SCREENING_REVIEW);
 
   if (isLoading || !data) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
 
@@ -186,12 +194,14 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           </h1>
           {data.isMsme && <Pill variant="info">MSME</Pill>}
           <Pill variant="gray">{data.lifecycleStatus.replace(/_/g, ' ')}</Pill>
-          <button
-            onClick={() => setRenaming(true)}
-            className="text-muted hover:text-ink text-[12px] font-medium underline"
-          >
-            Edit name
-          </button>
+          {canRename && (
+            <button
+              onClick={() => setRenaming(true)}
+              className="text-muted hover:text-ink text-[12px] font-medium underline"
+            >
+              Edit name
+            </button>
+          )}
         </div>
         <p className="text-muted text-[13px]">
           {data.legalEntityName} · {data.category ?? '—'} · {data.completionPct}% complete
@@ -286,7 +296,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                         <Pill variant={DOC_VARIANT[d.verificationStatus] ?? 'gray'}>
                           {d.verificationStatus.replace(/_/g, ' ')}
                         </Pill>
-                        {d.verificationStatus === 'PENDING' && (
+                        {d.verificationStatus === 'PENDING' && canVerifyDocs && (
                           <>
                             <Button
                               variant="default"
@@ -360,7 +370,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                         >
                           {s.status}
                         </Pill>
-                        {s.status === 'FLAGGED' && (
+                        {s.status === 'FLAGGED' && canReviewScreening && (
                           <Button
                             variant="default"
                             onClick={() =>

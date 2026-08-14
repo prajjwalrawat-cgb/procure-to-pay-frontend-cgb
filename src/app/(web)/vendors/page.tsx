@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { InviteVendorDialog } from './_components/invite-dialog';
 import { useVendorList, type VendorTab } from '@/lib/api/vendors';
 import { inr } from '@/lib/format';
+import { useHasPermission } from '@/lib/permissions';
+import { PERMISSIONS } from '@/lib/shared';
 
 const TABS: { key: VendorTab; label: string }[] = [
   { key: 'active', label: 'Active' },
@@ -27,7 +29,9 @@ function gradeVariant(grade: string | null): 'success' | 'warn' | 'danger' | 'gr
 export default function VendorsPage(): React.JSX.Element {
   const [tab, setTab] = useState<VendorTab>('active');
   const [inviteOpen, setInviteOpen] = useState(false);
-  const { data, isLoading } = useVendorList(tab);
+  const { data, isLoading, isError } = useVendorList(tab);
+  const canInvite = useHasPermission(PERMISSIONS.VENDOR_INVITE);
+  const canSeeQueue = useHasPermission(PERMISSIONS.VENDOR_ONBOARDING_READ);
 
   return (
     <div className="mx-auto max-w-[1400px]">
@@ -39,12 +43,16 @@ export default function VendorsPage(): React.JSX.Element {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/vendors/onboarding">
-            <Button variant="default">Onboarding queue</Button>
-          </Link>
-          <Button variant="primary" onClick={() => setInviteOpen(true)}>
-            Invite vendor
-          </Button>
+          {canSeeQueue && (
+            <Link href="/vendors/onboarding">
+              <Button variant="default">Onboarding queue</Button>
+            </Link>
+          )}
+          {canInvite && (
+            <Button variant="primary" onClick={() => setInviteOpen(true)}>
+              Invite vendor
+            </Button>
+          )}
         </div>
       </div>
 
@@ -66,6 +74,12 @@ export default function VendorsPage(): React.JSX.Element {
 
       {isLoading ? (
         <p className="text-muted text-[13px]">Loading…</p>
+      ) : isError ? (
+        // Distinguished from an empty result: a 403 used to render as "no
+        // vendors", which reads as an empty tenant rather than missing access.
+        <p className="text-muted text-[13px]">
+          Could not load the vendor master — your role may not have access to it.
+        </p>
       ) : !data || data.items.length === 0 ? (
         <p className="text-muted text-[13px]">No vendors in this view.</p>
       ) : (
