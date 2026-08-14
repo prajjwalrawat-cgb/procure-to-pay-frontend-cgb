@@ -90,6 +90,11 @@ export const LIVE_ROUTES = [
   },
   { label: 'Purchase Orders', href: '/purchase-orders', keywords: 'po orders purchase' },
   {
+    label: 'New purchase order',
+    href: '/purchase-orders/new',
+    keywords: 'spot buy direct po without pr requisition quote offline vendor quotation',
+  },
+  {
     label: 'Goods Receipt',
     href: '/goods-receipt',
     keywords: 'grn receipt receive gate qc quality inspection stores',

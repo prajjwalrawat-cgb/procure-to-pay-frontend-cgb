@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Pill } from '@/components/ui';
-import { ArrowLeft, Check, Download } from 'lucide-react';
+import { ArrowLeft, Check, Download, Paperclip } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -15,8 +15,9 @@ import {
   useIssuePo,
   usePurchaseOrder,
   useSubmitPo,
+  useUploadPoAttachment,
 } from '@/lib/api/purchase-orders';
-import { API_URL } from '@/lib/env';
+import { openAuthedAsset } from '@/lib/api-client';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
@@ -35,9 +36,25 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
   const hold = useHoldPo(id);
   const submit = useSubmitPo(id);
   const addComment = useAddPoComment(id);
+  const attach = useUploadPoAttachment();
 
   const [comment, setComment] = useState('');
   const [decisionComment, setDecisionComment] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const onAttach = (file: File): void => {
+    setUploading(true);
+    // Defaults to QUOTE: on a spot buy that is nearly always what is being
+    // attached, and the type is visible on the row afterwards.
+    attach.mutate(
+      { poId: id, file, docType: 'QUOTE' },
+      {
+        onSuccess: () => toast(`${file.name} attached`, 'success'),
+        onError: (e) => toast(e instanceof Error ? e.message : 'Upload failed', 'error'),
+        onSettled: () => setUploading(false),
+      },
+    );
+  };
 
   if (isLoading || !data) {
     return <div className="text-muted p-6 text-[13px]">Loading purchase order…</div>;
@@ -96,8 +113,13 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
     });
   };
 
+  // The access token lives in memory only, so a plain window.open() at the API
+  // URL arrives without an Authorization header and 401s. Fetch the PDF
+  // authenticated and hand the browser a blob instead.
   const openPdf = (): void => {
-    window.open(`${API_URL}/purchase-orders/${id}/pdf`, '_blank', 'noopener');
+    openAuthedAsset(`/purchase-orders/${id}/pdf`).catch((e) =>
+      toast(e instanceof Error ? e.message : 'Could not open the PDF', 'error'),
+    );
   };
 
   return (
@@ -281,6 +303,80 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 </a>
               ))}
             </DocCard>
+          </section>
+
+          {/* Supporting documents — buyer-side only; never shown in the vendor portal */}
+          <section>
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-ink text-[14px] font-semibold">Supporting documents</h2>
+              <label className="text-accent-2 flex cursor-pointer items-center gap-1 text-[12px] font-medium">
+                <Paperclip className="h-3.5 w-3.5" />
+                {uploading ? 'Uploading…' : 'Attach'}
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) onAttach(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            </div>
+            <div className="border-line bg-panel rounded-lg border p-3 text-[12px]">
+              {data.supportingDocuments.length === 0 ? (
+                <p className="text-muted">
+                  {data.poType === 'SPOT_BUY'
+                    ? 'No quote attached — this order was raised without a requisition, so nothing here evidences the price.'
+                    : 'None.'}
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {data.supportingDocuments.map((d) => (
+                    <li key={d.id} className="flex items-center gap-2">
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent-2 truncate"
+                      >
+                        {d.filename}
+                      </a>
+                      <Pill variant="gray">{d.docType.replace(/_/g, ' ')}</Pill>
+                      {d.addedAfterIssue && <Pill variant="warn">after issue</Pill>}
+                      {d.note && <span className="text-faint truncate">{d.note}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+
+          {/* Terms & conditions — the same rows printed on the PDF and shown to the vendor */}
+          <section>
+            <h2 className="text-ink mb-2 text-[14px] font-semibold">Terms & conditions</h2>
+            <div className="border-line bg-panel rounded-lg border p-3 text-[12px]">
+              {data.terms.length === 0 ? (
+                <p className="text-muted">
+                  None selected — the PDF prints the built-in standard wording.
+                </p>
+              ) : (
+                <ol className="flex flex-col gap-2">
+                  {data.terms.map((t, i) => (
+                    <li key={t.id}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-text font-medium">
+                          {i + 1}. {t.title}
+                        </span>
+                        {!t.isFromLibrary && <Pill variant="violet">special</Pill>}
+                      </div>
+                      <p className="text-muted pl-4">{t.contentText}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </section>
 
           {/* Vendor queries */}

@@ -7,10 +7,14 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type {
+  PoAttachmentType,
+  PoAttachmentView,
   PoCreateInput,
   PoDecisionInput,
   PoDetailResponse,
   PoListResponse,
+  PoTermInput,
+  PoTermView,
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
@@ -121,5 +125,66 @@ export function useAddPoComment(id: string) {
         body: JSON.stringify({ body }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: poKeys.detail(id) }),
+  });
+}
+
+// ── Supporting documents (buyer-side only) ──────────────────────────────────
+
+/*
+ * These three take `poId` in the mutation payload rather than as a hook
+ * argument: the spot-buy wizard only learns the id once the PO has been
+ * created, and a hook cannot be constructed mid-submit.
+ */
+
+/**
+ * Multipart, so no JSON Content-Type: `apiFetch` detects FormData and lets the
+ * browser set the multipart boundary itself.
+ */
+export function useUploadPoAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      poId: string;
+      file: File;
+      docType: PoAttachmentType;
+      note?: string;
+    }) => {
+      const form = new FormData();
+      form.append('file', input.file);
+      form.append('docType', input.docType);
+      if (input.note) form.append('note', input.note);
+      return apiFetch<PoAttachmentView>(
+        `/purchase-orders/${input.poId}/attachments/upload`,
+        { method: 'POST', body: form },
+      );
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: poKeys.detail(v.poId) }),
+  });
+}
+
+export function useRemovePoAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { poId: string; attachmentId: string }) =>
+      apiFetch<{ ok: true }>(
+        `/purchase-orders/${input.poId}/attachments/${input.attachmentId}`,
+        { method: 'DELETE' },
+      ),
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: poKeys.detail(v.poId) }),
+  });
+}
+
+// ── Terms & conditions ──────────────────────────────────────────────────────
+
+/** Replaces the whole set — array order becomes the order printed on the PDF. */
+export function useSetPoTerms() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { poId: string; terms: PoTermInput[] }) =>
+      apiFetch<PoTermView[]>(`/purchase-orders/${input.poId}/terms`, {
+        method: 'PUT',
+        body: JSON.stringify({ terms: input.terms }),
+      }),
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: poKeys.detail(v.poId) }),
   });
 }
