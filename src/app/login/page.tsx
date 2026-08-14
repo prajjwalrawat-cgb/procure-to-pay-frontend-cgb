@@ -91,6 +91,12 @@ export default function LoginPage(): React.JSX.Element {
               required
             />
           </label>
+          <Link
+            href="/forgot-password"
+            className="text-muted -mt-1 self-end text-[12px] hover:underline"
+          >
+            Forgot password?
+          </Link>
 
           {error && (
             <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-[12px]">

@@ -16,12 +16,15 @@ export function middleware(request: NextRequest): NextResponse {
 
   // --- Vendor zone ---
   if (pathname === '/vendor' || pathname.startsWith('/vendor/')) {
-    // Public vendor pages reachable without a session: sign-in, self-signup, and
-    // the emailed magic set-password link (invited vendors have no session yet).
+    // Public vendor pages reachable without a session: sign-in, self-signup, the
+    // emailed magic set-password link (invited vendors have no session yet), and
+    // password recovery — a locked-out vendor has no session by definition.
     const isVendorAuth =
       pathname === '/vendor/login' ||
       pathname === '/vendor/signup' ||
-      pathname === '/vendor/accept-invite';
+      pathname === '/vendor/accept-invite' ||
+      pathname === '/vendor/forgot-password' ||
+      pathname === '/vendor/reset-password';
     const hasVendorSession = Boolean(request.cookies.get(VENDOR_COOKIE)?.value);
 
     if (!hasVendorSession && !isVendorAuth) {
@@ -41,8 +44,12 @@ export function middleware(request: NextRequest): NextResponse {
   const hasBuyerSession = Boolean(request.cookies.get(BUYER_COOKIE)?.value);
   const isBuyerLogin = pathname === '/login';
   // Public buyer pages reachable without a session (invited users set their
-  // password here before they can log in).
-  const isBuyerPublic = isBuyerLogin || pathname === '/accept-invite';
+  // password here before they can log in, and anyone locked out recovers here).
+  const isBuyerPublic =
+    isBuyerLogin ||
+    pathname === '/accept-invite' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password';
 
   if (!hasBuyerSession && !isBuyerPublic) {
     const url = request.nextUrl.clone();
