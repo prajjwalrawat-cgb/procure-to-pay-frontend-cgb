@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 import { usePurchaseOrders, type PoTab } from '@/lib/api/purchase-orders';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const TABS: { key: PoTab; label: string }[] = [
   { key: 'open', label: 'Open' },
@@ -17,6 +18,7 @@ const TABS: { key: PoTab; label: string }[] = [
 ];
 
 export default function PurchaseOrdersPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<PoTab>('open');
   const { data, isLoading } = usePurchaseOrders(tab);
   const counts = data?.counts;
@@ -29,7 +31,7 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
             Purchase orders
           </h1>
           <p className="text-muted text-[13px]">
-            Issued & in-flight orders · Star Cement Ltd
+            Issued & in-flight orders{tenantSuffix(tenantName)}
           </p>
         </div>
         {/* Spot buy — no requisition behind it; see /purchase-orders/new. */}

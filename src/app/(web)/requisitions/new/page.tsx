@@ -16,7 +16,10 @@ import type {
 } from '@/lib/shared';
 import { REQUISITION_ATTACHMENT_TYPE } from '@/lib/shared';
 
+import { CustomFieldInputs } from '@/components/custom-fields';
+import type { CustomFieldValues } from '@/lib/shared';
 import { apiFetch } from '@/lib/api-client';
+import { saveCustomFieldValues } from '@/lib/api/settings';
 import { useCostCenters, usePlants, useVendors } from '@/lib/api/refs';
 import {
   uploadRequisitionAttachment,
@@ -105,6 +108,9 @@ export default function NewRequisitionPage(): React.JSX.Element {
   const [costCenterId, setCostCenterId] = useState('');
   const [plantId, setPlantId] = useState('');
   const [deliveryLocation, setDeliveryLocation] = useState('');
+  // Admin-defined fields (Settings → Custom fields). Empty when the tenant has
+  // defined none, in which case the section renders nothing.
+  const [customFields, setCustomFields] = useState<CustomFieldValues>({});
 
   // Default the plant to the first tenant plant once the list loads.
   useEffect(() => {
@@ -203,6 +209,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
     create.mutate(buildBody(), {
       onSuccess: async (res) => {
         await flushAttachments(res.id);
+        await saveCustomFieldValues('REQUISITION', res.id, customFields);
         toast('Draft saved', 'success');
         router.push(`/requisitions/${res.id}`);
       },
@@ -217,6 +224,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
         // Attachments go up before submit so an approver never opens a PR whose
         // supporting quote or PI is still in flight.
         await flushAttachments(res.id);
+        await saveCustomFieldValues('REQUISITION', res.id, customFields);
         // Submit against the freshly-returned id directly — the pre-bound
         // useSubmitRequisition hook still holds the previous (empty) id this tick.
         try {
@@ -309,7 +317,17 @@ export default function NewRequisitionPage(): React.JSX.Element {
             vendors={vendors}
           />
         )}
-        {step === 3 && <StepAttachments staged={staged} setStaged={setStaged} />}
+        {step === 3 && (
+          <div className="flex flex-col gap-4">
+            <StepAttachments staged={staged} setStaged={setStaged} />
+            {/* Renders nothing unless the tenant has defined fields. */}
+            <CustomFieldInputs
+              entity="REQUISITION"
+              values={customFields}
+              onChange={setCustomFields}
+            />
+          </div>
+        )}
         {step === 4 && (
           <StepReview
             title={title}
@@ -426,7 +444,9 @@ function StepBasics(props: {
             ))}
           </select>
         </Field>
-        <Field label="Plant">
+        {/* This is the GST registration the resulting PO bills to, so it is
+            labelled as such — it sets the place of supply, not just a site. */}
+        <Field label="Branch / GST registration">
           <select
             value={props.plantId}
             onChange={(e) => {
@@ -436,10 +456,12 @@ function StepBasics(props: {
             }}
             className={inputCls}
           >
-            {props.plants.length === 0 && <option value="">Loading plants…</option>}
+            {props.plants.length === 0 && <option value="">Loading branches…</option>}
             {props.plants.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
+                {p.gstin ? ` · ${p.gstin}` : ''}
+                {p.isDefault ? ' (default)' : ''}
               </option>
             ))}
           </select>
@@ -936,7 +958,10 @@ function StepAttachments(props: {
       {props.staged.length > 0 && (
         <div className="divide-y divide-line rounded-lg border border-line">
           {props.staged.map((s, i) => (
-            <div key={`${s.file.name}-${i}`} className="flex items-center gap-3 px-3 py-2">
+            <div
+              key={`${s.file.name}-${i}`}
+              className="flex items-center gap-3 px-3 py-2"
+            >
               <FileText className="h-4 w-4 shrink-0 text-faint" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] text-text">{s.file.name}</div>
@@ -967,7 +992,9 @@ function StepAttachments(props: {
               <button
                 type="button"
                 aria-label={`Remove ${s.file.name}`}
-                onClick={() => props.setStaged((prev) => prev.filter((_, xi) => xi !== i))}
+                onClick={() =>
+                  props.setStaged((prev) => prev.filter((_, xi) => xi !== i))
+                }
                 className="text-faint hover:text-danger"
               >
                 <Trash2 className="h-4 w-4" />

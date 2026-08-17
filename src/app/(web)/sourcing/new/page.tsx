@@ -3,12 +3,9 @@
 import { Button, Input } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type {
-  EvaluationCriterionInput,
-  RfqLineInput,
-  RfqType,
-} from '@/lib/shared';
+import type { EvaluationCriterionInput, RfqLineInput, RfqType } from '@/lib/shared';
 
+import { usePlants } from '@/lib/api/refs';
 import { useCreateRfq } from '@/lib/api/sourcing';
 import { useRequisitionList } from '@/lib/api/requisitions';
 import { inr } from '@/lib/format';
@@ -74,7 +71,7 @@ function RequisitionPicker({
 
   if (selected) {
     return (
-      <div className="border-line bg-surface flex items-center justify-between rounded-md border px-3 py-2">
+      <div className="bg-surface flex items-center justify-between rounded-md border border-line px-3 py-2">
         <span className="text-[13px]">
           <span className="font-numeric text-ink">{selected.number}</span>{' '}
           <span className="text-muted">{selected.title}</span>
@@ -82,7 +79,7 @@ function RequisitionPicker({
         <button
           type="button"
           onClick={() => onChange('')}
-          className="text-muted hover:text-danger text-[12px]"
+          className="text-[12px] text-muted hover:text-danger"
         >
           Clear
         </button>
@@ -100,14 +97,15 @@ function RequisitionPicker({
         }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder={isLoading ? 'Loading approved PRs…' : 'Search by PR number or title…'}
+        placeholder={
+          isLoading ? 'Loading approved PRs…' : 'Search by PR number or title…'
+        }
       />
       {open && (
-        <div className="border-line bg-panel absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border shadow-lg">
+        <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-panel shadow-lg">
           {matches.length === 0 ? (
-            <p className="text-muted px-3 py-2 text-[12px]">
-              No approved requisition matches. Leave this blank to raise a standalone
-              RFQ.
+            <p className="px-3 py-2 text-[12px] text-muted">
+              No approved requisition matches. Leave this blank to raise a standalone RFQ.
             </p>
           ) : (
             matches.map((r) => (
@@ -120,13 +118,13 @@ function RequisitionPicker({
                   setQuery('');
                   setOpen(false);
                 }}
-                className="hover:bg-canvas flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px]"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] hover:bg-canvas"
               >
                 <span className="truncate">
                   <span className="font-numeric text-faint">{r.number}</span>{' '}
                   <span className="text-text">{r.title}</span>
                 </span>
-                <span className="text-muted shrink-0">
+                <span className="shrink-0 text-muted">
                   {r.costCenter.code} · {inr(r.totalAmount)}
                 </span>
               </button>
@@ -155,6 +153,12 @@ export default function NewRfqPage(): React.JSX.Element {
 
   const weightSum = criteria.reduce((a, c) => a + c.weight, 0);
 
+  // Delivery defaults to the tenant's own first plant. It used to be a
+  // hardcoded plant + state code, which quoted every RFQ against the wrong
+  // place of supply for any tenant but the demo one.
+  const { data: plantData } = usePlants();
+  const defaultPlant = plantData?.items[0];
+
   const submit = (): void => {
     const rfqLines: RfqLineInput[] = lines.map((l) => ({
       itemDesc: l.itemDesc,
@@ -172,7 +176,10 @@ export default function NewRfqPage(): React.JSX.Element {
         rfqType,
         currency: 'INR',
         incotermDefault: incoterm,
-        deliveryLocation: { stateCode: '17', label: 'Lumshnong plant' },
+        deliveryLocation: {
+          stateCode: defaultPlant?.stateCode ?? '',
+          label: defaultPlant?.name ?? '',
+        },
         paymentTermsDefault: paymentTerms,
         estimatedValue,
         evaluationCriteria: criteria,
@@ -199,7 +206,7 @@ export default function NewRfqPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[900px]">
-      <h1 className="tracking-heading text-ink mb-4 text-[20px] font-semibold">
+      <h1 className="mb-4 text-[20px] font-semibold tracking-heading text-ink">
         New RFQ
       </h1>
 
@@ -217,7 +224,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="RFQ type">
             <select
-              className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
               value={rfqType}
               onChange={(e) => setRfqType(e.target.value as RfqType)}
             >
@@ -228,7 +235,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="INCOTERM">
             <select
-              className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
               value={incoterm}
               onChange={(e) => setIncoterm(e.target.value)}
             >
@@ -251,7 +258,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="Link PR (optional)">
             <RequisitionPicker value={requisitionId} onChange={setRequisitionId} />
-            <p className="text-muted mt-1 text-[12px]">
+            <p className="mt-1 text-[12px] text-muted">
               {requisitionId
                 ? 'The award will raise a PO against this requisition and draw down its quantities.'
                 : 'Leave blank only for a buy with no requisition behind it — the award then creates a standalone spot-buy PO.'}
@@ -317,12 +324,12 @@ export default function NewRfqPage(): React.JSX.Element {
                 }
               />
               <span className="text-muted">%</span>
-              {c.auto && <span className="text-accent-2 text-[11px]">auto-scored</span>}
+              {c.auto && <span className="text-[11px] text-accent-2">auto-scored</span>}
             </div>
           ))}
           <p
             className={
-              weightSum === 100 ? 'text-accent-2 text-[12px]' : 'text-danger text-[12px]'
+              weightSum === 100 ? 'text-[12px] text-accent-2' : 'text-[12px] text-danger'
             }
           >
             Weights sum: {weightSum}% {weightSum === 100 ? '✓' : '(must equal 100)'}
@@ -363,8 +370,8 @@ function Section({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-3 text-[14px] font-semibold">{title}</h2>
+    <div className="mb-4 rounded-lg border border-line bg-panel p-4">
+      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -379,7 +386,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="mb-3 block">
-      <span className="text-muted mb-1 block text-[12px]">{label}</span>
+      <span className="mb-1 block text-[12px] text-muted">{label}</span>
       {children}
     </label>
   );

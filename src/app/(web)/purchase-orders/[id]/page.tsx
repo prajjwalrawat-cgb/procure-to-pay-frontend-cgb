@@ -17,6 +17,8 @@ import {
   useSubmitPo,
   useUploadPoAttachment,
 } from '@/lib/api/purchase-orders';
+import { CustomFieldList } from '@/components/custom-fields';
+import { useCustomFieldValues } from '@/lib/api/settings';
 import { openAuthedAsset } from '@/lib/api-client';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
@@ -478,6 +480,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
             </dl>
           </div>
 
+          {/* Renders nothing unless the tenant defined fields and this order
+              captured some. */}
+          <CustomFieldPanel poId={id} />
+
           {data.requisition && (
             <div className="border-line bg-panel rounded-lg border p-4">
               <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
@@ -638,6 +644,20 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Admin-defined fields captured on this order, if any. */
+function CustomFieldPanel({ poId }: { poId: string }): React.JSX.Element | null {
+  const { data } = useCustomFieldValues('PURCHASE_ORDER', poId);
+  if (!data || Object.keys(data.values).length === 0) return null;
+  return (
+    <div className="border-line bg-panel rounded-lg border p-4">
+      <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+        Additional details
+      </div>
+      <CustomFieldList entity="PURCHASE_ORDER" values={data.values} />
     </div>
   );
 }

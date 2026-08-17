@@ -17,7 +17,7 @@ export default function VendorContractsPage(): React.JSX.Element {
     <div className="mx-auto max-w-5xl">
       <h1 className="mb-1 text-[20px] font-semibold tracking-tight">Contracts</h1>
       <p className="mb-4 text-[13px] text-neutral-500">
-        Your active agreements with Star Cement Ltd.
+        Your active agreements
       </p>
 
       {isLoading ? (

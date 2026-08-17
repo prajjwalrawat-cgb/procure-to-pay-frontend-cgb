@@ -11,15 +11,18 @@ import type {
 import { ArrowLeft, FileText, Paperclip, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { CustomFieldInputs } from '@/components/custom-fields';
+import type { CustomFieldValues } from '@/lib/shared';
 import { useClauseLibrary } from '@/lib/api/contracts';
+import { saveCustomFieldValues } from '@/lib/api/settings';
 import {
   useCreatePurchaseOrder,
   useSetPoTerms,
   useUploadPoAttachment,
 } from '@/lib/api/purchase-orders';
-import { useCostCenters, useVendors } from '@/lib/api/refs';
+import { useCostCenters, usePlants, useVendors } from '@/lib/api/refs';
 import { inr } from '@/lib/format';
 import { percentToRate } from '@/lib/rate';
 import { INCOTERM_OPTIONS, PAYMENT_TERM_OPTIONS } from '@/lib/refs';
@@ -114,6 +117,10 @@ export default function NewSpotBuyPage(): React.JSX.Element {
   const [terms, setTerms] = useState<DraftTerm[] | null>(null);
   const [special, setSpecial] = useState<DraftTerm[]>([]);
   const [saving, setSaving] = useState(false);
+  // Admin-defined fields (Settings → Custom fields). Empty when the tenant has
+  // defined none, in which case the section renders nothing.
+  const [customFields, setCustomFields] = useState<CustomFieldValues>({});
+  const [billToPlantId, setBillToPlantId] = useState<string>('');
 
   // Object URLs leak until revoked, so the lifetime is tied to the chosen file.
   useEffect(() => {
@@ -128,8 +135,18 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
   const vendors = useVendors().data?.items ?? [];
   const costCenters = useCostCenters().data?.items ?? [];
+  // Branches = GST registrations; the tenant default sorts first. Memoised so
+  // the default-selection effect below does not re-run on every render.
+  const plantData = usePlants().data;
+  const plants = useMemo(() => plantData?.items ?? [], [plantData]);
   const library = useClauseLibrary();
   const createPo = useCreatePurchaseOrder();
+
+  // Default to the tenant's default registration once the branch list lands —
+  // /plants sorts it first.
+  useEffect(() => {
+    if (!billToPlantId && plants.length > 0) setBillToPlantId(plants[0]!.id);
+  }, [billToPlantId, plants]);
 
   // Both take the PO id in the payload — it only exists after `createPo` below.
   const uploadQuote = useUploadPoAttachment();
@@ -167,6 +184,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
       kind: 'SPOT_BUY',
       vendorId,
       costCenterId,
+      billToPlantId: billToPlantId || null,
       deliveryTerms: deliveryTerms as PoCreateInput['deliveryTerms'],
       paymentTerms: {
         kind: paymentKind as 'NET_30' | 'NET_45' | 'NET_60' | 'MSME_45' | 'MILESTONE',
@@ -176,19 +194,17 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         `${expectedDeliveryDate}T00:00:00.000Z`,
       ).toISOString(),
       deliveryAddress: deliveryLine1.trim() ? { line1: deliveryLine1.trim() } : null,
-      lines: lines.map(
-        (l): PoSpotBuyLineInput => ({
-          itemId: null,
-          itemDesc: l.itemDesc.trim(),
-          hsnCode: l.hsnCode.trim() || null,
-          uom: l.uom,
-          qtyOrdered: l.qtyOrdered,
-          unitPrice: l.unitPrice,
-          discountPct: percentToRate(l.discountPct),
-          taxRate: percentToRate(l.taxRate),
-          glAccount: null,
-        }),
-      ),
+      lines: lines.map((l): PoSpotBuyLineInput => ({
+        itemId: null,
+        itemDesc: l.itemDesc.trim(),
+        hsnCode: l.hsnCode.trim() || null,
+        uom: l.uom,
+        qtyOrdered: l.qtyOrdered,
+        unitPrice: l.unitPrice,
+        discountPct: percentToRate(l.discountPct),
+        taxRate: percentToRate(l.taxRate),
+        glAccount: null,
+      })),
     };
   };
 
@@ -219,19 +235,19 @@ export default function NewSpotBuyPage(): React.JSX.Element {
       try {
         await setPoTerms.mutateAsync({
           poId: id,
-          terms: chosen.map(
-            (t): PoTermInput => ({
-              clauseType: t.clauseType as PoTermInput['clauseType'],
-              title: t.title,
-              contentText: t.contentText,
-              isFromLibrary: t.isFromLibrary,
-              libraryClauseId: t.libraryClauseId,
-            }),
-          ),
+          terms: chosen.map((t): PoTermInput => ({
+            clauseType: t.clauseType as PoTermInput['clauseType'],
+            title: t.title,
+            contentText: t.contentText,
+            isFromLibrary: t.isFromLibrary,
+            libraryClauseId: t.libraryClauseId,
+          })),
         });
       } catch {
         toast('PO created, but the conditions failed to save — set them below.', 'error');
       }
+
+      await saveCustomFieldValues('PURCHASE_ORDER', id, customFields);
 
       toast('Spot-buy PO drafted', 'success');
       router.push(`/purchase-orders/${id}`);
@@ -245,16 +261,16 @@ export default function NewSpotBuyPage(): React.JSX.Element {
     <div className="mx-auto max-w-4xl pb-8">
       <Link
         href="/purchase-orders"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
       </Link>
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
+      <h1 className="mb-1 text-[20px] font-semibold tracking-heading text-ink">
         New purchase order
       </h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Raised directly against a vendor quote — no requisition required. It still
-        goes through the normal PO approval before it can be issued.
+      <p className="mb-4 text-[13px] text-muted">
+        Raised directly against a vendor quote — no requisition required. It still goes
+        through the normal PO approval before it can be issued.
       </p>
 
       <ol className="mb-5 flex flex-wrap items-center gap-2">
@@ -274,7 +290,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             </span>
             <span
               className={
-                'text-[13px] ' + (i === step ? 'text-ink font-medium' : 'text-muted')
+                'text-[13px] ' + (i === step ? 'font-medium text-ink' : 'text-muted')
               }
             >
               {s}
@@ -284,7 +300,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         ))}
       </ol>
 
-      <div className="border-line bg-panel rounded-lg border p-4">
+      <div className="rounded-lg border border-line bg-panel p-4">
         {step === 0 && (
           <div className="grid gap-3 md:grid-cols-2">
             <Labelled label="Vendor" required>
@@ -316,6 +332,29 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                 ))}
               </select>
             </Labelled>
+            {/* Only worth asking when the tenant holds more than one
+                registration; with one branch there is nothing to choose. */}
+            {plants.length > 1 && (
+              <Labelled label="Bill to (GST registration)" required>
+                <select
+                  value={billToPlantId}
+                  onChange={(e) => setBillToPlantId(e.target.value)}
+                  className={inputCls}
+                >
+                  {plants.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.gstin ? ` · ${p.gstin}` : ''}
+                      {p.isDefault ? ' (default)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-faint">
+                  Decides the GSTIN on the PO and the place of supply — CGST+SGST vs IGST
+                  — even when the goods ship elsewhere.
+                </p>
+              </Labelled>
+            )}
             <Labelled label="Expected delivery" required>
               <input
                 type="date"
@@ -364,9 +403,9 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         {step === 1 && (
           <div className="flex flex-col gap-3">
             {lines.map((l, i) => (
-              <div key={l.key} className="border-line bg-canvas/40 rounded-lg border p-3">
+              <div key={l.key} className="rounded-lg border border-line bg-canvas/40 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-faint text-[11px] font-semibold uppercase tracking-wide">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
                     Line {i + 1}
                   </span>
                   {lines.length > 1 && (
@@ -436,7 +475,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                     />
                   </Small>
                 </div>
-                <div className="font-numeric text-ink mt-2 text-right text-[13px] font-semibold">
+                <div className="font-numeric mt-2 text-right text-[13px] font-semibold text-ink">
                   {inr(lineTotal(l).toFixed(2))}
                 </div>
               </div>
@@ -449,7 +488,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               >
                 <Plus className="h-3.5 w-3.5" /> Add line
               </Button>
-              <span className="font-numeric text-ink ml-auto text-[14px] font-semibold">
+              <span className="font-numeric ml-auto text-[14px] font-semibold text-ink">
                 PO total {inr(total.toFixed(2))}
               </span>
             </div>
@@ -458,18 +497,18 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
         {step === 2 && (
           <div className="flex flex-col gap-3">
-            <p className="text-muted text-[13px]">
+            <p className="text-[13px] text-muted">
               Attach the vendor&rsquo;s written quote. With no requisition behind this
               order, it is the only evidence an approver has for the price — and it is
               never shown to the vendor portal.
             </p>
             {!quote ? (
-              <label className="border-line hover:bg-canvas flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center">
-                <Paperclip className="text-faint h-6 w-6" />
-                <span className="text-text text-[13px] font-medium">
+              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-line py-10 text-center hover:bg-canvas">
+                <Paperclip className="h-6 w-6 text-faint" />
+                <span className="text-[13px] font-medium text-text">
                   Choose the quote file
                 </span>
-                <span className="text-faint text-[11px]">PDF, image or spreadsheet</span>
+                <span className="text-[11px] text-faint">PDF, image or spreadsheet</span>
                 <input
                   type="file"
                   className="hidden"
@@ -481,25 +520,25 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                 {/* Preview the local file before it is ever uploaded — picking the
                     wrong quote is easy, and it only reaches the server on submit,
                     so this is the only chance to catch it. */}
-                <div className="border-line bg-canvas/40 rounded-lg border p-3">
+                <div className="rounded-lg border border-line bg-canvas/40 p-3">
                   <div className="flex items-start gap-3">
                     {quoteUrl && quote.type.startsWith('image/') ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={quoteUrl}
                         alt={quote.name}
-                        className="border-line h-20 w-20 rounded-md border object-cover"
+                        className="h-20 w-20 rounded-md border border-line object-cover"
                       />
                     ) : (
-                      <div className="border-line bg-panel flex h-20 w-20 items-center justify-center rounded-md border">
-                        <FileText className="text-faint h-7 w-7" />
+                      <div className="flex h-20 w-20 items-center justify-center rounded-md border border-line bg-panel">
+                        <FileText className="h-7 w-7 text-faint" />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="text-ink truncate text-[13px] font-medium">
+                      <div className="truncate text-[13px] font-medium text-ink">
                         {quote.name}
                       </div>
-                      <div className="font-numeric text-faint text-[11px]">
+                      <div className="font-numeric text-[11px] text-faint">
                         {fileSize(quote.size)} · {quote.type || 'unknown type'}
                       </div>
                       <div className="mt-2 flex items-center gap-3 text-[12px]">
@@ -508,12 +547,12 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                             href={quoteUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-accent-2 font-medium underline"
+                            className="font-medium text-accent-2 underline"
                           >
                             Open to check
                           </a>
                         )}
-                        <label className="text-accent-2 cursor-pointer font-medium underline">
+                        <label className="cursor-pointer font-medium text-accent-2 underline">
                           Replace
                           <input
                             type="file"
@@ -535,12 +574,17 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                     <object
                       data={quoteUrl}
                       type="application/pdf"
-                      className="border-line mt-3 h-80 w-full rounded-md border"
+                      className="mt-3 h-80 w-full rounded-md border border-line"
                       aria-label={`Preview of ${quote.name}`}
                     >
-                      <p className="text-muted p-3 text-[12px]">
+                      <p className="p-3 text-[12px] text-muted">
                         This browser cannot preview PDFs inline — use{' '}
-                        <a href={quoteUrl} target="_blank" rel="noreferrer" className="underline">
+                        <a
+                          href={quoteUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline"
+                        >
                           Open to check
                         </a>
                         .
@@ -561,16 +605,25 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
         {step === 3 && (
           <div className="flex flex-col gap-3">
-            <p className="text-muted text-[13px]">
-              Tick the standard conditions to print on the PO. These come from the
-              clause library legal maintains; anything specific to this order goes in
-              as a special condition below.
+            {/* Renders nothing unless the tenant has defined fields. */}
+            <CustomFieldInputs
+              entity="PURCHASE_ORDER"
+              values={customFields}
+              onChange={setCustomFields}
+            />
+            <p className="text-[13px] text-muted">
+              Tick the standard conditions to print on the PO. These come from the clause
+              library legal maintains; anything specific to this order goes in as a
+              special condition below.
             </p>
 
             {libraryTerms.length === 0 && (
-              <p className="text-muted text-[12px]">
+              <p className="text-[12px] text-muted">
                 The clause library is empty — add clauses under{' '}
-                <Link href="/contracts/clause-library" className="text-accent-2 underline">
+                <Link
+                  href="/contracts/clause-library"
+                  className="text-accent-2 underline"
+                >
                   Contracts → Clause library
                 </Link>{' '}
                 and they will appear here. The PDF falls back to the built-in wording
@@ -581,7 +634,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             {libraryTerms.map((t) => (
               <label
                 key={t.key}
-                className="border-line hover:bg-canvas flex items-start gap-2.5 rounded-md border p-2.5"
+                className="flex items-start gap-2.5 rounded-md border border-line p-2.5 hover:bg-canvas"
               >
                 <input
                   type="checkbox"
@@ -597,17 +650,17 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                 />
                 <span className="min-w-0">
                   <span className="flex items-center gap-1.5">
-                    <span className="text-text text-[13px] font-medium">{t.title}</span>
+                    <span className="text-[13px] font-medium text-text">{t.title}</span>
                     <Pill variant="gray">{t.clauseType.replace(/_/g, ' ')}</Pill>
                   </span>
-                  <span className="text-muted block text-[12px]">{t.contentText}</span>
+                  <span className="block text-[12px] text-muted">{t.contentText}</span>
                 </span>
               </label>
             ))}
 
-            <div className="border-line mt-2 rounded-lg border p-3">
+            <div className="mt-2 rounded-lg border border-line p-3">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-faint text-[11px] font-semibold uppercase tracking-wide">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
                   Special conditions
                 </span>
                 <button
@@ -626,13 +679,13 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                       },
                     ])
                   }
-                  className="text-accent-2 flex items-center gap-1 text-[12px] font-medium"
+                  className="flex items-center gap-1 text-[12px] font-medium text-accent-2"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add
                 </button>
               </div>
               {special.length === 0 && (
-                <p className="text-muted text-[12px]">None for this order.</p>
+                <p className="text-[12px] text-muted">None for this order.</p>
               )}
               {special.map((s) => (
                 <div key={s.key} className="mb-2 flex items-start gap-2">
@@ -669,7 +722,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                     onClick={() =>
                       setSpecial((prev) => prev.filter((x) => x.key !== s.key))
                     }
-                    className="text-muted hover:text-danger mt-1.5"
+                    className="mt-1.5 text-muted hover:text-danger"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -695,13 +748,15 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             />
             <Row label="Lines" value={String(lines.length)} />
             <Row label="PO total" value={inr(total.toFixed(2))} />
-            <div className="border-line flex items-center justify-between border-b pb-2">
+            <div className="flex items-center justify-between border-b border-line pb-2">
               <span className="text-muted">Quote</span>
-              <span className="text-ink flex items-center gap-2 font-medium">
+              <span className="flex items-center gap-2 font-medium text-ink">
                 {quote ? (
                   <>
                     <span className="truncate">{quote.name}</span>
-                    <span className="font-numeric text-faint">{fileSize(quote.size)}</span>
+                    <span className="font-numeric text-faint">
+                      {fileSize(quote.size)}
+                    </span>
                     {quoteUrl && (
                       <a
                         href={quoteUrl}
@@ -723,7 +778,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               value={`${chosen.length} (${special.filter((s) => s.title.trim()).length} special)`}
             />
             {!quote && (
-              <p className="text-warn text-[12px]">
+              <p className="text-[12px] text-warn">
                 No quote attached. The approver will have nothing to check this price
                 against — you can still add it on the PO afterwards.
               </p>
@@ -771,7 +826,7 @@ function Labelled({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-muted text-[12px] font-medium">
+      <span className="text-[12px] font-medium text-muted">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
@@ -789,7 +844,7 @@ function Small({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-0.5">
-      <span className="text-faint text-[11px]">{label}</span>
+      <span className="text-[11px] text-faint">{label}</span>
       {children}
     </label>
   );
@@ -797,9 +852,9 @@ function Small({
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="border-line flex items-center justify-between border-b pb-2">
+    <div className="flex items-center justify-between border-b border-line pb-2">
       <span className="text-muted">{label}</span>
-      <span className="text-ink font-medium">{value}</span>
+      <span className="font-medium text-ink">{value}</span>
     </div>
   );
 }

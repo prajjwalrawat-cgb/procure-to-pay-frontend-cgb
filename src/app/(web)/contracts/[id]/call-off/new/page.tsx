@@ -20,7 +20,7 @@ export default function NewCallOffPage(): React.JSX.Element {
   const [rateCardId, setRateCardId] = useState('');
   const [qty, setQty] = useState('');
   const [expected, setExpected] = useState('');
-  const [line1, setLine1] = useState('Lumshnong plant');
+  const [line1, setLine1] = useState('');
 
   const card = useMemo(
     () => c?.rateCards.find((r) => r.id === rateCardId),
