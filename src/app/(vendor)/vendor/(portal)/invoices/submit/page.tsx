@@ -2,6 +2,7 @@
 
 import { Button, Input } from '@/components/ui';
 import { Money, type VendorPoOption } from '@/lib/shared';
+import { percentToRate, rateToPercent } from '@/lib/rate';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -16,16 +17,24 @@ interface LineDraft {
   uom: string;
   qty: string;
   unitPrice: string;
+  /** Held as a **percentage** ('5'), like the buyer forms; converted on submit. */
   taxRate: string;
   poLineId: string | null;
 }
 
-const DRAFT_KEY = (poId: string): string => `vendor-invoice-draft:${poId}`;
+// v2: taxRate switched from a wire fraction ('0.05') to a percentage ('5'), so
+// v1 drafts must not be restored into the new field.
+const DRAFT_KEY = (poId: string): string => `vendor-invoice-draft:v2:${poId}`;
 const today = (): string => new Date().toISOString().slice(0, 10);
 const inr = (v: string | number): string => Money.of(v || 0).toINR();
 const amountOf = (l: LineDraft): string =>
   Money.of(l.qty || 0)
     .multiply(l.unitPrice || 0)
+    .toString();
+/** GST on a line, at the percentage the vendor is billing. */
+const taxOf = (l: LineDraft): string =>
+  Money.of(amountOf(l))
+    .percent(Number(l.taxRate) || 0)
     .toString();
 
 export default function SubmitInvoicePage(): React.JSX.Element {
@@ -53,7 +62,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       uom: l.uom,
       qty: l.qtyOrdered,
       unitPrice: l.unitPrice,
-      taxRate: l.taxRate,
+      taxRate: rateToPercent(l.taxRate),
       poLineId: l.id,
     }));
     // Restore a device-local draft for this PO if one exists.
@@ -85,13 +94,9 @@ export default function SubmitInvoicePage(): React.JSX.Element {
   const updateLine = (i: number, patch: Partial<LineDraft>): void =>
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
 
-  const poTotal = po
-    ? po.lines.reduce(
-        (acc, l) => acc.add(Money.of(l.qtyOrdered).multiply(l.unitPrice).toString()),
-        Money.zero(),
-      )
-    : Money.zero();
   const invoiceSubtotal = lines.reduce((acc, l) => acc.add(amountOf(l)), Money.zero());
+  const invoiceTax = lines.reduce((acc, l) => acc.add(taxOf(l)), Money.zero());
+  const invoiceTotal = invoiceSubtotal.add(invoiceTax.toString());
 
   const canSubmit =
     invoiceNumber.trim().length > 0 &&
@@ -112,7 +117,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       uom: l.uom,
       qty: l.qty,
       unitPrice: l.unitPrice,
-      taxRate: l.taxRate,
+      taxRate: percentToRate(l.taxRate),
       poLineId: l.poLineId,
     })),
   });
@@ -176,7 +181,13 @@ export default function SubmitInvoicePage(): React.JSX.Element {
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-3">
             <Field label="PO Number" value={po.number} mono />
             <Field label="Line items" value={String(po.lines.length)} mono />
-            <Field label="Total PO amount" value={inr(poTotal.toString())} mono strong />
+            <Field label="Taxable value" value={inr(po.amounts.subtotal)} mono />
+            <Field
+              label={`Tax (${po.amounts.taxKind})`}
+              value={inr(po.amounts.taxAmount)}
+              mono
+            />
+            <Field label="Total PO amount" value={inr(po.amounts.total)} mono strong />
           </dl>
         </Section>
 
@@ -221,8 +232,11 @@ export default function SubmitInvoicePage(): React.JSX.Element {
               <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
                 <tr>
                   <th className="px-3 py-2 font-medium">Description</th>
-                  <th className="w-28 px-3 py-2 font-medium">Quantity</th>
-                  <th className="w-36 px-3 py-2 font-medium">Rate</th>
+                  <th className="w-24 px-3 py-2 font-medium">Quantity</th>
+                  <th className="w-28 px-3 py-2 font-medium">Rate</th>
+                  <th className="w-24 px-3 py-2 font-medium">GST %</th>
+                  <th className="w-28 px-3 py-2 text-right font-medium">Taxable</th>
+                  <th className="w-28 px-3 py-2 text-right font-medium">Tax</th>
                   <th className="w-32 px-3 py-2 text-right font-medium">Amount</th>
                 </tr>
               </thead>
@@ -249,22 +263,61 @@ export default function SubmitInvoicePage(): React.JSX.Element {
                         className="h-8"
                       />
                     </td>
-                    <td className="font-numeric text-ink px-3 py-2 text-right">
+                    <td className="px-3 py-2">
+                      <Input
+                        aria-label={`GST percent for ${l.itemDesc}`}
+                        value={l.taxRate}
+                        onChange={(e) => updateLine(i, { taxRate: e.target.value })}
+                        className="h-8"
+                      />
+                    </td>
+                    <td className="font-numeric text-text px-3 py-2 text-right">
                       {inr(amountOf(l))}
+                    </td>
+                    <td className="font-numeric text-text px-3 py-2 text-right">
+                      {inr(taxOf(l))}
+                    </td>
+                    <td className="font-numeric text-ink px-3 py-2 text-right">
+                      {inr(Money.of(amountOf(l)).add(taxOf(l)).toString())}
                     </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr className="border-line bg-canvas border-t">
+              <tfoot className="bg-canvas">
+                <tr className="border-line border-t">
                   <td
-                    colSpan={3}
-                    className="text-muted px-3 py-2 text-[12px] font-medium"
+                    colSpan={5}
+                    className="text-muted px-3 py-2 text-right text-[12px] font-medium"
                   >
-                    Invoice subtotal
+                    Taxable value
                   </td>
-                  <td className="font-numeric text-ink px-3 py-2 text-right font-semibold">
+                  <td colSpan={2} className="font-numeric text-text px-3 py-2 text-right">
                     {inr(invoiceSubtotal.toString())}
+                  </td>
+                </tr>
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="text-muted px-3 py-2 text-right text-[12px] font-medium"
+                  >
+                    Tax ({po.amounts.taxKind})
+                  </td>
+                  <td colSpan={2} className="font-numeric text-text px-3 py-2 text-right">
+                    {inr(invoiceTax.toString())}
+                  </td>
+                </tr>
+                <tr className="border-line border-t">
+                  <td
+                    colSpan={5}
+                    className="text-muted px-3 py-2 text-right text-[12px] font-medium"
+                  >
+                    Invoice total
+                  </td>
+                  <td
+                    colSpan={2}
+                    className="font-numeric text-ink px-3 py-2 text-right font-semibold"
+                  >
+                    {inr(invoiceTotal.toString())}
                   </td>
                 </tr>
               </tfoot>
@@ -362,7 +415,7 @@ function Field({
       <dd
         className={
           (mono ? 'font-numeric ' : '') +
-          (strong ? 'text-ink font-semibold' : 'text-text') +
+          (strong ? 'text-ink font-semibold ' : 'text-text ') +
           'mt-0.5 text-[13px]'
         }
       >
