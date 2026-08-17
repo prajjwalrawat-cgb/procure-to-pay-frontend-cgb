@@ -34,7 +34,15 @@ export default function LoginPage(): React.JSX.Element {
       });
       const data = (await res.json()) as LoginResult & { detail?: string };
       if (!res.ok) {
-        setError(data.detail ?? 'Invalid credentials');
+        // A server fault carries no `detail` (problem+json hides internals), so
+        // falling back to "Invalid credentials" would blame the user for an
+        // outage and send them round the password-reset loop for nothing.
+        setError(
+          data.detail ??
+            (res.status >= 500
+              ? 'Sign-in is temporarily unavailable. Please try again in a moment.'
+              : 'Invalid credentials'),
+        );
         return;
       }
       if (data.mfaRequired) {

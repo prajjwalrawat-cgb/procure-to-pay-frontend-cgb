@@ -35,7 +35,15 @@ export default function VendorLoginPage(): React.JSX.Element {
       });
       const data = (await res.json()) as LoginResult;
       if (!res.ok) {
-        setError(data.detail ?? 'Invalid credentials');
+        // A server fault carries no `detail` (problem+json hides internals), so
+        // falling back to "Invalid credentials" would blame the supplier for an
+        // outage and send them round the password-reset loop for nothing.
+        setError(
+          data.detail ??
+            (res.status >= 500
+              ? 'Sign-in is temporarily unavailable. Please try again in a moment.'
+              : 'Invalid credentials'),
+        );
         return;
       }
       setSession(data.accessToken, data.user);
