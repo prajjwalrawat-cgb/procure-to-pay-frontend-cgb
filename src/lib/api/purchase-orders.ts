@@ -11,6 +11,7 @@ import type {
   PoAttachmentView,
   PoCreateInput,
   PoDecisionInput,
+  PoUpdateInput,
   PoDetailResponse,
   PoListResponse,
   PoTermInput,
@@ -59,6 +60,20 @@ export function useCreatePurchaseOrder() {
 function invalidate(qc: ReturnType<typeof useQueryClient>, id: string): void {
   void qc.invalidateQueries({ queryKey: poKeys.detail(id) });
   void qc.invalidateQueries({ queryKey: poKeys.all });
+}
+
+/** Draft-only edits. Changing the bill-to branch re-derives the place of
+ *  supply server-side, so the detail view is re-read on success. */
+export function useUpdatePo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PoUpdateInput) =>
+      apiFetch(`/purchase-orders/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => invalidate(qc, id),
+  });
 }
 
 export function useSubmitPo(id: string) {

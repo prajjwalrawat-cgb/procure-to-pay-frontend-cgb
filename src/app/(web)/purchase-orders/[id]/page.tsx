@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Download, Paperclip } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import type { LiveApprovalStep, PoLineView } from '@/lib/shared';
+import type { LiveApprovalStep, PoDetailResponse, PoLineView } from '@/lib/shared';
 
 import {
   useAddPoComment,
@@ -14,10 +14,12 @@ import {
   useHoldPo,
   useIssuePo,
   usePurchaseOrder,
+  useUpdatePo,
   useSubmitPo,
   useUploadPoAttachment,
 } from '@/lib/api/purchase-orders';
 import { CustomFieldList } from '@/components/custom-fields';
+import { usePlants } from '@/lib/api/refs';
 import { useCustomFieldValues } from '@/lib/api/settings';
 import { openAuthedAsset } from '@/lib/api-client';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
@@ -468,6 +470,12 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
             </dl>
           </div>
 
+          <BillToPanel
+            poId={id}
+            billTo={data.billTo}
+            editable={data.status === 'DRAFT'}
+          />
+
           <div className="border-line bg-panel rounded-lg border p-4">
             <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
               Vendor
@@ -644,6 +652,73 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The GST registration this order bills to.
+ *
+ * Editable only while the PO is a draft: the place of supply is part of what
+ * the vendor is sent, so once the order is out it is history, not a setting.
+ * Hidden entirely for a tenant with one registration — there is nothing to
+ * choose.
+ */
+function BillToPanel({
+  poId,
+  billTo,
+  editable,
+}: {
+  poId: string;
+  billTo: PoDetailResponse['billTo'];
+  editable: boolean;
+}): React.JSX.Element | null {
+  const plants = usePlants().data?.items ?? [];
+  const update = useUpdatePo(poId);
+  const toast = useToastStore((s) => s.push);
+  if (!billTo) return null;
+
+  const canSwitch = editable && plants.length > 1;
+  return (
+    <div className="border-line bg-panel rounded-lg border p-4">
+      <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+        Bill to (GST registration)
+      </div>
+      {canSwitch ? (
+        <select
+          value={billTo.id}
+          disabled={update.isPending}
+          onChange={(e) =>
+            update.mutate(
+              { billToPlantId: e.target.value },
+              {
+                onSuccess: () => toast('Billing registration updated', 'success'),
+                onError: (err) =>
+                  toast(err instanceof Error ? err.message : 'Failed', 'error'),
+              },
+            )
+          }
+          className="border-line bg-panel text-text focus-visible:ring-accent h-9 w-full rounded-sm border px-2 text-[13px] outline-none focus-visible:ring-2"
+        >
+          {plants.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+              {p.gstin ? ` · ${p.gstin}` : ''}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <div className="text-ink text-[13px] font-medium">{billTo.name}</div>
+      )}
+      <dl className="mt-2 flex flex-col gap-1 text-[12px]">
+        <Row label="GSTIN" value={billTo.gstin ?? '—'} />
+        <Row label="State" value={billTo.stateCode} />
+      </dl>
+      {canSwitch && (
+        <p className="text-faint mt-2 text-[11px]">
+          Decides the GSTIN on the PO and CGST+SGST vs IGST. Locked once submitted.
+        </p>
+      )}
     </div>
   );
 }
