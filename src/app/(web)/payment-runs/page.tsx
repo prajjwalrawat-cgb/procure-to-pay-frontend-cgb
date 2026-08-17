@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { usePaymentRuns, type PaymentRunTab } from '@/lib/api/payments';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const TABS: { key: PaymentRunTab; label: string; countKey: keyof Counts }[] = [
   { key: 'all', label: 'All', countKey: 'all' },
@@ -25,6 +26,7 @@ type Counts = {
 };
 
 export default function PaymentRunsPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<PaymentRunTab>('all');
   const { data, isLoading } = usePaymentRuns(tab);
   const counts = data?.counts;
@@ -37,7 +39,7 @@ export default function PaymentRunsPage(): React.JSX.Element {
             Payment runs
           </h1>
           <p className="text-muted text-[13px]">
-            Compose, approve and submit bank files · Star Cement Ltd
+            Compose, approve and submit bank files{tenantSuffix(tenantName)}
           </p>
         </div>
         <Link href="/payment-runs/new">

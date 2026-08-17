@@ -8,6 +8,7 @@ import { Suspense, useMemo, useState } from 'react';
 import { usePurchaseOrder, usePurchaseOrders } from '@/lib/api/purchase-orders';
 import { useCreateReceipt } from '@/lib/api/receipts';
 import { useToastStore } from '@/store/toast-store';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const STEPS = ['Gate entry', 'Line receipt', 'Attachments', 'Review'];
 const inputCls =
@@ -29,13 +30,14 @@ interface LineDraft {
 // `next build` fails prerendering this route.
 export default function NewReceiptPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="text-muted p-6 text-[13px]">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-[13px] text-muted">Loading…</div>}>
       <NewReceiptForm />
     </Suspense>
   );
 }
 
 function NewReceiptForm(): React.JSX.Element {
+  const tenantName = useTenantName();
   const params = useSearchParams();
   const router = useRouter();
   const push = useToastStore((s) => s.push);
@@ -137,11 +139,11 @@ function NewReceiptForm(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
+      <h1 className="mb-1 text-[20px] font-semibold tracking-heading text-ink">
         New goods receipt
       </h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Gate-to-post receipt · Lumshnong plant
+      <p className="mb-4 text-[13px] text-muted">
+        Gate-to-post receipt{tenantSuffix(tenantName)}
       </p>
 
       {/* Stepper */}
@@ -162,17 +164,17 @@ function NewReceiptForm(): React.JSX.Element {
             </div>
             <span
               className={
-                'text-[12px] ' + (i === step ? 'text-ink font-medium' : 'text-faint')
+                'text-[12px] ' + (i === step ? 'font-medium text-ink' : 'text-faint')
               }
             >
               {label}
             </span>
-            {i < STEPS.length - 1 && <span className="text-faint mx-1">·</span>}
+            {i < STEPS.length - 1 && <span className="mx-1 text-faint">·</span>}
           </div>
         ))}
       </div>
 
-      <div className="border-line bg-panel rounded-lg border p-5">
+      <div className="rounded-lg border border-line bg-panel p-5">
         {step === 0 && (
           <div className="space-y-4">
             <Field label="Purchase order">
@@ -193,7 +195,7 @@ function NewReceiptForm(): React.JSX.Element {
               </select>
             </Field>
             {poDetail.data?.vendor && (
-              <p className="text-muted text-[12px]">
+              <p className="text-[12px] text-muted">
                 Vendor: <span className="text-text">{poDetail.data.vendor.name}</span> ·
                 Expected{' '}
                 {poDetail.data.expectedDeliveryDate
@@ -265,7 +267,7 @@ function NewReceiptForm(): React.JSX.Element {
               </select>
             </Field>
             {packingCondition !== 'OK' && (
-              <div className="bg-warn-wash text-warn rounded-sm px-3 py-2 text-[12px]">
+              <div className="rounded-sm bg-warn-wash px-3 py-2 text-[12px] text-warn">
                 QC will be mandatory even for tolerance-auto-accept items.
               </div>
             )}
@@ -294,10 +296,10 @@ function NewReceiptForm(): React.JSX.Element {
         {step === 1 && (
           <div className="space-y-3">
             {lines.map((l, i) => (
-              <div key={l.poLineId} className="border-line rounded-md border p-3">
+              <div key={l.poLineId} className="rounded-md border border-line p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-text text-[13px] font-medium">{l.itemDesc}</span>
-                  <span className="font-numeric text-faint text-[11px]">
+                  <span className="text-[13px] font-medium text-text">{l.itemDesc}</span>
+                  <span className="font-numeric text-[11px] text-faint">
                     ordered {l.qtyOrdered} · remaining {l.qtyRemaining} {l.uom}
                   </span>
                 </div>
@@ -326,7 +328,7 @@ function NewReceiptForm(): React.JSX.Element {
                 </div>
                 <button
                   type="button"
-                  className="text-accent-2 mt-2 text-[11px] hover:underline"
+                  className="mt-2 text-[11px] text-accent-2 hover:underline"
                   onClick={() => setLine(i, { qtyReceived: l.qtyRemaining })}
                 >
                   Copy remaining from PO
@@ -334,18 +336,18 @@ function NewReceiptForm(): React.JSX.Element {
               </div>
             ))}
             {lines.length === 0 && (
-              <p className="text-muted text-[13px]">Select a PO in step 1 first.</p>
+              <p className="text-[13px] text-muted">Select a PO in step 1 first.</p>
             )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-3">
-            <p className="text-muted text-[13px]">
+            <p className="text-[13px] text-muted">
               Attach the delivery challan, invoice copy, COA and packing/damage photos
               after saving. Attachments upload to the receipt once created.
             </p>
-            <div className="bg-canvas text-faint rounded-sm px-3 py-6 text-center text-[12px]">
+            <div className="rounded-sm bg-canvas px-3 py-6 text-center text-[12px] text-faint">
               Attachment upload is available on the receipt detail page after saving.
             </div>
           </div>
@@ -359,7 +361,7 @@ function NewReceiptForm(): React.JSX.Element {
             <Row k="Vehicle" v={vehicleNo} />
             <Row k="Packing" v={packingCondition} />
             <Row k="Weighbridge net" v={netWeight ? `${netWeight} kg` : '—'} />
-            <div className="border-line mt-2 border-t pt-2">
+            <div className="mt-2 border-t border-line pt-2">
               {lines
                 .filter((l) => Number(l.qtyReceived) > 0)
                 .map((l) => (
@@ -427,7 +429,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="text-faint mb-1 block text-[11px] font-medium uppercase tracking-wide">
+      <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-faint">
         {label}
       </span>
       {children}
@@ -439,7 +441,7 @@ function Row({ k, v }: { k: string; v: string }): React.JSX.Element {
   return (
     <div className="flex justify-between py-0.5">
       <span className="text-muted">{k}</span>
-      <span className="text-text font-numeric">{v}</span>
+      <span className="font-numeric text-text">{v}</span>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { useState } from 'react';
 
 import { usePendingReceiptPos, useReceipts, type GrnTab } from '@/lib/api/receipts';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const TABS: { key: GrnTab; label: string }[] = [
   { key: 'pending_receipt', label: 'Pending receipt' },
@@ -17,6 +18,7 @@ const TABS: { key: GrnTab; label: string }[] = [
 ];
 
 export default function GoodsReceiptPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<GrnTab>('pending_receipt');
   const { data, isLoading } = useReceipts(tab);
   const pendingPos = usePendingReceiptPos();
@@ -30,7 +32,7 @@ export default function GoodsReceiptPage(): React.JSX.Element {
             Receipts
           </h1>
           <p className="text-muted text-[13px]">
-            Goods receipt &amp; QC · Lumshnong plant
+            Goods receipt &amp; QC{tenantSuffix(tenantName)}
           </p>
         </div>
         <Link href="/goods-receipt/new">

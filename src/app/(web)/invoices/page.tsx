@@ -10,6 +10,7 @@ import { EntityRef } from '@/components/entity-ref';
 import { RowDetail } from '@/components/invoices/row-detail';
 import { useInvoiceCounts, useInvoices } from '@/lib/api/invoices';
 import { inr, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
@@ -30,6 +31,7 @@ type CountShape = {
 };
 
 export default function InvoicesInboxPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<InvoiceTab>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -64,7 +66,7 @@ export default function InvoicesInboxPage(): React.JSX.Element {
             Invoices
           </h1>
           <p className="text-muted text-[13px]">
-            Accounts payable inbox · Star Cement Ltd
+            Accounts payable inbox{tenantSuffix(tenantName)}
           </p>
         </div>
         <div className="flex items-center gap-2">

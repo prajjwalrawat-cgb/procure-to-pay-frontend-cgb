@@ -8,6 +8,10 @@ export interface SessionUser {
   name: string;
   roles: string[];
   mfaEnabled: boolean;
+  /** The signed-in user's own organisation, from /users/me or login. Screens
+   *  that display the buying org's name read it from here — never a literal,
+   *  so every tenant sees its own name. */
+  tenant?: { id: string; name: string };
 }
 
 /**
@@ -28,3 +32,17 @@ export const useSessionStore = create<SessionState>((set) => ({
   setSession: (accessToken, user) => set({ accessToken, user }),
   clear: () => set({ accessToken: null, user: null }),
 }));
+
+/**
+ * The signed-in organisation's name, for page subheadings. Empty while the
+ * session is still bootstrapping, so callers render it as an optional suffix
+ * rather than reserving space for a name that may not have arrived yet.
+ */
+export function useTenantName(): string {
+  return useSessionStore((s) => s.user?.tenant?.name ?? '');
+}
+
+/** " · Acme Ltd" once the tenant is known, "" before that. */
+export function tenantSuffix(name: string): string {
+  return name ? ` · ${name}` : '';
+}

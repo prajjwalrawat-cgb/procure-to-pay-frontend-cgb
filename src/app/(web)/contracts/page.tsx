@@ -8,6 +8,7 @@ import { useState } from 'react';
 
 import { useContracts } from '@/lib/api/contracts';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const TABS: { key: ContractTab; label: string }[] = [
   { key: 'active', label: 'Active' },
@@ -26,6 +27,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function ContractsPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<ContractTab>('active');
   const { data, isLoading } = useContracts(tab);
   const counts = data?.counts;
@@ -38,7 +40,7 @@ export default function ContractsPage(): React.JSX.Element {
             Contracts
           </h1>
           <p className="text-muted text-[13px]">
-            Rate contracts, framework agreements & call-offs · Star Cement Ltd
+            Rate contracts, framework agreements & call-offs{tenantSuffix(tenantName)}
           </p>
         </div>
         <div className="flex items-center gap-2">

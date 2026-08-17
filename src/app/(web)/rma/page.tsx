@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { useRmas, type RmaTab } from '@/lib/api/rma';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const TABS: { key: RmaTab; label: string }[] = [
   { key: 'draft', label: 'Draft' },
@@ -17,6 +18,7 @@ const TABS: { key: RmaTab; label: string }[] = [
 ];
 
 export default function RmaListPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<RmaTab>('all');
   const { data, isLoading } = useRmas(tab);
   const counts = data?.counts;
@@ -28,7 +30,7 @@ export default function RmaListPage(): React.JSX.Element {
           Return authorisations
         </h1>
         <p className="text-muted text-[13px]">
-          Rejected-material returns · Star Cement Ltd
+          Rejected-material returns{tenantSuffix(tenantName)}
         </p>
       </div>
 

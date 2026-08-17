@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/requisitions';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
 import { priorityVariant } from '@/lib/refs';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 const COLUMNS: {
@@ -39,6 +40,7 @@ const ORDER_KEY = 'pf_pr_board_order';
 type BoardOrder = Partial<Record<RequisitionKanbanColumn, string[]>>;
 
 export default function RequisitionsPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const [tab, setTab] = useState<RequisitionTab>('active');
 
   return (
@@ -48,7 +50,7 @@ export default function RequisitionsPage(): React.JSX.Element {
           <h1 className="tracking-heading text-ink text-[20px] font-semibold">
             Requisitions
           </h1>
-          <p className="text-muted text-[13px]">Purchase requests · Star Cement Ltd</p>
+          <p className="text-muted text-[13px]">Purchase requests{tenantSuffix(tenantName)}</p>
         </div>
         <Link href="/requisitions/new">
           <Button variant="primary" size="sm">

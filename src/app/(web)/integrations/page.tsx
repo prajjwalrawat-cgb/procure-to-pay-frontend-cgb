@@ -11,12 +11,14 @@ import {
   useSetCredential,
 } from '@/lib/api/integrations';
 import { inr } from '@/lib/format';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 const PROVIDERS = ['OCR', 'GSP', 'EMAIL_INBOUND'];
 const thisMonth = new Date().toISOString().slice(0, 7);
 
 export default function IntegrationsPage(): React.JSX.Element {
+  const tenantName = useTenantName();
   const push = useToastStore((s) => s.push);
   const { data: creds } = useCredentialStatus();
   const { data: usage } = useIntegrationUsage(thisMonth);
@@ -55,7 +57,7 @@ export default function IntegrationsPage(): React.JSX.Element {
           Integrations
         </h1>
         <p className="text-muted text-[13px]">
-          Provider credentials (encrypted at rest) & per-tenant usage · Star Cement Ltd
+          Provider credentials (encrypted at rest) & per-tenant usage{tenantSuffix(tenantName)}
         </p>
       </div>
 
