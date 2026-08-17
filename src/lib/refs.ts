@@ -31,10 +31,15 @@ export const PAYMENT_TERM_OPTIONS: {
   label: string;
   days: number | null;
 }[] = [
+  // Advance carries no credit period; the DELIVERY_* terms count from delivery
+  // rather than from the invoice date.
+  { value: 'ADVANCE', label: 'Advance', days: 0 },
   { value: 'NET_30', label: 'Net 30', days: 30 },
   { value: 'NET_45', label: 'Net 45', days: 45 },
   { value: 'NET_60', label: 'Net 60', days: 60 },
   { value: 'MSME_45', label: 'MSME 45 (§15 cap)', days: 45 },
+  { value: 'DELIVERY_7', label: '7 days from delivery', days: 7 },
+  { value: 'DELIVERY_15', label: '15 days from delivery', days: 15 },
   { value: 'MILESTONE', label: 'Milestone', days: null },
 ];
 

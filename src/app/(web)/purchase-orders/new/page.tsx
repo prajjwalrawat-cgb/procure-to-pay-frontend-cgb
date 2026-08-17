@@ -3,6 +3,7 @@
 import { Button, Pill } from '@/components/ui';
 import type {
   ClauseLibraryItem,
+  PaymentTermKind,
   PoCreateInput,
   PoSpotBuyLineInput,
   PoTermInput,
@@ -187,8 +188,11 @@ export default function NewSpotBuyPage(): React.JSX.Element {
       billToPlantId: billToPlantId || null,
       deliveryTerms: deliveryTerms as PoCreateInput['deliveryTerms'],
       paymentTerms: {
-        kind: paymentKind as 'NET_30' | 'NET_45' | 'NET_60' | 'MSME_45' | 'MILESTONE',
+        kind: paymentKind as PaymentTermKind,
         days: term?.days ?? null,
+        // Captured with the order so the PO prints the wording that was chosen,
+        // even if the catalogue is reworded later.
+        label: term?.label ?? null,
       },
       expectedDeliveryDate: new Date(
         `${expectedDeliveryDate}T00:00:00.000Z`,

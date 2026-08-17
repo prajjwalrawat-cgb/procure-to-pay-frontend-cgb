@@ -5,7 +5,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import type { PoCreateInput, RequisitionLineView } from '@/lib/shared';
+import type { PaymentTermKind, PoCreateInput, RequisitionLineView } from '@/lib/shared';
 
 import { useCreatePurchaseOrder } from '@/lib/api/purchase-orders';
 import { useVendors } from '@/lib/api/refs';
@@ -126,9 +126,10 @@ export default function CreatePoPage(): React.JSX.Element {
           vendorId: card.vendorId,
           deliveryTerms: card.deliveryTerms as PoCreateInput['deliveryTerms'],
           paymentTerms: {
-            kind: card.paymentKind as
-              'NET_30' | 'NET_45' | 'NET_60' | 'MSME_45' | 'MILESTONE',
+            kind: card.paymentKind as PaymentTermKind,
             days: term?.days ?? null,
+            // Captured with the order so the PO prints the wording chosen here.
+            label: term?.label ?? null,
           },
           expectedDeliveryDate: new Date(
             `${card.expectedDeliveryDate}T00:00:00.000Z`,
