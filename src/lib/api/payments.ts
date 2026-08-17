@@ -7,6 +7,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type {
+  BankAccountInput,
   BankAccountView,
   BankConfirmationResult,
   BankReconciliationResponse,
@@ -54,6 +55,56 @@ export function useBankAccounts(): UseQueryResult<{ items: BankAccountView[] }> 
     queryFn: () => apiFetch<{ items: BankAccountView[] }>('/bank-accounts'),
   });
 }
+
+// ── Bank account administration (Settings → Bank accounts) ─────────────────
+// Retired accounts are included here but not in the picker above, so a run can
+// only ever be raised against a live account.
+
+export function useAllBankAccounts(): UseQueryResult<{ items: BankAccountView[] }> {
+  return useQuery({
+    queryKey: [...paymentKeys.banks(), 'all'],
+    queryFn: () => apiFetch<{ items: BankAccountView[] }>('/bank-accounts/all'),
+  });
+}
+
+/** Every mutation returns the full list, so the cache is replaced whole. */
+function useBankAccountMutation<TArgs>(
+  fn: (args: TArgs) => Promise<{ items: BankAccountView[] }>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (data) => {
+      qc.setQueryData([...paymentKeys.banks(), 'all'], data);
+      // The run picker shows only active accounts, so it has to be re-read.
+      void qc.invalidateQueries({ queryKey: paymentKeys.banks() });
+    },
+  });
+}
+
+export const useCreateBankAccount = () =>
+  useBankAccountMutation((body: BankAccountInput) =>
+    apiFetch<{ items: BankAccountView[] }>('/bank-accounts', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  );
+
+export const useUpdateBankAccount = () =>
+  useBankAccountMutation((v: { id: string; body: BankAccountInput }) =>
+    apiFetch<{ items: BankAccountView[] }>(`/bank-accounts/${v.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(v.body),
+    }),
+  );
+
+export const useSetBankAccountActive = () =>
+  useBankAccountMutation((v: { id: string; isActive: boolean }) =>
+    apiFetch<{ items: BankAccountView[] }>(`/bank-accounts/${v.id}/active`, {
+      method: 'POST',
+      body: JSON.stringify({ isActive: v.isActive }),
+    }),
+  );
 
 export function useCreatePaymentRun() {
   return useMutation({

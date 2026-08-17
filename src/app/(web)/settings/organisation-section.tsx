@@ -16,14 +16,14 @@ export function OrganisationSection(): React.JSX.Element {
   const toast = useToastStore((s) => s.push);
 
   const [name, setName] = useState('');
-  const [gstin, setGstin] = useState('');
+  const [pan, setPan] = useState('');
   const [currency, setCurrency] = useState('INR');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!data) return;
     setName(data.tenant.name);
-    setGstin(data.tenant.gstin ?? '');
+    setPan(data.tenant.pan ?? '');
     setCurrency(data.tenant.currency);
   }, [data]);
 
@@ -35,7 +35,7 @@ export function OrganisationSection(): React.JSX.Element {
     setErrors({});
     const body: OrganisationUpdateInput = {
       name: name.trim(),
-      gstin: gstin.trim() ? gstin.trim().toUpperCase() : null,
+      pan: pan.trim() ? pan.trim().toUpperCase() : null,
       currency: currency.trim().toUpperCase(),
     };
     update.mutate(body, {
@@ -61,20 +61,9 @@ export function OrganisationSection(): React.JSX.Element {
             placeholder="e.g. ArtBox Solutions"
           />
         </Field>
+        {/* No company-wide GSTIN: a GSTIN belongs to a state registration, so
+            it lives on the branch that holds it, under GST registrations. */}
         <div className="grid gap-3 md:grid-cols-2">
-          <Field
-            label="Primary GSTIN"
-            error={errors.gstin}
-            hint="Per-state registrations are maintained under GST registrations."
-          >
-            <Input
-              value={gstin}
-              onChange={(e) => setGstin(e.target.value.toUpperCase())}
-              aria-invalid={!!errors.gstin}
-              placeholder="15-character GSTIN"
-              maxLength={15}
-            />
-          </Field>
           <Field label="Currency" error={errors.currency}>
             <Input
               value={currency}
@@ -84,6 +73,19 @@ export function OrganisationSection(): React.JSX.Element {
             />
           </Field>
         </div>
+        <Field
+          label="PAN"
+          error={errors.pan}
+          hint="One per company, however many state registrations you hold. Printed on the PO so vendors can claim credit for TDS deducted."
+        >
+          <Input
+            value={pan}
+            onChange={(e) => setPan(e.target.value.toUpperCase())}
+            aria-invalid={!!errors.pan}
+            placeholder="10-character PAN"
+            maxLength={10}
+          />
+        </Field>
       </Panel>
 
       <div className="flex items-center gap-3">
