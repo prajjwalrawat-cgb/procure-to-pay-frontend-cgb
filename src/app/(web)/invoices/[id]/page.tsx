@@ -33,6 +33,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   }
 
   const openExceptions = data.exceptions.filter((e) => !e.resolved);
+  // An empty exception list means "clean match" only once a match has run. While
+  // OCR is pending or has failed, the matcher has never looked at this invoice,
+  // so zero exceptions says nothing — and routing on it would send an unmatched
+  // invoice into the approval chain. These are the states the matcher leaves.
+  const matched = data.status === 'OCR_DONE' || data.status === 'MATCH_EXCEPTION';
 
   const onRoute = (): void => {
     route.mutate(undefined, {
@@ -40,7 +45,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         toast('Routed for approval', 'success');
         router.push('/invoices');
       },
-      onError: () => toast('Resolve all exceptions before routing', 'error'),
+      // Surface the API's reason — "resolve the exceptions" and "the match has
+      // not run yet" are different problems with different fixes.
+      onError: (e) =>
+        toast((e as Error).message || 'Could not route this invoice', 'error'),
     });
   };
 
@@ -137,7 +145,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                   QC: <span className="text-text">{data.grn?.qcStatus ?? '—'}</span>
                 </div>
                 <div className="text-muted mt-1 text-[12px]">
-                  All ordered lines received.
+                  {data.grn
+                    ? 'All ordered lines received.'
+                    : 'No goods receipt yet — quantities cannot be verified.'}
                 </div>
               </MatchCard>
               <MatchCard title="Invoice" subtitle={data.vendorInvoiceRef} accent="danger">
@@ -166,11 +176,17 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 Suggested: {data.suggestedResolution}
               </div>
             )}
-            {openExceptions.length === 0 && (
-              <div className="bg-accent-wash text-accent-2 rounded-sm px-3 py-2 text-[12px]">
-                All exceptions resolved. Ready to route for approval.
-              </div>
-            )}
+            {openExceptions.length === 0 &&
+              (matched ? (
+                <div className="bg-accent-wash text-accent-2 rounded-sm px-3 py-2 text-[12px]">
+                  All exceptions resolved. Ready to route for approval.
+                </div>
+              ) : (
+                <div className="bg-info-wash text-info rounded-sm px-3 py-2 text-[12px]">
+                  The 3-way match has not run yet ({statusLabel(data.status)}), so
+                  nothing has been checked against the PO or the goods receipt.
+                </div>
+              ))}
             <div className="flex flex-col gap-2">
               {data.exceptions.map((e) => (
                 <div
@@ -520,7 +536,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               variant="accent"
               className="ml-auto"
               onClick={onRoute}
-              disabled={route.isPending || openExceptions.length > 0}
+              disabled={route.isPending || openExceptions.length > 0 || !matched}
+              title={
+                matched
+                  ? undefined
+                  : 'The 3-way match has not run on this invoice yet'
+              }
             >
               Resolve &amp; route for approval
             </Button>
