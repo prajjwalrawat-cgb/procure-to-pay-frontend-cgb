@@ -1,11 +1,20 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import {
+  ApprovalChain,
+  Button,
+  NotShipped,
+  PageHeader,
+  Pill,
+  StageStrip,
+} from '@/components/ui';
 import { ArrowLeft, Check, Download, Paperclip } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
-import type { LiveApprovalStep, PoDetailResponse, PoLineView } from '@/lib/shared';
+import type { PoDetailResponse, PoLineView } from '@/lib/shared';
+
+import { DocumentLedger } from '@/components/document-ledger';
 
 import {
   useAddPoComment,
@@ -151,11 +160,11 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink flex items-center gap-2 text-[20px] font-semibold">
-            <span className="font-numeric">{data.number}</span>
+      <PageHeader
+        title={data.number}
+        numeric
+        meta={
+          <>
             <Pill variant={statusVariant(data.status)} dot>
               {statusLabel(data.status)}
             </Pill>
@@ -169,8 +178,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 Awaiting ack
               </Pill>
             )}
-          </h1>
-          <p className="text-muted mt-0.5 text-[13px]">
+          </>
+        }
+        description={
+          <>
             {data.vendor.name}
             {data.vendor.isMsme && (
               <Pill variant="violet" className="ml-1.5">
@@ -183,35 +194,28 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
             {data.expectedDeliveryDate
               ? new Date(data.expectedDeliveryDate).toLocaleDateString('en-IN')
               : '—'}
-          </p>
-        </div>
+          </>
+        }
+      />
+
+      <div className="border-line bg-panel mb-5 rounded-lg border p-3.5">
+        <StageStrip
+          stages={data.stages.map((s) => ({ key: s.key, label: s.label }))}
+          activeIndex={Math.max(
+            0,
+            data.stages.findIndex((s) => s.state === 'active'),
+          )}
+          failed={data.status === 'CANCELLED' || data.status === 'REJECTED'}
+          failedLabel={statusLabel(data.status)}
+        />
       </div>
 
-      {/* Stage strip */}
-      <div className="mb-5 flex items-center gap-1 overflow-x-auto">
-        {data.stages.map((s) => (
-          <span
-            key={s.key}
-            className={
-              'rounded-xs whitespace-nowrap px-2.5 py-1 text-[12px] font-medium ' +
-              (s.state === 'done'
-                ? 'bg-accent-wash text-accent-2'
-                : s.state === 'active'
-                  ? 'bg-ink text-white'
-                  : 'bg-canvas text-faint')
-            }
-          >
-            {s.label}
-          </span>
-        ))}
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-5">
           {/* Line items */}
           <section>
             <h2 className="text-ink mb-2 text-[14px] font-semibold">Line items</h2>
-            <div className="border-line bg-panel overflow-hidden rounded-lg border">
+            <div className="border-line bg-panel overflow-x-auto rounded-lg border">
               <table className="w-full text-[12px]">
                 <thead className="bg-canvas text-faint text-left text-[10px] uppercase tracking-wide">
                   <tr>
@@ -235,19 +239,9 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {/* Approval chain */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval chain</h2>
-            <div className="flex flex-wrap items-center gap-2">
-              {data.liveApprovalChain.map((s) => (
-                <ApprovalStepPill
-                  key={`${s.stepNo}-${s.approvalId ?? s.stepNo}`}
-                  step={s}
-                />
-              ))}
-              {data.liveApprovalChain.length === 0 && (
-                <span className="text-muted text-[12px]">
-                  No approval steps for this order.
-                </span>
-              )}
+            <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval route</h2>
+            <div className="border-line bg-panel rounded-lg border p-4">
+              <ApprovalChain steps={data.liveApprovalChain} />
             </div>
           </section>
 
@@ -553,12 +547,15 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               </dl>
             </div>
           )}
+
+          {/* The trust column. Same position on every document detail page. */}
+          <DocumentLedger entityId={data.id} />
         </aside>
       </div>
 
       {/* Sticky action bar */}
       <div className="border-line bg-panel/95 fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
           {data.canDecide ? (
             <>
               <input
@@ -585,7 +582,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                   Request changes
                 </Button>
                 <Button
-                  variant="accent"
+                  variant="commit"
                   disabled={decide.isPending}
                   onClick={() => onDecide('APPROVE')}
                 >
@@ -603,11 +600,11 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               >
                 <Download className="h-3.5 w-3.5" /> Download PDF
               </Button>
-              <span title="Coming in Slice 5.5">
+              <NotShipped reason="PO amendments arrive in Slice 5.5. To change this order today, cancel it and raise a replacement.">
                 <Button variant="ghost" size="sm" disabled>
                   Amend
                 </Button>
-              </span>
+              </NotShipped>
               {data.canHold && (
                 <Button
                   variant="ghost"
@@ -640,7 +637,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               )}
               {data.canIssue && (
                 <Button
-                  variant="accent"
+                  variant="commit"
                   size="sm"
                   disabled={issue.isPending}
                   onClick={onIssue}
@@ -771,47 +768,6 @@ function PoLineRow({ line: l }: { line: PoLineView }): React.JSX.Element {
   );
 }
 
-function ApprovalStepPill({ step: s }: { step: LiveApprovalStep }): React.JSX.Element {
-  return (
-    <span
-      className={
-        'flex items-center gap-2 rounded-sm border px-2.5 py-1.5 text-[12px] ' +
-        (s.isCurrent
-          ? 'border-accent bg-accent-wash'
-          : s.decision === 'REJECTED'
-            ? 'border-danger/40 bg-danger-wash'
-            : 'border-line bg-panel')
-      }
-    >
-      <span className="bg-canvas font-numeric flex h-5 w-5 items-center justify-center rounded-full text-[10px]">
-        {s.stepNo}
-      </span>
-      <span className="text-text font-medium">
-        {s.approverName ?? s.role.replace(/_/g, ' ')}
-      </span>
-      <Pill
-        variant={
-          s.decision === 'APPROVED'
-            ? 'success'
-            : s.decision === 'REJECTED'
-              ? 'danger'
-              : s.slaStatus === 'breach'
-                ? 'danger'
-                : s.slaStatus === 'warn'
-                  ? 'warn'
-                  : 'gray'
-        }
-        dot
-      >
-        {s.decision === 'PENDING'
-          ? s.isCurrent
-            ? 'Current'
-            : 'Pending'
-          : s.decision.replace(/_/g, ' ')}
-      </Pill>
-    </span>
-  );
-}
 
 function DocCard({
   title,

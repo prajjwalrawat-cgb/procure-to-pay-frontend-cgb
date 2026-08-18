@@ -1,17 +1,19 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, Pill, VerificationResult } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { InvoiceExceptionView } from '@/lib/shared';
 
+import { DocumentLedger } from '@/components/document-ledger';
 import { EntityRef } from '@/components/entity-ref';
 import { ResolveModal } from '@/components/invoices/resolve-modal';
 import { useDecide } from '@/lib/api/inbox';
 import { useAddComment, useInvoice, useResolveAndRoute } from '@/lib/api/invoices';
 import { inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
+import { COMPLIANCE_PROVIDER, useProviderLiveness } from '@/lib/integration-status';
 import { useToastStore } from '@/store/toast-store';
 
 export default function InvoiceDetailPage(): React.JSX.Element {
@@ -27,6 +29,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const [comment, setComment] = useState('');
   const [decisionComment, setDecisionComment] = useState('');
   const [activityTab, setActivityTab] = useState<'activity' | 'payments'>('activity');
+  // No `simulated` flag rides on invoice compliance, so provenance is inferred
+  // from whether live credentials exist for the provider behind each field.
+  const { isSimulated } = useProviderLiveness();
 
   if (isLoading || !data) {
     return <div className="text-muted p-6 text-[13px]">Loading invoice…</div>;
@@ -124,7 +129,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         ))}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-5">
           {/* 3-way match */}
           <section>
@@ -432,10 +437,44 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
               Compliance
             </div>
-            <dl className="flex flex-col gap-1 text-[12px]">
-              <Row label="GSTIN" value={data.compliance.gstinStatus} />
-              <Row label="GSTR-2B" value={data.compliance.gstr2bStatus} />
-              <Row label="IRN" value={data.compliance.irn ? 'Present' : '—'} />
+            <dl className="flex flex-col gap-1.5 text-[12px]">
+              <Row
+                label="GSTIN"
+                value={
+                  <VerificationResult
+                    status={data.compliance.gstinStatus}
+                    variant={complianceVariant(data.compliance.gstinStatus)}
+                    simulated={isSimulated(COMPLIANCE_PROVIDER.gstin)}
+                    label="GSTIN status check"
+                  />
+                }
+              />
+              <Row
+                label="GSTR-2B"
+                value={
+                  <VerificationResult
+                    status={data.compliance.gstr2bStatus}
+                    variant={complianceVariant(data.compliance.gstr2bStatus)}
+                    simulated={isSimulated(COMPLIANCE_PROVIDER.gstr2b)}
+                    label="GSTR-2B reconciliation"
+                  />
+                }
+              />
+              <Row
+                label="IRN"
+                value={
+                  data.compliance.irn ? (
+                    <VerificationResult
+                      status="Present"
+                      variant="success"
+                      simulated={isSimulated(COMPLIANCE_PROVIDER.irn)}
+                      label="e-invoice IRN validation"
+                    />
+                  ) : (
+                    '—'
+                  )
+                }
+              />
               <Row label="e-Way bill" value={data.compliance.ewaybillNo ?? '—'} />
             </dl>
           </div>
@@ -480,6 +519,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               <Row label="On-time" value={`${data.vendor.onTimePct ?? '—'}%`} />
             </dl>
           </div>
+
+          {/* The trust column. Same position on every document detail page. */}
+          <DocumentLedger entityId={data.id} />
         </aside>
       </div>
 
@@ -615,15 +657,39 @@ function Row({
   strong,
 }: {
   label: string;
-  value: string;
+  value: React.ReactNode;
   strong?: boolean;
 }): React.JSX.Element {
+  // Plain values are figures, IDs and dates, so they take the mono face. A
+  // rendered node (a pill, a sandbox chip) brings its own typography and must
+  // not inherit it.
+  const isText = typeof value === 'string' || typeof value === 'number';
   return (
-    <div className="flex items-center justify-between">
-      <dt className="text-muted">{label}</dt>
-      <dd className={'font-numeric ' + (strong ? 'text-ink font-semibold' : 'text-text')}>
+    <div className="flex items-center justify-between gap-2">
+      <dt className="text-muted shrink-0">{label}</dt>
+      <dd
+        className={
+          (isText ? 'font-numeric text-right ' : '') +
+          (strong ? 'text-ink font-semibold' : 'text-text')
+        }
+      >
         {value}
       </dd>
     </div>
   );
+}
+
+/**
+ * Colour for a compliance verdict string. Only clearly-good and clearly-bad
+ * states get a colour; anything unrecognised stays neutral rather than being
+ * guessed into green.
+ */
+function complianceVariant(status: string): 'success' | 'danger' | 'warn' | 'gray' {
+  const s = status.toUpperCase();
+  if (['ACTIVE', 'MATCHED', 'VALID', 'CLEAR', 'FOUND'].includes(s)) return 'success';
+  if (['CANCELLED', 'SUSPENDED', 'INVALID', 'NOT_FOUND', 'MISMATCH'].includes(s)) {
+    return 'danger';
+  }
+  if (['PENDING', 'NOT_CHECKED', 'UNKNOWN', 'NOT_APPLICABLE'].includes(s)) return 'warn';
+  return 'gray';
 }

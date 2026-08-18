@@ -12,11 +12,15 @@ import {
   DialogTitle,
   Input,
   Pill,
+  SandboxBanner,
+  VerificationResult,
 } from '@/components/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
+import type { IntegrationProvider } from '@/lib/shared';
 
+import { useProviderLiveness } from '@/lib/integration-status';
 import {
   useOnboardingDecision,
   useOnboardingDetail,
@@ -146,6 +150,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const canRename = useHasPermission(PERMISSIONS.VENDOR_UPDATE);
   const canVerifyDocs = useHasPermission(PERMISSIONS.VENDOR_DOC_VERIFY);
   const canReviewScreening = useHasPermission(PERMISSIONS.VENDOR_SCREENING_REVIEW);
+  const { isSimulated } = useProviderLiveness();
+  // Any provider behind a screening or document check answering from a
+  // sandbox makes every derived green signal on this page unearned.
+  const anyScreeningSimulated = (data?.screenings ?? []).some((sc) =>
+    isSimulated(sc.provider as IntegrationProvider),
+  );
 
   if (isLoading || !data) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
 
@@ -209,8 +219,21 @@ export default function OnboardingReviewPage(): React.JSX.Element {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 space-y-4">
+      {/* The risk lights and the AUTO VERIFIED document pills are both derived
+          from the same screening providers as the verdicts below, so when those
+          run in a sandbox every green signal on this page is unearned. The
+          individual verdicts are chipped; this states it once for the roll-ups. */}
+      {anyScreeningSimulated && (
+        <SandboxBanner className="mb-4">
+          <span className="font-semibold">Automated checks are simulated.</span>{' '}
+          Screenings and document verification on this vendor came from sandbox
+          providers. Do not treat the green signals — including sanctions — as
+          assurance when approving.
+        </SandboxBanner>
+      )}
+
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           {/* Risk traffic-lights */}
           <Card>
             <CardHeader>
@@ -353,13 +376,20 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                   {data.screenings.map((s) => (
                     <li
                       key={s.id}
-                      className="flex items-center justify-between text-[13px]"
+                      className="flex flex-wrap items-center justify-between gap-2 text-[13px]"
                     >
                       <span className="text-ink">
                         {s.screeningType.replace(/_/g, ' ')}
                       </span>
-                      <div className="flex items-center gap-2">
-                        <Pill
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* A green CLEAR from a sandbox screener is the most
+                            dangerous badge in the product — someone could
+                            onboard a sanctioned counterparty on the strength
+                            of it. VerificationResult drops the colour and adds
+                            the sandbox chip when the provider is not live.
+                            An unrecognised provider fails closed to sandbox. */}
+                        <VerificationResult
+                          status={s.status}
                           variant={
                             s.status === 'CLEAR'
                               ? 'success'
@@ -367,9 +397,10 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                                 ? 'danger'
                                 : 'warn'
                           }
-                        >
-                          {s.status}
-                        </Pill>
+                          dot={false}
+                          simulated={isSimulated(s.provider as IntegrationProvider)}
+                          label={`${s.screeningType.replace(/_/g, ' ').toLowerCase()} screening`}
+                        />
                         {s.status === 'FLAGGED' && canReviewScreening && (
                           <Button
                             variant="default"

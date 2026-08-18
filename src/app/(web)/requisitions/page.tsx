@@ -1,6 +1,19 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import {
+  Button,
+  DataState,
+  PageHeader,
+  Pill,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableState,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { RequisitionCardView, RequisitionKanbanColumn } from '@/lib/shared';
@@ -45,28 +58,26 @@ export default function RequisitionsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[1400px]">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Requisitions
-          </h1>
-          <p className="text-muted text-[13px]">Purchase requests{tenantSuffix(tenantName)}</p>
-        </div>
-        <Link href="/requisitions/new">
-          <Button variant="primary" size="sm">
-            New requisition
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Requisitions"
+        description={`Purchase requests${tenantSuffix(tenantName)}`}
+        actions={
+          <Link href="/requisitions/new">
+            <Button variant="primary" size="sm">
+              New requisition
+            </Button>
+          </Link>
+        }
+      />
 
-      <div className="border-line mb-4 flex items-center gap-1 border-b">
+      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
             className={
-              'duration-hover border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
+              'duration-hover shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
               (tab === t.key
                 ? 'border-accent text-ink'
                 : 'text-muted hover:text-text border-transparent')
@@ -83,7 +94,7 @@ export default function RequisitionsPage(): React.JSX.Element {
 }
 
 function Board(): React.JSX.Element {
-  const { data, isLoading } = useRequisitionBoard();
+  const { data, isLoading, error, refetch } = useRequisitionBoard();
   const toast = useToastStore((s) => s.push);
   const [order, setOrder] = useState<BoardOrder>({});
   const [dragId, setDragId] = useState<string | null>(null);
@@ -137,8 +148,29 @@ function Board(): React.JSX.Element {
     setDragId(null);
   };
 
-  if (isLoading) {
-    return <div className="text-muted p-6 text-[13px]">Loading board…</div>;
+  if (isLoading || error) {
+    return (
+      <div className="border-line bg-panel rounded-lg border">
+        <DataState
+          isLoading={isLoading}
+          error={error}
+          onRetry={() => void refetch()}
+          loading={
+            <div className="grid grid-cols-1 gap-3 p-3 md:grid-cols-3 xl:grid-cols-5">
+              {COLUMNS.map((col) => (
+                <div key={col.key} className="flex flex-col gap-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-[104px] w-full rounded-lg" />
+                  <Skeleton className="h-[104px] w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+          }
+        >
+          {null}
+        </DataState>
+      </div>
+    );
   }
 
   return (
@@ -201,11 +233,14 @@ function BoardCard({
       }}
       className="border-line bg-panel hover:border-accent/50 block cursor-grab rounded-lg border p-3 active:cursor-grabbing"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="font-numeric text-ink text-[12px] font-medium">
           {card.number}
         </span>
-        <Pill variant={priorityVariant(card.priority)}>{card.priority}</Pill>
+        {/* Only exceptional priorities earn a badge on a dense board card. */}
+        {card.priority !== 'STANDARD' && (
+          <Pill variant={priorityVariant(card.priority)}>{card.priority}</Pill>
+        )}
       </div>
       <div className="text-text mt-1 line-clamp-2 text-[13px] font-medium">
         {card.title}
@@ -228,69 +263,101 @@ function BoardCard({
   );
 }
 
+const TAB_EMPTY: Record<RequisitionTab, { title: string; detail: string }> = {
+  active: {
+    title: 'No active requisitions',
+    detail: 'Requests in progress will appear here once someone raises one.',
+  },
+  my_approval: {
+    title: 'Nothing waiting on you',
+    detail: 'Requisitions routed to you for approval will land here.',
+  },
+  draft: {
+    title: 'No drafts',
+    detail: 'Requisitions you start but have not submitted are kept here.',
+  },
+  rejected: {
+    title: 'No rejected requisitions',
+    detail: 'Requests an approver sent back will be listed here.',
+  },
+  closed: {
+    title: 'Nothing closed yet',
+    detail: 'Completed and cancelled requisitions are archived here.',
+  },
+};
+
 function ListView({ tab }: { tab: RequisitionTab }): React.JSX.Element {
-  const { data, isLoading } = useRequisitionList(tab);
+  const { data, isLoading, error, refetch } = useRequisitionList(tab);
   const rows = useMemo(() => data?.items ?? [], [data]);
 
   return (
-    <div className="border-line bg-panel overflow-hidden rounded-lg border">
-      <table className="w-full text-[13px]">
-        <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+    <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
           <tr>
-            <th className="px-3 py-2 font-medium">Requisition</th>
-            <th className="px-3 py-2 font-medium">Title</th>
-            <th className="px-3 py-2 font-medium">Cost centre</th>
-            <th className="px-3 py-2 font-medium">Status</th>
-            <th className="px-3 py-2 font-medium">Priority</th>
-            <th className="px-3 py-2 font-medium">Aging</th>
-            <th className="px-3 py-2 text-right font-medium">Amount</th>
+            <TableHead>Requisition</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead className="hidden md:table-cell">Cost centre</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="hidden sm:table-cell">Priority</TableHead>
+            <TableHead numeric className="hidden sm:table-cell">
+              Aging
+            </TableHead>
+            <TableHead numeric>Amount</TableHead>
           </tr>
-        </thead>
-        <tbody>
-          {isLoading && (
-            <tr>
-              <td colSpan={7} className="text-muted px-3 py-8 text-center">
-                Loading…
-              </td>
-            </tr>
-          )}
-          {!isLoading && rows.length === 0 && (
-            <tr>
-              <td colSpan={7} className="text-muted px-3 py-8 text-center">
-                No requisitions in this view.
-              </td>
-            </tr>
-          )}
+        </TableHeader>
+        <TableBody>
+          <TableState
+            colSpan={7}
+            isLoading={isLoading}
+            error={error}
+            isEmpty={rows.length === 0}
+            onRetry={() => void refetch()}
+            empty={{
+              title: TAB_EMPTY[tab].title,
+              detail: TAB_EMPTY[tab].detail,
+              action:
+                tab === 'draft' || tab === 'active' ? (
+                  <Link href="/requisitions/new">
+                    <Button variant="primary" size="sm">
+                      New requisition
+                    </Button>
+                  </Link>
+                ) : undefined,
+            }}
+          />
           {rows.map((pr) => (
-            <tr key={pr.id} className="border-line hover:bg-canvas/60 border-t">
-              <td className="px-3 py-2">
+            <TableRow key={pr.id}>
+              <TableCell>
                 <Link
                   href={`/requisitions/${pr.id}`}
-                  className="font-numeric text-ink font-medium"
+                  className="font-numeric text-ink font-medium hover:underline"
                 >
                   {pr.number}
                 </Link>
-              </td>
-              <td className="text-text px-3 py-2">{pr.title}</td>
-              <td className="text-muted px-3 py-2 text-[12px]">
+              </TableCell>
+              <TableCell className="text-text">{pr.title}</TableCell>
+              <TableCell className="text-muted hidden text-[12px] md:table-cell">
                 {pr.costCenter.code} · {pr.costCenter.name}
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <Pill variant={statusVariant(pr.status)} dot>
                   {statusLabel(pr.status)}
                 </Pill>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell className="hidden sm:table-cell">
                 <Pill variant={priorityVariant(pr.priority)}>{pr.priority}</Pill>
-              </td>
-              <td className="font-numeric text-text px-3 py-2">{pr.agingDays}d</td>
-              <td className="font-numeric text-ink px-3 py-2 text-right font-medium">
+              </TableCell>
+              <TableCell numeric className="text-text hidden sm:table-cell">
+                {pr.agingDays}d
+              </TableCell>
+              <TableCell numeric className="text-ink font-medium">
                 {inr(pr.totalAmount)}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

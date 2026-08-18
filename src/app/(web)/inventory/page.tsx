@@ -86,7 +86,7 @@ export default function InventoryPage(): React.JSX.Element {
         </label>
       </div>
 
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">
           <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
             <tr>

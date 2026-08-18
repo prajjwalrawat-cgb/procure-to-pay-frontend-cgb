@@ -26,6 +26,12 @@ const STATUS_LABELS: Record<string, string> = {
   REJECTED: 'Rejected',
   // Payment-run statuses (Slice 3).
   DRAFT: 'Draft',
+  COMPOSED: 'Composed',
+  PENDING_APPROVAL: 'Pending approval',
+  SUBMITTED: 'Submitted',
+  // Was falling through to the raw enum, so the payment-runs list showed
+  // "SUBMITTED_PENDING_BANK_CONFIRMATION" in a status pill.
+  SUBMITTED_PENDING_BANK_CONFIRMATION: 'Pending bank confirmation',
   SUBMITTED_TO_BANK: 'Submitted to bank',
   COMPLETED: 'Completed',
   FAILED: 'Failed',
@@ -65,6 +71,7 @@ export function statusVariant(status: string): PillVariant {
     case 'REVERSED':
       return 'danger';
     case 'AWAITING_APPROVAL':
+    case 'PENDING_APPROVAL':
     case 'PENDING_QC':
     case 'IN_PROGRESS':
     case 'CONDITIONAL_PASS':
@@ -72,7 +79,9 @@ export function statusVariant(status: string): PillVariant {
       return 'warn';
     case 'OCR_PENDING':
     case 'RECEIVED':
+    case 'SUBMITTED':
     case 'SUBMITTED_TO_BANK':
+    case 'SUBMITTED_PENDING_BANK_CONFIRMATION':
     case 'PARTIALLY_RECEIVED':
     case 'ACKNOWLEDGED':
     case 'PICKED_UP':

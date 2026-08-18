@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import type { GrnCompleteQcInput, GrnQcSampleInput } from '@/lib/shared';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -95,31 +95,31 @@ export default function QcPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
+      <PageHeader
+        title={
+          <>
             QC inspection · <span className="font-numeric">{data.number}</span>
-          </h1>
-          <p className="text-muted text-[13px]">
-            {data.vendor.name} · packing {data.gate.packingCondition}
-          </p>
-        </div>
-        {data.qcStatus === 'NOT_STARTED' && (
-          <Button
-            size="sm"
-            variant="accent"
-            disabled={startQc.isPending}
-            onClick={() =>
-              startQc.mutate(undefined as void, {
-                onSuccess: () => push('QC started', 'success'),
-                onError: (e) => push((e as Error).message, 'error'),
-              })
-            }
-          >
-            Start QC
-          </Button>
-        )}
-      </div>
+          </>
+        }
+        description={`${data.vendor.name} · packing ${data.gate.packingCondition}`}
+        actions={
+          data.qcStatus === 'NOT_STARTED' ? (
+            <Button
+              size="sm"
+              variant="accent"
+              disabled={startQc.isPending}
+              onClick={() =>
+                startQc.mutate(undefined as void, {
+                  onSuccess: () => push('QC started', 'success'),
+                  onError: (e) => push((e as Error).message, 'error'),
+                })
+              }
+            >
+              Start QC
+            </Button>
+          ) : undefined
+        }
+      />
 
       <div className="space-y-4">
         {data.lines.map((l) => (
@@ -135,7 +135,7 @@ export default function QcPage(): React.JSX.Element {
 
             {l.requiresQc && l.samplePlan ? (
               <>
-                <div className="mb-3 grid grid-cols-3 gap-3">
+                <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Object.entries(l.qcParameters).map(([param, spec]) => (
                     <label key={param} className="block">
                       <span className="text-faint mb-1 block text-[11px]">
@@ -198,7 +198,7 @@ export default function QcPage(): React.JSX.Element {
             )}
 
             {/* Decision */}
-            <div className="border-line mt-3 grid grid-cols-3 gap-3 border-t pt-3">
+            <div className="border-line mt-3 grid grid-cols-1 gap-3 border-t pt-3 sm:grid-cols-3">
               <label className="block">
                 <span className="text-faint mb-1 block text-[11px]">Qty accepted</span>
                 <input

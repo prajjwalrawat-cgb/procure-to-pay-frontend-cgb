@@ -1,7 +1,8 @@
 'use client';
 
 import type { InboxItem } from '@/lib/shared';
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill, TableState } from '@/components/ui';
+import { CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -20,7 +21,7 @@ const SLA_VARIANT = { ok: 'success', warn: 'warn', breach: 'danger' } as const;
 
 export default function InboxPage(): React.JSX.Element {
   const [filter, setFilter] = useState<InboxFilterKey>('waiting_on_me');
-  const { data, isLoading } = useInbox(filter);
+  const { data, isLoading, error, refetch } = useInbox(filter);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirming, setConfirming] = useState(false);
   const bulk = useBulkApprove();
@@ -51,23 +52,20 @@ export default function InboxPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            My approvals
-          </h1>
-          <p className="text-muted text-[13px]">
-            Documents routed to you for a decision.
-          </p>
-        </div>
-        {selected.size > 0 && (
-          <Button variant="accent" size="sm" onClick={() => setConfirming(true)}>
-            Approve selected ({selected.size})
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="My approvals"
+        description="Documents routed to you for a decision."
+        actions={
+          selected.size > 0 ? (
+            // Bulk-approving commits spend across several documents at once.
+            <Button variant="commit" size="sm" onClick={() => setConfirming(true)}>
+              Approve selected ({selected.size})
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="border-line mb-4 flex items-center gap-1 border-b">
+      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
         {FILTERS.map((f) => (
           <button
             key={f.key}
@@ -87,9 +85,7 @@ export default function InboxPage(): React.JSX.Element {
         ))}
       </div>
 
-      {isLoading && <div className="text-muted text-[13px]">Loading…</div>}
-
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">
           <thead className="border-line text-faint border-b text-[11px] uppercase tracking-wide">
             <tr>
@@ -103,6 +99,24 @@ export default function InboxPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
+            <TableState
+              colSpan={7}
+              isLoading={isLoading}
+              error={error}
+              isEmpty={items.length === 0}
+              onRetry={() => void refetch()}
+              empty={{
+                title:
+                  filter === 'waiting_on_me'
+                    ? 'Nothing waiting on you'
+                    : 'Nothing in this view',
+                detail:
+                  filter === 'waiting_on_me'
+                    ? 'Your approval queue is clear. Documents routed to you will appear here.'
+                    : 'Delegated approvals will be listed here.',
+                icon: CheckCircle2,
+              }}
+            />
             {items.map((item: InboxItem) => (
               <tr key={item.approvalId} className="border-line border-b last:border-0">
                 <td className="p-2 text-center">
@@ -140,13 +154,6 @@ export default function InboxPage(): React.JSX.Element {
                 </td>
               </tr>
             ))}
-            {items.length === 0 && !isLoading && (
-              <tr>
-                <td colSpan={7} className="text-muted p-6 text-center text-[13px]">
-                  Nothing waiting on you.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>

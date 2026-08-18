@@ -1,6 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { Pill, SandboxChip } from '@/components/ui';
 
 import {
   useConfirmBank,
@@ -45,7 +45,9 @@ export function BankReconciliationPanel({
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-ink text-[14px] font-semibold">Bank reconciliation</h2>
-          {data.simulated && <Pill variant="gray">sandbox simulator</Pill>}
+          {/* A grey "sandbox simulator" pill read as ordinary metadata next to
+              real UTRs. This is money movement — it gets the standard marker. */}
+          <SandboxChip simulated={data.simulated} label="bank reconciliation" />
           <span className="text-muted text-[12px]">attempt #{data.attemptNo}</span>
         </div>
         <div className="flex items-center gap-2">

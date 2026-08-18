@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill, TableState } from '@/components/ui';
 import type { GrnListItem } from '@/lib/shared';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -26,23 +26,19 @@ export default function GoodsReceiptPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Receipts
-          </h1>
-          <p className="text-muted text-[13px]">
-            Goods receipt &amp; QC{tenantSuffix(tenantName)}
-          </p>
-        </div>
-        <Link href="/goods-receipt/new">
-          <Button variant="accent" size="sm">
-            New receipt
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Receipts"
+        description={`Goods receipt & QC${tenantSuffix(tenantName)}`}
+        actions={
+          <Link href="/goods-receipt/new">
+            <Button variant="primary" size="sm">
+              New receipt
+            </Button>
+          </Link>
+        }
+      />
 
-      <div className="border-line mb-3 flex items-center gap-1 border-b">
+      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -94,7 +90,7 @@ function PendingReceiptTable({
   isLoading: boolean;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel overflow-hidden rounded-lg border">
+    <div className="border-line bg-panel overflow-x-auto rounded-lg border">
       <table className="w-full text-[13px]">
         <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
           <tr>
@@ -107,20 +103,16 @@ function PendingReceiptTable({
           </tr>
         </thead>
         <tbody>
-          {isLoading && (
-            <tr>
-              <td colSpan={6} className="text-muted px-3 py-8 text-center">
-                Loading…
-              </td>
-            </tr>
-          )}
-          {!isLoading && items.length === 0 && (
-            <tr>
-              <td colSpan={6} className="text-muted px-3 py-8 text-center">
-                No purchase orders awaiting receipt.
-              </td>
-            </tr>
-          )}
+          <TableState
+            colSpan={6}
+            isLoading={isLoading}
+            isEmpty={items.length === 0}
+            empty={{
+              title: 'Nothing awaiting receipt',
+              detail:
+                'Issued purchase orders with outstanding quantities will appear here.',
+            }}
+          />
           {items.map((po) => (
             <tr key={po.id} className="border-line hover:bg-canvas/60 border-t">
               <td className="font-numeric text-ink px-3 py-2 font-medium">{po.number}</td>
@@ -162,7 +154,7 @@ function ReceiptsTable({
   isLoading: boolean;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel overflow-hidden rounded-lg border">
+    <div className="border-line bg-panel overflow-x-auto rounded-lg border">
       <table className="w-full text-[13px]">
         <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
           <tr>
@@ -176,20 +168,15 @@ function ReceiptsTable({
           </tr>
         </thead>
         <tbody>
-          {isLoading && (
-            <tr>
-              <td colSpan={7} className="text-muted px-3 py-8 text-center">
-                Loading…
-              </td>
-            </tr>
-          )}
-          {!isLoading && items.length === 0 && (
-            <tr>
-              <td colSpan={7} className="text-muted px-3 py-8 text-center">
-                No receipts in this view.
-              </td>
-            </tr>
-          )}
+          <TableState
+            colSpan={7}
+            isLoading={isLoading}
+            isEmpty={items.length === 0}
+            empty={{
+              title: 'No receipts in this view',
+              detail: 'Goods receipts posted against your orders will be listed here.',
+            }}
+          />
           {items.map((g) => (
             <tr key={g.id} className="border-line hover:bg-canvas/60 border-t">
               <td className="px-3 py-2">

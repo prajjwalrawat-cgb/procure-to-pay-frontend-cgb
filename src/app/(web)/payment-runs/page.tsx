@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill, TableState } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -28,28 +28,24 @@ type Counts = {
 export default function PaymentRunsPage(): React.JSX.Element {
   const tenantName = useTenantName();
   const [tab, setTab] = useState<PaymentRunTab>('all');
-  const { data, isLoading } = usePaymentRuns(tab);
+  const { data, isLoading, error, refetch } = usePaymentRuns(tab);
   const counts = data?.counts;
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Payment runs
-          </h1>
-          <p className="text-muted text-[13px]">
-            Compose, approve and submit bank files{tenantSuffix(tenantName)}
-          </p>
-        </div>
-        <Link href="/payment-runs/new">
-          <Button variant="primary" size="sm">
-            New payment run
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Payment runs"
+        description={`Compose, approve and submit bank files${tenantSuffix(tenantName)}`}
+        actions={
+          <Link href="/payment-runs/new">
+            <Button variant="primary" size="sm">
+              New payment run
+            </Button>
+          </Link>
+        }
+      />
 
-      <div className="border-line mb-3 flex items-center gap-1 border-b">
+      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -70,7 +66,7 @@ export default function PaymentRunsPage(): React.JSX.Element {
         ))}
       </div>
 
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">
           <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
             <tr>
@@ -84,20 +80,26 @@ export default function PaymentRunsPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && (data?.items.length ?? 0) === 0 && (
-              <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
-                  No payment runs in this view.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={7}
+              isLoading={isLoading}
+              error={error}
+              isEmpty={(data?.items.length ?? 0) === 0}
+              onRetry={() => void refetch()}
+              empty={{
+                title: 'No payment runs in this view',
+                detail:
+                  'A run batches approved invoices into a single bank file for release.',
+                action:
+                  tab === 'all' || tab === 'draft' ? (
+                    <Link href="/payment-runs/new">
+                      <Button variant="primary" size="sm">
+                        New payment run
+                      </Button>
+                    </Link>
+                  ) : undefined,
+              }}
+            />
             {data?.items.map((run) => (
               <tr key={run.id} className="border-line hover:bg-canvas/60 border-t">
                 <td className="px-3 py-2">

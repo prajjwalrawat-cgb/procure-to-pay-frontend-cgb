@@ -49,8 +49,11 @@ export function priorityVariant(priority: string): 'danger' | 'warn' | 'info' | 
       return 'danger';
     case 'HIGH':
       return 'warn';
+    // STANDARD is the default on nearly every requisition, so colouring it
+    // painted a loud badge onto every row and card and left nothing for the
+    // priorities that actually need attention. The default reads quiet.
     case 'STANDARD':
-      return 'info';
+      return 'gray';
     default:
       return 'gray';
   }

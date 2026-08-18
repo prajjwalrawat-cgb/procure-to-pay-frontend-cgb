@@ -1,11 +1,13 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { ApprovalChain, Button, PageHeader, Pill } from '@/components/ui';
 import { AlertTriangle, ArrowLeft, Download, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type { LiveApprovalStep, PaymentRunDetailResponse } from '@/lib/shared';
+import type { PaymentRunDetailResponse } from '@/lib/shared';
+
+import { DocumentLedger } from '@/components/document-ledger';
 
 import { SuggestDrawer } from '@/components/payments/suggest-drawer';
 import {
@@ -81,35 +83,38 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
         <ArrowLeft className="h-3.5 w-3.5" /> Back to payment runs
       </Link>
 
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink flex items-center gap-2 text-[20px] font-semibold">
-            <span className="font-numeric">{data.number}</span>
-            <Pill variant={statusVariant(data.status)} dot>
-              {statusLabel(data.status)}
-            </Pill>
-          </h1>
-          <p className="text-muted text-[13px]">
+      <PageHeader
+        title={data.number}
+        numeric
+        meta={
+          <Pill variant={statusVariant(data.status)} dot>
+            {statusLabel(data.status)}
+          </Pill>
+        }
+        description={
+          <>
             Cycle {new Date(data.cycleDate).toLocaleDateString('en-IN')} ·{' '}
             {data.bankAccount?.bankName ?? '—'} · ····{data.bankAccount?.accountNoLast4}
-          </p>
-        </div>
-        {isDraft && (
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="default" onClick={() => setDrawerOpen(true)}>
-              <Plus className="mr-1 h-3.5 w-3.5" /> Add invoices
-            </Button>
-            <Button
-              size="sm"
-              variant="accent"
-              disabled={submit.isPending || data.items.length === 0}
-              onClick={onSubmit}
-            >
-              Submit for approval
-            </Button>
-          </div>
-        )}
-      </div>
+          </>
+        }
+        actions={
+          isDraft ? (
+            <>
+              <Button size="sm" variant="default" onClick={() => setDrawerOpen(true)}>
+                <Plus className="mr-1 h-3.5 w-3.5" /> Add invoices
+              </Button>
+              <Button
+                size="sm"
+                variant="accent"
+                disabled={submit.isPending || data.items.length === 0}
+                onClick={onSubmit}
+              >
+                Submit for approval
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
 
       {/* KPI strip */}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -157,7 +162,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         {/* Batch table */}
         <section className="border-line bg-panel rounded-lg border">
           <div className="border-line flex items-center justify-between border-b px-4 py-2.5">
@@ -263,7 +268,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
 
         {/* Bank file preview */}
         <aside className="flex flex-col gap-4">
-          <div className="border-line bg-panel overflow-hidden rounded-lg border">
+          <div className="border-line bg-panel overflow-x-auto rounded-lg border">
             <div className="border-line flex items-center justify-between border-b px-4 py-2.5">
               <h2 className="text-ink text-[13px] font-semibold">Bank file preview</h2>
               <span className="text-faint font-numeric text-[11px]">
@@ -303,35 +308,55 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
               </div>
             )}
           </div>
+
+          {/* The trust column. Same position on every document detail page. */}
+          <DocumentLedger entityId={data.id} />
         </aside>
       </div>
 
-      {/* Approval flow */}
+      {/* Approval flow. The composer and the bank hand-off are not approval
+          steps — they bracket the route — so they stay outside the chain while
+          the approvals themselves render through the shared component. */}
       <section className="mt-5">
-        <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval flow</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <ChainStep
-            label="Composer"
-            state="done"
-            sub={data.composedByName ?? undefined}
+        <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval route</h2>
+        <div className="border-line bg-panel rounded-lg border p-4">
+          <ApprovalChain
+            steps={[
+              ...data.liveApprovalChain,
+              ...(mdSkipped(data)
+                ? [
+                    {
+                      stepNo: 99,
+                      name: 'Managing Director',
+                      role: 'MANAGING_DIRECTOR',
+                      slaHours: 0,
+                      parallelGroup: null,
+                      approverName: 'Managing Director',
+                      decision: 'PENDING' as const,
+                      skipped: true,
+                      skipReason: 'Skipped — run is below the ₹50L MD threshold.',
+                    },
+                  ]
+                : []),
+            ]}
           />
-          {data.liveApprovalChain.map((s) => (
-            <LiveStep
-              key={`${s.stepNo}-${s.approvalId ?? s.approverId ?? s.stepNo}`}
-              step={s}
-            />
-          ))}
-          {mdSkipped(data) && (
-            <ChainStep
-              label="Managing Director"
-              state="skipped"
-              sub="Skipped: below ₹50L"
-            />
-          )}
-          <ChainStep
-            label="Bank submission"
-            state={isSubmitted ? 'done' : data.status === 'APPROVED' ? 'current' : 'todo'}
-          />
+
+          <dl className="border-line text-muted mt-3 flex flex-wrap gap-x-6 gap-y-1 border-t pt-3 text-[11px]">
+            <div className="flex gap-1.5">
+              <dt>Composed by</dt>
+              <dd className="text-text font-medium">{data.composedByName ?? '—'}</dd>
+            </div>
+            <div className="flex gap-1.5">
+              <dt>Bank submission</dt>
+              <dd className="text-text font-medium">
+                {isSubmitted
+                  ? 'Sent'
+                  : data.status === 'APPROVED'
+                    ? 'Ready to send'
+                    : 'Not yet'}
+              </dd>
+            </div>
+          </dl>
         </div>
       </section>
 
@@ -340,14 +365,15 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
       {/* Sticky action bar */}
       {isAwaiting && (
         <div className="border-line bg-panel/95 fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
             {data.canDecide ? (
               <>
                 <input
                   value={decisionComment}
                   onChange={(e) => setDecisionComment(e.target.value)}
                   placeholder="Add a decision comment…"
-                  className="border-line bg-panel flex-1 rounded-sm border px-3 py-2 text-[13px] outline-none"
+                  aria-label="Decision comment"
+                  className="border-line bg-panel min-w-0 flex-1 basis-full rounded-sm border px-3 py-2 text-[13px] outline-none sm:basis-auto"
                 />
                 <div className="flex items-center gap-2">
                   <Button
@@ -366,8 +392,10 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                   >
                     Request changes
                   </Button>
+                  {/* Approving a payment run releases money to vendors — the
+                      single most consequential action in the product. */}
                   <Button
-                    variant="accent"
+                    variant="commit"
                     disabled={decide.isPending}
                     onClick={() => onDecide('APPROVE')}
                   >
@@ -457,20 +485,3 @@ function ChainStep({
   );
 }
 
-function LiveStep({ step }: { step: LiveApprovalStep }): React.JSX.Element {
-  const state =
-    step.decision === 'APPROVED' ? 'done' : step.isCurrent ? 'current' : 'todo';
-  return (
-    <ChainStep
-      label={step.approverName ?? step.name}
-      state={state}
-      sub={
-        step.decision === 'APPROVED'
-          ? 'Approved'
-          : step.isCurrent
-            ? 'Awaiting'
-            : step.name
-      }
-    />
-  );
-}

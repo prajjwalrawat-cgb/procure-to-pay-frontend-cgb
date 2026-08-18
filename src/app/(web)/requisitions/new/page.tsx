@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, FileText, Plus, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -247,9 +247,10 @@ export default function NewRequisitionPage(): React.JSX.Element {
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisitions
       </Link>
-      <h1 className="mb-4 text-[20px] font-semibold tracking-heading text-ink">
-        New requisition
-      </h1>
+      <PageHeader
+        title="New requisition"
+        description="Raise a purchase request for approval and sourcing."
+      />
 
       {/* Step indicator */}
       <div className="mb-5 flex items-center gap-2">

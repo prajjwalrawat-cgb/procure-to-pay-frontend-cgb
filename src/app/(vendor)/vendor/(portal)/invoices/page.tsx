@@ -127,7 +127,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
         </span>
       </div>
 
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">

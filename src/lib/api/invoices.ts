@@ -38,10 +38,24 @@ export function useInvoiceCounts(): UseQueryResult<InvoiceTabCounts> {
   });
 }
 
+/**
+ * Statuses an invoice only passes through — OCR is queued, so the page is open
+ * before the worker has extracted anything or run the 3-way match. Nothing
+ * pushes that result to the browser, so the query polls itself until the
+ * pipeline settles (OCR_DONE, MATCH_EXCEPTION, or a manual-review state) and
+ * then stops. Without this the exceptions appear only on a manual refresh.
+ */
+const PIPELINE_IN_FLIGHT = ['RECEIVED', 'OCR_PENDING'];
+const PIPELINE_POLL_MS = 3000;
+
 export function useInvoice(id: string): UseQueryResult<InvoiceDetailResponse> {
   return useQuery({
     queryKey: invoiceKeys.detail(id),
     queryFn: () => apiFetch<InvoiceDetailResponse>(`/invoices/${id}`),
+    refetchInterval: (query) =>
+      PIPELINE_IN_FLIGHT.includes(query.state.data?.status ?? '')
+        ? PIPELINE_POLL_MS
+        : false,
   });
 }
 
