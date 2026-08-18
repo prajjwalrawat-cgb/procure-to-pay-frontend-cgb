@@ -1,7 +1,7 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
-import { MoreHorizontal, Plus } from 'lucide-react';
+import { Button, PageHeader, Pill, TableState } from '@/components/ui';
+import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -20,29 +20,25 @@ const TABS: { key: PoTab; label: string }[] = [
 export default function PurchaseOrdersPage(): React.JSX.Element {
   const tenantName = useTenantName();
   const [tab, setTab] = useState<PoTab>('open');
-  const { data, isLoading } = usePurchaseOrders(tab);
+  const { data, isLoading, error, refetch } = usePurchaseOrders(tab);
   const counts = data?.counts;
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Purchase orders
-          </h1>
-          <p className="text-muted text-[13px]">
-            Issued & in-flight orders{tenantSuffix(tenantName)}
-          </p>
-        </div>
-        {/* Spot buy — no requisition behind it; see /purchase-orders/new. */}
-        <Link href="/purchase-orders/new">
-          <Button variant="accent" size="sm">
-            <Plus className="h-3.5 w-3.5" /> New PO
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Purchase orders"
+        description={`Issued & in-flight orders${tenantSuffix(tenantName)}`}
+        actions={
+          // Spot buy — no requisition behind it; see /purchase-orders/new.
+          <Link href="/purchase-orders/new">
+            <Button variant="primary" size="sm">
+              <Plus className="h-3.5 w-3.5" /> New PO
+            </Button>
+          </Link>
+        }
+      />
 
-      <div className="border-line mb-3 flex items-center gap-1 border-b">
+      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -63,7 +59,7 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
         ))}
       </div>
 
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">
           <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
             <tr>
@@ -74,24 +70,31 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
               <th className="px-3 py-2 font-medium">Fulfilment</th>
               <th className="px-3 py-2 font-medium">Expected</th>
               <th className="px-3 py-2 text-right font-medium">Value</th>
-              <th className="w-8 px-3 py-2" />
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={8} className="text-muted px-3 py-8 text-center">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && (data?.items.length ?? 0) === 0 && (
-              <tr>
-                <td colSpan={8} className="text-muted px-3 py-8 text-center">
-                  No purchase orders in this view.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={7}
+              isLoading={isLoading}
+              error={error}
+              isEmpty={(data?.items.length ?? 0) === 0}
+              onRetry={() => void refetch()}
+              empty={{
+                title: 'No purchase orders in this view',
+                detail:
+                  tab === 'open'
+                    ? 'Approved requisitions converted to orders will appear here.'
+                    : 'Orders reach this view as they move through their lifecycle.',
+                action:
+                  tab === 'open' ? (
+                    <Link href="/purchase-orders/new">
+                      <Button variant="primary" size="sm">
+                        <Plus className="h-3.5 w-3.5" /> New PO
+                      </Button>
+                    </Link>
+                  ) : undefined,
+              }}
+            />
             {data?.items.map((po) => (
               <tr key={po.id} className="border-line hover:bg-canvas/60 border-t">
                 <td className="px-3 py-2">
@@ -129,15 +132,6 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
                 </td>
                 <td className="font-numeric text-ink px-3 py-2 text-right font-medium">
                   {inr(po.totalAmount)}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <button
-                    type="button"
-                    aria-label="More"
-                    className="text-muted hover:bg-line rounded-sm p-1"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
                 </td>
               </tr>
             ))}

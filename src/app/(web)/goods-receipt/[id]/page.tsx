@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { History } from 'lucide-react';
+
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  Pill,
+  StageStrip,
+} from '@/components/ui';
+
+import { DocumentLedger } from '@/components/document-ledger';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -33,20 +43,21 @@ export default function ReceiptDetailPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="tracking-heading font-numeric text-ink text-[20px] font-semibold">
-              {data.number}
-            </h1>
+      <PageHeader
+        title={data.number}
+        numeric
+        meta={
+          <>
             <Pill variant={statusVariant(data.status)} dot>
               {statusLabel(data.status)}
             </Pill>
             <Pill variant={statusVariant(data.qcStatus)}>
               QC · {statusLabel(data.qcStatus)}
             </Pill>
-          </div>
-          <p className="text-muted text-[13px]">
+          </>
+        }
+        description={
+          <>
             {data.vendor.name} · PO{' '}
             <Link
               href={`/purchase-orders/${data.po.id}`}
@@ -54,9 +65,10 @@ export default function ReceiptDetailPage(): React.JSX.Element {
             >
               {data.po.number}
             </Link>
-          </p>
-        </div>
-        <div className="flex gap-2">
+          </>
+        }
+        actions={
+          <>
           {data.canStartQc || data.status === 'DRAFT' ? (
             data.status === 'DRAFT' ? (
               <Button
@@ -108,26 +120,20 @@ export default function ReceiptDetailPage(): React.JSX.Element {
               Reverse
             </Button>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {/* Stage strip */}
-      <div className="mb-4 flex gap-1">
-        {data.stages.map((s) => (
-          <div
-            key={s.key}
-            className={
-              'flex-1 rounded-sm px-2 py-1.5 text-center text-[11px] font-medium ' +
-              (s.state === 'done'
-                ? 'bg-accent-wash text-accent-2'
-                : s.state === 'active'
-                  ? 'bg-ink text-white'
-                  : 'bg-canvas text-faint')
-            }
-          >
-            {s.label}
-          </div>
-        ))}
+      <div className="border-line bg-panel mb-4 rounded-lg border p-3.5">
+        <StageStrip
+          stages={data.stages.map((s) => ({ key: s.key, label: s.label }))}
+          activeIndex={Math.max(
+            0,
+            data.stages.findIndex((s) => s.state === 'active'),
+          )}
+          failed={data.status === 'REVERSED'}
+          failedLabel={statusLabel(data.status)}
+        />
       </div>
 
       {data.varianceFlags.length > 0 && (
@@ -137,11 +143,11 @@ export default function ReceiptDetailPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-2 space-y-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           {/* Gate details */}
           <Card title="Gate details">
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-[12px]">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-2">
               <Def k="Gate entry" v={data.gate.gateEntryRef} />
               <Def k="Vehicle" v={data.gate.vehicleNo} />
               <Def k="Driver" v={data.gate.driverName} />
@@ -158,7 +164,10 @@ export default function ReceiptDetailPage(): React.JSX.Element {
 
           {/* Lines */}
           <Card title="Line items">
-            <table className="w-full text-[12px]">
+            {/* Six columns will not fit a phone; the table scrolls inside the
+                card rather than widening the page. */}
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-[12px]">
               <thead className="text-faint text-left text-[10px] uppercase">
                 <tr>
                   <th className="py-1">Item</th>
@@ -192,6 +201,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                 ))}
               </tbody>
             </table>
+            </div>
           </Card>
 
           {/* QC samples */}
@@ -228,16 +238,28 @@ export default function ReceiptDetailPage(): React.JSX.Element {
 
           {/* Activity */}
           <Card title="Activity">
-            <ul className="space-y-1 text-[12px]">
-              {data.activity.map((a) => (
-                <li key={a.id} className="flex justify-between">
-                  <span className="text-text">{a.action}</span>
-                  <span className="text-faint font-numeric">
-                    {new Date(a.at).toLocaleString('en-IN')}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {/* Rendered as a bare heading over an empty <ul> when there was no
+                activity, which reads as a broken panel rather than "nothing
+                has happened yet". */}
+            {data.activity.length === 0 ? (
+              <EmptyState
+                compact
+                icon={History}
+                title="No activity recorded"
+                detail="Receipt events will be listed here as they happen."
+              />
+            ) : (
+              <ul className="space-y-1 text-[12px]">
+                {data.activity.map((a) => (
+                  <li key={a.id} className="flex justify-between gap-3">
+                    <span className="text-text">{a.action}</span>
+                    <span className="text-faint font-numeric shrink-0">
+                      {new Date(a.at).toLocaleString('en-IN')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </div>
 
@@ -304,6 +326,9 @@ export default function ReceiptDetailPage(): React.JSX.Element {
               {inr(data.totals.value)}
             </p>
           </Card>
+
+          {/* The trust column. Same position on every document detail page. */}
+          <DocumentLedger entityId={data.id} />
         </div>
       </div>
     </div>

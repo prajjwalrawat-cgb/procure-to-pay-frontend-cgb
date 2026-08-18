@@ -117,7 +117,7 @@ export default function AuditPage(): React.JSX.Element {
 
       {isLoading && <div className="text-muted text-[13px]">Loading…</div>}
 
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">
           <thead className="border-line text-faint border-b text-[11px] uppercase tracking-wide">
             <tr>

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { NotificationsTray } from '@/components/notifications-tray';
 import { LIVE_ROUTES, NAV_GROUPS } from '@/config/nav';
@@ -39,6 +39,13 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
   const { user, setSession, clear } = useSessionStore();
   const { data: approvalCounts } = useSidebarCounts();
   const { data: unread } = useUnreadCount();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Navigating from the drawer should close it; otherwise the new page renders
+  // behind an overlay that is still up.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   // Inject pending-approval badges onto the Inbox + Invoices nav items.
   const navGroups = NAV_GROUPS.map((group) => ({
@@ -126,15 +133,19 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
 
   return (
     <div className="bg-paper flex h-screen overflow-hidden">
+      <a href="#main-content" className="pf-skip-link">
+        Skip to content
+      </a>
+
       {!focusMode && (
         <Sidebar
           brand={
             <div className="flex items-center gap-2">
-              <span className="bg-ink flex h-6 w-6 items-center justify-center rounded-sm text-white">
+              <span className="bg-gold text-navy flex h-6 w-6 items-center justify-center rounded-sm">
                 <span className="font-numeric text-[12px] font-bold">P</span>
               </span>
-              {!sidebarCollapsed && (
-                <span className="tracking-heading text-ink text-[14px] font-semibold">
+              {(!sidebarCollapsed || mobileNavOpen) && (
+                <span className="tracking-heading text-on-navy text-[14px] font-semibold">
                   ProcureFlow
                 </span>
               )}
@@ -144,12 +155,15 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
           activeHref={pathname}
           collapsed={sidebarCollapsed}
           renderLink={renderLink}
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
         />
       )}
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar
           onToggleSidebar={toggleSidebar}
+          onOpenMobileNav={() => setMobileNavOpen(true)}
           onOpenCommand={() => setCommandOpen(true)}
           onToggleFocus={toggleFocus}
           onOpenNotifications={() => setTrayOpen(true)}
@@ -159,13 +173,23 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
               <Avatar>
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <Button variant="ghost" size="sm" onClick={() => void logout()}>
+              <Button
+                variant="onNavy"
+                size="sm"
+                onClick={() => void logout()}
+                className="hidden sm:inline-flex"
+              >
                 Logout
               </Button>
             </div>
           }
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6"
+        >
+          {children}
+        </main>
       </div>
 
       <CommandPalette

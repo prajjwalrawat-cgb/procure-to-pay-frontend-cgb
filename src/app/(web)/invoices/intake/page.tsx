@@ -1,7 +1,7 @@
 'use client';
 
 import type { InvoiceListResponse } from '@/lib/shared';
-import { Pill } from '@/components/ui';
+import { DataState, PageHeader, Pill, SandboxBanner } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,10 +14,14 @@ import {
 } from '@/lib/api/integrations';
 import { useVendorList } from '@/lib/api/vendors';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { useProviderLiveness } from '@/lib/integration-status';
+import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 export default function InvoiceIntakePage(): React.JSX.Element {
-  const { data: inbound } = useInboundEmails();
+  const tenantName = useTenantName();
+  const inboundQ = useInboundEmails();
+  const inbound = inboundQ.data;
   const review = useQuery({
     queryKey: ['invoices', 'ocr-review'],
     queryFn: () =>
@@ -25,6 +29,7 @@ export default function InvoiceIntakePage(): React.JSX.Element {
         '/invoices?status=OCR_LOW_CONFIDENCE,OCR_FAILED&limit=50',
       ),
   });
+  const { isSimulated } = useProviderLiveness();
 
   const pending = (inbound?.items ?? []).filter(
     (e) => e.status === 'PENDING_VENDOR_MATCH',
@@ -33,54 +38,85 @@ export default function InvoiceIntakePage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-4">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Invoice intake
-        </h1>
-        <p className="text-muted text-[13px]">
-          Email → invoice, manual OCR review, and quarantined senders · AP queue
-        </p>
-      </div>
+      <PageHeader
+        title="Invoice intake"
+        description={`Email → invoice, manual OCR review, and quarantined senders · AP queue${tenantSuffix(tenantName)}`}
+      />
+
+      {/* Every invoice in this queue was read by the OCR provider. When that
+          provider is a sandbox, the extracted figures below are fabricated —
+          and this is the screen where a human copies them into a real invoice. */}
+      {isSimulated('OCR') && (
+        <SandboxBanner className="mb-4">
+          <span className="font-semibold">OCR is running against a sandbox.</span>{' '}
+          Extracted values on this queue are simulated, not read from the supplier&rsquo;s
+          document. Verify every figure against the source PDF before saving.
+        </SandboxBanner>
+      )}
 
       <Section
         title="OCR review — low confidence / failed"
         count={review.data?.items.length ?? 0}
       >
-        {!review.data || review.data.items.length === 0 ? (
-          <Empty text="Nothing awaiting manual data entry." />
-        ) : (
-          review.data.items.map((inv) => (
-            <ReviewRow key={inv.id} inv={inv} onDone={() => review.refetch()} />
-          ))
-        )}
+        {/* Previously `!review.data` rendered the empty message, so a slow or
+            failed fetch read as "nothing to review" on a work queue. */}
+        <DataState
+          isLoading={review.isLoading}
+          error={review.error}
+          isEmpty={(review.data?.items.length ?? 0) === 0}
+          onRetry={() => void review.refetch()}
+          compact
+          empty={{
+            title: 'Nothing awaiting manual data entry',
+            detail: 'Invoices whose OCR came back low-confidence or failed land here.',
+          }}
+        >
+          {review.data?.items.map((inv) => (
+            <ReviewRow key={inv.id} inv={inv} onDone={() => void review.refetch()} />
+          ))}
+        </DataState>
       </Section>
 
       <Section title="Pending vendor match — unrecognised senders" count={pending.length}>
-        {pending.length === 0 ? (
-          <Empty text="No emails awaiting vendor attribution." />
-        ) : (
-          pending.map((e) => <PendingRow key={e.id} email={e} />)
-        )}
+        <DataState
+          isLoading={inboundQ.isLoading}
+          error={inboundQ.error}
+          isEmpty={pending.length === 0}
+          onRetry={() => void inboundQ.refetch()}
+          compact
+          empty={{ title: 'No emails awaiting vendor attribution' }}
+        >
+          {pending.map((e) => (
+            <PendingRow key={e.id} email={e} />
+          ))}
+        </DataState>
       </Section>
 
       <Section title="Dead letter — malformed emails" count={dead.length}>
-        {dead.length === 0 ? (
-          <Empty text="No dead-lettered emails." />
-        ) : (
-          <table className="w-full text-[13px]">
-            <tbody>
-              {dead.map((e) => (
-                <tr key={e.id} className="border-line border-b last:border-0">
-                  <td className="py-1.5">{e.fromEmail}</td>
-                  <td className="text-muted py-1.5">{e.subject ?? '—'}</td>
-                  <td className="py-1.5 text-right">
-                    <Pill variant="danger">{e.deadLetterReason}</Pill>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <DataState
+          isLoading={inboundQ.isLoading}
+          error={inboundQ.error}
+          isEmpty={dead.length === 0}
+          onRetry={() => void inboundQ.refetch()}
+          compact
+          empty={{ title: 'No dead-lettered emails' }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <tbody>
+                {dead.map((e) => (
+                  <tr key={e.id} className="border-line border-b last:border-0">
+                    <td className="py-1.5">{e.fromEmail}</td>
+                    <td className="text-muted py-1.5">{e.subject ?? '—'}</td>
+                    <td className="py-1.5 text-right">
+                      <Pill variant="danger">{e.deadLetterReason}</Pill>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </DataState>
       </Section>
     </div>
   );
@@ -138,7 +174,7 @@ function ReviewRow({
         </button>
       </div>
       {open && (
-        <div className="bg-canvas mt-2 grid grid-cols-4 gap-2 rounded-md p-2">
+        <div className="bg-canvas mt-2 grid grid-cols-1 gap-2 rounded-md p-2 sm:grid-cols-2 lg:grid-cols-4">
           <input
             className={i}
             placeholder="Vendor inv ref"
@@ -166,7 +202,7 @@ function ReviewRow({
           <button
             type="button"
             onClick={submit}
-            className="bg-accent col-span-4 rounded-md px-3 py-1.5 text-[13px] font-medium text-white"
+            className="bg-accent rounded-md px-3 py-1.5 text-[13px] font-medium text-white sm:col-span-2 lg:col-span-4"
           >
             Save & match
           </button>
@@ -247,6 +283,3 @@ function Section({
   );
 }
 
-function Empty({ text }: { text: string }): React.JSX.Element {
-  return <p className="text-muted py-4 text-center text-[13px]">{text}</p>;
-}

@@ -26,3 +26,31 @@ export const TooltipContent = React.forwardRef<
   </TooltipPrimitive.Portal>
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+
+/**
+ * The compound Root/Trigger/Content dance, bundled. Most call sites just want
+ * "this element, with this explanation on hover and focus". `asChild` keeps the
+ * trigger transparent so the child element stays the only DOM node.
+ *
+ * Relies on the app-level <TooltipProvider> in app/providers.tsx.
+ */
+export function InfoTip({
+  content,
+  children,
+  side = 'top',
+  className,
+}: {
+  content: React.ReactNode;
+  children: React.ReactNode;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  className?: string;
+}): React.JSX.Element {
+  return (
+    <TooltipPrimitive.Root>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side} className={cn('max-w-[38ch] leading-relaxed', className)}>
+        {content}
+      </TooltipContent>
+    </TooltipPrimitive.Root>
+  );
+}

@@ -1,16 +1,17 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { ApprovalChain, Button, PageHeader, Pill, StageStrip } from '@/components/ui';
 import { AlertTriangle, ArrowLeft, FileText, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import type {
   BudgetCheckResult,
-  LiveApprovalStep,
   RequisitionAttachmentType,
   RequisitionAttachmentView,
 } from '@/lib/shared';
+
+import { DocumentLedger } from '@/components/document-ledger';
 import { REQUISITION_ATTACHMENT_TYPE } from '@/lib/shared';
 
 import {
@@ -101,51 +102,49 @@ export default function RequisitionDetailPage(): React.JSX.Element {
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisitions
       </Link>
 
-      {/* Header */}
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink flex items-center gap-2 text-[20px] font-semibold">
-            <span className="font-numeric">{data.number}</span>
+      <PageHeader
+        title={data.number}
+        numeric
+        meta={
+          <>
             <Pill variant={statusVariant(data.status)} dot>
               {statusLabel(data.status)}
             </Pill>
-            <Pill variant={priorityVariant(data.priority)}>{data.priority}</Pill>
-          </h1>
-          <p className="text-text mt-0.5 text-[15px] font-medium">{data.title}</p>
-          <p className="text-muted text-[12px]">
+            {data.priority !== 'STANDARD' && (
+              <Pill variant={priorityVariant(data.priority)}>{data.priority}</Pill>
+            )}
+          </>
+        }
+        description={
+          <>
+            <span className="text-text text-[15px] font-medium">{data.title}</span>
+            <br />
             {data.requester.name}
             {data.requester.deptName ? ` · ${data.requester.deptName}` : ''} · Needed{' '}
             {data.neededBy ? new Date(data.neededBy).toLocaleDateString('en-IN') : '—'} ·{' '}
             {data.agingDays}d old
-          </p>
-        </div>
+          </>
+        }
+      />
+
+      <div className="border-line bg-panel mb-5 rounded-lg border p-3.5">
+        <StageStrip
+          stages={data.stages.map((s) => ({ key: s.key, label: s.label }))}
+          activeIndex={Math.max(
+            0,
+            data.stages.findIndex((s) => s.state === 'active'),
+          )}
+          failed={data.status === 'REJECTED' || data.status === 'CANCELLED'}
+          failedLabel={statusLabel(data.status)}
+        />
       </div>
 
-      {/* Stage strip */}
-      <div className="mb-5 flex items-center gap-1 overflow-x-auto">
-        {data.stages.map((s) => (
-          <span
-            key={s.key}
-            className={
-              'rounded-xs whitespace-nowrap px-2.5 py-1 text-[12px] font-medium ' +
-              (s.state === 'done'
-                ? 'bg-accent-wash text-accent-2'
-                : s.state === 'active'
-                  ? 'bg-ink text-white'
-                  : 'bg-canvas text-faint')
-            }
-          >
-            {s.label}
-          </span>
-        ))}
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-5">
           {/* Line items */}
           <section>
             <h2 className="text-ink mb-2 text-[14px] font-semibold">Line items</h2>
-            <div className="border-line bg-panel overflow-hidden rounded-lg border">
+            <div className="border-line bg-panel overflow-x-auto rounded-lg border">
               <table className="w-full text-[12px]">
                 <thead className="bg-canvas text-faint text-left text-[10px] uppercase tracking-wide">
                   <tr>
@@ -191,19 +190,9 @@ export default function RequisitionDetailPage(): React.JSX.Element {
 
           {/* Approval chain */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval chain</h2>
-            <div className="flex flex-wrap items-center gap-2">
-              {data.liveApprovalChain.map((s) => (
-                <ApprovalStepPill
-                  key={`${s.stepNo}-${s.approvalId ?? s.stepNo}`}
-                  step={s}
-                />
-              ))}
-              {data.liveApprovalChain.length === 0 && (
-                <span className="text-muted text-[12px]">
-                  No approval steps resolved yet.
-                </span>
-              )}
+            <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval route</h2>
+            <div className="border-line bg-panel rounded-lg border p-4">
+              <ApprovalChain steps={data.liveApprovalChain} />
             </div>
           </section>
 
@@ -371,19 +360,23 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               <Row label="Aging" value={`${data.agingDays}d`} />
             </dl>
           </div>
+
+          {/* The trust column. Same position on every document detail page. */}
+          <DocumentLedger entityId={data.id} />
         </aside>
       </div>
 
       {/* Sticky action bar */}
       <div className="border-line bg-panel/95 fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
           {data.canDecide ? (
             <>
               <input
                 value={decisionComment}
                 onChange={(e) => setDecisionComment(e.target.value)}
                 placeholder="Add a decision comment…"
-                className="border-line bg-panel flex-1 rounded-sm border px-3 py-2 text-[13px] outline-none"
+                aria-label="Decision comment"
+                className="border-line bg-panel min-w-0 flex-1 basis-full rounded-sm border px-3 py-2 text-[13px] outline-none sm:basis-auto"
               />
               <div className="flex items-center gap-2">
                 <Button
@@ -403,7 +396,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                   Request changes
                 </Button>
                 <Button
-                  variant="accent"
+                  variant="commit"
                   disabled={decide.isPending}
                   onClick={() => onDecide('APPROVE')}
                 >
@@ -462,7 +455,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               )}
               {data.canCreatePo && (
                 <Button
-                  variant="accent"
+                  variant="commit"
                   size="sm"
                   onClick={() => router.push(`/requisitions/${id}/create-po`)}
                 >
@@ -667,49 +660,6 @@ function AttachmentsSection(props: {
         </div>
       )}
     </section>
-  );
-}
-
-function ApprovalStepPill({ step: s }: { step: LiveApprovalStep }): React.JSX.Element {
-  return (
-    <span
-      className={
-        'flex items-center gap-2 rounded-sm border px-2.5 py-1.5 text-[12px] ' +
-        (s.isCurrent
-          ? 'border-accent bg-accent-wash'
-          : s.decision === 'REJECTED'
-            ? 'border-danger/40 bg-danger-wash'
-            : 'border-line bg-panel')
-      }
-    >
-      <span className="bg-canvas font-numeric flex h-5 w-5 items-center justify-center rounded-full text-[10px]">
-        {s.stepNo}
-      </span>
-      <span className="text-text font-medium">
-        {s.approverName ?? s.role.replace(/_/g, ' ')}
-      </span>
-      <Pill
-        variant={
-          s.decision === 'APPROVED'
-            ? 'success'
-            : s.decision === 'REJECTED'
-              ? 'danger'
-              : s.slaStatus === 'breach'
-                ? 'danger'
-                : s.slaStatus === 'warn'
-                  ? 'warn'
-                  : 'gray'
-        }
-        dot
-      >
-        {s.decision === 'PENDING'
-          ? s.isCurrent
-            ? 'Current'
-            : 'Pending'
-          : s.decision.replace(/_/g, ' ')}
-      </Pill>
-      {s.isEscalation && <span className="text-warn text-[10px] font-semibold">ESC</span>}
-    </span>
   );
 }
 

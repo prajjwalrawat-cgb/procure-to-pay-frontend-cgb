@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import type {
   ClauseLibraryItem,
   PaymentTermKind,
@@ -269,13 +269,10 @@ export default function NewSpotBuyPage(): React.JSX.Element {
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
       </Link>
-      <h1 className="mb-1 text-[20px] font-semibold tracking-heading text-ink">
-        New purchase order
-      </h1>
-      <p className="mb-4 text-[13px] text-muted">
-        Raised directly against a vendor quote — no requisition required. It still goes
-        through the normal PO approval before it can be issued.
-      </p>
+      <PageHeader
+        title="New purchase order"
+        description="Raised directly against a vendor quote — no requisition required. It still goes through the normal PO approval before it can be issued."
+      />
 
       <ol className="mb-5 flex flex-wrap items-center gap-2">
         {STEPS.map((s, i) => (

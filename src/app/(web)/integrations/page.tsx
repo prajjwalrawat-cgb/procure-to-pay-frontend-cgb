@@ -1,8 +1,9 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill, SandboxBanner, SandboxChip } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
+import type { IntegrationProvider } from '@/lib/shared';
 
 import {
   useCredentialStatus,
@@ -11,10 +12,11 @@ import {
   useSetCredential,
 } from '@/lib/api/integrations';
 import { inr } from '@/lib/format';
+import { useProviderLiveness } from '@/lib/integration-status';
 import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
-const PROVIDERS = ['OCR', 'GSP', 'EMAIL_INBOUND'];
+const PROVIDERS: IntegrationProvider[] = ['OCR', 'GSP', 'EMAIL_INBOUND'];
 const thisMonth = new Date().toISOString().slice(0, 7);
 
 export default function IntegrationsPage(): React.JSX.Element {
@@ -31,6 +33,7 @@ export default function IntegrationsPage(): React.JSX.Element {
   const [value, setValue] = useState('');
 
   const configured = new Map((creds ?? []).map((c) => [c.provider, c]));
+  const { isSimulated } = useProviderLiveness();
 
   const save = async (): Promise<void> => {
     if (!value) {
@@ -50,16 +53,23 @@ export default function IntegrationsPage(): React.JSX.Element {
     }
   };
 
+  const anySimulated = PROVIDERS.some((p) => isSimulated(p));
+
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-4">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Integrations
-        </h1>
-        <p className="text-muted text-[13px]">
-          Provider credentials (encrypted at rest) & per-tenant usage{tenantSuffix(tenantName)}
-        </p>
-      </div>
+      <PageHeader
+        title="Integrations"
+        description={`Provider credentials (encrypted at rest) & per-tenant usage${tenantSuffix(tenantName)}`}
+      />
+
+      {anySimulated && (
+        <SandboxBanner className="mb-4">
+          <span className="font-semibold">Some providers are simulated.</span> Results
+          from them are produced by a sandbox and carry no assurance — they are marked
+          throughout the app. A credential can be configured and still be a sandbox key,
+          so the badges below reflect what the recorded calls actually returned.
+        </SandboxBanner>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Credential vault */}
@@ -67,17 +77,32 @@ export default function IntegrationsPage(): React.JSX.Element {
           <h2 className="text-ink mb-2 text-[13px] font-semibold">Credentials</h2>
           <div className="mb-3 space-y-1">
             {PROVIDERS.map((p) => {
-              const c = configured.get(p as never);
+              const c = configured.get(p);
+              const simulated = isSimulated(p);
               return (
-                <div key={p} className="flex items-center justify-between text-[13px]">
+                <div
+                  key={p}
+                  className="flex flex-wrap items-center justify-between gap-1.5 text-[13px]"
+                >
                   <span className="font-numeric">{p}</span>
-                  {c ? (
-                    <Pill variant="success" dot>
-                      configured{c.label ? ` · ${c.label}` : ''}
-                    </Pill>
-                  ) : (
-                    <Pill variant="gray">using sandbox simulator</Pill>
-                  )}
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    {/* Green is reserved for a provider whose recorded calls came
+                        back real. A configured-but-sandbox credential (the demo
+                        tenant's GSP is exactly that) previously rendered the same
+                        green "configured" as a live one. */}
+                    {!c ? (
+                      <Pill variant="gray">using sandbox simulator</Pill>
+                    ) : (
+                      <Pill variant={simulated ? 'outline' : 'success'} dot={!simulated}>
+                        configured{c.label ? ` · ${c.label}` : ''}
+                      </Pill>
+                    )}
+                    <SandboxChip
+                      simulated={simulated}
+                      label={`${p} responses`}
+                      size="xs"
+                    />
+                  </span>
                 </div>
               );
             })}
@@ -168,10 +193,19 @@ export default function IntegrationsPage(): React.JSX.Element {
                     className="border-line border-b last:border-0"
                   >
                     <td className="py-1.5">
-                      {r.operation}
-                      {r.simulatedCalls > 0 && (
-                        <span className="text-faint ml-1 text-[11px]">(sim)</span>
-                      )}
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        {r.operation}
+                        {/* Was a faint grey "(sim)" that read as a footnote. */}
+                        <SandboxChip
+                          simulated={r.simulatedCalls > 0}
+                          label={
+                            r.simulatedCalls === r.calls
+                              ? `${r.operation} calls — all ${r.calls} simulated`
+                              : `${r.operation} calls — ${r.simulatedCalls} of ${r.calls} simulated`
+                          }
+                          size="xs"
+                        />
+                      </span>
                     </td>
                     <td className="font-numeric py-1.5 text-right">{r.calls}</td>
                     <td className="font-numeric py-1.5 text-right">{r.errors}</td>

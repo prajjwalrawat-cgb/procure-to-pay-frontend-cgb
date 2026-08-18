@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -45,9 +45,10 @@ export default function NewPaymentRunPage(): React.JSX.Element {
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to payment runs
       </Link>
-      <h1 className="tracking-heading text-ink mb-4 text-[20px] font-semibold">
-        New payment run
-      </h1>
+      <PageHeader
+        title="New payment run"
+        description="Pick a cycle date and the bank account the file will be drawn on."
+      />
 
       <div className="border-line bg-panel flex flex-col gap-4 rounded-lg border p-5">
         <label className="flex flex-col gap-1">

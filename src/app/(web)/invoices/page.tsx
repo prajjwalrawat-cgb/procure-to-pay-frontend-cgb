@@ -1,9 +1,16 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import {
+  Button,
+  Input,
+  NotShipped,
+  PageHeader,
+  Pill,
+  TableState,
+} from '@/components/ui';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import type { InvoiceTab } from '@/lib/shared';
 
 import { EntityRef } from '@/components/entity-ref';
@@ -37,7 +44,7 @@ export default function InvoicesInboxPage(): React.JSX.Element {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const { data: counts } = useInvoiceCounts();
-  const { data, isLoading } = useInvoices(tab);
+  const { data, isLoading, error, refetch } = useInvoices(tab);
   const toast = useToastStore((s) => s.push);
 
   const rows = useMemo(() => {
@@ -60,34 +67,29 @@ export default function InvoicesInboxPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Invoices
-          </h1>
-          <p className="text-muted text-[13px]">
-            Accounts payable inbox{tenantSuffix(tenantName)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => toast('Import coming in a later slice', 'info')}
-          >
-            Import
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => toast('Manual invoice entry coming soon', 'info')}
-          >
-            New invoice
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Invoices"
+        description={`Accounts payable inbox${tenantSuffix(tenantName)}`}
+        actions={
+          <>
+            {/* Both of these were live-looking buttons whose only behaviour was
+                a "coming soon" toast. Marked rather than removed so the roadmap
+                stays visible without pretending the capability is here. */}
+            <NotShipped reason="Bulk invoice import arrives in a later slice.">
+              <Button variant="default" size="sm" disabled>
+                Import
+              </Button>
+            </NotShipped>
+            <NotShipped reason="Manual invoice entry arrives in a later slice. Invoices currently arrive by email intake or vendor submission.">
+              <Button variant="default" size="sm" disabled>
+                New invoice
+              </Button>
+            </NotShipped>
+          </>
+        }
+      />
 
-      <div className="border-line mb-3 flex items-center gap-1 border-b">
+      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -140,7 +142,7 @@ export default function InvoicesInboxPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">
           <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
             <tr>
@@ -155,26 +157,29 @@ export default function InvoicesInboxPage(): React.JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={8} className="text-muted px-3 py-8 text-center">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && rows.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-muted px-3 py-8 text-center">
-                  No invoices in this view.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={8}
+              isLoading={isLoading}
+              error={error}
+              isEmpty={rows.length === 0}
+              onRetry={() => void refetch()}
+              empty={{
+                title: search
+                  ? 'No invoices match that search'
+                  : 'No invoices in this view',
+                detail: search
+                  ? 'Try a different invoice number or supplier name.'
+                  : 'Invoices arrive here from email intake, vendor submission, or import.',
+              }}
+            />
             {rows.map((inv) => {
               const isOpen = expanded === inv.id;
               return (
-                <>
+                // Keyed on the fragment, not the inner rows: each iteration
+                // renders a row pair (summary + expanded detail), so the key
+                // has to sit on the wrapper or React cannot reconcile them.
+                <Fragment key={inv.id}>
                   <tr
-                    key={inv.id}
                     className={
                       'border-line border-t ' +
                       (isOpen ? 'bg-canvas' : 'hover:bg-canvas/60')
@@ -250,13 +255,13 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                     </td>
                   </tr>
                   {isOpen && (
-                    <tr key={`${inv.id}-detail`}>
+                    <tr>
                       <td colSpan={8} className="p-0">
                         <RowDetail id={inv.id} />
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>

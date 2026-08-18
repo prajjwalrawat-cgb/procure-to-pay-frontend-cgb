@@ -219,7 +219,7 @@ export default function BulkUploadPage(): React.JSX.Element {
         <h2 className="text-faint mb-2 text-[11px] font-medium uppercase tracking-wide">
           Recent imports
         </h2>
-        <div className="border-line bg-panel overflow-hidden rounded-lg border">
+        <div className="border-line bg-panel overflow-x-auto rounded-lg border">
           <table className="w-full text-[13px]">
             <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
               <tr>

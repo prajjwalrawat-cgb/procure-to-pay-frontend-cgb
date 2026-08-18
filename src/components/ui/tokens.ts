@@ -1,45 +1,78 @@
 /**
- * Canonical ProcureFlow design tokens — locked from the v6 mockup
- * (Master Context §6). This file is the single source of truth; the Tailwind
- * preset and the CSS variable layer are both derived from it.
+ * Canonical ProcureFlow design tokens — "Midnight Executive".
+ *
+ * This file is the single source of truth; the Tailwind preset and the CSS
+ * variable layer are both derived from it. Nothing below is decorative: every
+ * value carries either a contrast obligation or a semantic rule.
+ *
+ * ── The three registers ────────────────────────────────────────────────────
+ *  1. NAVY is chrome. Sidebar, topbar, document headers, table header seams.
+ *     It is the institutional frame around the data, never the data surface —
+ *     this app renders dense 13.5px financial tables and long ₹ columns, which
+ *     are materially harder to scan on a dark ground.
+ *  2. ICE is surface. Page canvas and panels sit in a cool near-white range so
+ *     the navy chrome reads as a deliberate frame rather than an accident.
+ *  3. GOLD is consequence. It marks money-moving and commitment actions only —
+ *     approve, award, release a payment run. It is NOT a brand accent and must
+ *     never appear as decoration. This rule is enforced at the component API
+ *     (`<Button variant="commit">`), not by convention.
+ *
+ * ── Contrast ───────────────────────────────────────────────────────────────
+ * Every foreground token below was computed against the surface it is actually
+ * used on and meets WCAG 2.1 AA (4.5:1) as body text. The previous palette had
+ * this same discipline (see git history / docs/compliance/accessibility-review.md);
+ * the ratios were recomputed for the new hues rather than carried over.
  */
 
 export const colors = {
-  paper: '#FAFAF7', // page background
-  canvas: '#F5F5F1', // canvas below panels
+  // ── Ice surfaces (the data ground) ───────────────────────────────────────
+  paper: '#F4F7FB', // page background — ice-tinted, not neutral grey
+  canvas: '#E9EFF7', // below panels, table header fill, inset wells
   panel: '#FFFFFF',
-  ink: '#0A0A0A', // primary text, primary button
-  text: '#2E2E2C',
-  // Slice 11b — muted/faint darkened to meet WCAG 2.1 AA (4.5:1) as body text.
-  // Was #78786F (4.08:1) / #A3A39B (2.43:1) — both failed on canvas. See
-  // docs/compliance/accessibility-review.md. Three-tier hierarchy preserved
-  // (faint stays lighter than muted); the range is compressed by the AA floor.
-  muted: '#65655E', // 5.37:1 on canvas — secondary text
-  faint: '#70706B', // 4.55:1 on canvas — tertiary micro-labels
-  line: '#E8E8E1',
 
-  // accent darkened emerald-600 #059669 (3.77:1, failed as text & as button
-  // label bg) → #05835C: 4.76:1 on panel, 4.52:1 on accent-wash. Symmetric, so
-  // it fixes both accent-as-text and white-on-accent primary buttons.
-  accent: '#05835C', // emerald — single accent color
-  'accent-2': '#047857',
-  'accent-wash': '#ECFDF5',
+  // ── Navy chrome (the institutional frame) ────────────────────────────────
+  navy: '#0A1424', // near-black navy base — sidebar, deepest chrome
+  'navy-2': '#142338', // true ink-blue — elevated chrome, doc headers
+  'navy-3': '#1C2F49', // hover / active state within navy chrome
+  'on-navy': '#E6EDF7', // primary text on navy — 8.4:1 (AAA)
+  'on-navy-muted': '#9FB0C8', // secondary text on navy — 8.38:1 on navy base
 
-  danger: '#DA1C46', // was #E11D48 (4.28:1 on danger-wash) → 4.51:1
-  'danger-bg': '#FFE4E6',
-  'danger-wash': '#FFF1F2',
+  // ── Ink & text (on ice surfaces) ─────────────────────────────────────────
+  ink: '#0A1424', // primary text / headings — shares the navy base hue
+  text: '#1F2C40', // body copy
+  // Three-tier hierarchy preserved under the AA floor: faint stays lighter
+  // than muted, but the usable range is compressed by the 4.5:1 requirement.
+  muted: '#55647C', // 5.19:1 on canvas — secondary text
+  faint: '#5D6B80', // 4.73:1 on canvas — tertiary micro-labels
+  line: '#D4DEEC', // ice border
 
-  warn: '#AF6005', // was #D97706 (3.07:1 on warn-wash) → 4.50:1
-  'warn-bg': '#FEF3C7',
-  'warn-wash': '#FFFBEB',
+  // ── Gold / brass — consequence only ──────────────────────────────────────
+  // Two values because one gold cannot serve both grounds: a gold bright
+  // enough to sit on navy (7.2:1) is ~1.9:1 on white and illegible as text.
+  gold: '#C89B2C', // on-navy fills, seams, borders — 7.20:1 on navy
+  'gold-ink': '#8A6A12', // gold-as-text on light — 5.09:1 on panel, 4.65:1 on wash
+  'gold-wash': '#FBF4E2', // pale brass surface
 
-  info: '#0276B2', // was #0284C7 (3.76:1 on info-wash) → 4.55:1
-  'info-bg': '#DBEAFE',
-  'info-wash': '#EFF6FF',
+  // ── Semantic states — tuned to sit beside navy, not fight it ─────────────
+  accent: '#0F7A52', // deep emerald — 5.34:1 on panel. Positive/complete.
+  'accent-2': '#0B6141',
+  'accent-wash': '#E8F5EF',
 
-  violet: '#7C3AED',
-  'violet-bg': '#EDE9FE',
-  'violet-wash': '#F5F3FF',
+  danger: '#C2183F', // 5.99:1 on panel
+  'danger-bg': '#FBD8DF',
+  'danger-wash': '#FEF2F4',
+
+  warn: '#9A5B02', // 5.35:1 on panel
+  'warn-bg': '#FBEBCC',
+  'warn-wash': '#FDF8EE',
+
+  info: '#1D5FA8', // 6.38:1 on panel
+  'info-bg': '#D8E6F7',
+  'info-wash': '#EFF5FC',
+
+  violet: '#6D3BC7',
+  'violet-bg': '#E5DDF7',
+  'violet-wash': '#F4F0FD',
 } as const;
 
 export const radius = {
@@ -50,12 +83,16 @@ export const radius = {
   xl: '16px',
 } as const;
 
+/**
+ * Shadows are navy-tinted rather than neutral-black. On an ice ground a pure
+ * black shadow reads as grime; a blue-black one reads as depth.
+ */
 export const shadow = {
-  xs: '0 1px 2px rgba(10, 10, 10, 0.04)',
-  sm: '0 1px 3px rgba(10, 10, 10, 0.06), 0 1px 2px rgba(10, 10, 10, 0.04)',
-  md: '0 4px 8px rgba(10, 10, 10, 0.06), 0 2px 4px rgba(10, 10, 10, 0.04)',
-  lg: '0 12px 24px rgba(10, 10, 10, 0.08), 0 4px 8px rgba(10, 10, 10, 0.04)',
-  xl: '0 24px 48px rgba(10, 10, 10, 0.10), 0 8px 16px rgba(10, 10, 10, 0.05)',
+  xs: '0 1px 2px rgba(10, 20, 36, 0.05)',
+  sm: '0 1px 3px rgba(10, 20, 36, 0.07), 0 1px 2px rgba(10, 20, 36, 0.04)',
+  md: '0 4px 8px rgba(10, 20, 36, 0.07), 0 2px 4px rgba(10, 20, 36, 0.04)',
+  lg: '0 12px 24px rgba(10, 20, 36, 0.10), 0 4px 8px rgba(10, 20, 36, 0.05)',
+  xl: '0 24px 48px rgba(10, 20, 36, 0.12), 0 8px 16px rgba(10, 20, 36, 0.06)',
 } as const;
 
 export const motion = {
@@ -64,14 +101,25 @@ export const motion = {
   panel: '200ms',
 } as const;
 
+/**
+ * Three faces, three jobs:
+ *  - display — module headers and KPI values only, and only at >=18px. A serif
+ *    at table sizes reads dated and hurts scanning, so `.font-display` is the
+ *    only way to reach it and it is never applied inside a table.
+ *  - sans — the body/table face. Optimized for dense rows at 13.5px.
+ *  - mono — money, dates, IDs, hashes. Always with tabular figures so ₹ columns
+ *    align down the page.
+ */
 export const typography = {
+  fontDisplay: "'Source Serif 4', ui-serif, Georgia, serif",
   fontSans: "'Geist', ui-sans-serif, sans-serif",
   fontMono: "'Geist Mono', ui-monospace, monospace",
   baseSize: '13.5px',
   lineHeight: '1.5',
   letterSpacingBody: '-0.005em',
   letterSpacingHeading: '-0.02em',
-  letterSpacingDisplay: '-0.03em',
+  letterSpacingDisplay: '-0.02em',
+  displayMinSize: '18px',
   weights: [400, 500, 600, 700],
 } as const;
 
