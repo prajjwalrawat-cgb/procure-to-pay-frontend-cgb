@@ -9,7 +9,11 @@ import { useState } from 'react';
 
 import { FileDrop } from '@/vendor/components/invoices/file-drop';
 import { PoSelectModal } from '@/vendor/components/invoices/po-select-modal';
-import { useOpenPos, useSubmitInvoice } from '@/vendor/lib/api/invoices';
+import {
+  uploadInvoiceFile,
+  useOpenPos,
+  useSubmitInvoice,
+} from '@/vendor/lib/api/invoices';
 
 interface LineDraft {
   lineNo: number;
@@ -50,6 +54,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
   const [ewaybill, setEwaybill] = useState('');
   const [taxFiles, setTaxFiles] = useState<File[]>([]);
   const [supportFiles, setSupportFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,11 +109,11 @@ export default function SubmitInvoicePage(): React.JSX.Element {
     taxFiles.length > 0 &&
     lines.some((l) => Number(l.qty) > 0);
 
-  const buildPayload = () => ({
+  const buildPayload = (s3Key: string) => ({
     poId: po!.id,
     vendorInvoiceRef: invoiceNumber.trim(),
     invoiceDate: new Date(`${invoiceDate}T00:00:00.000Z`).toISOString(),
-    s3Key: `invoices/vendor/${po!.number}_${Date.now()}_${taxFiles[0]?.name ?? 'tax-invoice.pdf'}`,
+    s3Key,
     irn: irn || null,
     ewaybillNo: ewaybill || null,
     lines: lines.map((l) => ({
@@ -132,14 +137,27 @@ export default function SubmitInvoicePage(): React.JSX.Element {
     setNotice('Draft saved on this device.');
   };
 
-  const onSubmit = (): void => {
+  const onSubmit = async (): Promise<void> => {
     if (!po) return;
     if (!canSubmit) {
       setError('Add an invoice number, date and tax invoice before submitting.');
       return;
     }
     setError(null);
-    submit.mutate(buildPayload(), {
+    // The document has to reach storage before the invoice references it — the
+    // API rejects a key it cannot find, so a failed upload stops the submission
+    // rather than creating an invoice with a dead attachment link.
+    setUploading(true);
+    let s3Key: string;
+    try {
+      s3Key = await uploadInvoiceFile(taxFiles[0]!);
+    } catch (e) {
+      setUploading(false);
+      setError((e as Error).message || 'Could not upload the tax invoice.');
+      return;
+    }
+    setUploading(false);
+    submit.mutate(buildPayload(s3Key), {
       onSuccess: () => {
         localStorage.removeItem(DRAFT_KEY(po.id));
         router.push('/vendor/invoices');
@@ -372,10 +390,14 @@ export default function SubmitInvoicePage(): React.JSX.Element {
           </Button>
           <Button
             variant="accent"
-            disabled={!canSubmit || submit.isPending}
-            onClick={onSubmit}
+            disabled={!canSubmit || uploading || submit.isPending}
+            onClick={() => void onSubmit()}
           >
-            {submit.isPending ? 'Submitting…' : 'Submit invoice'}
+            {uploading
+              ? 'Uploading…'
+              : submit.isPending
+                ? 'Submitting…'
+                : 'Submit invoice'}
           </Button>
         </div>
       </div>
