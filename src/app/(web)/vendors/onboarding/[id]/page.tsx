@@ -18,12 +18,13 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import type { IntegrationProvider } from '@/lib/shared';
+import type { IntegrationProvider, OnboardingDetailResponse } from '@/lib/shared';
 
 import { useProviderLiveness } from '@/lib/integration-status';
 import {
   useOnboardingDecision,
   useOnboardingDetail,
+  useOverrideBank,
   useRenameVendor,
   useReturnForInfo,
   useReviewScreening,
@@ -46,6 +47,47 @@ const DOC_VARIANT: Record<string, 'success' | 'warn' | 'danger' | 'gray'> = {
   FAILED: 'danger',
   EXPIRED: 'danger',
 };
+
+/**
+ * What stands between this onboarding and a decision.
+ *
+ * The panel used to say only "not currently awaiting your review", which is
+ * true of two very different situations: a vendor who has not submitted, and a
+ * submission sitting with a different approver. Naming the outstanding work
+ * turns a dead end into something the officer can act on — usually by chasing
+ * the vendor, which is what Return for info is for.
+ */
+function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.Element {
+  if (data.submittedAt) {
+    return (
+      <p className="text-[13px] text-muted">
+        Submitted on {new Date(data.submittedAt).toLocaleDateString()} — waiting on
+        another approver in the chain, so there is nothing for you to decide here.
+      </p>
+    );
+  }
+  const outstanding = data.steps.filter((s) => !s.done);
+  return (
+    <div className="space-y-2 text-[13px]">
+      <p className="text-muted">
+        The vendor has not submitted yet ({data.completionPct}% complete), so there is
+        nothing to approve. They can still change everything below.
+      </p>
+      {outstanding.length > 0 && (
+        <div>
+          <p className="text-[12px] text-muted">Still to complete:</p>
+          <ul className="mt-1 space-y-0.5">
+            {outstanding.map((s) => (
+              <li key={s.step} className="text-[12px] text-ink">
+                {s.step}. {s.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Corrects a vendor's name. The legal entity name is what PAN/GST verification
@@ -100,13 +142,13 @@ function RenameVendorDialog({
         </DialogDescription>
         <div className="mt-4 space-y-3">
           <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
+            <label className="mb-1 block text-[12px] font-medium text-muted">
               Display name
             </label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
+            <label className="mb-1 block text-[12px] font-medium text-muted">
               Legal entity name
             </label>
             <Input
@@ -141,8 +183,10 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const returnForInfo = useReturnForInfo(id);
   const verifyDoc = useVerifyDocument(id);
   const reviewScreening = useReviewScreening(id);
+  const overrideBank = useOverrideBank(id, data?.vendorId ?? '');
   const toast = useToastStore((s) => s.push);
   const [comment, setComment] = useState('');
+  const [bankReason, setBankReason] = useState('');
   const [renaming, setRenaming] = useState(false);
   // The dossier is readable by anyone with VENDOR_ONBOARDING_READ (finance
   // watches the pipeline), so each write control is gated on its own
@@ -156,8 +200,11 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const anyScreeningSimulated = (data?.screenings ?? []).some((sc) =>
     isSimulated(sc.provider as IntegrationProvider),
   );
+  // The penny drop has no row of its own to chip, so its liveness is read
+  // straight off the provider registry.
+  const pennyDropSimulated = isSimulated('PENNY_DROP');
 
-  if (isLoading || !data) return <p className="text-muted p-6 text-[13px]">Loading…</p>;
+  if (isLoading || !data) return <p className="p-6 text-[13px] text-muted">Loading…</p>;
 
   const act = (decision: 'APPROVE' | 'REJECT'): void => {
     if (!data.myApprovalId) return;
@@ -194,12 +241,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
       <div className="mb-4">
         <Link
           href="/vendors/onboarding"
-          className="text-muted hover:text-ink text-[12px]"
+          className="text-[12px] text-muted hover:text-ink"
         >
           ← Onboarding queue
         </Link>
         <div className="mt-1 flex items-center gap-3">
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
+          <h1 className="text-[20px] font-semibold tracking-heading text-ink">
             {data.vendorName}
           </h1>
           {data.isMsme && <Pill variant="info">MSME</Pill>}
@@ -207,13 +254,13 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           {canRename && (
             <button
               onClick={() => setRenaming(true)}
-              className="text-muted hover:text-ink text-[12px] font-medium underline"
+              className="text-[12px] font-medium text-muted underline hover:text-ink"
             >
               Edit name
             </button>
           )}
         </div>
-        <p className="text-muted text-[13px]">
+        <p className="text-[13px] text-muted">
           {data.legalEntityName} · {data.category ?? '—'} · {data.completionPct}% complete
           · open {data.daysOpen}d
         </p>
@@ -223,12 +270,17 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           from the same screening providers as the verdicts below, so when those
           run in a sandbox every green signal on this page is unearned. The
           individual verdicts are chipped; this states it once for the roll-ups. */}
-      {anyScreeningSimulated && (
+      {(anyScreeningSimulated || pennyDropSimulated) && (
         <SandboxBanner className="mb-4">
           <span className="font-semibold">Automated checks are simulated.</span>{' '}
-          Screenings and document verification on this vendor came from sandbox
-          providers. Do not treat the green signals — including sanctions — as
-          assurance when approving.
+          {[
+            anyScreeningSimulated && 'screenings and document verification',
+            pennyDropSimulated && 'the bank penny-drop check',
+          ]
+            .filter(Boolean)
+            .join(' and ')}{' '}
+          on this vendor came from sandbox providers. Do not treat the green signals —
+          including sanctions and the account-holder match — as assurance when approving.
         </SandboxBanner>
       )}
 
@@ -271,6 +323,106 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardContent>
           </Card>
 
+          {/* Banking — the one field on this page that moves money. */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Bank account</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!data.bank ? (
+                <p className="text-[13px] text-muted">No bank account submitted yet.</p>
+              ) : (
+                <div className="space-y-2 text-[13px]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-ink">
+                      {data.bank.bankName} · ••••{data.bank.accountNoLast4} ·{' '}
+                      {data.bank.ifsc}
+                    </span>
+                    <VerificationResult
+                      status={
+                        data.bank.isVerified
+                          ? 'Penny drop matched'
+                          : data.bank.manualOverrideReason
+                            ? 'Accepted by a reviewer'
+                            : 'Holder name not confirmed'
+                      }
+                      variant={
+                        data.bank.isVerified
+                          ? 'success'
+                          : data.bank.manualOverrideReason
+                            ? 'warn'
+                            : 'danger'
+                      }
+                      /* Only a *pass* can be unearned. A mismatch or a reviewer's
+                         written acceptance says something real either way, and
+                         chipping those would bury the signal in noise. */
+                      simulated={data.bank.isVerified && pennyDropSimulated}
+                      label="penny-drop check"
+                    />
+                  </div>
+                  <p className="text-muted">
+                    Declared holder:{' '}
+                    <span className="text-ink">{data.bank.holderName}</span>
+                    {data.bank.pennyDropNameReturned && (
+                      <>
+                        {' · '}bank returned:{' '}
+                        <span className="text-ink">
+                          {data.bank.pennyDropNameReturned}
+                        </span>
+                      </>
+                    )}
+                    {data.bank.nameMatchScore !== null && (
+                      <> · match {Math.round(data.bank.nameMatchScore * 100)}%</>
+                    )}
+                  </p>
+                  {data.bank.manualOverrideReason && (
+                    <p className="text-[12px] text-muted">
+                      Accepted: {data.bank.manualOverrideReason}
+                    </p>
+                  )}
+                  {!data.bank.isVerified && !data.bank.manualOverrideReason && (
+                    <div className="space-y-2 rounded-md border border-warn/40 bg-warn-wash p-3">
+                      <p className="text-[12px]">
+                        The bank did not confirm this name holds this account. Check it
+                        against the cancelled cheque before activation — this vendor
+                        cannot be activated until you accept it or send it back.
+                      </p>
+                      {canVerifyDocs && (
+                        <>
+                          <Input
+                            value={bankReason}
+                            onChange={(e) => setBankReason(e.target.value)}
+                            placeholder="What did you check? (recorded against your name)"
+                          />
+                          <Button
+                            variant="default"
+                            disabled={
+                              overrideBank.isPending || bankReason.trim().length < 10
+                            }
+                            onClick={() =>
+                              overrideBank.mutate(
+                                { reason: bankReason.trim() },
+                                {
+                                  onSuccess: () => {
+                                    setBankReason('');
+                                    toast('Bank account accepted', 'success');
+                                  },
+                                  onError: (e) => toast(e.message, 'error'),
+                                },
+                              )
+                            }
+                          >
+                            Accept this account
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Documents */}
           <Card>
             <CardHeader>
@@ -278,7 +430,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {data.documents.length === 0 ? (
-                <p className="text-muted text-[13px]">No documents uploaded yet.</p>
+                <p className="text-[13px] text-muted">No documents uploaded yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.documents.map((d) => (
@@ -287,7 +439,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                       className="flex items-center justify-between text-[13px]"
                     >
                       <div>
-                        <span className="text-ink font-medium">
+                        <span className="font-medium text-ink">
                           {d.docType.replace(/_/g, ' ')}
                         </span>
                         {d.url ? (
@@ -300,7 +452,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             {d.filename}
                           </a>
                         ) : (
-                          <span className="text-muted ml-2">
+                          <span className="ml-2 text-muted">
                             {d.filename} (file unavailable)
                           </span>
                         )}
@@ -370,7 +522,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {data.screenings.length === 0 ? (
-                <p className="text-muted text-[13px]">No screenings run yet.</p>
+                <p className="text-[13px] text-muted">No screenings run yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.screenings.map((s) => (
@@ -462,7 +614,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Comment / reason (required to return or reject)…"
-                    className="border-line bg-surface text-ink mb-3 w-full rounded-md border px-3 py-2 text-[13px]"
+                    className="bg-surface mb-3 w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
                     rows={4}
                   />
                   <div className="space-y-2">
@@ -493,16 +645,9 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                   </div>
                 </>
               ) : (
-                <p className="text-muted text-[13px]">
-                  This onboarding is not currently awaiting your review.
-                </p>
+                <NotYourTurn data={data} />
               )}
-              <div className="text-muted mt-4 text-[12px]">
-                CoC acknowledged:{' '}
-                {data.cocAcknowledgedAt
-                  ? new Date(data.cocAcknowledgedAt).toLocaleDateString()
-                  : 'no'}
-                <br />
+              <div className="mt-4 text-[12px] text-muted">
                 SLA target: {data.slaTargetHours}h
               </div>
             </CardContent>

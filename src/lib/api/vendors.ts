@@ -176,6 +176,27 @@ export function useVerifyDocument(
   });
 }
 
+/**
+ * Accept a bank account the penny drop could not confirm. The reason is
+ * mandatory server-side: an unverified payment destination may be let through,
+ * but the record of who did it and why is not optional.
+ */
+export function useOverrideBank(
+  onboardingId: string,
+  vendorId: string,
+): ReturnType<typeof useMutation<{ ok: true }, Error, { reason: string }>> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { reason: string }) =>
+      apiFetch<{ ok: true }>(`/vendors/${vendorId}/bank/override`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () =>
+      void qc.invalidateQueries({ queryKey: vendorKeys.onboardingDetail(onboardingId) }),
+  });
+}
+
 export function useReviewScreening(onboardingId: string): ReturnType<
   typeof useMutation<
     { ok: true },

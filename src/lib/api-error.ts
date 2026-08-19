@@ -36,6 +36,7 @@ const FIELD_LABELS: Record<string, string> = {
   password: 'Password',
   // Onboarding step 1 — company basics
   legalEntityType: 'Legal entity type',
+  tradeName: 'Trade name',
   dateOfIncorporation: 'Date of incorporation',
   businessPan: 'Business PAN',
   addressLine1: 'Address',
@@ -54,14 +55,9 @@ const FIELD_LABELS: Record<string, string> = {
   accountNumber: 'Account number',
   ifsc: 'IFSC',
   holderName: 'Account holder name',
-  // Step 5 — capabilities
-  categoryTags: 'Categories',
-  capabilityTags: 'Capabilities',
-  employeeCountBracket: 'Employee count',
-  annualTurnoverDeclared: 'Annual turnover',
-  // Step 6 — ownership
-  beneficialOwners: 'Beneficial owners',
-  ownershipType: 'Ownership type',
+  // Step 4 — documents
+  documentsConfirmed: 'Documents',
+  missing: 'Missing documents',
 };
 
 /** `primaryContactEmail` → `Primary contact email`, for paths we have no label for. */
