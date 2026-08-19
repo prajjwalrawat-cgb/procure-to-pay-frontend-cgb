@@ -1,13 +1,20 @@
 'use client';
 
 import { Button, Pill } from '@/components/ui';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { PaymentTermKind, PoCreateInput, RequisitionLineView } from '@/lib/shared';
 
-import { useCreatePurchaseOrder } from '@/lib/api/purchase-orders';
+import type { DraftTerm } from '@/components/purchase-orders/po-terms-editor';
+import {
+  PoTermsEditor,
+  seedLibraryTerms,
+  toTermInputs,
+} from '@/components/purchase-orders/po-terms-editor';
+import { useClauseLibrary } from '@/lib/api/contracts';
+import { useCreatePurchaseOrder, useSetPoTerms } from '@/lib/api/purchase-orders';
 import { useVendors } from '@/lib/api/refs';
 import { useRequisition } from '@/lib/api/requisitions';
 import { inr } from '@/lib/format';
@@ -23,6 +30,14 @@ interface PoCard {
   deliveryLine1: string;
   /** prLineId -> qty string */
   lines: Record<string, string>;
+  /**
+   * Null until the buyer touches the list — the clause library loads after the
+   * card is created, so the seeded set is derived on render instead of frozen
+   * at construction time.
+   */
+  terms: DraftTerm[] | null;
+  special: DraftTerm[];
+  termsOpen: boolean;
 }
 
 let cardSeq = 0;
@@ -36,6 +51,9 @@ function blankCard(defaultDate: string): PoCard {
     expectedDeliveryDate: defaultDate,
     deliveryLine1: '',
     lines: {},
+    terms: null,
+    special: [],
+    termsOpen: false,
   };
 }
 
@@ -53,6 +71,8 @@ export default function CreatePoPage(): React.JSX.Element {
   const { data: vendorData } = useVendors();
   const vendors = vendorData?.items ?? [];
   const createPo = useCreatePurchaseOrder();
+  const setPoTerms = useSetPoTerms();
+  const library = useClauseLibrary();
 
   const defaultDate = useMemo(() => {
     const d = new Date();
@@ -76,6 +96,13 @@ export default function CreatePoPage(): React.JSX.Element {
 
   const updateCard = (key: string, patch: Partial<PoCard>): void =>
     setCards((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)));
+
+  /**
+   * The library defaults stand in until the buyer edits the set, so a card
+   * created before /clause-library resolved still shows the ticked clauses.
+   */
+  const termsFor = (card: PoCard): DraftTerm[] =>
+    card.terms ?? seedLibraryTerms(library.data);
 
   const setLineQty = (key: string, prLineId: string, qty: string): void =>
     setCards((prev) =>
@@ -141,6 +168,21 @@ export default function CreatePoPage(): React.JSX.Element {
         };
         const res = await createPo.mutateAsync(body);
         createdIds.push(res.id);
+
+        // The PO has to exist before its terms can hang off it. A failure here
+        // leaves a usable draft — the clauses can still be set on the PO — so it
+        // warns rather than aborting the rest of the split-award.
+        try {
+          await setPoTerms.mutateAsync({
+            poId: res.id,
+            terms: toTermInputs(termsFor(card), card.special),
+          });
+        } catch {
+          toast(
+            'PO created, but its terms & conditions failed to save — set them on the PO.',
+            'error',
+          );
+        }
       }
       toast(`Created ${createdIds.length} PO draft(s)`, 'success');
       const [first, ...rest] = createdIds;
@@ -328,6 +370,40 @@ export default function CreatePoPage(): React.JSX.Element {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Terms & conditions — same clause set as a spot-buy PO, so the
+                  printed PDF reads identically whichever route raised it. */}
+              <div className="mt-3 border-t border-line pt-2">
+                <button
+                  type="button"
+                  onClick={() => updateCard(card.key, { termsOpen: !card.termsOpen })}
+                  className="flex w-full items-center justify-between text-[12px] font-medium text-text"
+                >
+                  <span className="flex items-center gap-1">
+                    {card.termsOpen ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                    Terms &amp; conditions
+                  </span>
+                  <span className="font-numeric text-faint">
+                    {termsFor(card).filter((t) => t.selected).length +
+                      card.special.filter((t) => t.title.trim()).length}{' '}
+                    selected
+                  </span>
+                </button>
+                {card.termsOpen && (
+                  <div className="mt-2">
+                    <PoTermsEditor
+                      libraryTerms={termsFor(card)}
+                      special={card.special}
+                      onLibraryChange={(next) => updateCard(card.key, { terms: next })}
+                      onSpecialChange={(next) => updateCard(card.key, { special: next })}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 flex items-center justify-between border-t border-line pt-2">

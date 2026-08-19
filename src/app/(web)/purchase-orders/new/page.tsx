@@ -1,12 +1,10 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import type {
-  ClauseLibraryItem,
   PaymentTermKind,
   PoCreateInput,
   PoSpotBuyLineInput,
-  PoTermInput,
   VendorRef,
 } from '@/lib/shared';
 import { ArrowLeft, FileText, Paperclip, Plus, Trash2 } from 'lucide-react';
@@ -15,6 +13,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { CustomFieldInputs } from '@/components/custom-fields';
+import type { DraftTerm } from '@/components/purchase-orders/po-terms-editor';
+import {
+  PoTermsEditor,
+  seedLibraryTerms,
+  toTermInputs,
+} from '@/components/purchase-orders/po-terms-editor';
 import type { CustomFieldValues } from '@/lib/shared';
 import { useClauseLibrary } from '@/lib/api/contracts';
 import { saveCustomFieldValues } from '@/lib/api/settings';
@@ -87,16 +91,6 @@ function lineTotal(l: DraftLine): number {
   return base * (1 - num(l.discountPct) / 100) * (1 + num(l.taxRate) / 100);
 }
 
-interface DraftTerm {
-  key: string;
-  clauseType: string;
-  title: string;
-  contentText: string;
-  isFromLibrary: boolean;
-  libraryClauseId: string | null;
-  selected: boolean;
-}
-
 const inputCls =
   'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-2.5 py-1.5 text-[13px] outline-none';
 
@@ -155,20 +149,10 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
   // Seed the condition list from the library once it lands, pre-ticking whatever
   // legal marked as default. Kept in state so the user can untick freely.
-  const libraryTerms: DraftTerm[] =
-    terms ??
-    (library.data ?? []).map((c: ClauseLibraryItem) => ({
-      key: c.id,
-      clauseType: c.clauseType,
-      title: c.title,
-      contentText: c.contentText,
-      isFromLibrary: true,
-      libraryClauseId: c.id,
-      selected: c.isDefault,
-    }));
+  const libraryTerms: DraftTerm[] = terms ?? seedLibraryTerms(library.data);
 
   const total = lines.reduce((s, l) => s + lineTotal(l), 0);
-  const chosen = [...libraryTerms.filter((t) => t.selected), ...special];
+  const chosen = toTermInputs(libraryTerms, special);
 
   const step0Valid = vendorId && costCenterId && expectedDeliveryDate;
   const step1Valid =
@@ -237,16 +221,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
       }
 
       try {
-        await setPoTerms.mutateAsync({
-          poId: id,
-          terms: chosen.map((t): PoTermInput => ({
-            clauseType: t.clauseType as PoTermInput['clauseType'],
-            title: t.title,
-            contentText: t.contentText,
-            isFromLibrary: t.isFromLibrary,
-            libraryClauseId: t.libraryClauseId,
-          })),
-        });
+        await setPoTerms.mutateAsync({ poId: id, terms: chosen });
       } catch {
         toast('PO created, but the conditions failed to save — set them below.', 'error');
       }
@@ -612,124 +587,12 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               values={customFields}
               onChange={setCustomFields}
             />
-            <p className="text-[13px] text-muted">
-              Tick the standard conditions to print on the PO. These come from the clause
-              library legal maintains; anything specific to this order goes in as a
-              special condition below.
-            </p>
-
-            {libraryTerms.length === 0 && (
-              <p className="text-[12px] text-muted">
-                The clause library is empty — add clauses under{' '}
-                <Link
-                  href="/contracts/clause-library"
-                  className="text-accent-2 underline"
-                >
-                  Contracts → Clause library
-                </Link>{' '}
-                and they will appear here. The PDF falls back to the built-in wording
-                until then.
-              </p>
-            )}
-
-            {libraryTerms.map((t) => (
-              <label
-                key={t.key}
-                className="flex items-start gap-2.5 rounded-md border border-line p-2.5 hover:bg-canvas"
-              >
-                <input
-                  type="checkbox"
-                  checked={t.selected}
-                  className="mt-0.5"
-                  onChange={(e) =>
-                    setTerms(
-                      libraryTerms.map((x) =>
-                        x.key === t.key ? { ...x, selected: e.target.checked } : x,
-                      ),
-                    )
-                  }
-                />
-                <span className="min-w-0">
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-[13px] font-medium text-text">{t.title}</span>
-                    <Pill variant="gray">{t.clauseType.replace(/_/g, ' ')}</Pill>
-                  </span>
-                  <span className="block text-[12px] text-muted">{t.contentText}</span>
-                </span>
-              </label>
-            ))}
-
-            <div className="mt-2 rounded-lg border border-line p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
-                  Special conditions
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setSpecial((prev) => [
-                      ...prev,
-                      {
-                        key: `s${prev.length + 1}-${Date.now()}`,
-                        clauseType: 'CUSTOM',
-                        title: '',
-                        contentText: '',
-                        isFromLibrary: false,
-                        libraryClauseId: null,
-                        selected: true,
-                      },
-                    ])
-                  }
-                  className="flex items-center gap-1 text-[12px] font-medium text-accent-2"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add
-                </button>
-              </div>
-              {special.length === 0 && (
-                <p className="text-[12px] text-muted">None for this order.</p>
-              )}
-              {special.map((s) => (
-                <div key={s.key} className="mb-2 flex items-start gap-2">
-                  <div className="flex-1">
-                    <input
-                      value={s.title}
-                      onChange={(e) =>
-                        setSpecial((prev) =>
-                          prev.map((x) =>
-                            x.key === s.key ? { ...x, title: e.target.value } : x,
-                          ),
-                        )
-                      }
-                      placeholder="Condition title"
-                      className={inputCls}
-                    />
-                    <textarea
-                      value={s.contentText}
-                      rows={2}
-                      onChange={(e) =>
-                        setSpecial((prev) =>
-                          prev.map((x) =>
-                            x.key === s.key ? { ...x, contentText: e.target.value } : x,
-                          ),
-                        )
-                      }
-                      placeholder="Wording as it should appear on the PO"
-                      className={inputCls + ' mt-1'}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Remove condition"
-                    onClick={() =>
-                      setSpecial((prev) => prev.filter((x) => x.key !== s.key))
-                    }
-                    className="mt-1.5 text-muted hover:text-danger"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <PoTermsEditor
+              libraryTerms={libraryTerms}
+              special={special}
+              onLibraryChange={setTerms}
+              onSpecialChange={setSpecial}
+            />
           </div>
         )}
 
@@ -776,7 +639,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             </div>
             <Row
               label="Conditions"
-              value={`${chosen.length} (${special.filter((s) => s.title.trim()).length} special)`}
+              value={`${chosen.length} (${chosen.filter((t) => !t.isFromLibrary).length} special)`}
             />
             {!quote && (
               <p className="text-[12px] text-warn">
