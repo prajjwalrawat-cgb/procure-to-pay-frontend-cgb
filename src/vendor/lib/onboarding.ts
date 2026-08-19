@@ -7,6 +7,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type {
+  DocumentExtractionResult,
   SaveStepInput,
   VendorDocumentType,
   VendorDocumentUpload,
@@ -17,7 +18,7 @@ import type { WizardState } from './wizard-hydrate';
 
 // Pure form-rebuilding logic lives apart from these network hooks so it can be
 // unit-tested without pulling in the api client.
-export { hydrateWizardForm } from './wizard-hydrate';
+export { applyExtractedFields, hydrateWizardForm } from './wizard-hydrate';
 export type { HydratedWizard, WizardState } from './wizard-hydrate';
 
 export interface UploadedDocument {
@@ -93,6 +94,9 @@ export interface UploadedDocResult {
   filename: string;
   sizeBytes: number;
   url: string;
+  /** Set for the GST certificate and PAN card: the fields read off the document
+   *  and what corroborates each. Null for documents that are filed, not parsed. */
+  extraction?: DocumentExtractionResult | null;
 }
 
 /** Upload the vendor's actual file (multipart) — the API stores it in S3 and
@@ -119,18 +123,20 @@ export function useUploadOnboardingDocFile(): ReturnType<
   });
 }
 
-export function useAcknowledgeCoc(): ReturnType<
-  typeof useMutation<{ ok: true }, Error, { name: string; designation: string }>
-> {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: { name: string; designation: string }) =>
-      apiFetch<{ ok: true }>('/vendor/onboarding/coc', {
-        method: 'POST',
-        body: JSON.stringify({ ...input, agreed: true }),
-      }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: onboardingKeys.resume }),
-  });
+/** IFSC → bank/branch. Called as the vendor types, so the bank name they can
+ *  see is the directory's, not their memory of it. Null = unknown code. */
+export async function lookupIfsc(ifsc: string): Promise<IfscLookupResult | null> {
+  return apiFetch<IfscLookupResult | null>(
+    `/vendor/onboarding/ifsc/${encodeURIComponent(ifsc)}`,
+  );
+}
+
+export interface IfscLookupResult {
+  ifsc: string;
+  bank: string;
+  branch: string | null;
+  city: string | null;
+  state: string | null;
 }
 
 export function useSubmitOnboarding(): ReturnType<

@@ -10,11 +10,22 @@ import {
   Pill,
 } from '@/components/ui';
 import {
-  gstStateName,
+  LEGAL_ENTITY_TYPE,
+  ONBOARDING_OPTIONAL_DOCUMENTS,
+  ONBOARDING_STEP1_DOCUMENTS,
+  ONBOARDING_STEP4_DOCUMENTS,
+  ONBOARDING_STEP_COUNT,
+  ONBOARDING_STEP_NAMES,
   ONBOARDING_STEP_SCHEMAS,
   SELECTABLE_GST_STATES,
   VENDOR_CATEGORY_CONFIGS,
   VENDOR_DOCUMENT_TYPE,
+  fieldSourceLabel,
+  gstStateName,
+  vendorDocumentLabel,
+  type DocumentExtractionResult,
+  type ExtractedField,
+  type ExtractedFieldMap,
   type SaveStepInput,
   type VendorDocumentType,
 } from '@/lib/shared';
@@ -22,8 +33,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiError, zodFieldErrors, zodSummary } from '@/lib/api-error';
 import {
+  applyExtractedFields,
   hydrateWizardForm,
-  useAcknowledgeCoc,
+  lookupIfsc,
   useOnboarding,
   useSaveStep,
   useSubmitOnboarding,
@@ -37,20 +49,93 @@ import { useToastStore } from '@/vendor/store/toast-store';
  *  offers file types the server will accept. */
 const ACCEPTED_DOC_TYPES = '.pdf,.png,.jpg,.jpeg,.tif,.tiff';
 
+/** Documents the API parses on upload (VendorKycService.isExtractable) — the
+ *  ones worth saying "reading…" over rather than "uploading…". */
+const EXTRACTED_DOCUMENTS: VendorDocumentType[] = [
+  ...ONBOARDING_STEP1_DOCUMENTS,
+  'CANCELLED_CHEQUE',
+];
+
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const STEP_NAMES = [
-  'Company basics',
-  'Statutory identity',
-  'Banking',
-  'Certifications',
-  'Capabilities',
-  'Ownership & UBO',
-];
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  PROPRIETORSHIP: 'Proprietorship',
+  PARTNERSHIP: 'Partnership firm',
+  LLP: 'LLP',
+  PVT_LTD: 'Private limited',
+  PUBLIC_LTD: 'Public limited',
+  HUF: 'HUF',
+  TRUST: 'Trust',
+  SOCIETY: 'Society / AOP',
+  INDIVIDUAL: 'Individual',
+};
+
+/**
+ * The badge that tells a vendor where a pre-filled value came from.
+ *
+ * Green means something outside the document they uploaded agreed with it — the
+ * GSTN lookup, or a derivation from the GSTIN's own check digit — and the input
+ * is locked, because the whole point of verifying a value is that it can no
+ * longer be fat-fingered into a typo. Amber means it was read off the page and
+ * nothing has confirmed it: shown, editable, and asking to be checked.
+ */
+function SourceBadge({ field }: { field: ExtractedField }): React.JSX.Element {
+  return (
+    <Pill variant={field.verified ? 'success' : 'warn'} dot>
+      {fieldSourceLabel(field.source)}
+      {field.verified ? '' : ' — please confirm'}
+    </Pill>
+  );
+}
+
+/**
+ * What an upload had to say — blocking problems in red, things to look at in
+ * amber. Shown next to the pickers for exactly the documents named in `forDocs`,
+ * so the reason an upload was rejected outlives the toast, and a note about the
+ * PAN card never appears over the banking step. Each note names its document,
+ * because two of them can be on screen at once.
+ */
+function ExtractionNotes({
+  results,
+  forDocs,
+}: {
+  results: Map<string, DocumentExtractionResult>;
+  forDocs: VendorDocumentType[];
+}): React.JSX.Element | null {
+  const relevant = forDocs
+    .map((d) => results.get(d))
+    .filter((r): r is DocumentExtractionResult => !!r)
+    .filter((r) => r.errors.length > 0 || r.warnings.length > 0);
+  if (relevant.length === 0) return null;
+  const prefix = (r: DocumentExtractionResult): string =>
+    relevant.length > 1 || forDocs.length > 1
+      ? `${vendorDocumentLabel(r.docType)}: `
+      : '';
+  return (
+    <>
+      {relevant.map((r) => (
+        <div key={r.docType}>
+          {r.errors.map((e) => (
+            <p key={e} className="mt-2 text-[12px] text-danger">
+              <span className="capitalize">{prefix(r)}</span>
+              {e}
+            </p>
+          ))}
+          {r.warnings.map((w) => (
+            <p key={w} className="mt-2 text-[12px] text-warn">
+              <span className="capitalize">{prefix(r)}</span>
+              {w}
+            </p>
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
 
 function Field({
   label,
@@ -60,6 +145,7 @@ function Field({
   type = 'text',
   error,
   hint,
+  provenance,
 }: {
   label: string;
   value: string;
@@ -70,19 +156,32 @@ function Field({
   error?: string;
   /** Always-on guidance for fields whose format isn't obvious (PAN, state code). */
   hint?: string;
+  /** Where this value came from, when it was not typed by the vendor. */
+  provenance?: ExtractedField | null;
 }): React.JSX.Element {
+  const locked = provenance?.verified === true;
   return (
     <div>
-      <label className="mb-1 block text-[12px] font-medium text-muted">{label}</label>
+      <div className="mb-1 flex items-center gap-2">
+        <label className="block text-[12px] font-medium text-muted">{label}</label>
+        {provenance && <SourceBadge field={provenance} />}
+      </div>
       <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-invalid={!!error}
+        readOnly={locked}
+        className={locked ? 'cursor-not-allowed bg-canvas text-muted' : undefined}
       />
       {error ? (
         <p className="mt-1 text-[12px] text-danger">{error}</p>
+      ) : locked ? (
+        <p className="mt-1 text-[12px] text-faint">
+          Taken from your documents and verified — to change it, upload a corrected
+          document or ask your buyer to raise a change request.
+        </p>
       ) : (
         hint && <p className="mt-1 text-[12px] text-faint">{hint}</p>
       )}
@@ -99,10 +198,12 @@ function StateCodeField({
   value,
   onChange,
   error,
+  provenance,
 }: {
   value: string;
   onChange: (v: string) => void;
   error?: string;
+  provenance?: ExtractedField | null;
 }): React.JSX.Element {
   const options = useMemo(
     () => [...SELECTABLE_GST_STATES].sort((a, b) => a.name.localeCompare(b.name)),
@@ -111,17 +212,22 @@ function StateCodeField({
   // A saved record may carry a retired code (25, 28). Keep it selected and
   // labelled rather than silently resetting the field to blank on load.
   const isRetired = !!value && !options.some((s) => s.code === value);
+  const locked = provenance?.verified === true;
 
   return (
     <div>
-      <label className="mb-1 block text-[12px] font-medium text-muted">State</label>
+      <div className="mb-1 flex items-center gap-2">
+        <label className="block text-[12px] font-medium text-muted">State</label>
+        {provenance && <SourceBadge field={provenance} />}
+      </div>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
+        disabled={locked}
         className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-[13px] text-text ${
           error ? 'border-danger' : ''
-        }`}
+        } ${locked ? 'cursor-not-allowed bg-canvas text-muted' : ''}`}
       >
         <option value="">Select state…</option>
         {isRetired && (
@@ -132,6 +238,48 @@ function StateCodeField({
         {options.map((s) => (
           <option key={s.code} value={s.code}>
             {s.name} ({s.code})
+          </option>
+        ))}
+      </select>
+      {error && <p className="mt-1 text-[12px] text-danger">{error}</p>}
+    </div>
+  );
+}
+
+/** Constitution of business. Pre-filled from the GST certificate where GSTN
+ *  states it, and only locked when GSTN is what stated it — the PAN-derived
+ *  guess cannot tell an LLP from a partnership firm, so it stays a suggestion. */
+function EntityTypeField({
+  value,
+  onChange,
+  error,
+  provenance,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  error?: string;
+  provenance?: ExtractedField | null;
+}): React.JSX.Element {
+  const locked = provenance?.verified === true;
+  return (
+    <div>
+      <div className="mb-1 flex items-center gap-2">
+        <label className="block text-[12px] font-medium text-muted">Type of entity</label>
+        {provenance && <SourceBadge field={provenance} />}
+      </div>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={!!error}
+        disabled={locked}
+        className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-[13px] text-text ${
+          error ? 'border-danger' : ''
+        } ${locked ? 'cursor-not-allowed bg-canvas text-muted' : ''}`}
+      >
+        <option value="">Select…</option>
+        {LEGAL_ENTITY_TYPE.map((t) => (
+          <option key={t} value={t}>
+            {ENTITY_TYPE_LABELS[t] ?? t}
           </option>
         ))}
       </select>
@@ -182,7 +330,6 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   const { data, isLoading, error } = useOnboarding();
   const saveStep = useSaveStep();
   const uploadDoc = useUploadOnboardingDocFile();
-  const ackCoc = useAcknowledgeCoc();
   const submit = useSubmitOnboarding();
   const toast = useToastStore((s) => s.push);
 
@@ -191,11 +338,9 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   const [f, setF] = useState<Record<string, string>>({});
   // Per-field rejection reasons for the current step, keyed by field name.
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Where each auto-filled value came from — drives the badges and the locking.
+  const [extracted, setExtracted] = useState<ExtractedFieldMap>({});
   const [isMsme, setIsMsme] = useState(false);
-  const [isRelatedParty, setIsRelatedParty] = useState(false);
-  const [cocName, setCocName] = useState('');
-  const [cocDesignation, setCocDesignation] = useState('');
-  const [cocAgreed, setCocAgreed] = useState(false);
   // Locally-uploaded docs give instant feedback; the server list is the source
   // of truth once the resume query refetches, so ticks survive a refresh.
   const [localDocs, setLocalDocs] = useState<Map<string, UploadedDocResult>>(
@@ -203,6 +348,18 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   );
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [showOtherDocs, setShowOtherDocs] = useState(false);
+  /** What each parsed upload yielded, keyed by document type. Keyed rather than
+   *  single-slot because the notes are shown beside the pickers on three
+   *  different steps, and a warning about the PAN card has no business
+   *  appearing over the banking step. */
+  const [extractionNotes, setExtractionNotes] = useState<
+    Map<string, DocumentExtractionResult>
+  >(() => new Map());
+  /** Bank + branch for the IFSC currently typed, or null while unresolved. */
+  const [bankFromIfsc, setBankFromIfsc] = useState<{
+    bank: string;
+    branch: string | null;
+  } | null>(null);
 
   // Seed the inputs from what the server already holds. Done once per
   // onboarding, not on every refetch: saving a step invalidates this query, and
@@ -215,7 +372,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     const hydrated = hydrateWizardForm(data?.wizardState);
     setF(hydrated.fields);
     setIsMsme(hydrated.isMsme);
-    setIsRelatedParty(hydrated.isRelatedParty);
+    setExtracted(data?.wizardState?.extracted ?? {});
   }, [onboardingId, data?.wizardState]);
 
   const uploadedDocs = useMemo(() => {
@@ -235,6 +392,31 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     for (const [k, v] of localDocs) merged.set(k, v);
     return merged;
   }, [data, localDocs]);
+
+  // The bank follows from the IFSC, so it is looked up as the vendor types
+  // rather than asked for. A code the directory does not know clears the field
+  // and the vendor is asked for the name — the only case where they type it.
+  useEffect(() => {
+    const code = (f.ifsc ?? '').trim().toUpperCase();
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(code)) {
+      setBankFromIfsc(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void lookupIfsc(code)
+        .then((r) => {
+          if (!cancelled) setBankFromIfsc(r ? { bank: r.bank, branch: r.branch } : null);
+        })
+        .catch(() => {
+          if (!cancelled) setBankFromIfsc(null);
+        });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [f.ifsc]);
 
   if (isLoading) return <p className="p-6 text-[13px] text-muted">Loading…</p>;
   if (error || !data)
@@ -265,6 +447,20 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   // out of ACTIVE and block new purchase orders against them.
   const editable = data.editable;
   const status = onboardingStatus(data);
+  /**
+   * The badge for a field — but only while the box still holds the value it
+   * describes. A vendor who edits an unverified suggestion has made the value
+   * theirs, and leaving "from document" over their own typing claims a
+   * provenance the text no longer has. (Verified fields are locked, so they
+   * cannot drift out of step this way.)
+   */
+  const provenance = (name: string): ExtractedField | null => {
+    const field = extracted[name];
+    if (!field) return null;
+    const current = (f[name] ?? '').trim();
+    if (current !== '' && current !== field.value.trim()) return null;
+    return field;
+  };
 
   const persist = (stepNumber: number, payload: SaveStepInput): void => {
     // Validate against this step's schema before sending. The API enforces the
@@ -284,7 +480,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       {
         onSuccess: () => {
           toast(`Step ${stepNumber} saved`, 'success');
-          setStep(Math.min(6, stepNumber + 1));
+          setStep(Math.min(ONBOARDING_STEP_COUNT, stepNumber + 1));
         },
         onError: (e) => {
           // Server-only rejections (PAN/GSTIN verification, penny-drop mismatch)
@@ -298,9 +494,21 @@ export default function OnboardingWizardPage(): React.JSX.Element {
 
   const saveCurrent = (): void => {
     if (step === 1) {
+      // The API refuses this too; catching it here keeps the vendor on the
+      // panel that has the file pickers rather than bouncing them off a 422.
+      if (missingStatutoryDocs.length > 0) {
+        toast(
+          `Upload your ${missingStatutoryDocs
+            .map(vendorDocumentLabel)
+            .join(' and ')} first — we fill this step in from them.`,
+          'error',
+        );
+        return;
+      }
       persist(1, {
-        legalEntityType: 'PVT_LTD',
+        legalEntityType: f.legalEntityType ?? '',
         legalEntityName: f.legalEntityName ?? '',
+        tradeName: f.tradeName?.trim() || null,
         businessPan: f.businessPan ?? '',
         addressLine1: f.addressLine1 ?? '',
         city: f.city ?? '',
@@ -318,38 +526,32 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       } as SaveStepInput);
     } else if (step === 3) {
       persist(3, {
-        bankName: f.bankName ?? '',
+        // Only sent for an IFSC the directory could not resolve; otherwise the
+        // API overwrites it with the directory's name anyway.
+        bankName: bankFromIfsc?.bank ?? f.bankName ?? '',
         accountNumber: f.accountNumber ?? '',
-        ifsc: f.ifsc ?? '',
+        ifsc: (f.ifsc ?? '').trim().toUpperCase(),
         holderName: f.holderName ?? '',
       } as SaveStepInput);
     } else if (step === 4) {
-      persist(4, { certifications: [] } as SaveStepInput);
-    } else if (step === 5) {
-      persist(5, {
-        categoryTags: (f.categoryTags ?? '')
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        capabilityTags: (f.capabilityTags ?? '')
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean),
-        facilities: [],
-        employeeCountBracket: '10-50',
-        annualTurnoverDeclared: f.annualTurnoverDeclared || null,
-        references: [],
-      } as SaveStepInput);
-    } else if (step === 6) {
-      persist(6, {
-        beneficialOwners: [],
-        sanctionsSelfDeclaration: true,
-        isRelatedParty,
-        relatedPartyDisclosure: isRelatedParty
-          ? (f.relatedPartyDisclosure ?? null)
-          : null,
-      } as SaveStepInput);
+      persist(4, { documentsConfirmed: true } as SaveStepInput);
     }
+  };
+
+  /**
+   * Apply what a statutory document yielded to the form.
+   *
+   * A verified value replaces whatever is in the box — it is the value of
+   * record, and the input is locked to it. An unverified read only fills a gap,
+   * so a vendor who has already typed something never has it overwritten by a
+   * guess made from a blurry scan.
+   */
+  const applyExtraction = (result: DocumentExtractionResult): void => {
+    // The merge rule lives in wizard-hydrate so it can be tested directly —
+    // "does a document overwrite what the vendor typed?" is the question this
+    // whole flow turns on, and it has two answers depending on when they typed.
+    setF((prev) => applyExtractedFields(prev, extracted, result.fields));
+    setExtracted((prev) => ({ ...prev, ...result.fields }));
   };
 
   const uploadStatutoryDoc = (docType: VendorDocumentType, file: File): void => {
@@ -359,7 +561,34 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       {
         onSuccess: (res) => {
           setLocalDocs((prev) => new Map(prev).set(docType, res));
-          toast(`${docType.replace(/_/g, ' ')} uploaded`, 'success');
+          const result = res.extraction ?? null;
+          setExtractionNotes((prev) => {
+            const next = new Map(prev);
+            if (result) next.set(docType, result);
+            else next.delete(docType);
+            return next;
+          });
+          if (!result) {
+            toast(`${vendorDocumentLabel(docType)} uploaded`, 'success');
+            return;
+          }
+          if (result.errors.length > 0) {
+            toast(result.errors[0]!, 'error');
+            return;
+          }
+          applyExtraction(result);
+          const filled = Object.keys(result.fields).length;
+          // The fields these documents fill live on step 1, so where the vendor
+          // is told to look depends on where they uploaded from.
+          const where = step === 1 ? 'below' : 'on step 1';
+          toast(
+            filled > 0
+              ? `${vendorDocumentLabel(docType)} read — ${filled} field${
+                  filled === 1 ? '' : 's'
+                } filled in ${where}`
+              : `${vendorDocumentLabel(docType)} uploaded — please fill the fields in yourself`,
+            filled > 0 ? 'success' : 'info',
+          );
         },
         onError: (e) => toast(e.message, 'error'),
         onSettled: () => setUploadingDoc(null),
@@ -373,7 +602,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   const renderDocButton = (d: VendorDocumentType): React.JSX.Element => {
     const done = uploadedDocs.get(d);
     const busy = uploadingDoc === d;
-    const label = d.replace(/_/g, ' ');
+    const label = vendorDocumentLabel(d);
     return (
       <div
         key={d}
@@ -394,12 +623,16 @@ export default function OnboardingWizardPage(): React.JSX.Element {
               if (file) uploadStatutoryDoc(d, file);
             }}
           />
-          <span className="font-medium hover:underline">
+          <span className="font-medium capitalize hover:underline">
             {done ? '✓ ' : ''}
             {label}
           </span>
         </label>
-        {busy && <span className="text-muted">uploading…</span>}
+        {busy && (
+          <span className="text-muted">
+            {EXTRACTED_DOCUMENTS.includes(d) ? 'reading…' : 'uploading…'}
+          </span>
+        )}
         {done && (
           <>
             <span className="max-w-[180px] truncate text-[12px] text-muted">
@@ -421,28 +654,28 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     );
   };
 
-  // Documents the invited vendor's category actually requires (from the config
-  // keyed on the onboarding's categoryKey). Everything else is offered behind a
-  // toggle so the common case shows only the handful that matter.
+  // Documents beyond the mandatory set. The vendor's category is what makes some
+  // of them likely, so those are listed first — but none of them block submit.
   const categoryCfg = VENDOR_CATEGORY_CONFIGS.find(
     (c) => c.categoryKey === data?.categoryKey,
   );
-  const requiredDocs = categoryCfg?.requiredDocuments ?? [];
-  const otherDocs = VENDOR_DOCUMENT_TYPE.filter((d) => !requiredDocs.includes(d));
-
-  const acknowledge = (): void => {
-    if (!cocAgreed) {
-      toast('You must accept the code of conduct', 'error');
-      return;
-    }
-    ackCoc.mutate(
-      { name: cocName, designation: cocDesignation },
-      {
-        onSuccess: () => toast('Code of conduct acknowledged', 'success'),
-        onError: (e) => toast(e.message, 'error'),
-      },
-    );
-  };
+  const mandatory = new Set<string>([
+    ...ONBOARDING_STEP1_DOCUMENTS,
+    ...ONBOARDING_STEP4_DOCUMENTS,
+  ]);
+  // Documents that already have a row of their own on this step.
+  const shownAbove = new Set<string>([...mandatory, ...ONBOARDING_OPTIONAL_DOCUMENTS]);
+  const suggestedDocs = [
+    ...(categoryCfg?.requiredDocuments ?? []),
+    ...(categoryCfg?.optionalDocuments ?? []),
+  ].filter((d) => !shownAbove.has(d));
+  const otherDocs = VENDOR_DOCUMENT_TYPE.filter(
+    (d) => !shownAbove.has(d) && !suggestedDocs.includes(d),
+  );
+  /** Step-1 documents still outstanding — they gate step 4 and submission too. */
+  const missingStatutoryDocs = ONBOARDING_STEP1_DOCUMENTS.filter(
+    (d) => !uploadedDocs.has(d),
+  );
 
   const doSubmit = (): void => {
     submit.mutate(undefined, {
@@ -457,7 +690,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         <h1 className="text-[20px] font-semibold text-ink">Vendor onboarding</h1>
         <p className="text-[13px] text-muted">
           {editable
-            ? 'Complete all steps, acknowledge the code of conduct, then submit.'
+            ? 'Four steps. Upload your GST certificate and PAN card and we fill in what we can, then submit for review.'
             : 'Your submitted details, read-only.'}
         </p>
         {editable && (
@@ -497,7 +730,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
 
       {/* Step tabs */}
       <div className="mb-4 flex flex-wrap gap-1">
-        {STEP_NAMES.map((name, i) => {
+        {ONBOARDING_STEP_NAMES.map((name, i) => {
           const n = i + 1;
           const done = data.wizardState?.steps?.[`step${n}`]?.done;
           return (
@@ -520,17 +753,60 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       <Card>
         <CardHeader>
           <CardTitle>
-            Step {step}: {STEP_NAMES[step - 1]}
+            Step {step}: {ONBOARDING_STEP_NAMES[step - 1]}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {step === 1 && (
             <>
+              <div className="rounded-md border border-line bg-canvas/60 p-3">
+                <p className="text-[13px] font-medium text-ink">
+                  Start with your documents
+                </p>
+                <p className="mt-0.5 text-[12px] text-muted">
+                  Upload your GST registration certificate and PAN card (PDF or image, max
+                  10 MB). We read them and fill in the fields below — your GSTIN is
+                  checked against GSTN, and your PAN and state are taken from it rather
+                  than typed.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {ONBOARDING_STEP1_DOCUMENTS.map((d) => renderDocButton(d))}
+                </div>
+                <ExtractionNotes
+                  results={extractionNotes}
+                  forDocs={ONBOARDING_STEP1_DOCUMENTS}
+                />
+
+                {missingStatutoryDocs.length > 0 && (
+                  <p className="mt-2 text-[12px] text-warn">
+                    The fields below stay empty until we have your{' '}
+                    {missingStatutoryDocs.map(vendorDocumentLabel).join(' and ')} — they
+                    are read off them, and they are required to submit either way.
+                  </p>
+                )}
+              </div>
+
               <Field
                 label="Legal entity name"
                 value={f.legalEntityName ?? ''}
                 onChange={set('legalEntityName')}
                 error={fieldErrors.legalEntityName}
+                hint="As registered — for a proprietorship this is the proprietor's own name, matching the PAN"
+                provenance={provenance('legalEntityName')}
+              />
+              <Field
+                label="Trade name"
+                value={f.tradeName ?? ''}
+                onChange={set('tradeName')}
+                error={fieldErrors.tradeName}
+                hint="What the business trades as. This is the name your buyer sees on POs and invoices."
+                provenance={provenance('tradeName')}
+              />
+              <EntityTypeField
+                value={f.legalEntityType ?? ''}
+                onChange={set('legalEntityType')}
+                error={fieldErrors.legalEntityType}
+                provenance={provenance('legalEntityType')}
               />
               <Field
                 label="Business PAN"
@@ -539,12 +815,14 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 placeholder="AFMFS3755D"
                 error={fieldErrors.businessPan}
                 hint="10 characters. Not your GSTIN — the PAN is characters 3–12 of it."
+                provenance={provenance('businessPan')}
               />
               <Field
                 label="Address"
                 value={f.addressLine1 ?? ''}
                 onChange={set('addressLine1')}
                 error={fieldErrors.addressLine1}
+                provenance={provenance('addressLine1')}
               />
               <div className="grid grid-cols-3 gap-2">
                 <Field
@@ -552,11 +830,13 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   value={f.city ?? ''}
                   onChange={set('city')}
                   error={fieldErrors.city}
+                  provenance={provenance('city')}
                 />
                 <StateCodeField
                   value={f.stateCode ?? ''}
                   onChange={set('stateCode')}
                   error={fieldErrors.stateCode}
+                  provenance={provenance('stateCode')}
                 />
                 <Field
                   label="Pincode"
@@ -564,6 +844,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   onChange={set('pincode')}
                   placeholder="110055"
                   error={fieldErrors.pincode}
+                  provenance={provenance('pincode')}
                 />
               </div>
               <Field
@@ -598,6 +879,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 placeholder="07AFMFS3755D1ZS"
                 error={fieldErrors.gstin}
                 hint="15 characters: state code + PAN + 3 more"
+                provenance={provenance('gstin')}
               />
               <label className="flex items-center gap-2 text-[13px]">
                 <input
@@ -616,65 +898,153 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 />
               )}
               <p className="text-[12px] text-muted">
-                GSTIN & PAN are auto-verified against mock government APIs on save.
+                GSTIN & PAN are re-checked against the statutory registries on save, and
+                the two must describe the same entity — characters 3–12 of a GSTIN are the
+                PAN.
               </p>
             </>
           )}
 
           {step === 3 && (
             <>
-              <Field
-                label="Bank name"
-                value={f.bankName ?? ''}
-                onChange={set('bankName')}
-                error={fieldErrors.bankName}
-              />
-              <Field
-                label="Account number"
-                value={f.accountNumber ?? ''}
-                onChange={set('accountNumber')}
-                error={fieldErrors.accountNumber}
-              />
+              <div className="rounded-md border border-line bg-canvas/60 p-3">
+                <p className="text-[13px] font-medium text-ink">
+                  Upload a cancelled cheque
+                </p>
+                <p className="mt-0.5 text-[12px] text-muted">
+                  We read the IFSC and account number off it. The IFSC tells us which bank
+                  and branch the account is at, so you never type a bank name.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {renderDocButton('CANCELLED_CHEQUE')}
+                </div>
+                <ExtractionNotes
+                  results={extractionNotes}
+                  forDocs={['CANCELLED_CHEQUE']}
+                />
+              </div>
+
               <Field
                 label="IFSC"
                 value={f.ifsc ?? ''}
                 onChange={set('ifsc')}
                 placeholder="HDFC0001234"
                 error={fieldErrors.ifsc}
-                hint="11 characters"
+                hint="11 characters, from your cheque: 4 letters, a 0, then 6 more"
+                provenance={provenance('ifsc')}
+              />
+              {/* Read-only and resolved, or asked for only when the directory has
+                  never heard of the code the vendor typed. */}
+              {bankFromIfsc ? (
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <label className="block text-[12px] font-medium text-muted">
+                      Bank
+                    </label>
+                    <Pill variant="success" dot>
+                      Resolved from your IFSC
+                    </Pill>
+                  </div>
+                  <Input
+                    value={
+                      bankFromIfsc.branch
+                        ? `${bankFromIfsc.bank} — ${bankFromIfsc.branch}`
+                        : bankFromIfsc.bank
+                    }
+                    readOnly
+                    className="cursor-not-allowed bg-canvas text-muted"
+                  />
+                </div>
+              ) : (
+                <Field
+                  label="Bank name"
+                  value={f.bankName ?? ''}
+                  onChange={set('bankName')}
+                  error={fieldErrors.bankName}
+                  hint={
+                    (f.ifsc ?? '').length >= 11
+                      ? 'We could not find that IFSC in the bank directory — check it, or enter your bank name.'
+                      : 'Filled in for you once you enter a valid IFSC.'
+                  }
+                />
+              )}
+              <Field
+                label="Account number"
+                value={f.accountNumber ?? ''}
+                onChange={set('accountNumber')}
+                error={fieldErrors.accountNumber}
+                provenance={provenance('accountNumber')}
               />
               <Field
                 label="Account holder name"
                 value={f.holderName ?? ''}
                 onChange={set('holderName')}
                 error={fieldErrors.holderName}
-                hint="Must match the name registered at the bank"
+                hint="Exactly as the bank has it — a penny drop checks this name against the account"
               />
               <p className="text-[12px] text-muted">
-                A penny-drop name match runs automatically on save.
+                On save we credit a rupee to the account and compare the name the bank
+                returns with the one above. A mismatch does not stop you here, but your
+                buyer has to clear it before your account goes live.
               </p>
             </>
           )}
 
           {step === 4 && (
             <div className="space-y-4">
-              {requiredDocs.length > 0 ? (
-                <div>
-                  <p className="mb-2 text-[13px] text-muted">
-                    Required documents
-                    {categoryCfg ? ` for ${categoryCfg.displayName}` : ''} — select a file
-                    for each (PDF or image, max 10 MB):
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {requiredDocs.map((d) => renderDocButton(d))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-[13px] text-muted">
-                  Upload your documents (PDF or image, max 10 MB):
+              <div>
+                <p className="mb-2 text-[13px] text-muted">
+                  Two documents are required here (PDF or image, max 10 MB). The cancelled
+                  cheque is the one you were asked for on the banking step.
                 </p>
-              )}
+                <div className="flex flex-wrap gap-2">
+                  {ONBOARDING_STEP4_DOCUMENTS.map((d) => renderDocButton(d))}
+                </div>
+              </div>
 
+              {/* Commercial material, not compliance: offered plainly rather than
+                  hidden behind the "other documents" toggle, because a vendor who
+                  has a catalogue should be invited to attach it — and one who has
+                  none is never held up by it. */}
+              <div>
+                <p className="mb-2 text-[12px] text-muted">
+                  Optional — attach your product or price catalogue if you have one. Your
+                  buyer can browse it when sourcing.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ONBOARDING_OPTIONAL_DOCUMENTS.map((d) => renderDocButton(d))}
+                </div>
+              </div>
+
+              {/* The statutory pair is asked for on step 1, where it drives the
+                  auto-fill — but it is just as mandatory as the two above, and a
+                  vendor who skipped it there would otherwise be stopped here by a
+                  message about documents with no picker in front of them. */}
+              <div
+                className={`rounded-md border p-3 ${
+                  missingStatutoryDocs.length > 0
+                    ? 'border-warn/40 bg-warn-wash'
+                    : 'border-line bg-canvas/60'
+                }`}
+              >
+                <p className="text-[12px] text-muted">
+                  {missingStatutoryDocs.length > 0
+                    ? 'Still required — asked for in step 1, where they fill the form in for you:'
+                    : 'Collected in step 1:'}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {ONBOARDING_STEP1_DOCUMENTS.map((d) => renderDocButton(d))}
+                </div>
+                <ExtractionNotes
+                  results={extractionNotes}
+                  forDocs={ONBOARDING_STEP1_DOCUMENTS}
+                />
+              </div>
+
+              {/* Everything else lives behind one toggle. The category's usual
+                  extras are listed first inside it, because they are the ones a
+                  buyer is most likely to come back and ask for — but none of them
+                  block submission, so none of them belong on the surface. */}
               <div>
                 <button
                   type="button"
@@ -684,85 +1054,39 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   {showOtherDocs ? '− Hide other documents' : '+ Add other documents'}
                 </button>
                 {showOtherDocs && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {otherDocs.map((d) => renderDocButton(d))}
+                  <div className="mt-2 space-y-3">
+                    {suggestedDocs.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-[12px] text-muted">
+                          {categoryCfg
+                            ? `Commonly asked for in ${categoryCfg.displayName}`
+                            : 'Commonly asked for'}
+                          . Your buyer may request these during review.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {suggestedDocs.map((d) => renderDocButton(d))}
+                        </div>
+                      </div>
+                    )}
+                    {otherDocs.length > 0 && (
+                      <div>
+                        {suggestedDocs.length > 0 && (
+                          <p className="mb-2 text-[12px] text-muted">Anything else:</p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {otherDocs.map((d) => renderDocButton(d))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            </div>
-          )}
 
-          {step === 5 && (
-            <>
-              <Field
-                label="Category tags (comma-separated)"
-                value={f.categoryTags ?? ''}
-                onChange={set('categoryTags')}
-                placeholder="spares, castings"
-              />
-              <Field
-                label="Capability tags (comma-separated)"
-                value={f.capabilityTags ?? ''}
-                onChange={set('capabilityTags')}
-                placeholder="machining"
-              />
-              <Field
-                label="Annual turnover (₹)"
-                value={f.annualTurnoverDeclared ?? ''}
-                onChange={set('annualTurnoverDeclared')}
-                placeholder="25000000"
-              />
-            </>
-          )}
-
-          {step === 6 && (
-            <>
-              <label className="flex items-center gap-2 text-[13px]">
-                <input
-                  type="checkbox"
-                  checked={isRelatedParty}
-                  onChange={(e) => setIsRelatedParty(e.target.checked)}
-                />
-                We are a related party to the buyer
-              </label>
-              {isRelatedParty && (
-                <Field
-                  label="Related-party disclosure"
-                  value={f.relatedPartyDisclosure ?? ''}
-                  onChange={set('relatedPartyDisclosure')}
-                />
-              )}
-              <p className="text-[12px] text-muted">
-                By saving this step you self-declare no sanctions exposure. Sanctions
-                screening runs automatically.
+              <p className="border-t border-line pt-4 text-[12px] text-muted">
+                By submitting you self-declare no sanctions exposure. Sanctions screening
+                runs automatically on submission.
               </p>
-
-              {/* CoC + submit */}
-              <div className="mt-4 space-y-3 border-t border-line pt-4">
-                <CardTitle>Code of conduct</CardTitle>
-                <Field label="Your name" value={cocName} onChange={setCocName} />
-                <Field
-                  label="Designation"
-                  value={cocDesignation}
-                  onChange={setCocDesignation}
-                />
-                <label className="flex items-center gap-2 text-[13px]">
-                  <input
-                    type="checkbox"
-                    checked={cocAgreed}
-                    onChange={(e) => setCocAgreed(e.target.checked)}
-                  />
-                  I have read and accept the supplier code of conduct
-                </label>
-                <Button
-                  variant="default"
-                  onClick={acknowledge}
-                  disabled={ackCoc.isPending}
-                >
-                  Acknowledge CoC
-                </Button>
-              </div>
-            </>
+            </div>
           )}
 
           <div className="mt-4 flex justify-between border-t border-line pt-4">
@@ -782,7 +1106,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 >
                   Save step
                 </Button>
-                {step === 6 && (
+                {step === ONBOARDING_STEP_COUNT && (
                   <Button variant="accent" onClick={doSubmit} disabled={submit.isPending}>
                     Submit for review
                   </Button>
@@ -795,8 +1119,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
 
       {editable && completionPct === 100 && (
         <p className="mt-3 text-[13px] text-accent-2">
-          <Pill variant="success">Ready</Pill> All steps complete — acknowledge the CoC
-          and submit.
+          <Pill variant="success">Ready</Pill> All steps complete — submit for review.
         </p>
       )}
     </div>
