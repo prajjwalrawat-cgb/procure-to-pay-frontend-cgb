@@ -10,6 +10,10 @@ import type {
   CustomFieldValues,
   OrganisationSettings,
   OrganisationUpdateInput,
+  VendorCategory,
+  VendorCategoryCreateInput,
+  VendorCategoryOption,
+  VendorCategoryUpdateInput,
 } from '@/lib/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -20,6 +24,8 @@ export const settingsKeys = {
   organisation: ['settings', 'organisation'] as const,
   customFields: ['settings', 'custom-fields'] as const,
   formFields: (entity: CustomFieldEntity) => ['settings', 'form-fields', entity] as const,
+  vendorCategories: ['settings', 'vendor-categories'] as const,
+  vendorCategoryOptions: ['settings', 'vendor-categories', 'options'] as const,
 };
 
 export const useOrganisationSettings = () =>
@@ -168,6 +174,51 @@ export function useUpdateCustomField() {
   return useMutation({
     mutationFn: (v: { id: string; body: CustomFieldUpdateInput }) =>
       apiFetch<CustomFieldDefinition>(`/settings/custom-fields/${v.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(v.body),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: settingsKeys.all }),
+  });
+}
+
+// ── Vendor categories ──────────────────────────────────────────────────────
+
+/** Every category in the tenant, retired ones included — the admin screen. */
+export const useVendorCategories = () =>
+  useQuery({
+    queryKey: settingsKeys.vendorCategories,
+    queryFn: () => apiFetch<VendorCategory[]>('/settings/vendor-categories'),
+  });
+
+/**
+ * The categories a dropdown should offer. Needs no settings permission — the
+ * buyer inviting a vendor and the vendor filling in the wizard both read it.
+ */
+export const useVendorCategoryOptions = () =>
+  useQuery({
+    queryKey: settingsKeys.vendorCategoryOptions,
+    queryFn: () =>
+      apiFetch<VendorCategoryOption[]>('/settings/vendor-categories/options'),
+    staleTime: 5 * 60_000,
+  });
+
+export function useCreateVendorCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: VendorCategoryCreateInput) =>
+      apiFetch<VendorCategory>('/settings/vendor-categories', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: settingsKeys.all }),
+  });
+}
+
+export function useUpdateVendorCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; body: VendorCategoryUpdateInput }) =>
+      apiFetch<VendorCategory>(`/settings/vendor-categories/${v.id}`, {
         method: 'PATCH',
         body: JSON.stringify(v.body),
       }),

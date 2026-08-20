@@ -18,7 +18,6 @@ import {
   ONBOARDING_STEP_NAMES,
   ONBOARDING_STEP_SCHEMAS,
   SELECTABLE_GST_STATES,
-  VENDOR_CATEGORY_CONFIGS,
   VENDOR_DOCUMENT_TYPE,
   fieldSourceLabel,
   gstStateName,
@@ -36,6 +35,7 @@ import {
   applyExtractedFields,
   hydrateWizardForm,
   lookupIfsc,
+  useCategoryOptions,
   useOnboarding,
   useSaveStep,
   useSubmitOnboarding,
@@ -328,6 +328,9 @@ function onboardingStatus(data: ResumeResponse): {
 
 export default function OnboardingWizardPage(): React.JSX.Element {
   const { data, isLoading, error } = useOnboarding();
+  // The buyer's own category list — what documents this vendor's category
+  // expects is their configuration, not a constant.
+  const { data: categoryOptions } = useCategoryOptions();
   const saveStep = useSaveStep();
   const uploadDoc = useUploadOnboardingDocFile();
   const submit = useSubmitOnboarding();
@@ -656,9 +659,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
 
   // Documents beyond the mandatory set. The vendor's category is what makes some
   // of them likely, so those are listed first — but none of them block submit.
-  const categoryCfg = VENDOR_CATEGORY_CONFIGS.find(
-    (c) => c.categoryKey === data?.categoryKey,
-  );
+  const categoryCfg = categoryOptions?.find((c) => c.key === data?.categoryKey);
   const mandatory = new Set<string>([
     ...ONBOARDING_STEP1_DOCUMENTS,
     ...ONBOARDING_STEP4_DOCUMENTS,

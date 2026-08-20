@@ -29,15 +29,17 @@ export default function VendorSignupPage(): React.JSX.Element {
     setTenantId(new URLSearchParams(window.location.search).get('tenant') ?? '');
   }, []);
 
+  // Waits for the tenant: the categories offered are that organisation's own.
   useEffect(() => {
-    void fetch(`${API_URL}/public/vendors/categories`)
+    if (!tenantId) return;
+    void fetch(`${API_URL}/public/vendors/categories?tenant=${encodeURIComponent(tenantId)}`)
       .then((r) => r.json())
       .then((cats: CategoryOption[]) => {
         setCategories(cats);
         setCategoryKey(cats[0]?.key ?? '');
       })
       .catch(() => setCategories([]));
-  }, []);
+  }, [tenantId]);
 
   async function submit(e: React.FormEvent): Promise<void> {
     e.preventDefault();

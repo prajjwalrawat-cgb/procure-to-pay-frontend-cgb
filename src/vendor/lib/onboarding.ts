@@ -9,6 +9,7 @@ import {
 import type {
   DocumentExtractionResult,
   SaveStepInput,
+  VendorCategoryOption,
   VendorDocumentType,
   VendorDocumentUpload,
 } from '@/lib/shared';
@@ -50,6 +51,7 @@ export interface ResumeResponse {
 
 export const onboardingKeys = {
   resume: ['onboarding', 'resume'] as const,
+  categories: ['onboarding', 'categories'] as const,
 };
 
 export function useOnboarding(): UseQueryResult<ResumeResponse> {
@@ -57,6 +59,19 @@ export function useOnboarding(): UseQueryResult<ResumeResponse> {
     queryKey: onboardingKeys.resume,
     queryFn: () => apiFetch<ResumeResponse>('/vendor/onboarding'),
     retry: false,
+  });
+}
+
+/**
+ * The buyer's own vendor categories (they maintain them in Settings), so the
+ * wizard can name the documents this vendor's category expects instead of
+ * reading a list compiled into the app.
+ */
+export function useCategoryOptions(): UseQueryResult<VendorCategoryOption[]> {
+  return useQuery({
+    queryKey: onboardingKeys.categories,
+    queryFn: () => apiFetch<VendorCategoryOption[]>('/settings/vendor-categories/options'),
+    staleTime: 5 * 60_000,
   });
 }
 

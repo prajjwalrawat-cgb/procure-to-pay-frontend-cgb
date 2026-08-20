@@ -1,7 +1,14 @@
 'use client';
 
 import { PERMISSIONS, type Permission } from '@/lib/shared';
-import { Building2, Landmark, ListPlus, MapPin, Image as ImageIcon } from 'lucide-react';
+import {
+  Building2,
+  Landmark,
+  ListPlus,
+  MapPin,
+  Image as ImageIcon,
+  Tags,
+} from 'lucide-react';
 import { useState } from 'react';
 
 import { useHasPermission } from '@/lib/permissions';
@@ -10,6 +17,7 @@ import { BrandingSection } from './branding-section';
 import { BranchesSection } from './branches-section';
 import { CustomFieldsSection } from './custom-fields-section';
 import { OrganisationSection } from './organisation-section';
+import { VendorCategoriesSection } from './vendor-categories-section';
 
 /**
  * Organisation settings. Everything that names the buying organisation — the
@@ -51,6 +59,13 @@ const SECTIONS = [
     permission: PERMISSIONS.BANK_ACCOUNT_READ,
   },
   {
+    key: 'vendor-categories',
+    group: 'Vendors',
+    label: 'Vendor categories',
+    icon: Tags,
+    permission: PERMISSIONS.SETTINGS_READ,
+  },
+  {
     key: 'custom-fields',
     group: 'Documents',
     label: 'Custom fields',
@@ -88,8 +103,8 @@ export default function SettingsPage(): React.JSX.Element {
     <div className="mx-auto max-w-6xl pb-16">
       <h1 className="text-[20px] font-semibold tracking-heading text-ink">Settings</h1>
       <p className="mb-5 text-[13px] text-muted">
-        Manage organisation identity, GST registrations, branding, banking and document
-        fields.
+        Manage organisation identity, GST registrations, branding, banking, vendor
+        categories and document fields.
       </p>
 
       <div className="grid gap-6 border-t border-line pt-5 md:grid-cols-[220px_1fr]">
@@ -130,6 +145,7 @@ export default function SettingsPage(): React.JSX.Element {
           {current === 'branches' && <BranchesSection />}
           {current === 'branding' && <BrandingSection />}
           {current === 'bank-accounts' && <BankAccountsSection />}
+          {current === 'vendor-categories' && <VendorCategoriesSection />}
           {current === 'custom-fields' && <CustomFieldsSection />}
         </div>
       </div>

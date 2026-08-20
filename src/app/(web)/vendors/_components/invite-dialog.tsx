@@ -8,11 +8,12 @@ import {
   DialogTitle,
   Input,
 } from '@/components/ui';
-import { InviteVendorInputSchema, VENDOR_CATEGORY_CONFIGS } from '@/lib/shared';
+import { InviteVendorInputSchema } from '@/lib/shared';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ApiError, zodFieldErrors, zodSummary } from '@/lib/api-error';
+import { useVendorCategoryOptions } from '@/lib/api/settings';
 import { useInviteVendor } from '@/lib/api/vendors';
 import { useToastStore } from '@/store/toast-store';
 
@@ -73,13 +74,18 @@ export function InviteVendorDialog({
   const [legalEntityName, setLegalEntityName] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [categoryKey, setCategoryKey] = useState(
-    VENDOR_CATEGORY_CONFIGS[0]?.categoryKey ?? '',
-  );
+  // Categories are this organisation's own (Settings → Vendor categories), so
+  // the list is fetched rather than compiled in.
+  const { data: categories } = useVendorCategoryOptions();
+  const [categoryKey, setCategoryKey] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [duplicate, setDuplicate] = useState<DuplicateWarning | null>(null);
   const invite = useInviteVendor();
   const toast = useToastStore((s) => s.push);
+
+  useEffect(() => {
+    if (!categoryKey && categories?.length) setCategoryKey(categories[0].key);
+  }, [categories, categoryKey]);
 
   /** Any edit invalidates the warning — it was about the previous values. */
   const edit = (set: (v: string) => void) => (v: string) => {
@@ -202,8 +208,8 @@ export function InviteVendorDialog({
               onChange={(e) => setCategoryKey(e.target.value)}
               className="bg-surface w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
             >
-              {VENDOR_CATEGORY_CONFIGS.map((c) => (
-                <option key={c.categoryKey} value={c.categoryKey}>
+              {(categories ?? []).map((c) => (
+                <option key={c.key} value={c.key}>
                   {c.displayName}
                 </option>
               ))}
@@ -226,7 +232,7 @@ export function InviteVendorDialog({
           <Button
             variant="primary"
             onClick={() => submit()}
-            disabled={invite.isPending || !legalEntityName || !email}
+            disabled={invite.isPending || !legalEntityName || !email || !categoryKey}
           >
             {invite.isPending ? 'Inviting…' : 'Send invitation'}
           </Button>
