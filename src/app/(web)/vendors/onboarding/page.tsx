@@ -2,11 +2,13 @@
 
 import {
   Button,
+  DataState,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
   Input,
+  PageHeader,
   Pill,
 } from '@/components/ui';
 import Link from 'next/link';
@@ -116,31 +118,26 @@ export default function OnboardingQueuePage(): React.JSX.Element {
   const tabs = canReview ? TABS : TABS.filter((t) => t.key !== 'my_review');
   const activeTab: OnboardingTab =
     tab === 'my_review' && !canReview ? 'in_progress' : tab;
-  const { data, isLoading, isError } = useOnboardingQueue(activeTab);
+  const { data, isLoading, isError, error, refetch } = useOnboardingQueue(activeTab);
 
   return (
     <div className="mx-auto max-w-[1400px]">
-      <div className="mb-4">
-        <Link href="/vendors" className="text-muted hover:text-ink text-[12px]">
-          ← Vendors
-        </Link>
-        <h1 className="tracking-heading text-ink mt-1 text-[20px] font-semibold">
-          Onboarding queue
-        </h1>
-        <p className="text-muted text-[13px]">
-          Invited and self-registered vendors working through the onboarding wizard.
-        </p>
-      </div>
+      <PageHeader
+        title="Onboarding queue"
+        breadcrumbs={[{ label: 'Vendors', href: '/vendors' }, { label: 'Onboarding' }]}
+        description="Invited and self-registered vendors working through the onboarding wizard."
+      />
 
-      <div className="border-line mb-4 flex gap-1 border-b">
+      <div className="border-line mb-4 flex gap-1 overflow-x-auto border-b">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-[13px] font-medium ${
+            type="button"
+            className={`duration-hover shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ${
               activeTab === t.key
-                ? 'text-ink border-ink border-b-2'
-                : 'text-muted hover:text-ink'
+                ? 'border-accent text-ink'
+                : 'text-muted hover:text-ink border-transparent'
             }`}
           >
             {t.label}
@@ -148,18 +145,25 @@ export default function OnboardingQueuePage(): React.JSX.Element {
         ))}
       </div>
 
-      {isLoading ? (
-        <p className="text-muted text-[13px]">Loading…</p>
-      ) : isError ? (
-        <p className="text-muted text-[13px]">
-          Could not load the onboarding queue — your role may not have access to it.
-        </p>
-      ) : !data || data.items.length === 0 ? (
-        <p className="text-muted text-[13px]">Nothing in this view.</p>
+      {isLoading || isError || !data || data.items.length === 0 ? (
+        <div className="border-line bg-panel rounded-lg border">
+          <DataState
+            isLoading={isLoading}
+            error={isError ? error : undefined}
+            isEmpty={!data || data.items.length === 0}
+            onRetry={() => void refetch()}
+            empty={{
+              title: 'Nothing in this view',
+              detail: 'Vendors move through here from invitation to activation.',
+            }}
+          >
+            {null}
+          </DataState>
+        </div>
       ) : (
-        <div className="border-line overflow-hidden rounded-lg border">
+        <div className="border-line bg-panel overflow-x-auto rounded-lg border">
           <table className="w-full text-[13px]">
-            <thead className="bg-surface-2 text-muted">
+            <thead className="bg-canvas text-muted">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Vendor</th>
                 <th className="px-3 py-2 text-left font-medium">Category</th>
@@ -173,7 +177,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
             </thead>
             <tbody>
               {data.items.map((o) => (
-                <tr key={o.id} className="border-line hover:bg-surface-2 border-t">
+                <tr key={o.id} className="border-line hover:bg-canvas border-t">
                   <td className="px-3 py-2">
                     <Link
                       href={`/vendors/onboarding/${o.id}`}

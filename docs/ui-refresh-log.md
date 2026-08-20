@@ -207,6 +207,8 @@ keeps the explanation reachable by assistive tech.
 | `invoice.compliance` has no `simulated` flag — `gstinStatus` / `gstr2bStatus` are bare strings with no provenance | Provenance is *inferred* client-side from usage data. It is an inference, not ground truth. | Add `simulated: boolean` per compliance field, as `Gstr2bReconResult` and `IrnValidationResult` already have |
 | `CredentialStatusItem` cannot distinguish a sandbox key from a live one | Drove the false-green bug above | Add `isSandbox: boolean` |
 | `VendorScreeningView` has no `simulated` flag | Sanctions/GSTIN/PAN verdicts infer provenance from `provider` + usage data | Add `simulated: boolean` |
+| **`GET /rfq/:id/comparison` 500s: `TypeError: criteria.map is not a function`** | 🔴 **Live bug.** `quote-evaluation.service.ts:157` expects `evaluation_criteria` to be an array. Seeded RFQ-9001 / RFQ-8001 store it as an object (`{"price": 100}`), so evaluation and award are unreachable for them. RFQ-2026-0001 has the correct array shape and works. | Migrate the legacy object shape, or accept both in the service |
+| **Upstash Redis request quota exhausted** | ⚠️ Infra. `max requests limit exceeded. Limit: 500000, Usage: 500005` — the `ocr` and `inventory-import` workers are erroring on every tick. Background jobs are silently dead. | Raise the Upstash plan or point local dev at a local Redis |
 | Audit `entityType` is the PascalCase Prisma model name | A mismatched filter silently returns an empty ledger — the failure mode that makes the component lie. `DocumentLedger` filters by `entityId` alone to avoid it. | Document the enum, or accept a domain alias |
 
 The route-shadowing bug is the only one that is a live defect rather than a
@@ -276,11 +278,74 @@ the intake and vendor-onboarding screens the honesty requirements reached into.
 rather than a list; those still use the page-level loading guard. Converting
 those to `DataState` is worthwhile but is not a list-view gap.
 
+### Phase 2 — sourcing & vendor
+
+All 13 pages converted. They started with **zero** responsive coverage and zero
+shared states between them.
+
+| Page | Resp | States | Notes |
+|---|---|---|---|
+| `/sourcing` | ✓ | ✓ | Fixed a `Date.now()`-in-render hydration mismatch in the deadline countdown |
+| `/sourcing/new` | ✓ | ✓ | PageHeader; 2-up and 6-up wizard grids now stack |
+| `/sourcing/[id]` | ✓ | ✓ | PageHeader, `StageStrip`, DataState |
+| `/sourcing/[id]/publish` | ✓ | ✓ | PageHeader + breadcrumbs |
+| `/sourcing/[id]/open` | ✓ | ✓ | PageHeader + breadcrumbs |
+| `/sourcing/[id]/evaluate` | ✓ | ✓ | **`ScoreBreakdown`** on every row; empty state for an unquoted RFQ |
+| `/sourcing/[id]/award` | ✓ | ✓ | Rebuilt — see below |
+| `/sourcing/[id]/reverse-auction` | ✓ | ✓ | Stale-ladder warning when the SSE stream is offline |
+| `/vendors` | ✓ | ✓ | PageHeader, DataState (403 stays distinct from empty) |
+| `/vendors/[id]` | ✓ | ✓ | **Scorecard rebuilt** — see below |
+| `/vendors/[id]/suspend` | ✓ | ✓ | PageHeader |
+| `/vendors/onboarding` | ✓ | ✓ | PageHeader, DataState |
+| `/vendors/onboarding/[id]` | ✓ | ✓ | PageHeader + breadcrumbs |
+
+**Making the scoring maths visible** (the brief's named differentiator).
+`ScoreBreakdown` decomposes a quote's weighted total into `raw × weight =
+points` per criterion, with a bar scaled to 100 possible points. Every figure
+comes from the API's `weightedScore`; nothing is recomputed client-side, so the
+breakdown cannot drift from the total the engine persisted. The total itself is
+the expander — the number people act on is the way into the maths behind it.
+Colour is a monochrome navy ramp ordered by weight, not a categorical palette:
+criteria are not states, and "quality: green" would read as a pass.
+
+**The award page was rebuilt, not restyled.** Allocation was two free-text boxes
+asking for `quoteId` and `rfqLineId` — both ULIDs nobody can type. They are now
+pickers over the actual quotes and lines. The 500-character variance
+justification was described in prose and enforced only server-side, so a buyer
+could write a paragraph and be rejected on submit; it is now a live gate that
+only applies when the allocation actually moves away from L1.
+
+**Vendor scorecard.** Seven metrics that were a column of bare numbers now show
+against the scale they are measured on — but only where a scale exists:
+
+- OTIF, quality and dispute rate are banded good/watch/problem (dispute rate
+  inverted, since lower is better).
+- Win rate and RFQ participation render **neutral**. They have no target: a 45%
+  RFQ win rate is a healthy supplier, and my first cut coloured it red by
+  applying OTIF-shaped thresholds — inventing a judgement the data does not
+  support.
+- Response time (hours) and payment cycle (days) get no bar at all. They are
+  unbounded with no target in the API, so a bar would need an invented
+  denominator. A fake scale is worse than no scale.
+
+**Another honesty fix, same family as the sandbox chips.** `insufficientData`
+rendered "Cold start — under 3 transactions" *next to a confident green grade
+pill*. The caveat was there; the colour still said "good". The grade now goes
+neutral and gains a **Provisional** chip.
+
+**Bugs found and fixed en route**
+
+| Bug | Where | Fix |
+|---|---|---|
+| `bg-surface` / `bg-surface-2` were never tokens in this system — 14 dead classes across 8 files, so those inputs and table headers rendered with **no background at all** | vendors, sourcing, team, vendor portal | Mapped onto the real tokens (`bg-panel` / `bg-canvas`) |
+| `Date.now()` during render — hydration mismatch | sourcing list countdown | Mounted guard, refreshed each minute |
+| Nullable `legalEntityName` stringified into "null · CATEGORY" | vendor 360, onboarding detail | Filtered join |
+| Raw `font-mono` instead of the system's `.font-numeric` (no tabular figures) | sourcing list, evaluate | Swapped |
+
 ### Remaining
 
 | Phase | Scope | Status |
 |---|---|---|
-| 2 | Sourcing (RFQ/sealed bid, award, evaluate, reverse auction), vendor 360, scorecards | not started |
 | 3 | Analytics, MSME §15 aging/compliance | not started |
 | 4 | Contracts, inventory (13 pages), items, settings, team, vendor portal (18 pages), audit | not started |
 

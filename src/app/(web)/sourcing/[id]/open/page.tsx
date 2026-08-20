@@ -1,6 +1,10 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import {
+  Button,
+  Input,
+  PageHeader,
+} from '@/components/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -37,13 +41,17 @@ export default function OpenCeremonyPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[640px]">
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
-        Quote-open ceremony — {rfq?.number}
-      </h1>
-      <p className="text-muted mb-4 text-[13px]">
-        {rfq?.submittedCount} of {rfq?.invitedCount} vendors submitted. This RFQ is above
-        the multi-party threshold — two witnesses from different roles are required.
-      </p>
+      <PageHeader
+        title={`Quote-open ceremony — ${rfq?.number ?? ''}`.trim()}
+        breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Quote open' }]}
+        description={
+          <>
+            {rfq?.submittedCount} of {rfq?.invitedCount} vendors submitted. This RFQ is
+            above the multi-party threshold — two witnesses from different roles are
+            required.
+          </>
+        }
+      />
 
       <div className="border-line bg-panel mb-4 rounded-lg border p-4">
         <label className="mb-1 block">

@@ -1,6 +1,10 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import {
+  Button,
+  Input,
+  PageHeader,
+} from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { EvaluationCriterionInput, RfqLineInput, RfqType } from '@/lib/shared';
@@ -71,7 +75,7 @@ function RequisitionPicker({
 
   if (selected) {
     return (
-      <div className="bg-surface flex items-center justify-between rounded-md border border-line px-3 py-2">
+      <div className="bg-panel flex items-center justify-between rounded-md border border-line px-3 py-2">
         <span className="text-[13px]">
           <span className="font-numeric text-ink">{selected.number}</span>{' '}
           <span className="text-muted">{selected.title}</span>
@@ -206,9 +210,10 @@ export default function NewRfqPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[900px]">
-      <h1 className="mb-4 text-[20px] font-semibold tracking-heading text-ink">
-        New RFQ
-      </h1>
+      <PageHeader
+        title="New RFQ"
+        description="Define the lines, invite vendors and set the evaluation weights."
+      />
 
       <Section title="1 · Basics">
         <Field label="Title">
@@ -218,7 +223,7 @@ export default function NewRfqPage(): React.JSX.Element {
             placeholder="Cement mill liner segments Q3-26"
           />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Category">
             <Input value={category} onChange={(e) => setCategory(e.target.value)} />
           </Field>
@@ -269,7 +274,7 @@ export default function NewRfqPage(): React.JSX.Element {
 
       <Section title="2 · Lines">
         {lines.map((l, i) => (
-          <div key={i} className="mb-2 grid grid-cols-6 gap-2">
+          <div key={i} className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <Input
               placeholder="Item"
               value={l.itemDesc}

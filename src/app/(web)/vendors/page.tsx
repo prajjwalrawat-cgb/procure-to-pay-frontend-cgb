@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, DataState, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -29,42 +29,43 @@ function gradeVariant(grade: string | null): 'success' | 'warn' | 'danger' | 'gr
 export default function VendorsPage(): React.JSX.Element {
   const [tab, setTab] = useState<VendorTab>('active');
   const [inviteOpen, setInviteOpen] = useState(false);
-  const { data, isLoading, isError } = useVendorList(tab);
+  const { data, isLoading, isError, error, refetch } = useVendorList(tab);
   const canInvite = useHasPermission(PERMISSIONS.VENDOR_INVITE);
   const canSeeQueue = useHasPermission(PERMISSIONS.VENDOR_ONBOARDING_READ);
 
   return (
     <div className="mx-auto max-w-[1400px]">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">Vendors</h1>
-          <p className="text-muted text-[13px]">
-            Vendor master — onboarding, compliance, scorecards and lifecycle.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {canSeeQueue && (
-            <Link href="/vendors/onboarding">
-              <Button variant="default">Onboarding queue</Button>
-            </Link>
-          )}
-          {canInvite && (
-            <Button variant="primary" onClick={() => setInviteOpen(true)}>
-              Invite vendor
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Vendors"
+        description="Vendor master — onboarding, compliance, scorecards and lifecycle."
+        actions={
+          <>
+            {canSeeQueue && (
+              <Link href="/vendors/onboarding">
+                <Button variant="default" size="sm">
+                  Onboarding queue
+                </Button>
+              </Link>
+            )}
+            {canInvite && (
+              <Button variant="primary" size="sm" onClick={() => setInviteOpen(true)}>
+                Invite vendor
+              </Button>
+            )}
+          </>
+        }
+      />
 
-      <div className="border-line mb-4 flex gap-1 border-b">
+      <div className="border-line mb-4 flex gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-[13px] font-medium ${
+            type="button"
+            className={`duration-hover shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ${
               tab === t.key
-                ? 'text-ink border-ink border-b-2'
-                : 'text-muted hover:text-ink'
+                ? 'border-accent text-ink'
+                : 'text-muted hover:text-ink border-transparent'
             }`}
           >
             {t.label}
@@ -72,20 +73,33 @@ export default function VendorsPage(): React.JSX.Element {
         ))}
       </div>
 
-      {isLoading ? (
-        <p className="text-muted text-[13px]">Loading…</p>
-      ) : isError ? (
-        // Distinguished from an empty result: a 403 used to render as "no
-        // vendors", which reads as an empty tenant rather than missing access.
-        <p className="text-muted text-[13px]">
-          Could not load the vendor master — your role may not have access to it.
-        </p>
-      ) : !data || data.items.length === 0 ? (
-        <p className="text-muted text-[13px]">No vendors in this view.</p>
+      {isLoading || isError || !data || data.items.length === 0 ? (
+        // Error stays distinct from empty: a 403 rendering as "no vendors"
+        // reads as an empty tenant rather than missing access. DataState's
+        // error branch says which it is.
+        <div className="border-line bg-panel rounded-lg border">
+          <DataState
+            isLoading={isLoading}
+            error={isError ? error : undefined}
+            isEmpty={!data || data.items.length === 0}
+            onRetry={() => void refetch()}
+            empty={{
+              title: 'No vendors in this view',
+              detail: 'Invited and onboarded suppliers appear here.',
+              action: canInvite ? (
+                <Button variant="primary" size="sm" onClick={() => setInviteOpen(true)}>
+                  Invite vendor
+                </Button>
+              ) : undefined,
+            }}
+          >
+            {null}
+          </DataState>
+        </div>
       ) : (
-        <div className="border-line overflow-hidden rounded-lg border">
+        <div className="border-line bg-panel overflow-x-auto rounded-lg border">
           <table className="w-full text-[13px]">
-            <thead className="bg-surface-2 text-muted">
+            <thead className="bg-canvas text-muted">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Code</th>
                 <th className="px-3 py-2 text-left font-medium">Name</th>
@@ -99,7 +113,7 @@ export default function VendorsPage(): React.JSX.Element {
             </thead>
             <tbody>
               {data.items.map((v) => (
-                <tr key={v.id} className="border-line hover:bg-surface-2 border-t">
+                <tr key={v.id} className="border-line hover:bg-canvas border-t">
                   <td className="px-3 py-2">
                     <Link
                       href={`/vendors/${v.id}`}

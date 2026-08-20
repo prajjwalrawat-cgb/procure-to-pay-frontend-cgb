@@ -1,6 +1,11 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import {
+  Button,
+  Input,
+  PageHeader,
+  Pill,
+} from '@/components/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -163,13 +168,11 @@ export default function PublishPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[720px]">
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
-        Publish {rfq?.number}
-      </h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Invite vendors and set the timeline. After publishing, criteria and lines are
-        immutable.
-      </p>
+      <PageHeader
+        title={`Publish ${rfq?.number ?? ''}`.trim()}
+        breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Publish' }]}
+        description="Invite vendors and set the timeline. After publishing, criteria and lines are immutable."
+      />
 
       <Section title="Invitations">
         {rfq?.invitations.map((i) => (

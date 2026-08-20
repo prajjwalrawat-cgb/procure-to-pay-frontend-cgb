@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import {
+  Button,
+  DataState,
+  PageHeader,
+  Pill,
+  StageStrip,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -21,78 +27,92 @@ const STAGES = [
 
 export default function RfqDetailPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
-  const { data: rfq, isLoading } = useRfq(id);
+  const { data: rfq, isLoading, error, refetch } = useRfq(id);
 
-  if (isLoading || !rfq)
-    return <div className="text-muted p-8 text-center">Loading…</div>;
+  if (isLoading || error || !rfq) {
+    return (
+      <div className="mx-auto max-w-[1400px]">
+        <PageHeader title="RFQ" />
+        <div className="border-line bg-panel rounded-lg border">
+          <DataState
+            isLoading={isLoading}
+            error={error}
+            isEmpty={!rfq}
+            onRetry={() => void refetch()}
+            empty={{ title: 'RFQ not found' }}
+          >
+            {null}
+          </DataState>
+        </div>
+      </div>
+    );
+  }
 
   const stageIdx = STAGES.indexOf(rfq.status);
 
   return (
     <div className="mx-auto max-w-[1400px]">
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-accent font-mono text-[12px]">{rfq.number}</span>
-            <Pill variant={statusVariant(rfq.status)}>{statusLabel(rfq.status)}</Pill>
+      <PageHeader
+        title={rfq.title}
+        breadcrumbs={[
+          { label: 'Sourcing', href: '/sourcing' },
+          { label: rfq.number },
+        ]}
+        meta={
+          <>
+            <span className="font-numeric text-muted text-[12px]">{rfq.number}</span>
+            <Pill variant={statusVariant(rfq.status)} dot>
+              {statusLabel(rfq.status)}
+            </Pill>
             <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
-          </div>
-          <h1 className="tracking-heading text-ink mt-1 text-[20px] font-semibold">
-            {rfq.title}
-          </h1>
-          <p className="text-muted text-[13px]">
-            {rfq.category}
-            {rfq.subcategory ? ` · ${rfq.subcategory}` : ''}
-          </p>
-        </div>
-        <div className="flex gap-2">
+          </>
+        }
+        description={`${rfq.category}${rfq.subcategory ? ` · ${rfq.subcategory}` : ''}`}
+        actions={
+          <>
           {rfq.status === 'DRAFT' && (
             <Link href={`/sourcing/${id}/publish`}>
-              <Button variant="primary">Publish</Button>
+              <Button variant="primary" size="sm">Publish</Button>
             </Link>
           )}
           {(rfq.status === 'BID_CLOSED' ||
             rfq.status === 'BIDDING_OPEN' ||
             rfq.status === 'TECH_OPEN') && (
             <Link href={`/sourcing/${id}/open`}>
-              <Button variant="primary">Open ceremony</Button>
+              <Button variant="primary" size="sm">Open ceremony</Button>
             </Link>
           )}
           {(rfq.status === 'COMMERCIAL_OPEN' || rfq.status === 'EVALUATION') && (
             <>
               <Link href={`/sourcing/${id}/evaluate`}>
-                <Button variant="accent">Evaluate</Button>
+                <Button variant="accent" size="sm">Evaluate</Button>
               </Link>
               <Link href={`/sourcing/${id}/award`}>
-                <Button variant="primary">Award</Button>
+                <Button variant="primary" size="sm">Award</Button>
               </Link>
             </>
           )}
           {rfq.isReverseAuction && (
             <Link href={`/sourcing/${id}/reverse-auction`}>
-              <Button variant="ghost">Reverse auction</Button>
+              <Button variant="ghost" size="sm">
+                Reverse auction
+              </Button>
             </Link>
           )}
-        </div>
+          </>
+        }
+      />
+
+      <div className="border-line bg-panel mb-4 rounded-lg border p-3.5">
+        <StageStrip
+          stages={STAGES.map((st) => ({ key: st, label: statusLabel(st) }))}
+          activeIndex={Math.max(0, stageIdx)}
+          failed={rfq.status === 'CANCELLED'}
+          failedLabel={statusLabel(rfq.status)}
+        />
       </div>
 
-      {/* Stage strip */}
-      <div className="border-line bg-panel mb-4 flex items-center gap-1 overflow-x-auto rounded-lg border px-3 py-2 text-[11px]">
-        {STAGES.map((s, i) => (
-          <div key={s} className="flex items-center gap-1">
-            <span
-              className={`whitespace-nowrap rounded px-2 py-1 ${
-                i <= stageIdx ? 'bg-accent-wash text-accent-2' : 'text-faint'
-              }`}
-            >
-              {statusLabel(s)}
-            </span>
-            {i < STAGES.length - 1 && <span className="text-faint">›</span>}
-          </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-[1fr_320px] gap-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           {/* Lines */}
           <Section title="Lines">

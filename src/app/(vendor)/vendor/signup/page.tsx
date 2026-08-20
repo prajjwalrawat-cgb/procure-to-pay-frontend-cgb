@@ -133,7 +133,7 @@ export default function VendorSignupPage(): React.JSX.Element {
           <select
             value={categoryKey}
             onChange={(e) => setCategoryKey(e.target.value)}
-            className="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+            className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
           >
             {categories.map((c) => (
               <option key={c.key} value={c.key}>

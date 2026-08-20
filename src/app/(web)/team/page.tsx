@@ -163,7 +163,7 @@ export default function TeamPage(): React.JSX.Element {
                           value={m.roles[0] ?? ''}
                           onChange={(e) => onRoleChange(m, e.target.value)}
                           disabled={updateRole.isPending}
-                          className="border-line bg-surface text-ink rounded-md border px-2 py-1 text-[12px] disabled:opacity-50"
+                          className="border-line bg-panel text-ink rounded-md border px-2 py-1 text-[12px] disabled:opacity-50"
                           aria-label={`Role for ${m.name || m.email}`}
                         >
                           {ASSIGNABLE_ROLES.map((r) => (
@@ -239,7 +239,7 @@ export default function TeamPage(): React.JSX.Element {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="border-line bg-surface text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+                className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
               >
                 {ASSIGNABLE_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
