@@ -1,17 +1,29 @@
 'use client';
 
-import { Button, Sidebar, Topbar, type NavItem } from '@/components/ui';
+import {
+  Button,
+  CommandPalette,
+  Sidebar,
+  Topbar,
+  type CommandRoute,
+  type NavItem,
+} from '@/components/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
-import { NAV_GROUPS } from '@/vendor/config/nav';
+import { NAV_GROUPS, VENDOR_LIVE_ROUTES } from '@/vendor/config/nav';
 import { useSessionStore } from '@/vendor/store/session-store';
+import { useVendorUiStore } from '@/vendor/store/ui-store';
+
+const LOGOUT_HREF = 'action:logout';
 
 export function VendorShell({ children }: { children: ReactNode }): React.JSX.Element {
   const pathname = usePathname();
   const router = useRouter();
   const { user, clear } = useSessionStore();
+  const { sidebarCollapsed, commandOpen, toggleSidebar, setCommandOpen } =
+    useVendorUiStore();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Navigating from the drawer should close it; otherwise the new page renders
@@ -33,10 +45,32 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
     };
   }, [router]);
 
-  const logout = async (): Promise<void> => {
+  // Cmd-K / Ctrl-K opens the command palette, same as the buyer portal.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setCommandOpen]);
+
+  const logout = useCallback(async () => {
     await fetch(`/api/vendor/auth/logout`, { method: 'POST' });
     clear();
     router.replace('/vendor/login');
+  }, [clear, router]);
+
+  const commandRoutes: CommandRoute[] = [
+    ...VENDOR_LIVE_ROUTES,
+    { label: 'Logout', href: LOGOUT_HREF, keywords: 'sign out log out' },
+  ];
+
+  const onCommandSelect = (href: string): void => {
+    if (href === LOGOUT_HREF) void logout();
+    else router.push(href);
   };
 
   const renderLink = (item: NavItem, content: ReactNode): ReactNode => (
@@ -52,22 +86,23 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
       <Sidebar
         brand={
           <div className="flex items-center gap-2">
-            {/* Gold badge and on-navy text: the rail is navy, so the buyer
-                shell's ink-on-white treatment was invisible here. */}
-            <span className="bg-gold text-navy flex h-6 w-6 items-center justify-center rounded-sm">
+            {/* Gold badge and on-navy text: the rail is navy, so the
+                ink-on-white treatment this shell carried was invisible. */}
+            <span className="bg-gold text-navy flex h-6 w-6 shrink-0 items-center justify-center rounded-sm">
               <span className="font-numeric text-[12px] font-bold">P</span>
             </span>
-            <span className="tracking-heading text-on-navy text-[14px] font-semibold">
-              Vendor Portal
-            </span>
+            {(!sidebarCollapsed || mobileNavOpen) && (
+              <span className="tracking-heading text-on-navy text-[14px] font-semibold">
+                Vendor Portal
+              </span>
+            )}
           </div>
         }
         groups={NAV_GROUPS}
         activeHref={pathname}
+        collapsed={sidebarCollapsed}
         renderLink={renderLink}
-        // Below `lg` the rail is off-canvas. Without this wiring the vendor
-        // portal had a hamburger that did nothing and no reachable navigation
-        // at all on a phone.
+        // Below `lg` the rail is off-canvas, so the topbar hamburger opens it.
         mobileOpen={mobileNavOpen}
         onMobileClose={() => setMobileNavOpen(false)}
       />
@@ -75,7 +110,9 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar
           title="Supplier"
+          onToggleSidebar={toggleSidebar}
           onOpenMobileNav={() => setMobileNavOpen(true)}
+          onOpenCommand={() => setCommandOpen(true)}
           right={
             <div className="flex items-center gap-2 pl-1">
               <span className="text-on-navy-muted hidden text-[12px] sm:inline">
@@ -91,6 +128,13 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
           {children}
         </main>
       </div>
+
+      <CommandPalette
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+        routes={commandRoutes}
+        onSelect={onCommandSelect}
+      />
     </div>
   );
 }
