@@ -200,6 +200,10 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const anyScreeningSimulated = (data?.screenings ?? []).some((sc) =>
     isSimulated(sc.provider as IntegrationProvider),
   );
+  // Documents are auto-verified against the PAN and GSTN registries; if
+  // either is answering from a sandbox, an AUTO VERIFIED badge is unearned.
+  const statutoryVerificationSimulated =
+    isSimulated('PAN') || isSimulated('GSTN');
   // The penny drop has no row of its own to chip, so its liveness is read
   // straight off the provider registry.
   const pennyDropSimulated = isSimulated('PENNY_DROP');
@@ -468,9 +472,21 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             View
                           </a>
                         )}
-                        <Pill variant={DOC_VARIANT[d.verificationStatus] ?? 'gray'}>
-                          {d.verificationStatus.replace(/_/g, ' ')}
-                        </Pill>
+                        {/* AUTO VERIFIED means a statutory provider (PAN /
+                            GSTN) matched the document. When those run in a
+                            sandbox that green is unearned, so it is chipped
+                            like any other simulated verdict. MANUALLY VERIFIED
+                            was a human and keeps its colour either way. */}
+                        <VerificationResult
+                          status={d.verificationStatus.replace(/_/g, ' ')}
+                          variant={DOC_VARIANT[d.verificationStatus] ?? 'gray'}
+                          dot={false}
+                          simulated={
+                            d.verificationStatus === 'AUTO_VERIFIED' &&
+                            statutoryVerificationSimulated
+                          }
+                          label="document verification"
+                        />
                         {d.verificationStatus === 'PENDING' && canVerifyDocs && (
                           <>
                             <Button

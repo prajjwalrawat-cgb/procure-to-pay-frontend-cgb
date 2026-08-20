@@ -128,16 +128,20 @@ export default function InvoicesInboxPage(): React.JSX.Element {
       {selected.size > 0 && (
         <div className="bg-accent-wash mb-3 flex items-center gap-2 rounded-sm px-3 py-2 text-[13px]">
           <span className="text-accent-2 font-medium">{selected.size} selected</span>
-          <Button
-            size="sm"
-            variant="default"
-            onClick={() => toast('Assigned', 'success')}
-          >
-            Assign
-          </Button>
-          <Button size="sm" variant="default" onClick={() => toast('Held', 'success')}>
-            Hold
-          </Button>
+          {/* These reported success and did nothing. A user who selected five
+              invoices, clicked Hold and saw "Held" would reasonably believe
+              those invoices were on hold — a false success is worse than a
+              dead button, so both are disabled and marked. */}
+          <NotShipped reason="Bulk assignment arrives in a later slice. Assign an invoice from its detail page.">
+            <Button size="sm" variant="default" disabled>
+              Assign
+            </Button>
+          </NotShipped>
+          <NotShipped reason="Bulk hold arrives in a later slice. Put an invoice on hold from its detail page.">
+            <Button size="sm" variant="default" disabled>
+              Hold
+            </Button>
+          </NotShipped>
           <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
             Clear
           </Button>
