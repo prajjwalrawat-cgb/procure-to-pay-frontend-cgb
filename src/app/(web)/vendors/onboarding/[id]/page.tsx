@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogTitle,
   Input,
+  PageHeader,
   Pill,
   SandboxBanner,
   VerificationResult,
@@ -238,33 +239,40 @@ export default function OnboardingReviewPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[1200px]">
-      <div className="mb-4">
-        <Link
-          href="/vendors/onboarding"
-          className="text-[12px] text-muted hover:text-ink"
-        >
-          ← Onboarding queue
-        </Link>
-        <div className="mt-1 flex items-center gap-3">
-          <h1 className="text-[20px] font-semibold tracking-heading text-ink">
-            {data.vendorName}
-          </h1>
-          {data.isMsme && <Pill variant="info">MSME</Pill>}
-          <Pill variant="gray">{data.lifecycleStatus.replace(/_/g, ' ')}</Pill>
-          {canRename && (
-            <button
-              onClick={() => setRenaming(true)}
-              className="text-[12px] font-medium text-muted underline hover:text-ink"
-            >
-              Edit name
-            </button>
-          )}
-        </div>
-        <p className="text-[13px] text-muted">
-          {data.legalEntityName} · {data.category ?? '—'} · {data.completionPct}% complete
-          · open {data.daysOpen}d
-        </p>
-      </div>
+      <PageHeader
+        title={data.vendorName}
+        breadcrumbs={[
+          { label: 'Vendors', href: '/vendors' },
+          { label: 'Onboarding queue', href: '/vendors/onboarding' },
+          { label: data.vendorName },
+        ]}
+        meta={
+          <>
+            {data.isMsme && <Pill variant="info">MSME</Pill>}
+            <Pill variant="gray">{data.lifecycleStatus.replace(/_/g, ' ')}</Pill>
+            {canRename && (
+              <button
+                type="button"
+                onClick={() => setRenaming(true)}
+                className="text-muted hover:text-ink duration-hover text-[12px] font-medium underline transition-colors"
+              >
+                Edit name
+              </button>
+            )}
+          </>
+        }
+        description={
+          // legalEntityName is nullable; joining unconditionally printed "null · ".
+          [
+            data.legalEntityName,
+            data.category,
+            `${data.completionPct}% complete`,
+            `open ${data.daysOpen}d`,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        }
+      />
 
       {/* The risk lights and the AUTO VERIFIED document pills are both derived
           from the same screening providers as the verdicts below, so when those
@@ -614,7 +622,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Comment / reason (required to return or reject)…"
-                    className="bg-surface mb-3 w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
+                    className="bg-panel mb-3 w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
                     rows={4}
                   />
                   <div className="space-y-2">

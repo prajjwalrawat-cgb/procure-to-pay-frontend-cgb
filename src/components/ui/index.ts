@@ -29,6 +29,8 @@ export * from './components/sandbox-chip';
 export * from './components/approval-chain';
 export * from './components/kpi-card';
 export * from './components/ledger-strip';
+export * from './components/metric-bar';
+export * from './components/score-breakdown';
 export * from './components/stage-strip';
 
 export * from './components/coming-in-slice';

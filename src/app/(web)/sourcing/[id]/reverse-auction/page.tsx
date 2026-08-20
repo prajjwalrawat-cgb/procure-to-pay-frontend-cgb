@@ -1,6 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReverseAuctionLeaderboardEntry } from '@/lib/shared';
@@ -40,21 +40,37 @@ export default function ReverseAuctionPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[720px]">
-      <div className="mb-4 flex items-center gap-2">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Reverse auction
-        </h1>
-        <Pill variant={connected ? 'success' : 'gray'}>
-          {connected ? 'live' : 'offline'}
-        </Pill>
-      </div>
-
-      <input
-        className="border-line bg-panel mb-4 h-9 w-full rounded-md border px-2 text-[13px]"
-        placeholder="Round ID (rar_…) to watch the live leaderboard"
-        value={roundId}
-        onChange={(e) => setRoundId(e.target.value)}
+      <PageHeader
+        title="Reverse auction"
+        breadcrumbs={[
+          { label: 'Sourcing', href: '/sourcing' },
+          { label: 'Reverse auction' },
+        ]}
+        meta={
+          // The connection state is load-bearing here: an offline stream means
+          // the ladder below is stale, not that nobody is bidding.
+          <Pill variant={connected ? 'success' : 'gray'} dot>
+            {connected ? 'live' : 'offline'}
+          </Pill>
+        }
+        description="Watch the live bid ladder for a round."
       />
+
+      <label className="mb-4 block">
+        <span className="text-muted mb-1 block text-[12px] font-medium">Round</span>
+        <input
+          className="border-line bg-panel h-9 w-full rounded-sm border px-2 text-[13px]"
+          placeholder="Round ID (rar_…) to watch the live leaderboard"
+          value={roundId}
+          onChange={(e) => setRoundId(e.target.value)}
+        />
+      </label>
+
+      {!connected && roundId && (
+        <p className="border-warn/30 bg-warn-wash text-warn mb-4 rounded-lg border px-3 py-2 text-[12px]">
+          Not connected to the live stream — the ladder below may be out of date.
+        </p>
+      )}
 
       <div className="border-line bg-panel overflow-x-auto rounded-lg border">
         <table className="w-full text-[13px]">

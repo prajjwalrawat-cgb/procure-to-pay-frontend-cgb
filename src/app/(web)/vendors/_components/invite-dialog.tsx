@@ -206,7 +206,7 @@ export function InviteVendorDialog({
             <select
               value={categoryKey}
               onChange={(e) => setCategoryKey(e.target.value)}
-              className="bg-surface w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
+              className="bg-panel w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
             >
               {(categories ?? []).map((c) => (
                 <option key={c.key} value={c.key}>
