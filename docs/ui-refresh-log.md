@@ -145,6 +145,32 @@ it has recorded calls this month **and** not all of them were simulated.
 `configured && isActive` is a necessary precondition, not a sufficient one. It
 **fails closed** — loading, unknown provider, or zero calls all report sandbox.
 
+### Pre-Phase-2 honesty sweep
+
+Run across all remaining pages before starting Phase 2, rather than folding it
+into the styling work — the sanctions violation was only found by looking for
+it, so the rest of the app was searched the same way instead of assumed clean.
+
+Found and fixed:
+
+- **`AUTO VERIFIED` document pills rendered green** on vendor onboarding.
+  Documents are auto-verified against the PAN and GSTN registries; when those
+  answer from a sandbox the badge is unearned. Now chipped via
+  `VerificationResult`. `MANUALLY_VERIFIED` was a human and keeps its colour.
+- **"Assign" and "Hold" on the invoices bulk bar reported success and did
+  nothing** — `onClick={() => toast('Held', 'success')}`. A false success is
+  worse than a dead button: a user who selected five invoices and saw "Held"
+  would reasonably believe those invoices were on hold. Both disabled and
+  marked `NotShipped`.
+
+Checked and found clean:
+
+- No other controls whose only behaviour is a toast.
+- `/vendor/documents` and `/vendor/profile` already use the honest
+  `ComingInSlice` placeholder.
+- Vendor 360 shows a computed risk grade/score, not a provider verdict badge —
+  a different category from a "CLEAR"/"ACTIVE" claim, so left as is.
+
 ### Unshipped controls
 
 `<NotShipped>` renders a visible **SOON** chip beside a disabled control and
