@@ -43,6 +43,20 @@ export default function InventoryPage(): React.JSX.Element {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* The floor's entry point. Discoverable from the desk so a supervisor
+              can find it and point a stores officer at it; the scanner itself is
+              built for a handset. */}
+          <Link href="/scan" title="Barcode scanner — designed for a phone">
+            <Button variant="ghost" size="sm">
+              Scanner
+            </Button>
+          </Link>
+          {/* For products with no manufacturer EAN — prints their own code. */}
+          <Link href="/labels?type=product" target="_blank">
+            <Button variant="ghost" size="sm">
+              Print labels
+            </Button>
+          </Link>
           <Link href="/inventory/bulk-upload">
             <Button variant="ghost" size="sm">
               Bulk upload

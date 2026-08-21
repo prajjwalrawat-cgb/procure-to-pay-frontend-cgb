@@ -13,6 +13,7 @@ const TABS = [
   { href: '/inventory/adjustments', label: 'Adjustments' },
   { href: '/inventory/ledger', label: 'Ledger' },
   { href: '/inventory/locations', label: 'Locations' },
+  { href: '/inventory/boxes', label: 'Boxes' },
   { href: '/inventory/bulk-upload', label: 'Bulk upload' },
 ];
 

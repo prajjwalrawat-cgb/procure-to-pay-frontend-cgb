@@ -31,6 +31,8 @@ export default function NewProductPage(): React.JSX.Element {
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
   const [colour, setColour] = useState('');
+  const [barcode, setBarcode] = useState('');
+  const [batchTracked, setBatchTracked] = useState(false);
   const [unit, setUnit] = useState('pcs');
   const [reorderPoint, setReorderPoint] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -52,6 +54,8 @@ export default function NewProductPage(): React.JSX.Element {
         name: name.trim(),
         category: category.trim(),
         colour: colour.trim() || null,
+        barcode: barcode.trim() || null,
+        requiresBatchTracking: batchTracked,
         unit: unit.trim() || 'pcs',
         reorderPoint: reorderPoint ? Number(reorderPoint) : null,
         imageUrl: imageUrl.trim() || null,
@@ -132,8 +136,34 @@ export default function NewProductPage(): React.JSX.Element {
             />
           </Field>
 
+          {/* Without a barcode the scanner can only find this product by typing
+              its code, so this is the field that decides whether a warehouse can
+              actually scan it. */}
+          <Field label="Barcode" hint="EAN / UPC printed on the pack. Needed for scanning.">
+            <TextInput
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              placeholder="8901234567890"
+            />
+          </Field>
+
           <Field label="Unit">
             <TextInput value={unit} onChange={(e) => setUnit(e.target.value)} />
+          </Field>
+
+          <Field
+            label="Batch tracked"
+            hint="Receipts must then carry a batch number and expiry; picking uses oldest-first."
+          >
+            <label className="flex items-center gap-2 py-2 text-[13px]">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                checked={batchTracked}
+                onChange={(e) => setBatchTracked(e.target.checked)}
+              />
+              <span className="text-muted">Require batch and expiry on receipt</span>
+            </label>
           </Field>
           <Field label="Reorder point" hint="Flags the row as low stock at or below this.">
             <TextInput

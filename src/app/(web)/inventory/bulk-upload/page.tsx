@@ -21,6 +21,10 @@ const EXPECTED_COLUMNS: Record<ImportType, string[]> = {
     'product_name *',
     'category',
     'colour',
+    // Slice 13 — the pack's EAN/UPC. Also accepted as ean / upc / gtin / bar_code.
+    // Re-uploading the sheet with this column filled is how a whole catalogue
+    // becomes scannable; a blank cell leaves an existing barcode untouched.
+    'barcode',
     'image_link',
     'unit',
     'opening_stock',

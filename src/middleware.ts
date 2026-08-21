@@ -68,5 +68,14 @@ export const config = {
   // Everything except Next internals, static assets, and API routes. The API
   // route handlers (/api/auth/*, /api/vendor/auth/*) and the /api/v1 proxy
   // authorize themselves, so they must not be gated by this page middleware.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+  //
+  // The scanner PWA's install assets are exempt too (Slice 13). The browser
+  // fetches a manifest *without* credentials unless it is tagged
+  // crossorigin="use-credentials", so gating it on the session cookie redirects
+  // it to /login and the app silently stops being installable. A service worker
+  // script cannot register through a redirect at all. None of these files carry
+  // tenant data — the pages they bootstrap are still gated normally.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api|sw.js|manifest.webmanifest|icons/).*)',
+  ],
 };
