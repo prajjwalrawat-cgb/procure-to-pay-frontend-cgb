@@ -10,7 +10,17 @@ import {
   useLocations,
   useUpdateLocation,
 } from '@/lib/api/inventory';
+import type { LocationKind } from '@/lib/shared';
 import { Field, FormResult, SelectInput, TextInput } from '../_components/form-controls';
+
+/** How each hierarchy level reads in the table. */
+const KIND_LABEL: Record<LocationKind, string> = {
+  WAREHOUSE: 'Warehouse',
+  RACK: 'Rack',
+  SECTION: 'Section',
+  DOCK: 'Dock',
+  OTHER: '—',
+};
 
 /**
  * Locations — the physical places stock sits. Every movement needs one, so this
@@ -26,6 +36,8 @@ export default function LocationsPage(): React.JSX.Element {
   const [name, setName] = useState('');
   const [rackNo, setRackNo] = useState('');
   const [parentId, setParentId] = useState('');
+  const [kind, setKind] = useState<LocationKind>('OTHER');
+  const [barcode, setBarcode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -39,10 +51,13 @@ export default function LocationsPage(): React.JSX.Element {
         name: name.trim(),
         rackNo: rackNo.trim() || null,
         parentId: parentId || null,
+        kind,
+        barcode: barcode.trim() || null,
       });
       setSuccess(`Created "${name.trim()}".`);
       setName('');
       setRackNo('');
+      setBarcode('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create the location');
     }
@@ -57,11 +72,19 @@ export default function LocationsPage(): React.JSX.Element {
             {items.length} location{items.length === 1 ? '' : 's'} · rooms, racks and bins
           </p>
         </div>
-        <Link href="/inventory">
-          <Button variant="ghost" size="sm">
-            Stock overview
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* A barcode in this table is only a value until somebody prints it. */}
+          <Link href="/labels?type=location" target="_blank">
+            <Button variant="ghost" size="sm">
+              Print labels
+            </Button>
+          </Link>
+          <Link href="/inventory">
+            <Button variant="ghost" size="sm">
+              Stock overview
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {items.length === 0 && !isLoading && (
@@ -100,6 +123,32 @@ export default function LocationsPage(): React.JSX.Element {
               ))}
             </SelectInput>
           </Field>
+
+          {/* Build the hierarchy by creating a Warehouse first, then Racks with
+              it as parent, then Sections under each rack. The scanner reads
+              these levels to show "Main Warehouse › Rack A › Section A1". */}
+          <Field label="Level" hint="Warehouse → rack → section. Boxes go inside sections.">
+            <SelectInput
+              value={kind}
+              onChange={(e) => setKind(e.target.value as LocationKind)}
+            >
+              <option value="WAREHOUSE">Warehouse</option>
+              <option value="RACK">Rack</option>
+              <option value="SECTION">Section / row</option>
+              <option value="DOCK">Receiving dock</option>
+              <option value="OTHER">Other / unclassified</option>
+            </SelectInput>
+          </Field>
+          <Field
+            label="Barcode"
+            hint="The label stuck on this shelf. Needed for scanning; usually only on sections."
+          >
+            <TextInput
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              placeholder="BIN-A1"
+            />
+          </Field>
         </div>
         <div className="mt-4 flex items-center justify-between">
           <FormResult error={error} success={success} />
@@ -119,7 +168,8 @@ export default function LocationsPage(): React.JSX.Element {
           <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
             <tr>
               <th className="px-3 py-2 font-medium">Location</th>
-              <th className="px-3 py-2 font-medium">Rack no.</th>
+              <th className="px-3 py-2 font-medium">Level</th>
+              <th className="px-3 py-2 font-medium">Barcode</th>
               <th className="px-3 py-2 font-medium">Inside</th>
               <th className="px-3 py-2 text-right font-medium">Products</th>
               <th className="px-3 py-2 text-right font-medium">Units on hand</th>
@@ -129,14 +179,14 @@ export default function LocationsPage(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="text-muted px-3 py-8 text-center">
+                <td colSpan={7} className="text-muted px-3 py-8 text-center">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && items.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-muted px-3 py-8 text-center">
+                <td colSpan={7} className="text-muted px-3 py-8 text-center">
                   No locations yet.
                 </td>
               </tr>
@@ -165,6 +215,8 @@ function LocationRow({
     name: string;
     rackNo: string | null;
     parentName: string | null;
+    barcode: string | null;
+    kind: LocationKind;
     active: boolean;
     productCount: number;
     totalQty: number;
@@ -173,7 +225,8 @@ function LocationRow({
 }): React.JSX.Element {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(l.name);
-  const [rackNo, setRackNo] = useState(l.rackNo ?? '');
+  const [kind, setKind] = useState<LocationKind>(l.kind);
+  const [barcode, setBarcode] = useState(l.barcode ?? '');
 
   const update = useUpdateLocation();
   const deactivate = useDeactivateLocation();
@@ -182,7 +235,7 @@ function LocationRow({
   function save(): void {
     onError(null);
     update.mutate(
-      { id: l.id, name: name.trim(), rackNo: rackNo.trim() || null },
+      { id: l.id, name: name.trim(), kind, barcode: barcode.trim() || null },
       { onError: (e) => onError(e.message), onSuccess: () => setEditing(false) },
     );
   }
@@ -194,15 +247,27 @@ function LocationRow({
           <TextInput value={name} onChange={(e) => setName(e.target.value)} />
         </td>
         <td className="px-3 py-2">
+          <SelectInput
+            value={kind}
+            onChange={(e) => setKind(e.target.value as LocationKind)}
+          >
+            <option value="WAREHOUSE">Warehouse</option>
+            <option value="RACK">Rack</option>
+            <option value="SECTION">Section / row</option>
+            <option value="DOCK">Dock</option>
+            <option value="OTHER">Other</option>
+          </SelectInput>
+        </td>
+        <td className="px-3 py-2">
           <TextInput
-            value={rackNo}
-            onChange={(e) => setRackNo(e.target.value)}
-            placeholder="(none)"
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            placeholder="BIN-A1"
           />
         </td>
         <td colSpan={3} className="text-faint px-3 py-2 text-[11px]">
-          Name is the place (Store, Conference Room). Rack no. is the shelf or
-          carton inside it.
+          Label an existing shelf here — the barcode is what the scanner reads
+          during putaway, transfer and cycle count.
         </td>
         <td className="px-3 py-2 text-right">
           <button
@@ -217,7 +282,8 @@ function LocationRow({
             type="button"
             onClick={() => {
               setName(l.name);
-              setRackNo(l.rackNo ?? '');
+              setKind(l.kind);
+              setBarcode(l.barcode ?? '');
               setEditing(false);
             }}
             className="text-muted ml-3 text-[12px] hover:underline"
@@ -239,7 +305,8 @@ function LocationRow({
           </Pill>
         )}
       </td>
-      <td className="text-muted px-3 py-2">{l.rackNo ?? '—'}</td>
+      <td className="text-muted px-3 py-2 text-[12px]">{KIND_LABEL[l.kind]}</td>
+      <td className="text-muted px-3 py-2 font-mono text-[12px]">{l.barcode ?? '—'}</td>
       <td className="text-muted px-3 py-2 text-[12px]">{l.parentName ?? '—'}</td>
       <td className="font-numeric text-text px-3 py-2 text-right">{l.productCount}</td>
       <td className="font-numeric text-ink px-3 py-2 text-right font-medium">

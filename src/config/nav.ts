@@ -12,6 +12,7 @@ import {
   Plug,
   ReceiptText,
   RotateCcw,
+  ScanLine,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -39,6 +40,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Goods Receipt', href: '/goods-receipt', icon: PackageCheck },
       { label: 'Returns (RMA)', href: '/rma', icon: RotateCcw },
       { label: 'Inventory', href: '/inventory', icon: Warehouse },
+      // Leaves the desktop shell for the phone-sized scanner UI (Slice 13).
+      // Listed here rather than hidden behind Inventory because a stores
+      // officer opening this app on a handset has no other way to find it.
+      { label: 'Scanner', href: '/scan', icon: ScanLine },
     ],
   },
   {
@@ -118,6 +123,12 @@ export const LIVE_ROUTES = [
     label: 'Inventory ledger',
     href: '/inventory/ledger',
     keywords: 'stock ledger movements daily in out vendor inward sales team report',
+  },
+  {
+    label: 'Scanner',
+    href: '/scan',
+    keywords:
+      'scan barcode qr camera mobile phone handset receive putaway pick cycle count transfer warehouse offline',
   },
   {
     label: 'Bulk upload',

@@ -168,6 +168,12 @@ function Drawer({
                   </Pill>
                 </Row>
                 <Row label="Colour">{data.colour ?? '—'}</Row>
+                <Row label="Barcode">
+                  {data.barcode ?? (
+                    <span className="text-faint">not set — scan by product code</span>
+                  )}
+                </Row>
+                <Row label="Batch tracked">{data.requiresBatchTracking ? 'Yes' : 'No'}</Row>
                 <Row label="Unit">{data.unit}</Row>
                 <Row label="Reorder point">{data.reorderPoint ?? '—'}</Row>
                 <Row label="Expiry/Warranty">
@@ -243,6 +249,8 @@ function EditForm({
   const [name, setName] = useState(product.name);
   const [category, setCategory] = useState(product.category);
   const [colour, setColour] = useState(product.colour ?? '');
+  const [barcode, setBarcode] = useState(product.barcode ?? '');
+  const [batchTracked, setBatchTracked] = useState(product.requiresBatchTracking);
   const [unit, setUnit] = useState(product.unit);
   const [reorderPoint, setReorderPoint] = useState(
     product.reorderPoint === null ? '' : String(product.reorderPoint),
@@ -265,6 +273,8 @@ function EditForm({
         name: name.trim(),
         category: category.trim(),
         colour: colour.trim() || null,
+        barcode: barcode.trim() || null,
+        requiresBatchTracking: batchTracked,
         unit: unit.trim(),
         // Blank clears the value; the API rejects '' because it must be a URL.
         imageUrl: imageUrl.trim() || null,
@@ -311,8 +321,31 @@ function EditForm({
         <Field label="Colour">
           <TextInput value={colour} onChange={(e) => setColour(e.target.value)} />
         </Field>
+        {/* The field that makes an existing product scannable. Editable here
+            because a catalogue gets barcoded long after it was created. */}
+        <Field label="Barcode" hint="EAN / UPC on the pack. Blank = scan by product code only.">
+          <TextInput
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            placeholder="8901234567890"
+          />
+        </Field>
         <Field label="Unit" required>
           <TextInput value={unit} onChange={(e) => setUnit(e.target.value)} />
+        </Field>
+        <Field
+          label="Batch tracked"
+          hint="Receipts must carry a batch number and expiry; picking goes oldest-first."
+        >
+          <label className="flex items-center gap-2 py-1 text-[13px]">
+            <input
+              type="checkbox"
+              className="h-4 w-4"
+              checked={batchTracked}
+              onChange={(e) => setBatchTracked(e.target.checked)}
+            />
+            <span className="text-muted">Require batch and expiry</span>
+          </label>
         </Field>
         <Field label="Reorder point" hint="Blank means no low-stock alert.">
           <TextInput
