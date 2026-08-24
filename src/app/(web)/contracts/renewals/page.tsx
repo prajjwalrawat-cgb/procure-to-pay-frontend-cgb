@@ -1,7 +1,7 @@
 'use client';
 
 import type { RenewalAlertAction } from '@/lib/shared';
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -30,19 +30,17 @@ export default function RenewalsPage(): React.JSX.Element {
     <div className="mx-auto max-w-5xl">
       <Link
         href="/contracts"
-        className="text-muted hover:text-text mb-3 inline-flex items-center gap-1 text-[13px]"
+        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
-        Renewal calendar
-      </h1>
-      <p className="text-muted mb-5 text-[13px]">
-        Proactive expiry warnings — acknowledge and renew before contracts lapse.
-      </p>
+      <PageHeader
+        title="Renewal calendar"
+        description="Proactive expiry warnings — acknowledge and renew before contracts lapse."
+      />
 
       {!data || data.entries.length === 0 ? (
-        <p className="text-muted py-16 text-center text-[13px]">
+        <p className="py-16 text-center text-[13px] text-muted">
           No contracts expiring within 90 days.
         </p>
       ) : (
@@ -56,9 +54,9 @@ export default function RenewalsPage(): React.JSX.Element {
                   <Pill variant={b.variant} dot>
                     {b.label}
                   </Pill>
-                  <span className="text-muted text-[12px]">{rows.length}</span>
+                  <span className="text-[12px] text-muted">{rows.length}</span>
                 </div>
-                <div className="border-line divide-line divide-y rounded-lg border">
+                <div className="divide-y divide-line rounded-lg border border-line">
                   {rows.map((e) => (
                     <RenewalRow
                       key={e.contractId}
@@ -105,13 +103,13 @@ function RenewalRow({
       <div>
         <Link
           href={`/contracts/${entry.contractId}`}
-          className="text-accent-2 font-numeric font-medium"
+          className="font-numeric font-medium text-accent-2"
         >
           {entry.number}
         </Link>
-        <span className="text-ink ml-2">{entry.title}</span>
-        <span className="text-muted ml-2">· {entry.vendorName}</span>
-        <div className="text-muted text-[12px]">
+        <span className="ml-2 text-ink">{entry.title}</span>
+        <span className="ml-2 text-muted">· {entry.vendorName}</span>
+        <div className="text-[12px] text-muted">
           {inr(entry.totalValueEstimate)} ·{' '}
           {entry.daysToExpiry >= 0 ? `${entry.daysToExpiry} days left` : 'expired'}
           {entry.alert?.acknowledgedAt && (
@@ -126,7 +124,7 @@ function RenewalRow({
         <button
           type="button"
           onClick={() => void onAck('UNDER_NEGOTIATION')}
-          className="border-line text-text hover:bg-canvas rounded-md border px-3 py-1.5 text-[12px]"
+          className="rounded-md border border-line px-3 py-1.5 text-[12px] text-text hover:bg-canvas"
         >
           Acknowledge
         </button>
@@ -141,7 +139,7 @@ function RenewalRow({
               push(e instanceof Error ? e.message : 'Renew failed', 'error');
             }
           }}
-          className="bg-ink rounded-md px-3 py-1.5 text-[12px] font-medium text-white"
+          className="rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-white"
         >
           Renew
         </button>

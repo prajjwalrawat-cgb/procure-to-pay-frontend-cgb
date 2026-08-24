@@ -1,7 +1,7 @@
 'use client';
 
 import { Money } from '@/lib/shared';
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -32,26 +32,28 @@ export default function VendorContractDetailPage(): React.JSX.Element {
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-[20px] font-semibold tracking-tight">{c.title}</h1>
-            <Pill variant="info">{c.status.replace(/_/g, ' ')}</Pill>
-          </div>
-          <p className="font-mono text-[13px] text-neutral-500">
+      <PageHeader
+        title={c.title}
+        meta={<Pill variant="info">{c.status.replace(/_/g, ' ')}</Pill>}
+        description={
+          <span className="font-numeric">
             {c.number} · {fmt(c.validityStart)} → {fmt(c.validityEnd)}
-          </p>
-        </div>
-        {c.pdfAvailable && (
-          <button
-            type="button"
-            onClick={() => void openAuthedAsset(`/vendor/contracts/${id}/pdf`)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] hover:bg-neutral-50"
-          >
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </button>
-        )}
-      </div>
+          </span>
+        }
+        actions={
+          <>
+            {c.pdfAvailable && (
+              <button
+                type="button"
+                onClick={() => void openAuthedAsset(`/vendor/contracts/${id}/pdf`)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-3 py-1.5 text-[13px] hover:bg-neutral-50"
+              >
+                <FileText className="h-3.5 w-3.5" /> PDF
+              </button>
+            )}
+          </>
+        }
+      />
 
       <Section title="Rate card">
         <table className="w-full text-[13px]">

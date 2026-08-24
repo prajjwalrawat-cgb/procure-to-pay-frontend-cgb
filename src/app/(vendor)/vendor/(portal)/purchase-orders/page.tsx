@@ -1,6 +1,6 @@
 'use client';
 
-import { Input, Pill } from '@/components/ui';
+import { Input, PageHeader, Pill } from '@/components/ui';
 import { Money, type VendorPoListItem } from '@/lib/shared';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -31,18 +31,16 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-4">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Purchase orders
-        </h1>
-        <p className="text-muted text-[13px]">
-          Orders issued to you — acknowledge receipt and track fulfilment
-        </p>
+        <PageHeader
+          title="Purchase orders"
+          description="Orders issued to you — acknowledge receipt and track fulfilment"
+        />
       </div>
 
       {/* Toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search className="text-faint pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -50,13 +48,13 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
             className="h-8 w-72 pl-8"
           />
         </div>
-        <span className="text-muted ml-auto text-[12px]">{rows.length} shown</span>
+        <span className="ml-auto text-[12px] text-muted">{rows.length} shown</span>
       </div>
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
               <tr>
                 <th className="px-3 py-2.5 font-medium">PO</th>
                 <th className="px-3 py-2.5 font-medium">Description</th>
@@ -69,14 +67,14 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={6} className="text-muted px-3 py-10 text-center">
+                  <td colSpan={6} className="px-3 py-10 text-center text-muted">
                     Loading…
                   </td>
                 </tr>
               )}
               {!isLoading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-muted px-3 py-10 text-center">
+                  <td colSpan={6} className="px-3 py-10 text-center text-muted">
                     {(data?.items.length ?? 0) === 0
                       ? 'No purchase orders issued to you yet.'
                       : 'No purchase orders match your search.'}
@@ -87,11 +85,11 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
                 <tr
                   key={po.id}
                   onClick={() => router.push(`/vendor/purchase-orders/${po.id}`)}
-                  className="border-line hover:bg-canvas/60 cursor-pointer border-t"
+                  className="cursor-pointer border-t border-line hover:bg-canvas/60"
                 >
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-numeric text-ink font-medium">
+                      <span className="font-numeric font-medium text-ink">
                         {po.number}
                       </span>
                       {po.acknowledged && (
@@ -101,31 +99,31 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
                       )}
                     </div>
                   </td>
-                  <td className="text-text max-w-xs truncate px-3 py-2.5">
+                  <td className="max-w-xs truncate px-3 py-2.5 text-text">
                     {po.description}
                   </td>
-                  <td className="font-numeric text-text px-3 py-2.5">
+                  <td className="font-numeric px-3 py-2.5 text-text">
                     {fmtDate(po.orderedDate)}
                   </td>
-                  <td className="font-numeric text-text px-3 py-2.5">
+                  <td className="font-numeric px-3 py-2.5 text-text">
                     {fmtDate(po.expectedDeliveryDate)}
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="bg-canvas border-line h-1.5 w-16 overflow-hidden rounded-full border">
+                      <div className="h-1.5 w-16 overflow-hidden rounded-full border border-line bg-canvas">
                         <div
-                          className="bg-accent h-full"
+                          className="h-full bg-accent"
                           style={{
                             width: `${Math.min(100, Math.max(0, po.fulfilmentPct))}%`,
                           }}
                         />
                       </div>
-                      <span className="font-numeric text-muted text-[12px]">
+                      <span className="font-numeric text-[12px] text-muted">
                         {po.fulfilmentPct}%
                       </span>
                     </div>
                   </td>
-                  <td className="font-numeric text-ink px-3 py-2.5 text-right">
+                  <td className="font-numeric px-3 py-2.5 text-right text-ink">
                     {inr(po.totalAmount)}
                   </td>
                 </tr>

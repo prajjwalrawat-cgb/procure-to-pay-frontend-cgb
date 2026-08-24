@@ -1,6 +1,7 @@
 // @/components/ui — design system. Tokens + shadcn base + ProcureFlow extensions.
 export * from './lib/cn';
 export * from './tokens';
+export * from './chart-tokens';
 
 // Primitives.
 export * from './components/button';

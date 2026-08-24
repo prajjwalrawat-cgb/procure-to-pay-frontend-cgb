@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
   Input,
+  PageHeader,
   Pill,
 } from '@/components/ui';
 import {
@@ -688,12 +689,16 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-[760px]">
       <div className="mb-4">
-        <h1 className="text-[20px] font-semibold text-ink">Vendor onboarding</h1>
-        <p className="text-[13px] text-muted">
-          {editable
-            ? 'Four steps. Upload your GST certificate and PAN card and we fill in what we can, then submit for review.'
-            : 'Your submitted details, read-only.'}
-        </p>
+        <PageHeader
+          title="Vendor onboarding"
+          description={
+            <>
+              {editable
+                ? 'Four steps. Upload your GST certificate and PAN card and we fill in what we can, then submit for review.'
+                : 'Your submitted details, read-only.'}
+            </>
+          }
+        />
         {editable && (
           <div className="mt-3 flex items-center gap-2">
             <div className="h-1.5 w-48 overflow-hidden rounded-full bg-canvas">

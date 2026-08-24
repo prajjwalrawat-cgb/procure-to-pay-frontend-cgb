@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import type { ItemListItem } from '@/lib/shared';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -58,25 +58,25 @@ export default function ItemMasterPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-heading text-ink">
-            Item master
-          </h1>
-          <p className="text-[13px] text-muted">
-            {data?.totalEstimate ?? 0} SKUs · catalogue behind requisition lines
-          </p>
-        </div>
-        {canManage && (
-          <Button
-            variant="accent"
-            size="sm"
-            onClick={() => setTarget({ mode: 'create' })}
-          >
-            <Plus className="h-3.5 w-3.5" /> New item
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Item master"
+        description={
+          <>{data?.totalEstimate ?? 0} SKUs · catalogue behind requisition lines</>
+        }
+        actions={
+          <>
+            {canManage && (
+              <Button
+                variant="accent"
+                size="sm"
+                onClick={() => setTarget({ mode: 'create' })}
+              >
+                <Plus className="h-3.5 w-3.5" /> New item
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input

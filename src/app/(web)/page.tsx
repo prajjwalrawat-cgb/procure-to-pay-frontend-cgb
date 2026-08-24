@@ -1,16 +1,21 @@
-import { Card, CardContent, CardHeader, CardTitle, Pill } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  PageHeader,
+  Pill,
+} from '@/components/ui';
 
 /** Slice 0 home — the only live buyer screen. Everything else is a stub. */
 export default function HomePage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Welcome to ProcureFlow
-        </h1>
-        <p className="text-muted mt-1 text-[13px]">
-          Foundation shell (Slice 0). Business modules arrive in later slices.
-        </p>
+        <PageHeader
+          title="Welcome to ProcureFlow"
+          description="Foundation shell (Slice 0). Business modules arrive in later slices."
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -18,9 +23,9 @@ export default function HomePage(): React.JSX.Element {
           <CardHeader>
             <CardTitle>Getting started</CardTitle>
           </CardHeader>
-          <CardContent className="text-muted text-[13px]">
+          <CardContent className="text-[13px] text-muted">
             Use the sidebar to explore where each module will live. Press{' '}
-            <kbd className="font-numeric text-text text-[11px]">⌘K</kbd> to open the
+            <kbd className="font-numeric text-[11px] text-text">⌘K</kbd> to open the
             command palette.
           </CardContent>
         </Card>
@@ -34,7 +39,7 @@ export default function HomePage(): React.JSX.Element {
               </Pill>
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-muted text-[13px]">
+          <CardContent className="text-[13px] text-muted">
             Auth, tenancy, RLS, seed data, and the design system are in place. Invoices
             land in Slice 1.
           </CardContent>

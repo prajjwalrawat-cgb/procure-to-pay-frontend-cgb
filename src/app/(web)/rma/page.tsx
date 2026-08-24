@@ -1,6 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -26,38 +26,36 @@ export default function RmaListPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-4">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Return authorisations
-        </h1>
-        <p className="text-muted text-[13px]">
-          Rejected-material returns{tenantSuffix(tenantName)}
-        </p>
+        <PageHeader
+          title="Return authorisations"
+          description={<>Rejected-material returns{tenantSuffix(tenantName)}</>}
+        />
       </div>
 
-      <div className="border-line mb-3 flex items-center gap-1 border-b">
+      <div className="mb-3 flex items-center gap-1 border-b border-line">
         {TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
             className={
-              'duration-hover flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
+              'flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors duration-hover ' +
               (tab === t.key
                 ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
+                : 'border-transparent text-muted hover:text-text')
             }
           >
             {t.label}
-            <span className="font-numeric text-faint text-[11px]">
+            <span className="font-numeric text-[11px] text-faint">
               {counts?.[t.key] ?? 0}
             </span>
           </button>
         ))}
       </div>
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2 font-medium">RMA</th>
               <th className="px-3 py-2 font-medium">Vendor</th>
@@ -69,24 +67,24 @@ export default function RmaListPage(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={5} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && (data?.items.length ?? 0) === 0 && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={5} className="px-3 py-8 text-center text-muted">
                   No return authorisations in this view.
                 </td>
               </tr>
             )}
             {data?.items.map((r) => (
-              <tr key={r.id} className="border-line hover:bg-canvas/60 border-t">
+              <tr key={r.id} className="border-t border-line hover:bg-canvas/60">
                 <td className="px-3 py-2">
                   <Link
                     href={`/rma/${r.id}`}
-                    className="font-numeric text-ink font-medium"
+                    className="font-numeric font-medium text-ink"
                   >
                     {r.number}
                   </Link>
@@ -96,12 +94,12 @@ export default function RmaListPage(): React.JSX.Element {
                     </Pill>
                   </div>
                 </td>
-                <td className="text-text px-3 py-2">{r.vendor.name}</td>
-                <td className="font-numeric text-text px-3 py-2 text-[12px]">
+                <td className="px-3 py-2 text-text">{r.vendor.name}</td>
+                <td className="font-numeric px-3 py-2 text-[12px] text-text">
                   {r.grn.number}
                 </td>
-                <td className="text-muted px-3 py-2 text-[12px]">{r.reasonCode}</td>
-                <td className="font-numeric text-ink px-3 py-2 text-right font-medium">
+                <td className="px-3 py-2 text-[12px] text-muted">{r.reasonCode}</td>
+                <td className="font-numeric px-3 py-2 text-right font-medium text-ink">
                   {inr(r.totalReturnValue)}
                 </td>
               </tr>

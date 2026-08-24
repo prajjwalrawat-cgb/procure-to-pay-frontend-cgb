@@ -1,6 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -47,7 +47,7 @@ export default function ContractDetailPage(): React.JSX.Element {
 
   if (isLoading || !c) {
     return (
-      <p className="text-muted mx-auto max-w-6xl py-10 text-center text-[13px]">
+      <p className="mx-auto max-w-6xl py-10 text-center text-[13px] text-muted">
         Loading…
       </p>
     );
@@ -68,42 +68,44 @@ export default function ContractDetailPage(): React.JSX.Element {
     <div className="mx-auto max-w-6xl pb-24">
       <Link
         href="/contracts"
-        className="text-muted hover:text-text mb-3 inline-flex items-center gap-1 text-[13px]"
+        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
 
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-              {c.title}
-            </h1>
-            <Pill variant={statusVariant(c.status)} dot>
-              {statusLabel(c.status)}
-            </Pill>
-          </div>
-          <p className="text-muted font-numeric text-[13px]">
+      <PageHeader
+        title={c.title}
+        meta={
+          <Pill variant={statusVariant(c.status)} dot>
+            {statusLabel(c.status)}
+          </Pill>
+        }
+        description={
+          <span className="font-numeric">
             {c.number} · {c.vendor.name} · {c.category}
-          </p>
-        </div>
-        {c.pdfAvailable && (
-          <button
-            type="button"
-            onClick={() =>
-              openAuthedAsset(`/contracts/${id}/pdf`).catch((e) =>
-                push(e instanceof Error ? e.message : 'Could not open PDF', 'error'),
-              )
-            }
-            className="border-line text-text hover:bg-canvas inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px]"
-          >
-            <FileText className="h-3.5 w-3.5" /> PDF
-          </button>
-        )}
-      </div>
+          </span>
+        }
+        actions={
+          <>
+            {c.pdfAvailable && (
+              <button
+                type="button"
+                onClick={() =>
+                  openAuthedAsset(`/contracts/${id}/pdf`).catch((e) =>
+                    push(e instanceof Error ? e.message : 'Could not open PDF', 'error'),
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-[13px] text-text hover:bg-canvas"
+              >
+                <FileText className="h-3.5 w-3.5" /> PDF
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Stage strip */}
-      <div className="border-line bg-panel mb-4 flex items-center gap-2 rounded-lg border p-3">
+      <div className="mb-4 flex items-center gap-2 rounded-lg border border-line bg-panel p-3">
         {c.stages.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
             <span
@@ -145,7 +147,7 @@ export default function ContractDetailPage(): React.JSX.Element {
               </div>
             )}
             <table className="w-full text-[13px]">
-              <thead className="text-muted border-line border-b text-left text-[12px]">
+              <thead className="border-b border-line text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1.5 font-medium">Item / Route</th>
                   <th className="py-1.5 font-medium">UOM</th>
@@ -157,14 +159,14 @@ export default function ContractDetailPage(): React.JSX.Element {
                 {c.rateCards
                   .filter((r) => r.rateYear === rateYear)
                   .map((r) => (
-                    <tr key={r.id} className="border-line border-b last:border-0">
+                    <tr key={r.id} className="border-b border-line last:border-0">
                       <td className="py-1.5">
                         {r.routeOrigin
                           ? `${r.routeOrigin} → ${r.routeDest ?? ''}`
                           : r.itemDesc}
                       </td>
-                      <td className="text-muted py-1.5">{r.uom}</td>
-                      <td className="text-muted py-1.5">
+                      <td className="py-1.5 text-muted">{r.uom}</td>
+                      <td className="py-1.5 text-muted">
                         {r.volumeBandMin || r.volumeBandMax
                           ? `${r.volumeBandMin ?? '0'}–${r.volumeBandMax ?? '∞'}`
                           : '—'}
@@ -189,14 +191,14 @@ export default function ContractDetailPage(): React.JSX.Element {
                   {statusLabel(vt.status)}
                 </Pill>
               </div>
-              <div className="bg-canvas mt-2 h-2 w-full overflow-hidden rounded-full">
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas">
                 <div
-                  className="bg-accent h-full"
+                  className="h-full bg-accent"
                   style={{ width: `${Math.min(100, (vt.pctOfCommitment ?? 0) * 100)}%` }}
                 />
               </div>
               {vt.projectedPctOfCommitment != null && (
-                <p className="text-muted mt-1 text-[12px]">
+                <p className="mt-1 text-[12px] text-muted">
                   Projected year-end: {Math.round(vt.projectedPctOfCommitment * 100)}% of
                   commitment
                 </p>
@@ -209,13 +211,13 @@ export default function ContractDetailPage(): React.JSX.Element {
             <div className="space-y-3">
               {c.clauses.map((cl) => (
                 <div key={cl.id}>
-                  <p className="text-ink text-[13px] font-medium">
+                  <p className="text-[13px] font-medium text-ink">
                     {cl.title}{' '}
-                    <span className="text-faint text-[11px]">
+                    <span className="text-[11px] text-faint">
                       ({CLAUSE_LABEL[cl.clauseType] ?? cl.clauseType})
                     </span>
                   </p>
-                  <p className="text-muted text-[12px]">{cl.contentText}</p>
+                  <p className="text-[12px] text-muted">{cl.contentText}</p>
                 </div>
               ))}
             </div>
@@ -224,10 +226,10 @@ export default function ContractDetailPage(): React.JSX.Element {
           {/* Call-offs */}
           <Section title={`Call-off history (${c.callOffs.length})`}>
             {c.callOffs.length === 0 ? (
-              <p className="text-muted text-[13px]">No call-offs yet.</p>
+              <p className="text-[13px] text-muted">No call-offs yet.</p>
             ) : (
               <table className="w-full text-[13px]">
-                <thead className="text-muted border-line border-b text-left text-[12px]">
+                <thead className="border-b border-line text-left text-[12px] text-muted">
                   <tr>
                     <th className="py-1.5 font-medium">PO</th>
                     <th className="py-1.5 font-medium">Status</th>
@@ -238,11 +240,11 @@ export default function ContractDetailPage(): React.JSX.Element {
                 </thead>
                 <tbody>
                   {c.callOffs.map((co) => (
-                    <tr key={co.id} className="border-line border-b last:border-0">
+                    <tr key={co.id} className="border-b border-line last:border-0">
                       <td className="py-1.5">
                         <Link
                           href={`/purchase-orders/${co.poId}`}
-                          className="text-accent-2 font-numeric"
+                          className="font-numeric text-accent-2"
                         >
                           {co.poNumber}
                         </Link>
@@ -254,7 +256,7 @@ export default function ContractDetailPage(): React.JSX.Element {
                       </td>
                       <td className="font-numeric py-1.5 text-right">{co.qty}</td>
                       <td className="font-numeric py-1.5 text-right">{inr(co.value)}</td>
-                      <td className="text-muted py-1.5">{co.calledOffAt.slice(0, 10)}</td>
+                      <td className="py-1.5 text-muted">{co.calledOffAt.slice(0, 10)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -268,7 +270,7 @@ export default function ContractDetailPage(): React.JSX.Element {
               {c.amendments.map((a) => (
                 <div
                   key={a.id}
-                  className="border-line flex items-center justify-between border-b py-1.5 text-[13px] last:border-0"
+                  className="flex items-center justify-between border-b border-line py-1.5 text-[13px] last:border-0"
                 >
                   <span>
                     #{a.amendmentNo} · {a.changeSummary}
@@ -303,7 +305,7 @@ export default function ContractDetailPage(): React.JSX.Element {
             {c.supersededByContractId && (
               <Link
                 href={`/contracts/${c.supersededByContractId}`}
-                className="text-accent-2 text-[12px]"
+                className="text-[12px] text-accent-2"
               >
                 → Superseded by newer contract
               </Link>
@@ -311,7 +313,7 @@ export default function ContractDetailPage(): React.JSX.Element {
             {c.supersedesContractId && (
               <Link
                 href={`/contracts/${c.supersedesContractId}`}
-                className="text-accent-2 text-[12px]"
+                className="text-[12px] text-accent-2"
               >
                 ← Supersedes prior contract
               </Link>
@@ -345,7 +347,7 @@ export default function ContractDetailPage(): React.JSX.Element {
       </div>
 
       {/* Sticky action bar */}
-      <div className="border-line bg-panel/95 fixed inset-x-0 bottom-0 z-10 border-t backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-panel/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-end gap-2 px-4 py-3">
           {c.canSubmit && (
             <Btn
@@ -430,7 +432,7 @@ export default function ContractDetailPage(): React.JSX.Element {
           {c.canCallOff && (
             <Link
               href={`/contracts/${id}/call-off/new`}
-              className="bg-ink rounded-md px-4 py-1.5 text-[13px] font-medium text-white"
+              className="rounded-md bg-ink px-4 py-1.5 text-[13px] font-medium text-white"
             >
               New call-off
             </Link>
@@ -449,8 +451,8 @@ function Section({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
-      <h2 className="text-ink mb-2 text-[13px] font-semibold">{title}</h2>
+    <div className="rounded-lg border border-line bg-panel p-4">
+      <h2 className="mb-2 text-[13px] font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );

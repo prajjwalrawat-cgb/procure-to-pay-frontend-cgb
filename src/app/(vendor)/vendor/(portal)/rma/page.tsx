@@ -1,7 +1,7 @@
 'use client';
 
 import { openAuthedAsset } from '@/vendor/lib/api-client';
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import { Money } from '@/lib/shared';
 
 import { useScheduleRmaPickup, useVendorRmas } from '@/vendor/lib/api/receipts';
@@ -15,15 +15,15 @@ export default function VendorRmaPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-ink mb-1 text-[20px] font-semibold">Return authorisations</h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Material returns requested against your deliveries
-      </p>
+      <PageHeader
+        title="Return authorisations"
+        description="Material returns requested against your deliveries"
+      />
 
       <div className="space-y-3">
-        {isLoading && <p className="text-muted text-[13px]">Loading…</p>}
+        {isLoading && <p className="text-[13px] text-muted">Loading…</p>}
         {!isLoading && (data?.items.length ?? 0) === 0 && (
-          <p className="text-muted text-[13px]">No active returns.</p>
+          <p className="text-[13px] text-muted">No active returns.</p>
         )}
         {data?.items.map((r) => (
           <RmaCard key={r.id} rma={r} />
@@ -49,20 +49,20 @@ function RmaCard({
   const schedule = useScheduleRmaPickup(rma.id);
 
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
+    <div className="rounded-lg border border-line bg-panel p-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="font-numeric text-ink text-[14px] font-medium">
+          <span className="font-numeric text-[14px] font-medium text-ink">
             {rma.number}
           </span>
           <span className="ml-2">
             <Pill variant="gray">{rma.status}</Pill>
           </span>
-          <p className="text-muted mt-1 text-[12px]">
+          <p className="mt-1 text-[12px] text-muted">
             {rma.reasonCode} · {inr(rma.totalReturnValue)}
           </p>
           {rma.pickupScheduledAt && (
-            <p className="text-faint font-numeric text-[11px]">
+            <p className="font-numeric text-[11px] text-faint">
               Pickup {new Date(rma.pickupScheduledAt).toLocaleString('en-IN')}
             </p>
           )}

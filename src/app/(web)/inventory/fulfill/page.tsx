@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -74,25 +74,26 @@ export default function FulfillPage(): React.JSX.Element {
     }
   }
 
-  const ready = productId && locationId && Number(qty) > 0 && (!short || allowNegativeStock);
+  const ready =
+    productId && locationId && Number(qty) > 0 && (!short || allowNegativeStock);
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Order fulfilment
-          </h1>
-          <p className="text-muted text-[13px]">Stock-checked customer dispatch</p>
-        </div>
-        <Link href="/inventory">
-          <Button variant="ghost" size="sm">
-            Stock overview
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Order fulfilment"
+        description="Stock-checked customer dispatch"
+        actions={
+          <>
+            <Link href="/inventory">
+              <Button variant="ghost" size="sm">
+                Stock overview
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
-      <div className="border-line bg-panel rounded-lg border p-4">
+      <div className="rounded-lg border border-line bg-panel p-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <Field label="Product" required>
@@ -108,9 +109,7 @@ export default function FulfillPage(): React.JSX.Element {
           <Field
             label="Pick from location"
             required
-            hint={
-              productId && locationId ? `${atLocation} on hand here` : undefined
-            }
+            hint={productId && locationId ? `${atLocation} on hand here` : undefined}
           >
             <LocationSelect value={locationId} onChange={setLocationId} />
           </Field>
@@ -179,7 +178,8 @@ export default function FulfillPage(): React.JSX.Element {
         {short && Number(qty) > 0 && (
           <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
             <p className="text-[12px] text-amber-800">
-              Only {atLocation} on hand at this location — {Number(qty) - atLocation} short.
+              Only {atLocation} on hand at this location — {Number(qty) - atLocation}{' '}
+              short.
             </p>
             <label className="mt-1.5 flex items-center gap-2 text-[12px] text-amber-900">
               <input

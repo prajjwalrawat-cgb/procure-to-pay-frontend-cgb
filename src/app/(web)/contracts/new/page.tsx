@@ -1,10 +1,8 @@
 'use client';
 
-import type {
-  ClauseInput,
-  ContractCreateInput,
-  RateCardInput,
-} from '@/lib/shared';
+import { PageHeader } from '@/components/ui';
+
+import type { ClauseInput, ContractCreateInput, RateCardInput } from '@/lib/shared';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -137,14 +135,11 @@ export default function NewContractPage(): React.JSX.Element {
     <div className="mx-auto max-w-4xl pb-10">
       <Link
         href="/contracts"
-        className="text-muted hover:text-text mb-3 inline-flex items-center gap-1 text-[13px]"
+        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
-        New contract
-      </h1>
-
+      <PageHeader title="New contract" />
       <div className="mb-5 flex items-center gap-2">
         {STEPS.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
@@ -165,7 +160,7 @@ export default function NewContractPage(): React.JSX.Element {
         ))}
       </div>
 
-      <div className="border-line bg-panel space-y-3 rounded-lg border p-5">
+      <div className="space-y-3 rounded-lg border border-line bg-panel p-5">
         {step === 0 && (
           <>
             <Field label="Title">
@@ -275,7 +270,7 @@ export default function NewContractPage(): React.JSX.Element {
             {rateCards.map((r, i) => (
               <div
                 key={i}
-                className="border-line grid grid-cols-6 items-end gap-2 border-b pb-2"
+                className="grid grid-cols-6 items-end gap-2 border-b border-line pb-2"
               >
                 <Field label="Item / route">
                   <input
@@ -315,7 +310,7 @@ export default function NewContractPage(): React.JSX.Element {
                 </Field>
                 <button
                   type="button"
-                  className="text-danger mb-1.5"
+                  className="mb-1.5 text-danger"
                   onClick={() => setRateCards((rc) => rc.filter((_, idx) => idx !== i))}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -325,7 +320,7 @@ export default function NewContractPage(): React.JSX.Element {
             <button
               type="button"
               onClick={addRateCard}
-              className="text-accent-2 flex items-center gap-1 text-[13px]"
+              className="flex items-center gap-1 text-[13px] text-accent-2"
             >
               <Plus className="h-3.5 w-3.5" /> Add rate row
             </button>
@@ -334,14 +329,14 @@ export default function NewContractPage(): React.JSX.Element {
 
         {step === 2 && (
           <div className="space-y-2">
-            <p className="text-muted text-[12px]">
+            <p className="text-[12px] text-muted">
               Select clauses from the library. Payment terms, Delivery SLA and Termination
               are mandatory.
             </p>
             {library?.map((l) => (
               <label
                 key={l.id}
-                className="border-line flex items-start gap-2 border-b pb-2 text-[13px]"
+                className="flex items-start gap-2 border-b border-line pb-2 text-[13px]"
               >
                 <input
                   type="checkbox"
@@ -356,8 +351,8 @@ export default function NewContractPage(): React.JSX.Element {
                   }}
                 />
                 <span>
-                  <span className="text-ink font-medium">{l.title}</span>
-                  <span className="text-muted block text-[12px]">{l.contentText}</span>
+                  <span className="font-medium text-ink">{l.title}</span>
+                  <span className="block text-[12px] text-muted">{l.contentText}</span>
                 </span>
               </label>
             ))}
@@ -366,7 +361,7 @@ export default function NewContractPage(): React.JSX.Element {
 
         {step === 3 && (
           <>
-            <p className="text-muted text-[12px]">
+            <p className="text-[12px] text-muted">
               Optional — indexed price escalation (e.g. diesel-linked).
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -421,7 +416,7 @@ export default function NewContractPage(): React.JSX.Element {
 
         {step === 4 && (
           <div className="text-[13px]">
-            <p className="text-ink mb-2 font-medium">Review</p>
+            <p className="mb-2 font-medium text-ink">Review</p>
             <Row label="Title" v={title} />
             <Row label="Type" v={contractType} />
             <Row label="Category" v={category} />
@@ -438,7 +433,7 @@ export default function NewContractPage(): React.JSX.Element {
           type="button"
           disabled={step === 0}
           onClick={() => setStep((s) => s - 1)}
-          className="border-line text-text rounded-md border px-4 py-1.5 text-[13px] disabled:opacity-40"
+          className="rounded-md border border-line px-4 py-1.5 text-[13px] text-text disabled:opacity-40"
         >
           Back
         </button>
@@ -446,7 +441,7 @@ export default function NewContractPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setStep((s) => s + 1)}
-            className="bg-ink rounded-md px-4 py-1.5 text-[13px] font-medium text-white"
+            className="rounded-md bg-ink px-4 py-1.5 text-[13px] font-medium text-white"
           >
             Next
           </button>
@@ -455,7 +450,7 @@ export default function NewContractPage(): React.JSX.Element {
             type="button"
             onClick={submit}
             disabled={create.isPending}
-            className="bg-accent rounded-md px-4 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
           >
             Create draft
           </button>
@@ -477,7 +472,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="text-muted mb-1 block text-[12px]">{label}</span>
+      <span className="mb-1 block text-[12px] text-muted">{label}</span>
       {children}
     </label>
   );
@@ -485,7 +480,7 @@ function Field({
 
 function Row({ label, v }: { label: string; v: string }): React.JSX.Element {
   return (
-    <div className="border-line flex justify-between border-b py-1">
+    <div className="flex justify-between border-b border-line py-1">
       <span className="text-muted">{label}</span>
       <span className="text-ink">{v}</span>
     </div>

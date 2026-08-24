@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import { Button, Input, PageHeader } from '@/components/ui';
 import { Money, type VendorPoOption } from '@/lib/shared';
 import { percentToRate, rateToPercent } from '@/lib/rate';
 import { ArrowLeft } from 'lucide-react';
@@ -185,14 +185,11 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       <button
         type="button"
         onClick={backToList}
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to invoices
       </button>
-      <h1 className="tracking-heading text-ink mb-5 text-[20px] font-semibold">
-        Create invoice
-      </h1>
-
+      <PageHeader title="Create invoice" />
       <div className="flex flex-col gap-5">
         {/* Section 1 — PO information */}
         <Section title="Purchase order">
@@ -245,9 +242,9 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
         {/* Section 3 — line items */}
         <Section title="Line items">
-          <div className="border-line overflow-hidden rounded-lg border">
+          <div className="overflow-hidden rounded-lg border border-line">
             <table className="w-full text-[13px]">
-              <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+              <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
                 <tr>
                   <th className="px-3 py-2 font-medium">Description</th>
                   <th className="w-24 px-3 py-2 font-medium">Quantity</th>
@@ -260,10 +257,10 @@ export default function SubmitInvoicePage(): React.JSX.Element {
               </thead>
               <tbody>
                 {lines.map((l, i) => (
-                  <tr key={l.poLineId ?? l.lineNo} className="border-line border-t">
+                  <tr key={l.poLineId ?? l.lineNo} className="border-t border-line">
                     <td className="px-3 py-2">
                       <div className="text-text">{l.itemDesc}</div>
-                      <div className="text-faint text-[11px]">{l.uom}</div>
+                      <div className="text-[11px] text-faint">{l.uom}</div>
                     </td>
                     <td className="px-3 py-2">
                       <Input
@@ -289,51 +286,51 @@ export default function SubmitInvoicePage(): React.JSX.Element {
                         className="h-8"
                       />
                     </td>
-                    <td className="font-numeric text-text px-3 py-2 text-right">
+                    <td className="font-numeric px-3 py-2 text-right text-text">
                       {inr(amountOf(l))}
                     </td>
-                    <td className="font-numeric text-text px-3 py-2 text-right">
+                    <td className="font-numeric px-3 py-2 text-right text-text">
                       {inr(taxOf(l))}
                     </td>
-                    <td className="font-numeric text-ink px-3 py-2 text-right">
+                    <td className="font-numeric px-3 py-2 text-right text-ink">
                       {inr(Money.of(amountOf(l)).add(taxOf(l)).toString())}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot className="bg-canvas">
-                <tr className="border-line border-t">
+                <tr className="border-t border-line">
                   <td
                     colSpan={5}
-                    className="text-muted px-3 py-2 text-right text-[12px] font-medium"
+                    className="px-3 py-2 text-right text-[12px] font-medium text-muted"
                   >
                     Taxable value
                   </td>
-                  <td colSpan={2} className="font-numeric text-text px-3 py-2 text-right">
+                  <td colSpan={2} className="font-numeric px-3 py-2 text-right text-text">
                     {inr(invoiceSubtotal.toString())}
                   </td>
                 </tr>
                 <tr>
                   <td
                     colSpan={5}
-                    className="text-muted px-3 py-2 text-right text-[12px] font-medium"
+                    className="px-3 py-2 text-right text-[12px] font-medium text-muted"
                   >
                     Tax ({po.amounts.taxKind})
                   </td>
-                  <td colSpan={2} className="font-numeric text-text px-3 py-2 text-right">
+                  <td colSpan={2} className="font-numeric px-3 py-2 text-right text-text">
                     {inr(invoiceTax.toString())}
                   </td>
                 </tr>
-                <tr className="border-line border-t">
+                <tr className="border-t border-line">
                   <td
                     colSpan={5}
-                    className="text-muted px-3 py-2 text-right text-[12px] font-medium"
+                    className="px-3 py-2 text-right text-[12px] font-medium text-muted"
                   >
                     Invoice total
                   </td>
                   <td
                     colSpan={2}
-                    className="font-numeric text-ink px-3 py-2 text-right font-semibold"
+                    className="font-numeric px-3 py-2 text-right font-semibold text-ink"
                   >
                     {inr(invoiceTotal.toString())}
                   </td>
@@ -347,13 +344,13 @@ export default function SubmitInvoicePage(): React.JSX.Element {
         <Section title="Documents">
           <div className="flex flex-col gap-4">
             <div>
-              <p className="text-text mb-1.5 text-[12px] font-medium">
+              <p className="mb-1.5 text-[12px] font-medium text-text">
                 Tax invoice <span className="text-danger">*</span>
               </p>
               <FileDrop label="Tax invoice" files={taxFiles} onChange={setTaxFiles} />
             </div>
             <div>
-              <p className="text-text mb-1.5 text-[12px] font-medium">
+              <p className="mb-1.5 text-[12px] font-medium text-text">
                 Supporting documents
               </p>
               <FileDrop
@@ -380,7 +377,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       </div>
 
       {/* Section 5 — sticky actions */}
-      <div className="border-line bg-panel/95 fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-end gap-2 px-6 py-3">
           <Button variant="ghost" size="sm" onClick={backToList}>
             Cancel
@@ -413,8 +410,8 @@ function Section({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <section className="border-line bg-panel rounded-lg border p-4">
-      <h2 className="text-ink mb-3 text-[14px] font-semibold">{title}</h2>
+    <section className="rounded-lg border border-line bg-panel p-4">
+      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -433,11 +430,11 @@ function Field({
 }): React.JSX.Element {
   return (
     <div>
-      <dt className="text-faint text-[11px] uppercase tracking-wide">{label}</dt>
+      <dt className="text-[11px] uppercase tracking-wide text-faint">{label}</dt>
       <dd
         className={
           (mono ? 'font-numeric ' : '') +
-          (strong ? 'text-ink font-semibold ' : 'text-text ') +
+          (strong ? 'font-semibold text-ink' : 'text-text') +
           'mt-0.5 text-[13px]'
         }
       >
@@ -458,7 +455,7 @@ function Labeled({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-text text-[12px] font-medium">
+      <span className="text-[12px] font-medium text-text">
         {label} {required && <span className="text-danger">*</span>}
       </span>
       {children}

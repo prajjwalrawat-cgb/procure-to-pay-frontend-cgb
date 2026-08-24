@@ -2,7 +2,7 @@
 
 import type { ApprovalMatrixView, ApprovalStep, DocumentType } from '@/lib/shared';
 import { PERMISSIONS, ROLE_PERMISSIONS, type RoleName } from '@/lib/shared';
-import { Button, Pill, Tabs, TabsList, TabsTrigger } from '@/components/ui';
+import { Button, PageHeader, Pill, Tabs, TabsList, TabsTrigger } from '@/components/ui';
 import { useState } from 'react';
 
 import { ConditionChips } from '@/components/approvals/condition-chips';
@@ -50,15 +50,12 @@ export default function ApprovalsPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-5xl">
       <div className="mb-4">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Approval matrix
-        </h1>
-        <p className="text-muted text-[13px]">
-          Rules are evaluated by priority; the first match routes the document. Editing a
-          rule creates a new version — in-flight documents keep their snapshot.
-        </p>
+        <PageHeader
+          title="Approval matrix"
+          description="Rules are evaluated by priority; the first match routes the document. Editing a rule creates a new version — in-flight documents keep their snapshot."
+        />
         {!canEdit && (
-          <p className="text-faint mt-1 text-[12px]">
+          <p className="mt-1 text-[12px] text-faint">
             Read-only — only an Admin or the Finance Head can add, edit or deactivate
             rules.
           </p>
@@ -140,18 +137,18 @@ function MatrixTab({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-muted text-[13px]">
+        <div className="text-[13px] text-muted">
           {data?.items.length ?? 0} active rule
           {(data?.items.length ?? 0) === 1 ? '' : 's'}
         </div>
         {canEdit && (
-          <Button variant="accent" size="sm" onClick={() => setEditing('new')}>
+          <Button variant="primary" size="sm" onClick={() => setEditing('new')}>
             Add rule
           </Button>
         )}
       </div>
 
-      {isLoading && <div className="text-muted text-[13px]">Loading rules…</div>}
+      {isLoading && <div className="text-[13px] text-muted">Loading rules…</div>}
 
       <div className="flex flex-col gap-3">
         {data?.items.map((rule) => (
@@ -176,7 +173,7 @@ function MatrixTab({
           />
         ))}
         {data && data.items.length === 0 && !isLoading && (
-          <div className="text-muted text-[13px]">
+          <div className="text-[13px] text-muted">
             No active rules — documents of this type cannot be submitted for approval
             until one exists.
             {canEdit ? ' Add one to start routing.' : ''}
@@ -233,15 +230,15 @@ function RuleCard({
   onHistory: () => void;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel rounded-lg border p-4" data-testid="rule-card">
+    <div className="rounded-lg border border-line bg-panel p-4" data-testid="rule-card">
       <div className="mb-3 flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-ink text-[14px] font-semibold">{rule.name}</span>
+            <span className="text-[14px] font-semibold text-ink">{rule.name}</span>
             <Pill variant={rule.isActive ? 'success' : 'gray'} dot>
               {rule.isActive ? 'Active' : 'Draft'}
             </Pill>
-            <span className="text-faint font-numeric text-[11px]">
+            <span className="font-numeric text-[11px] text-faint">
               v{rule.version} · priority {rule.priority}
             </span>
           </div>
@@ -269,26 +266,26 @@ function RuleCard({
       </div>
 
       <div className="mb-3">
-        <div className="text-faint mb-1 text-[10px] font-semibold uppercase tracking-wide">
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-faint">
           When
         </div>
         <ConditionChips condition={rule.conditions} />
       </div>
 
       <div>
-        <div className="text-faint mb-1.5 text-[10px] font-semibold uppercase tracking-wide">
+        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-faint">
           Then route to
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {rule.steps.map((s: ApprovalStep) => (
             <span
               key={s.step_no}
-              className="border-line bg-canvas flex items-center gap-2 rounded-sm border px-2.5 py-1.5 text-[12px]"
+              className="flex items-center gap-2 rounded-sm border border-line bg-canvas px-2.5 py-1.5 text-[12px]"
             >
-              <span className="bg-panel font-numeric flex h-5 w-5 items-center justify-center rounded-full text-[10px]">
+              <span className="font-numeric flex h-5 w-5 items-center justify-center rounded-full bg-panel text-[10px]">
                 {s.step_no}
               </span>
-              <span className="text-text font-medium">{s.name}</span>
+              <span className="font-medium text-text">{s.name}</span>
               <span className="text-muted">
                 {s.role} · {s.scope} · {s.sla_hours}h
                 {s.escalate_to ? ` · ↑${s.escalate_to.role}` : ''}
@@ -313,9 +310,9 @@ function ActivateConfirm({
 }): React.JSX.Element {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="bg-panel border-line w-full max-w-md rounded-xl border p-5 shadow-lg">
-        <h3 className="text-ink text-[15px] font-semibold">Activate “{rule.name}”?</h3>
-        <p className="text-muted mt-2 text-[13px]">
+      <div className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg">
+        <h3 className="text-[15px] font-semibold text-ink">Activate “{rule.name}”?</h3>
+        <p className="mt-2 text-[13px] text-muted">
           This will affect all future documents matching these conditions. In-flight
           documents keep their snapshot and are not re-routed.
         </p>
@@ -347,25 +344,25 @@ function VersionHistory({
   const { data } = useMatrixVersions(id);
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
-      <div className="bg-panel border-line h-full w-full max-w-md overflow-y-auto border-l p-5">
+      <div className="h-full w-full max-w-md overflow-y-auto border-l border-line bg-panel p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-ink text-[15px] font-semibold">Version history</h3>
+          <h3 className="text-[15px] font-semibold text-ink">Version history</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
           </Button>
         </div>
         <div className="flex flex-col gap-2">
           {data?.map((v) => (
-            <div key={v.id} className="border-line rounded-lg border p-3">
+            <div key={v.id} className="rounded-lg border border-line p-3">
               <div className="flex items-center justify-between">
-                <span className="text-ink font-numeric text-[13px] font-semibold">
+                <span className="font-numeric text-[13px] font-semibold text-ink">
                   v{v.version}
                 </span>
                 <Pill variant={v.isActive ? 'success' : 'gray'} dot>
                   {v.isActive ? 'Active' : 'Draft'}
                 </Pill>
               </div>
-              <div className="text-muted mt-1 text-[11px]">
+              <div className="mt-1 text-[11px] text-muted">
                 {v.updatedByName ?? 'system'} ·{' '}
                 {new Date(v.createdAt).toLocaleString('en-IN')}
               </div>

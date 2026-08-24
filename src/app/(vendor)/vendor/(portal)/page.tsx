@@ -1,12 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle, Pill } from '@/components/ui';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  PageHeader,
+  Pill,
+} from '@/components/ui';
 
 export default function VendorHomePage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-6 flex items-center gap-3">
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Supplier dashboard
-        </h1>
+        <PageHeader title="Supplier dashboard" />
         <Pill variant="success" dot>
           Slice 0 shell
         </Pill>
@@ -15,7 +20,7 @@ export default function VendorHomePage(): React.JSX.Element {
         <CardHeader>
           <CardTitle>Welcome</CardTitle>
         </CardHeader>
-        <CardContent className="text-muted text-[13px]">
+        <CardContent className="text-[13px] text-muted">
           Your supplier workspace is ready. Invoice submission, PO tracking, and document
           management arrive in later slices.
         </CardContent>

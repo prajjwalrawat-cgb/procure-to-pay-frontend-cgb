@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import type { LedgerEntryView } from '@/lib/shared';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -27,7 +27,7 @@ import { formatSignedQty, txnLabel, txnVariant } from '../_components/txn-displa
 // `next build` fails prerendering this route.
 export default function AdjustmentsPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="text-muted p-6 text-[13px]">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-[13px] text-muted">Loading…</div>}>
       <AdjustmentsScreen />
     </Suspense>
   );
@@ -53,25 +53,22 @@ function AdjustmentsScreen(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Adjustments
-          </h1>
-          <p className="text-muted text-[13px]">
-            Correct a wrong count or write off damaged stock — both post a new
-            ledger entry
-          </p>
-        </div>
-        <Link href="/inventory/ledger">
-          <Button variant="ghost" size="sm">
-            Stock ledger
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Adjustments"
+        description="Correct a wrong count or write off damaged stock — both post a new ledger entry"
+        actions={
+          <>
+            <Link href="/inventory/ledger">
+              <Button variant="ghost" size="sm">
+                Stock ledger
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {!correctId && (
-        <div className="border-line mb-3 flex items-center gap-1 border-b">
+        <div className="mb-3 flex items-center gap-1 border-b border-line">
           {(
             [
               ['adjust', 'Stock adjustment'],
@@ -86,7 +83,7 @@ function AdjustmentsScreen(): React.JSX.Element {
                 'border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
                 (tab === k
                   ? 'border-accent text-ink'
-                  : 'text-muted hover:text-ink border-transparent')
+                  : 'border-transparent text-muted hover:text-ink')
               }
             >
               {label}
@@ -96,7 +93,7 @@ function AdjustmentsScreen(): React.JSX.Element {
       )}
 
       {correctId && isLoading && (
-        <p className="text-muted mb-3 text-[13px]">Loading the entry to correct…</p>
+        <p className="mb-3 text-[13px] text-muted">Loading the entry to correct…</p>
       )}
       {correctId && isError && (
         <p className="mb-3 text-[13px] text-red-600">
@@ -112,10 +109,9 @@ function AdjustmentsScreen(): React.JSX.Element {
         <DamageForm />
       )}
 
-      <p className="text-faint mt-3 text-[11px]">
-        Nothing on this screen edits an existing entry. Stock figures are the sum
-        of every ledger movement, so both the original and the correction stay in
-        the audit trail.
+      <p className="mt-3 text-[11px] text-faint">
+        Nothing on this screen edits an existing entry. Stock figures are the sum of every
+        ledger movement, so both the original and the correction stay in the audit trail.
       </p>
     </div>
   );
@@ -123,12 +119,12 @@ function AdjustmentsScreen(): React.JSX.Element {
 
 function CorrectionBanner({ entry }: { entry: LedgerEntryView }): React.JSX.Element {
   return (
-    <div className="border-line bg-canvas mb-4 rounded-lg border p-3">
+    <div className="mb-4 rounded-lg border border-line bg-canvas p-3">
       <div className="mb-1.5 flex items-center gap-2">
         <Pill variant="violet">Correcting an entry</Pill>
         <Pill variant={txnVariant(entry.txnType)}>{txnLabel(entry.txnType)}</Pill>
       </div>
-      <p className="text-text text-[13px]">
+      <p className="text-[13px] text-text">
         {entry.productName}
         {entry.colour ? ` · ${entry.colour}` : ''}{' '}
         <span className="font-numeric text-faint">({entry.productCode})</span> ·{' '}
@@ -136,9 +132,9 @@ function CorrectionBanner({ entry }: { entry: LedgerEntryView }): React.JSX.Elem
         <span className="font-numeric">{formatSignedQty(entry.signedQty)}</span> on{' '}
         {new Date(entry.txnDate).toLocaleDateString('en-IN')}
       </p>
-      <p className="text-faint mt-1 text-[11px]">
-        The quantity below is pre-filled to reverse it exactly. Change it if only
-        part of the entry was wrong.
+      <p className="mt-1 text-[11px] text-faint">
+        The quantity below is pre-filled to reverse it exactly. Change it if only part of
+        the entry was wrong.
       </p>
     </div>
   );
@@ -156,7 +152,9 @@ function AdjustmentForm({
     correcting ? String(-correcting.signedQty) : '',
   );
   const [reason, setReason] = useState(
-    correcting ? `Reverses ${txnLabel(correcting.txnType).toLowerCase()} ${correcting.id}` : '',
+    correcting
+      ? `Reverses ${txnLabel(correcting.txnType).toLowerCase()} ${correcting.id}`
+      : '',
   );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -189,7 +187,7 @@ function AdjustmentForm({
     !!productId && !!locationId && delta !== 0 && wholeNumber && reason.trim().length > 0;
 
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
+    <div className="rounded-lg border border-line bg-panel p-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Product" required>
@@ -290,13 +288,17 @@ function DamageForm(): React.JSX.Element {
   }
 
   const ready =
-    !!productId && !!locationId && amount > 0 && Number.isInteger(amount) && !!reason.trim();
+    !!productId &&
+    !!locationId &&
+    amount > 0 &&
+    Number.isInteger(amount) &&
+    !!reason.trim();
   // Blocked client-side rather than round-tripping to a certain 409. Unknown
   // stock (still loading) is not treated as zero — let the API decide then.
   const exceedsStock = onHand !== null && amount > onHand;
 
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
+    <div className="rounded-lg border border-line bg-panel p-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Product" required>
@@ -311,7 +313,11 @@ function DamageForm(): React.JSX.Element {
         <Field label="Location" required>
           <LocationSelect value={locationId} onChange={setLocationId} />
         </Field>
-        <Field label="Damaged quantity" required hint="Always positive — it writes stock down.">
+        <Field
+          label="Damaged quantity"
+          required
+          hint="Always positive — it writes stock down."
+        >
           <TextInput
             type="number"
             min={1}
@@ -336,11 +342,7 @@ function DamageForm(): React.JSX.Element {
         </div>
       </div>
 
-      <StockPreview
-        onHand={onHand}
-        delta={ready ? -amount : 0}
-        negativeAllowed={false}
-      />
+      <StockPreview onHand={onHand} delta={ready ? -amount : 0} negativeAllowed={false} />
 
       <div className="mt-4 flex items-center justify-between">
         <FormResult error={error} success={success} />
@@ -390,9 +392,9 @@ function StockPreview({
   if (onHand === null) return null;
   const after = onHand + delta;
   return (
-    <div className="border-line bg-canvas mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3 py-2 text-[13px]">
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-canvas px-3 py-2 text-[13px]">
       <span className="text-muted">At this location</span>
-      <span className="font-numeric text-ink font-medium">
+      <span className="font-numeric font-medium text-ink">
         {onHand.toLocaleString('en-IN')}
       </span>
       {delta !== 0 && (
@@ -405,7 +407,9 @@ function StockPreview({
           >
             {after.toLocaleString('en-IN')}
           </span>
-          <span className={'text-[12px] ' + (delta > 0 ? 'text-emerald-700' : 'text-red-600')}>
+          <span
+            className={'text-[12px] ' + (delta > 0 ? 'text-emerald-700' : 'text-red-600')}
+          >
             ({formatSignedQty(delta)})
           </span>
         </>

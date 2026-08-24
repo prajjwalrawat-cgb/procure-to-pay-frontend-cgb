@@ -1,7 +1,7 @@
 'use client';
 
 import type { ClauseLibraryInput } from '@/lib/shared';
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -59,34 +59,32 @@ export default function ClauseLibraryPage(): React.JSX.Element {
     <div className="mx-auto max-w-4xl">
       <Link
         href="/contracts"
-        className="text-muted hover:text-text mb-3 inline-flex items-center gap-1 text-[13px]"
+        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Clause library
-          </h1>
-          <p className="text-muted text-[13px]">
-            Standard clauses · governed by Legal & Tenant Admin
-          </p>
-        </div>
-        {canManage && (
-          <button
-            type="button"
-            onClick={() => setShow((s) => !s)}
-            className="bg-ink flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-medium text-white"
-          >
-            <Plus className="h-3.5 w-3.5" /> Add clause
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Clause library"
+        description="Standard clauses · governed by Legal & Tenant Admin"
+        actions={
+          <>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setShow((s) => !s)}
+                className="flex items-center gap-1.5 rounded-md bg-ink px-3 py-1.5 text-[13px] font-medium text-white"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add clause
+              </button>
+            )}
+          </>
+        }
+      />
 
       {show && canManage && (
-        <div className="border-line bg-panel mb-4 space-y-2 rounded-lg border p-4">
+        <div className="mb-4 space-y-2 rounded-lg border border-line bg-panel p-4">
           <select
-            className="border-line rounded-md border px-2.5 py-1.5 text-[13px]"
+            className="rounded-md border border-line px-2.5 py-1.5 text-[13px]"
             value={clauseType}
             onChange={(e) => setClauseType(e.target.value)}
           >
@@ -97,13 +95,13 @@ export default function ClauseLibraryPage(): React.JSX.Element {
             ))}
           </select>
           <input
-            className="border-line block w-full rounded-md border px-2.5 py-1.5 text-[13px]"
+            className="block w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <textarea
-            className="border-line block w-full rounded-md border px-2.5 py-1.5 text-[13px]"
+            className="block w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
             rows={3}
             placeholder="Clause text"
             value={contentText}
@@ -113,7 +111,7 @@ export default function ClauseLibraryPage(): React.JSX.Element {
             <button
               type="button"
               onClick={submit}
-              className="bg-accent rounded-md px-4 py-1.5 text-[13px] font-medium text-white"
+              className="rounded-md bg-accent px-4 py-1.5 text-[13px] font-medium text-white"
             >
               Save
             </button>
@@ -124,7 +122,7 @@ export default function ClauseLibraryPage(): React.JSX.Element {
                 setTitle('');
                 setContentText('');
               }}
-              className="border-line text-text hover:bg-canvas rounded-md border px-4 py-1.5 text-[13px] font-medium"
+              className="rounded-md border border-line px-4 py-1.5 text-[13px] font-medium text-text hover:bg-canvas"
             >
               Cancel
             </button>
@@ -134,14 +132,14 @@ export default function ClauseLibraryPage(): React.JSX.Element {
 
       <div className="space-y-2">
         {data?.map((l) => (
-          <div key={l.id} className="border-line bg-panel rounded-lg border p-4">
+          <div key={l.id} className="rounded-lg border border-line bg-panel p-4">
             <div className="flex items-center gap-2">
               <Pill variant="gray">{l.clauseType.replace('_', ' ')}</Pill>
-              <span className="text-ink text-[13px] font-medium">{l.title}</span>
-              <span className="text-faint text-[11px]">v{l.version}</span>
+              <span className="text-[13px] font-medium text-ink">{l.title}</span>
+              <span className="text-[11px] text-faint">v{l.version}</span>
               {l.isDefault && <Pill variant="success">default</Pill>}
             </div>
-            <p className="text-muted mt-1 text-[12px]">{l.contentText}</p>
+            <p className="mt-1 text-[12px] text-muted">{l.contentText}</p>
           </div>
         ))}
       </div>

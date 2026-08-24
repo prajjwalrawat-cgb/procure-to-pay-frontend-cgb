@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -82,23 +82,21 @@ export default function NewProductPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            New product
-          </h1>
-          <p className="text-muted text-[13px]">
-            Add one SKU by hand · use Bulk upload for a whole sheet
-          </p>
-        </div>
-        <Link href="/inventory">
-          <Button variant="ghost" size="sm">
-            Cancel
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="New product"
+        description="Add one SKU by hand · use Bulk upload for a whole sheet"
+        actions={
+          <>
+            <Link href="/inventory">
+              <Button variant="ghost" size="sm">
+                Cancel
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
-      <div className="border-line bg-panel rounded-lg border p-4">
+      <div className="rounded-lg border border-line bg-panel p-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <Field label="Product name" required>
@@ -139,7 +137,10 @@ export default function NewProductPage(): React.JSX.Element {
           {/* Without a barcode the scanner can only find this product by typing
               its code, so this is the field that decides whether a warehouse can
               actually scan it. */}
-          <Field label="Barcode" hint="EAN / UPC printed on the pack. Needed for scanning.">
+          <Field
+            label="Barcode"
+            hint="EAN / UPC printed on the pack. Needed for scanning."
+          >
             <TextInput
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
@@ -165,7 +166,10 @@ export default function NewProductPage(): React.JSX.Element {
               <span className="text-muted">Require batch and expiry on receipt</span>
             </label>
           </Field>
-          <Field label="Reorder point" hint="Flags the row as low stock at or below this.">
+          <Field
+            label="Reorder point"
+            hint="Flags the row as low stock at or below this."
+          >
             <TextInput
               type="number"
               min={0}
@@ -200,8 +204,8 @@ export default function NewProductPage(): React.JSX.Element {
           </div>
         </div>
 
-        <div className="border-line mt-5 border-t pt-4">
-          <h2 className="text-faint mb-3 text-[11px] font-medium uppercase tracking-wide">
+        <div className="mt-5 border-t border-line pt-4">
+          <h2 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-faint">
             Opening stock (optional)
           </h2>
           <div className="grid grid-cols-2 gap-4">
@@ -226,9 +230,9 @@ export default function NewProductPage(): React.JSX.Element {
               if you want to record opening stock.
             </p>
           )}
-          <p className="text-faint mt-2 text-[11px]">
-            Recorded as an ADJUSTMENT ledger entry, so it stays visible in history and
-            can never drift from the ledger.
+          <p className="mt-2 text-[11px] text-faint">
+            Recorded as an ADJUSTMENT ledger entry, so it stays visible in history and can
+            never drift from the ledger.
           </p>
         </div>
 

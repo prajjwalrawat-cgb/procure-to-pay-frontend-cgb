@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -65,27 +65,31 @@ export default function LocationsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">Locations</h1>
-          <p className="text-muted text-[13px]">
+      <PageHeader
+        title="Locations"
+        description={
+          <>
             {items.length} location{items.length === 1 ? '' : 's'} · rooms, racks and bins
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* A barcode in this table is only a value until somebody prints it. */}
-          <Link href="/labels?type=location" target="_blank">
-            <Button variant="ghost" size="sm">
-              Print labels
-            </Button>
-          </Link>
-          <Link href="/inventory">
-            <Button variant="ghost" size="sm">
-              Stock overview
-            </Button>
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <div className="flex items-center gap-2">
+              {/* A barcode in this table is only a value until somebody prints it. */}
+              <Link href="/labels?type=location" target="_blank">
+                <Button variant="ghost" size="sm">
+                  Print labels
+                </Button>
+              </Link>
+              <Link href="/inventory">
+                <Button variant="ghost" size="sm">
+                  Stock overview
+                </Button>
+              </Link>
+            </div>
+          </>
+        }
+      />
 
       {items.length === 0 && !isLoading && (
         <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
@@ -96,7 +100,7 @@ export default function LocationsPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="border-line bg-panel mb-6 rounded-lg border p-4">
+      <div className="mb-6 rounded-lg border border-line bg-panel p-4">
         <div className="grid grid-cols-3 gap-4">
           <Field label="Name" required>
             <TextInput
@@ -127,7 +131,10 @@ export default function LocationsPage(): React.JSX.Element {
           {/* Build the hierarchy by creating a Warehouse first, then Racks with
               it as parent, then Sections under each rack. The scanner reads
               these levels to show "Main Warehouse › Rack A › Section A1". */}
-          <Field label="Level" hint="Warehouse → rack → section. Boxes go inside sections.">
+          <Field
+            label="Level"
+            hint="Warehouse → rack → section. Boxes go inside sections."
+          >
             <SelectInput
               value={kind}
               onChange={(e) => setKind(e.target.value as LocationKind)}
@@ -163,9 +170,9 @@ export default function LocationsPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2 font-medium">Location</th>
               <th className="px-3 py-2 font-medium">Level</th>
@@ -179,14 +186,14 @@ export default function LocationsPage(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
+                <td colSpan={7} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && items.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
+                <td colSpan={7} className="px-3 py-8 text-center text-muted">
                   No locations yet.
                 </td>
               </tr>
@@ -242,7 +249,7 @@ function LocationRow({
 
   if (editing) {
     return (
-      <tr className="border-line bg-canvas/50 border-t">
+      <tr className="border-t border-line bg-canvas/50">
         <td className="px-3 py-2">
           <TextInput value={name} onChange={(e) => setName(e.target.value)} />
         </td>
@@ -265,16 +272,16 @@ function LocationRow({
             placeholder="BIN-A1"
           />
         </td>
-        <td colSpan={3} className="text-faint px-3 py-2 text-[11px]">
-          Label an existing shelf here — the barcode is what the scanner reads
-          during putaway, transfer and cycle count.
+        <td colSpan={3} className="px-3 py-2 text-[11px] text-faint">
+          Label an existing shelf here — the barcode is what the scanner reads during
+          putaway, transfer and cycle count.
         </td>
         <td className="px-3 py-2 text-right">
           <button
             type="button"
             disabled={!name.trim() || busy}
             onClick={save}
-            className="text-accent-2 text-[12px] font-medium hover:underline"
+            className="text-[12px] font-medium text-accent-2 hover:underline"
           >
             Save
           </button>
@@ -286,7 +293,7 @@ function LocationRow({
               setBarcode(l.barcode ?? '');
               setEditing(false);
             }}
-            className="text-muted ml-3 text-[12px] hover:underline"
+            className="ml-3 text-[12px] text-muted hover:underline"
           >
             Cancel
           </button>
@@ -296,8 +303,8 @@ function LocationRow({
   }
 
   return (
-    <tr className="border-line border-t">
-      <td className="text-ink px-3 py-2">
+    <tr className="border-t border-line">
+      <td className="px-3 py-2 text-ink">
         {l.name}
         {!l.active && (
           <Pill variant="gray" className="ml-1.5">
@@ -305,18 +312,18 @@ function LocationRow({
           </Pill>
         )}
       </td>
-      <td className="text-muted px-3 py-2 text-[12px]">{KIND_LABEL[l.kind]}</td>
-      <td className="text-muted px-3 py-2 font-mono text-[12px]">{l.barcode ?? '—'}</td>
-      <td className="text-muted px-3 py-2 text-[12px]">{l.parentName ?? '—'}</td>
-      <td className="font-numeric text-text px-3 py-2 text-right">{l.productCount}</td>
-      <td className="font-numeric text-ink px-3 py-2 text-right font-medium">
+      <td className="px-3 py-2 text-[12px] text-muted">{KIND_LABEL[l.kind]}</td>
+      <td className="px-3 py-2 font-mono text-[12px] text-muted">{l.barcode ?? '—'}</td>
+      <td className="px-3 py-2 text-[12px] text-muted">{l.parentName ?? '—'}</td>
+      <td className="font-numeric px-3 py-2 text-right text-text">{l.productCount}</td>
+      <td className="font-numeric px-3 py-2 text-right font-medium text-ink">
         {l.totalQty.toLocaleString('en-IN')}
       </td>
       <td className="px-3 py-2 text-right">
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-accent-2 text-[12px] font-medium hover:underline"
+          className="text-[12px] font-medium text-accent-2 hover:underline"
         >
           Rename
         </button>
@@ -333,7 +340,7 @@ function LocationRow({
               onError(null);
               deactivate.mutate(l.id, { onError: (e) => onError(e.message) });
             }}
-            className="text-muted ml-3 text-[12px] hover:underline disabled:opacity-40 disabled:hover:no-underline"
+            className="ml-3 text-[12px] text-muted hover:underline disabled:opacity-40 disabled:hover:no-underline"
           >
             Retire
           </button>
