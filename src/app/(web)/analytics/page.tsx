@@ -1,18 +1,21 @@
 'use client';
 
 import type { AnalyticsPeriodKey, TopVendorRow } from '@/lib/shared';
-import { Pill } from '@/components/ui';
+import {
+  CHART_CHROME,
+  CHART_SERIES,
+  CHART_TICK,
+  PageHeader,
+  Pill,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -32,7 +35,7 @@ import {
 } from '@/lib/api/analytics';
 import { inr, inrCompact } from '@/lib/format';
 
-import { ACCENT, AsOfBadge, CHART_COLORS, PeriodPicker, PRIOR } from './_lib';
+import { AsOfBadge, MSME_BUCKET, PeriodPicker, TOOLTIP_STYLE } from './_lib';
 
 const TABS = [
   { label: 'Overview', href: '/analytics' },
@@ -61,41 +64,38 @@ export default function AnalyticsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[1400px]">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Analytics
-          </h1>
-          <p className="text-muted text-[13px]">
-            Spend, savings, concentration and MSME exposure — computed from real Slice 1–7
-            data.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <label className="text-muted flex items-center gap-1.5 text-[12px]">
-            <input
-              type="checkbox"
-              checked={compare}
-              onChange={(e) => setCompare(e.target.checked)}
-            />
-            Compare prior FY
-          </label>
-          <PeriodPicker value={period} onChange={setPeriod} />
+      <PageHeader
+        title="Analytics"
+        description="Spend, savings, concentration and MSME exposure, computed from posted documents."
+      />
+
+      {/* Filters sit in one row above the charts and apply to all of them. */}
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <PeriodPicker value={period} onChange={setPeriod} />
+        <label className="text-muted flex items-center gap-1.5 text-[12px]">
+          <input
+            type="checkbox"
+            checked={compare}
+            onChange={(e) => setCompare(e.target.checked)}
+          />
+          Compare prior FY
+        </label>
+        <span className="ml-auto">
           <AsOfBadge
             refreshedAt={asOf}
             onRefresh={() => refresh.mutate()}
             refreshing={refresh.isPending}
           />
-        </div>
+        </span>
       </div>
 
-      <div className="border-line mb-4 flex items-center gap-1 border-b">
+      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
         {TABS.map((t) => (
           <Link
             key={t.href}
             href={t.href}
             className={
-              'border-b-2 px-3 py-2 text-[13px] font-medium ' +
+              'shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium ' +
               (t.href === '/analytics'
                 ? 'border-accent text-ink'
                 : 'text-muted hover:text-text border-transparent')
@@ -151,18 +151,18 @@ export default function AnalyticsPage(): React.JSX.Element {
               data={trend.data?.points ?? []}
               margin={{ left: 8, right: 8, top: 8 }}
             >
-              <CartesianGrid stroke="#E8E8E1" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#65655E' }} />
+              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
+              <XAxis dataKey="month" tick={CHART_TICK} />
               <YAxis
                 tickFormatter={(v) => inrCompact(String(v))}
-                tick={{ fontSize: 11, fill: '#65655E' }}
+                tick={CHART_TICK}
                 width={70}
               />
               <Tooltip formatter={(v: number) => inr(String(v))} />
               <Line
                 type="monotone"
                 dataKey="netSpend"
-                stroke={ACCENT}
+                stroke={CHART_SERIES[0]}
                 strokeWidth={2}
                 dot={false}
                 name="This FY"
@@ -171,7 +171,7 @@ export default function AnalyticsPage(): React.JSX.Element {
                 <Line
                   type="monotone"
                   dataKey="priorYearNetSpend"
-                  stroke={PRIOR}
+                  stroke={CHART_CHROME.comparison}
                   strokeWidth={2}
                   strokeDasharray="4 4"
                   dot={false}
@@ -182,24 +182,46 @@ export default function AnalyticsPage(): React.JSX.Element {
           </ResponsiveContainer>
         </Card>
 
-        {/* Category donut */}
+        {/* Spend by category.
+            Was a donut. A donut is the wrong form for comparing close values —
+            adjacent-slice angles are near-impossible to rank by eye, and with
+            seven categories the palette also exceeds what validates for a form
+            where every pair is co-visible. A ranked horizontal bar answers the
+            actual question ("which categories cost most, in order") and carries
+            its own labels. */}
         <Card title="Spend by category" asOf={category.data?.refreshedAt ?? null}>
           <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie
-                data={category.data?.slices ?? []}
+            <BarChart
+              data={[...(category.data?.slices ?? [])].sort(
+                (a, b) => Number(b.netSpend) - Number(a.netSpend),
+              )}
+              layout="vertical"
+              margin={{ left: 6, right: 12 }}
+            >
+              <CartesianGrid stroke={CHART_CHROME.grid} horizontal={false} />
+              <XAxis
+                type="number"
+                tickFormatter={(v) => inrCompact(String(v))}
+                tick={CHART_TICK}
+              />
+              <YAxis
+                type="category"
+                dataKey="category"
+                width={110}
+                tick={{ fontSize: 11, fill: CHART_CHROME.label }}
+              />
+              <Tooltip
+                formatter={(v: number) => [inr(String(v)), 'Net spend']}
+                contentStyle={TOOLTIP_STYLE}
+              />
+              <Bar
                 dataKey={(s: { netSpend: string }) => Number(s.netSpend)}
-                nameKey="category"
-                innerRadius={55}
-                outerRadius={90}
-                paddingAngle={2}
-              >
-                {(category.data?.slices ?? []).map((_s, i) => (
-                  <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(v: number) => inr(String(v))} />
-            </PieChart>
+                fill={CHART_SERIES[0]}
+                name="Net spend"
+                radius={[0, 4, 4, 0]}
+                maxBarSize={18}
+              />
+            </BarChart>
           </ResponsiveContainer>
         </Card>
       </div>
@@ -216,27 +238,28 @@ export default function AnalyticsPage(): React.JSX.Element {
               <XAxis
                 type="number"
                 tickFormatter={(v) => inrCompact(String(v))}
-                tick={{ fontSize: 11, fill: '#65655E' }}
+                tick={CHART_TICK}
               />
               <YAxis
                 type="category"
-                dataKey="vendorName"
-                width={130}
-                tick={{ fontSize: 11, fill: '#2E2E2C' }}
+                dataKey={(v: TopVendorRow) => (v.isMsme ? `${v.vendorName} · MSME` : v.vendorName)}
+                width={150}
+                tick={{ fontSize: 11, fill: CHART_CHROME.label }}
               />
               <Tooltip formatter={(v: number) => inr(String(v))} />
               <Bar
                 dataKey={(v: TopVendorRow) => Number(v.netSpend)}
+                fill={CHART_SERIES[0]}
                 radius={[0, 4, 4, 0]}
                 name="Net spend"
-              >
-                {(topVendors.data?.vendors ?? []).map((v, i) => (
-                  <Cell key={i} fill={v.isMsme ? ACCENT : '#0276B2'} />
-                ))}
-              </Bar>
+                maxBarSize={18}
+              />
             </BarChart>
           </ResponsiveContainer>
-          <p className="text-faint mt-1 text-[11px]">MSME vendors shown in emerald.</p>
+          <p className="text-faint mt-1 text-[11px]">
+            MSME suppliers are marked in the label. One series, so the bars carry no
+            separate identity colour.
+          </p>
         </Card>
 
         {/* MSME Section 15 widget */}
@@ -249,7 +272,10 @@ export default function AnalyticsPage(): React.JSX.Element {
                 className="border-line hover:bg-canvas rounded-md border p-3"
               >
                 <div className="text-faint text-[10px] uppercase">
-                  {b.bucket.replace(/_/g, ' ')}
+                  {MSME_BUCKET[b.bucket].short}
+                </div>
+                <div className="text-faint text-[10px]">
+                  {MSME_BUCKET[b.bucket].days}
                 </div>
                 <div className="font-numeric text-ink mt-1 text-[18px] font-semibold">
                   {b.invoiceCount}

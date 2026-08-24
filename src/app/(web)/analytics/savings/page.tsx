@@ -1,5 +1,7 @@
 'use client';
 
+import { PageHeader } from '@/components/ui';
+
 import { SAVINGS_METHODOLOGY, type AnalyticsPeriodKey } from '@/lib/shared';
 import { Info } from 'lucide-react';
 import Link from 'next/link';
@@ -10,6 +12,7 @@ import {
   useLogAvoidedCost,
   useSavingsSummary,
 } from '@/lib/api/analytics';
+import { humanise } from '../_lib';
 import { inr, inrCompact } from '@/lib/format';
 import { useSessionStore } from '@/store/session-store';
 
@@ -26,18 +29,11 @@ export default function SavingsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4">
-        <Link href="/analytics" className="text-muted text-[12px] hover:underline">
-          ← Analytics
-        </Link>
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          Savings tracker
-        </h1>
-        <p className="text-muted text-[13px]">
-          Four categories, kept visually distinct — never one &ldquo;trust us&rdquo;
-          number.
-        </p>
-      </div>
+      <PageHeader
+        title="Savings tracker"
+        breadcrumbs={[{ label: 'Analytics', href: '/analytics' }, { label: 'Savings' }]}
+        description={'Four categories, kept apart on purpose — a single blended savings number hides how much of it is cash and how much is avoidance.'}
+      />
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
         {(summary.data?.totals ?? []).map((t) => (
@@ -88,10 +84,10 @@ export default function SavingsPage(): React.JSX.Element {
                 <td className="p-2">
                   {i.sourceType === 'RFQ_AWARD' && i.sourceId ? (
                     <Link href={`/sourcing`} className="text-accent-2 hover:underline">
-                      {i.sourceType}
+                      {humanise(i.sourceType)}
                     </Link>
                   ) : (
-                    <span className="text-muted">{i.sourceType}</span>
+                    <span className="text-muted">{humanise(i.sourceType)}</span>
                   )}
                 </td>
                 <td className="font-numeric p-2 text-right tabular-nums">

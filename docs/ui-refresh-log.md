@@ -342,11 +342,63 @@ neutral and gains a **Provisional** chip.
 | Nullable `legalEntityName` stringified into "null · CATEGORY" | vendor 360, onboarding detail | Filtered join |
 | Raw `font-mono` instead of the system's `.font-numeric` (no tabular figures) | sourcing list, evaluate | Swapped |
 
+### Phase 3 — analytics & compliance
+
+**Chart colour is now computed, not chosen.** The old analytics palette was raw
+hex against the pre-refresh tokens (`#05835C` emerald, `#E8E8E1` grid,
+`#65655E` axis) and had never been checked for colour-vision separation. The
+replacement lives in [`components/ui/chart-tokens.ts`](../src/components/ui/chart-tokens.ts)
+and was run through the validator, not eyeballed:
+
+| Gate | Result |
+|---|---|
+| adjacent pairs (bar / line / stacked) | all 6 slots **PASS** — worst CVD ΔE 9.3, normal-vision 16.6 |
+| all pairs (pie / scatter) | first 4 PASS with a CVD **WARN** (6.8 deutan); slot 5 **FAILS** (ΔE 2.4) |
+
+Slot ordering is the safety mechanism: teal beside rose fails deutan at ΔE 0.7,
+which is why they sit apart. A palette built only from navy/gold/ice cannot
+clear the gate — those hues are too close — so the categorical set is
+deliberately wider than the brand. Status colours are excluded from it and
+always ship with a label.
+
+**Forms changed on the evidence, not taste:**
+
+- **Spend by category was a donut → now a ranked horizontal bar.** A donut is
+  the wrong form for comparing close values, and with seven categories it also
+  exceeded what the palette validates for a form where every pair is co-visible.
+- **Top vendors encoded MSME by bar colour** — identity by colour alone, in a
+  reserved status colour, explained by a caption ("MSME vendors shown in
+  emerald"). One series now, with MSME in the axis label.
+- **The cycle-time chart had two series and no legend.** Added.
+- **AP charts used two different hues for single series** for no reason, one of
+  them orange, which read as a warning state. All single series use slot 1.
+
+**The MSME §15 page** got the signature treatment the brief asked for: a single
+strip showing the whole MSME payable against the 45-day statutory cliff, since
+the three buckets are parts of one payable and the question is how much is
+drifting toward the cap. Three separate stat cards could not show that
+proportion. Plus the CFO-facing figures as KPIs, and the exposure table now
+defaults to the breach bucket rather than opening with its most important table
+hidden.
+
+**Bugs found by rendering, which typecheck and lint both passed:**
+
+| Bug | Where | Note |
+|---|---|---|
+| `'use client'` pushed below an import | savings, AP performance | Next-only build error; my own edit caused it |
+| Twelve months of zeroes rendered as an empty grid | MSME trend | `points.length === 0` never fires; an all-zero series is an empty state |
+| Raw enums on screen — `BREACH 45 PLUS`, `RFQ_AWARD`, `GRN_MISSING` | 3 pages | shared acronym-aware `humanise()`; naive title-case gives "Grn" |
+| Bucket vocabulary duplicated | overview vs MSME page | one shared map |
+
+Local `.env` also had `API_INTERNAL_URL` on port 3011 while the API listens on
+3001, so every server-side auth proxy call failed with ECONNREFUSED. Corrected
+to 3001 (gitignored, local only).
+
 ### Remaining
 
 | Phase | Scope | Status |
 |---|---|---|
-| 3 | Analytics, MSME §15 aging/compliance | not started |
+| 3 | Analytics, MSME §15 aging/compliance | **done** — 4 pages, validated chart palette |
 | 4 | Contracts, inventory (13 pages), items, settings, team, vendor portal (18 pages), audit | not started |
 
 Everything not yet converted still renders correctly — the token layer is

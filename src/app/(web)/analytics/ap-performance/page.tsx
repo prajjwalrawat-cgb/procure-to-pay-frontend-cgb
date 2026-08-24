@@ -1,11 +1,14 @@
 'use client';
 
+import { PageHeader } from '@/components/ui';
+
 import type { AnalyticsPeriodKey } from '@/lib/shared';
 import Link from 'next/link';
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -16,7 +19,14 @@ import {
 
 import { useApPerformance } from '@/lib/api/analytics';
 
-import { ACCENT } from '../_lib';
+import {
+  CHART_CHROME,
+  CHART_SERIES,
+  CHART_STATUS,
+  CHART_TICK,
+  TOOLTIP_STYLE,
+  humanise,
+} from '../_lib';
 
 export default function ApPerformancePage(): React.JSX.Element {
   const period: AnalyticsPeriodKey = 'LAST_12M';
@@ -25,18 +35,14 @@ export default function ApPerformancePage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4">
-        <Link href="/analytics" className="text-muted text-[12px] hover:underline">
-          ← Analytics
-        </Link>
-        <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-          AP performance
-        </h1>
-        <p className="text-muted text-[13px]">
-          Cycle time, first-pass yield, exception rate, straight-through — from real
-          invoice data.
-        </p>
-      </div>
+      <PageHeader
+        title="AP performance"
+        breadcrumbs={[
+          { label: 'Analytics', href: '/analytics' },
+          { label: 'AP performance' },
+        ]}
+        description="Cycle time, first-pass yield, exception rate and straight-through processing, computed from posted invoices."
+      />
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="Avg cycle (days)" value={d ? String(d.avgCycleDays) : '—'} />
@@ -68,14 +74,23 @@ export default function ApPerformancePage(): React.JSX.Element {
         <Card title="Cycle time — with exception vs clean match">
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={d?.cycleTrend ?? []}>
-              <CartesianGrid stroke="#E8E8E1" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#65655E' }} />
-              <YAxis tick={{ fontSize: 11, fill: '#65655E' }} width={40} />
-              <Tooltip />
+              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
+              <XAxis dataKey="month" tick={CHART_TICK} />
+              <YAxis tick={CHART_TICK} width={40} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              {/* Two series, so a legend is mandatory — the lines are otherwise
+                  distinguished by colour alone. */}
+              <Legend
+                verticalAlign="top"
+                align="left"
+                height={24}
+                iconType="plainline"
+                wrapperStyle={{ fontSize: 11, color: CHART_CHROME.axis }}
+              />
               <Line
                 type="monotone"
                 dataKey="cleanMatch"
-                stroke={ACCENT}
+                stroke={CHART_SERIES[0]}
                 strokeWidth={2}
                 dot={false}
                 name="Clean match"
@@ -83,7 +98,7 @@ export default function ApPerformancePage(): React.JSX.Element {
               <Line
                 type="monotone"
                 dataKey="withException"
-                stroke="#DA1C46"
+                stroke={CHART_STATUS.serious}
                 strokeWidth={2}
                 dot={false}
                 name="With exception"
@@ -95,17 +110,22 @@ export default function ApPerformancePage(): React.JSX.Element {
         <Card title="Exception rate by type">
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={d?.exceptionBreakdown ?? []}>
-              <CartesianGrid stroke="#E8E8E1" vertical={false} />
+              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
               <XAxis
-                dataKey="exceptionType"
-                tick={{ fontSize: 10, fill: '#65655E' }}
-                angle={-20}
-                textAnchor="end"
-                height={60}
+                dataKey={(e: { exceptionType: string }) => humanise(e.exceptionType)}
+                tick={{ ...CHART_TICK, fontSize: 10 }}
+                interval={0}
+                height={44}
               />
-              <YAxis tick={{ fontSize: 11, fill: '#65655E' }} width={30} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#AF6005" radius={[4, 4, 0, 0]} name="Count" />
+              <YAxis tick={CHART_TICK} width={30} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <Bar
+                dataKey="count"
+                fill={CHART_SERIES[0]}
+                radius={[4, 4, 0, 0]}
+                name="Count"
+                maxBarSize={40}
+              />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -113,18 +133,18 @@ export default function ApPerformancePage(): React.JSX.Element {
         <Card title="First-pass yield trend">
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={d?.fpyTrend ?? []}>
-              <CartesianGrid stroke="#E8E8E1" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#65655E' }} />
+              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
+              <XAxis dataKey="month" tick={CHART_TICK} />
               <YAxis
-                tick={{ fontSize: 11, fill: '#65655E' }}
+                tick={CHART_TICK}
                 width={35}
                 domain={[0, 100]}
               />
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: number) => `${v}%`} contentStyle={TOOLTIP_STYLE} />
               <Line
                 type="monotone"
                 dataKey="pct"
-                stroke={ACCENT}
+                stroke={CHART_SERIES[0]}
                 strokeWidth={2}
                 dot={false}
                 name="FPY %"
@@ -136,18 +156,18 @@ export default function ApPerformancePage(): React.JSX.Element {
         <Card title="Straight-through processing trend">
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={d?.stpTrend ?? []}>
-              <CartesianGrid stroke="#E8E8E1" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#65655E' }} />
+              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
+              <XAxis dataKey="month" tick={CHART_TICK} />
               <YAxis
-                tick={{ fontSize: 11, fill: '#65655E' }}
+                tick={CHART_TICK}
                 width={35}
                 domain={[0, 100]}
               />
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: number) => `${v}%`} contentStyle={TOOLTIP_STYLE} />
               <Line
                 type="monotone"
                 dataKey="pct"
-                stroke="#0276B2"
+                stroke={CHART_SERIES[0]}
                 strokeWidth={2}
                 dot={false}
                 name="STP %"
