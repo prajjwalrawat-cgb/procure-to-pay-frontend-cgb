@@ -170,9 +170,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
           notificationCount={unread?.count ?? 0}
           right={
             <div className="flex items-center gap-2 pl-1">
-              <Avatar>
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
+              <AccountMenu initials={initials} user={user} onLogout={logout} />
               <Button
                 variant="onNavy"
                 size="sm"
@@ -199,6 +197,98 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
         onSelect={onCommandSelect}
       />
       <NotificationsTray />
+    </div>
+  );
+}
+
+/**
+ * The avatar, as a menu.
+ *
+ * The topbar's Logout button is `hidden sm:inline-flex`, so below 640px it does
+ * not render — and the avatar used to be decoration with no click handler. That
+ * left a phone-sized window with no way to sign out at all, which is also the
+ * first thing anyone taps when they want to switch user. The menu carries the
+ * signed-in identity too, because on a shared handset "who am I?" is the
+ * question that precedes "log me out".
+ */
+function AccountMenu({
+  initials,
+  user,
+  onLogout,
+}: {
+  initials: string;
+  user: SessionUser | null;
+  onLogout: () => Promise<void>;
+}): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+
+  // Escape and outside-click, so the menu behaves like a menu rather than a
+  // panel you have to tap the avatar again to dismiss.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    // pointerdown, not mousedown: it covers touch and pen directly rather than
+    // relying on a mobile browser synthesising a mouse event after the tap.
+    const onPointer = (e: PointerEvent): void => {
+      if (!(e.target as HTMLElement).closest('[data-account-menu]')) setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onPointer);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onPointer);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" data-account-menu>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Account"
+        className="flex items-center rounded-full focus-visible:ring-2 focus-visible:ring-white/60"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Avatar>
+          <AvatarFallback>{initials}</AvatarFallback>
+        </Avatar>
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          className="border-line absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border bg-white shadow-lg"
+        >
+          <div className="border-line border-b px-3 py-2">
+            <p className="text-ink truncate text-[13px] font-medium">{user?.name ?? 'Signed in'}</p>
+            {user?.email ? (
+              <p className="text-muted truncate text-[12px]">{user.email}</p>
+            ) : null}
+          </div>
+          <Link
+            href="/scan"
+            role="menuitem"
+            className="text-ink hover:bg-canvas block px-3 py-2 text-[13px]"
+            onClick={() => setOpen(false)}
+          >
+            Open scanner
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            className="text-danger hover:bg-canvas block w-full px-3 py-2 text-left text-[13px]"
+            onClick={() => {
+              setOpen(false);
+              void onLogout();
+            }}
+          >
+            Logout
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
