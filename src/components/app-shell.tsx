@@ -210,6 +210,9 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
  * first thing anyone taps when they want to switch user. The menu carries the
  * signed-in identity too, because on a shared handset "who am I?" is the
  * question that precedes "log me out".
+ *
+ * Identity and Logout only. Navigation belongs in the sidebar, and duplicating
+ * destinations here would mean two places to keep in step.
  */
 function AccountMenu({
   initials,
@@ -268,14 +271,6 @@ function AccountMenu({
               <p className="text-muted truncate text-[12px]">{user.email}</p>
             ) : null}
           </div>
-          <Link
-            href="/scan"
-            role="menuitem"
-            className="text-ink hover:bg-canvas block px-3 py-2 text-[13px]"
-            onClick={() => setOpen(false)}
-          >
-            Open scanner
-          </Link>
           <button
             type="button"
             role="menuitem"
