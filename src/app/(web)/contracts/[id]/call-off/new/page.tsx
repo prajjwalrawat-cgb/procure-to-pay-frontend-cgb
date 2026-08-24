@@ -1,5 +1,7 @@
 'use client';
 
+import { PageHeader } from '@/components/ui';
+
 import type { CallOffInput } from '@/lib/shared';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -55,7 +57,7 @@ export default function NewCallOffPage(): React.JSX.Element {
 
   if (!c)
     return (
-      <p className="text-muted mx-auto max-w-3xl py-10 text-center text-[13px]">
+      <p className="mx-auto max-w-3xl py-10 text-center text-[13px] text-muted">
         Loading…
       </p>
     );
@@ -64,22 +66,20 @@ export default function NewCallOffPage(): React.JSX.Element {
     <div className="mx-auto max-w-3xl">
       <Link
         href={`/contracts/${id}`}
-        className="text-muted hover:text-text mb-3 inline-flex items-center gap-1 text-[13px]"
+        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> {c.number}
       </Link>
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
-        New call-off
-      </h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Pricing is locked to the contract rate card — no override possible.
-      </p>
+      <PageHeader
+        title="New call-off"
+        description="Pricing is locked to the contract rate card — no override possible."
+      />
 
-      <div className="border-line bg-panel space-y-3 rounded-lg border p-5">
+      <div className="space-y-3 rounded-lg border border-line bg-panel p-5">
         <label className="block">
-          <span className="text-muted mb-1 block text-[12px]">Rate card row</span>
+          <span className="mb-1 block text-[12px] text-muted">Rate card row</span>
           <select
-            className="border-line w-full rounded-md border px-2.5 py-1.5 text-[13px]"
+            className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
             value={rateCardId}
             onChange={(e) => setRateCardId(e.target.value)}
           >
@@ -94,7 +94,7 @@ export default function NewCallOffPage(): React.JSX.Element {
         </label>
 
         {card && (
-          <p className="text-muted text-[12px]">
+          <p className="text-[12px] text-muted">
             Locked unit price:{' '}
             <span className="font-numeric text-ink">₹{card.unitRate}</span> per {card.uom}
           </p>
@@ -102,20 +102,20 @@ export default function NewCallOffPage(): React.JSX.Element {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="text-muted mb-1 block text-[12px]">
+            <span className="mb-1 block text-[12px] text-muted">
               Quantity ({card?.uom ?? 'unit'})
             </span>
             <input
-              className="border-line w-full rounded-md border px-2.5 py-1.5 text-[13px]"
+              className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
             />
           </label>
           <label className="block">
-            <span className="text-muted mb-1 block text-[12px]">Expected delivery</span>
+            <span className="mb-1 block text-[12px] text-muted">Expected delivery</span>
             <input
               type="date"
-              className="border-line w-full rounded-md border px-2.5 py-1.5 text-[13px]"
+              className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
               value={expected}
               onChange={(e) => setExpected(e.target.value)}
             />
@@ -123,22 +123,22 @@ export default function NewCallOffPage(): React.JSX.Element {
         </div>
 
         <label className="block">
-          <span className="text-muted mb-1 block text-[12px]">Delivery location</span>
+          <span className="mb-1 block text-[12px] text-muted">Delivery location</span>
           <input
-            className="border-line w-full rounded-md border px-2.5 py-1.5 text-[13px]"
+            className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
             value={line1}
             onChange={(e) => setLine1(e.target.value)}
           />
         </label>
 
         {lineValue > 0 && (
-          <div className="bg-canvas rounded-md p-3 text-[13px]">
+          <div className="rounded-md bg-canvas p-3 text-[13px]">
             <div className="flex justify-between">
               <span className="text-muted">Call-off value (incl. tax)</span>
               <span className="font-numeric text-ink">{inr(lineValue)}</span>
             </div>
             {projected != null && (
-              <p className="text-accent-2 mt-1 text-[12px]">
+              <p className="mt-1 text-[12px] text-accent-2">
                 This brings YTD to {Math.round(projected)}% of the annual commitment
                 {projected >= 90
                   ? ' — on track.'
@@ -154,7 +154,7 @@ export default function NewCallOffPage(): React.JSX.Element {
           type="button"
           onClick={submit}
           disabled={callOff.isPending}
-          className="bg-ink w-full rounded-md px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50"
+          className="w-full rounded-md bg-ink px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50"
         >
           Create call-off PO
         </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 
 import { useVendorGrns } from '@/vendor/lib/api/receipts';
 
@@ -9,14 +9,14 @@ export default function VendorReceiptsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-ink mb-1 text-[20px] font-semibold">Deliveries received</h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Goods receipts against your purchase orders
-      </p>
+      <PageHeader
+        title="Deliveries received"
+        description="Goods receipts against your purchase orders"
+      />
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase">
+          <thead className="bg-canvas text-left text-[11px] uppercase text-faint">
             <tr>
               <th className="px-3 py-2 font-medium">GRN</th>
               <th className="px-3 py-2 font-medium">PO</th>
@@ -28,33 +28,33 @@ export default function VendorReceiptsPage(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={5} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && (data?.items.length ?? 0) === 0 && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={5} className="px-3 py-8 text-center text-muted">
                   No deliveries recorded yet.
                 </td>
               </tr>
             )}
             {data?.items.map((g) => (
-              <tr key={g.id} className="border-line border-t">
-                <td className="font-numeric text-ink px-3 py-2 font-medium">
+              <tr key={g.id} className="border-t border-line">
+                <td className="font-numeric px-3 py-2 font-medium text-ink">
                   {g.number}
                 </td>
-                <td className="font-numeric text-text px-3 py-2 text-[12px]">
+                <td className="font-numeric px-3 py-2 text-[12px] text-text">
                   {g.poNumber}
                 </td>
-                <td className="font-numeric text-text px-3 py-2 text-[12px]">
+                <td className="font-numeric px-3 py-2 text-[12px] text-text">
                   {new Date(g.receivedAt).toLocaleDateString('en-IN')}
                 </td>
                 <td className="px-3 py-2">
                   <Pill variant="gray">{g.qcStatus}</Pill>
                 </td>
-                <td className="font-numeric text-text px-3 py-2 text-right">
+                <td className="font-numeric px-3 py-2 text-right text-text">
                   {g.acceptedPct.toFixed(0)}%
                 </td>
               </tr>

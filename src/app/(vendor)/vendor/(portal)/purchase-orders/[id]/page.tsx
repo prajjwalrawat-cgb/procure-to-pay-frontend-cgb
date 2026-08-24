@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  PageHeader,
   Pill,
 } from '@/components/ui';
 import { Money, type DeliveryAddress, type PaymentTerms } from '@/lib/shared';
@@ -112,12 +113,11 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       <BackLink />
 
       {/* Header */}
-      <div className="mb-5 mt-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-numeric text-[20px] font-semibold tracking-heading text-ink">
-              {po.number}
-            </h1>
+      <PageHeader
+        title={po.number}
+        numeric
+        meta={
+          <>
             <Pill variant={STATUS_VARIANT[po.status] ?? 'gray'} dot>
               {label(po.status)}
             </Pill>
@@ -126,52 +126,54 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
                 Acknowledged
               </Pill>
             )}
-          </div>
-          <p className="mt-1 text-[12px] text-muted">
+          </>
+        }
+        description={
+          <>
             Ordered {fmtDate(po.orderedDate)} · Expected{' '}
             {fmtDate(po.expectedDeliveryDate)}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {po.pdfAvailable && (
-            // A plain link cannot carry the in-memory access token, so the API
-            // would 401 — fetch it authenticated and open the blob instead.
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() =>
-                openAuthedAsset(`/vendor/purchase-orders/${po.id}/pdf`).catch((e) =>
-                  pushToast(
-                    e instanceof Error ? e.message : 'Could not open the PDF',
-                    'error',
-                  ),
-                )
-              }
-            >
-              <Download className="mr-1.5 h-3.5 w-3.5" /> Download PDF
+          </>
+        }
+        actions={
+          <>
+            {po.pdfAvailable && (
+              // A plain link cannot carry the in-memory access token, so the API
+              // would 401 — fetch it authenticated and open the blob instead.
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() =>
+                  openAuthedAsset(`/vendor/purchase-orders/${po.id}/pdf`).catch((e) =>
+                    pushToast(
+                      e instanceof Error ? e.message : 'Could not open the PDF',
+                      'error',
+                    ),
+                  )
+                }
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Download PDF
+              </Button>
+            )}
+            <Button variant="default" size="sm" onClick={() => setQueryOpen(true)}>
+              <MessageSquarePlus className="mr-1.5 h-3.5 w-3.5" /> Raise query
             </Button>
-          )}
-          <Button variant="default" size="sm" onClick={() => setQueryOpen(true)}>
-            <MessageSquarePlus className="mr-1.5 h-3.5 w-3.5" /> Raise query
-          </Button>
-          {po.acknowledgedAt ? (
-            <Button variant="ghost" size="sm" disabled>
-              Acknowledged
-            </Button>
-          ) : (
-            <Button
-              variant="accent"
-              size="sm"
-              onClick={onAcknowledge}
-              disabled={acknowledge.isPending}
-            >
-              {acknowledge.isPending ? 'Acknowledging…' : 'Acknowledge receipt'}
-            </Button>
-          )}
-        </div>
-      </div>
+            {po.acknowledgedAt ? (
+              <Button variant="ghost" size="sm" disabled>
+                Acknowledged
+              </Button>
+            ) : (
+              <Button
+                variant="accent"
+                size="sm"
+                onClick={onAcknowledge}
+                disabled={acknowledge.isPending}
+              >
+                {acknowledge.isPending ? 'Acknowledging…' : 'Acknowledge receipt'}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {po.acknowledgedAt && (
         <div className="mb-5 rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
@@ -263,7 +265,9 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
           should not have to open an attachment to find out what they are. */}
       {po.terms.length > 0 && (
         <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-          <h2 className="mb-3 text-[14px] font-semibold text-ink">Terms &amp; conditions</h2>
+          <h2 className="mb-3 text-[14px] font-semibold text-ink">
+            Terms &amp; conditions
+          </h2>
           <ol className="flex flex-col gap-2 text-[13px]">
             {po.terms.map((t, i) => (
               <li key={t.id}>

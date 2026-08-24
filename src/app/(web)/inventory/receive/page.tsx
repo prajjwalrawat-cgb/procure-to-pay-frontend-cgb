@@ -1,10 +1,14 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
-import { usePendingDispositions, useReceiveStock, useRecordQc } from '@/lib/api/inventory';
+import {
+  usePendingDispositions,
+  useReceiveStock,
+  useRecordQc,
+} from '@/lib/api/inventory';
 import {
   Field,
   FormResult,
@@ -70,25 +74,26 @@ export default function ReceivePage(): React.JSX.Element {
     }
   }
 
-  const ready = productId && locationId && Number(qty) > 0 && (nonPo ? nonPoReason : poId);
+  const ready =
+    productId && locationId && Number(qty) > 0 && (nonPo ? nonPoReason : poId);
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Goods receipt
-          </h1>
-          <p className="text-muted text-[13px]">Receive against a PO, then run QC</p>
-        </div>
-        <Link href="/inventory">
-          <Button variant="ghost" size="sm">
-            Stock overview
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Goods receipt"
+        description="Receive against a PO, then run QC"
+        actions={
+          <>
+            <Link href="/inventory">
+              <Button variant="ghost" size="sm">
+                Stock overview
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
-      <div className="border-line bg-panel mb-6 rounded-lg border p-4">
+      <div className="mb-6 rounded-lg border border-line bg-panel p-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <Field label="Product" required>
@@ -130,7 +135,7 @@ export default function ReceivePage(): React.JSX.Element {
           </Field>
 
           <div className="col-span-2">
-            <label className="text-muted flex items-center gap-2 text-[13px]">
+            <label className="flex items-center gap-2 text-[13px] text-muted">
               <input
                 type="checkbox"
                 checked={nonPo}
@@ -227,13 +232,13 @@ function QcQueue(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="text-faint mb-2 text-[11px] font-medium uppercase tracking-wide">
+      <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
         Awaiting QC ({rows.length})
       </h2>
       {error && <p className="mb-2 text-[12px] text-red-600">{error}</p>}
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2 font-medium">Received</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -245,29 +250,31 @@ function QcQueue(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={5} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-muted px-3 py-8 text-center">
+                <td colSpan={5} className="px-3 py-8 text-center text-muted">
                   Nothing awaiting inspection.
                 </td>
               </tr>
             )}
             {rows.map((r) => (
-              <tr key={r.id} className="border-line border-t">
-                <td className="font-numeric text-muted px-3 py-2 text-[12px]">
+              <tr key={r.id} className="border-t border-line">
+                <td className="font-numeric px-3 py-2 text-[12px] text-muted">
                   {new Date(r.txnDate).toLocaleDateString('en-IN')}
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-ink">{r.productName}</div>
-                  <div className="font-numeric text-faint text-[11px]">{r.productCode}</div>
+                  <div className="font-numeric text-[11px] text-faint">
+                    {r.productCode}
+                  </div>
                 </td>
-                <td className="text-text px-3 py-2 text-[12px]">{r.vendorName ?? '—'}</td>
-                <td className="font-numeric text-ink px-3 py-2 text-right">{r.qty}</td>
+                <td className="px-3 py-2 text-[12px] text-text">{r.vendorName ?? '—'}</td>
+                <td className="font-numeric px-3 py-2 text-right text-ink">{r.qty}</td>
                 <td className="px-3 py-2 text-right">
                   <button
                     type="button"
@@ -289,7 +296,11 @@ function QcQueue(): React.JSX.Element {
                     onClick={() => {
                       setError(null);
                       qc.mutate(
-                        { id: r.id, qcStatus: 'REJECTED', disposition: 'RETURN_TO_VENDOR' },
+                        {
+                          id: r.id,
+                          qcStatus: 'REJECTED',
+                          disposition: 'RETURN_TO_VENDOR',
+                        },
                         { onError: (e) => setError(e.message) },
                       );
                     }}
@@ -317,9 +328,9 @@ function QcQueue(): React.JSX.Element {
           </tbody>
         </table>
       </div>
-      <p className="text-faint mt-2 text-[11px]">
-        Rejected quantity never posts to sellable stock — it routes to a vendor return
-        or a write-off, both recorded as their own ledger entries.
+      <p className="mt-2 text-[11px] text-faint">
+        Rejected quantity never posts to sellable stock — it routes to a vendor return or
+        a write-off, both recorded as their own ledger entries.
       </p>
       <div className="mt-1">
         <Pill variant="gray">Ledger entries are never edited or deleted</Pill>

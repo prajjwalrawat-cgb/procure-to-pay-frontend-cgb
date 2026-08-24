@@ -1,6 +1,6 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import { PageHeader, Pill } from '@/components/ui';
 import { ScrollText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -15,10 +15,7 @@ export default function VendorContractsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="mb-1 text-[20px] font-semibold tracking-tight">Contracts</h1>
-      <p className="mb-4 text-[13px] text-neutral-500">
-        Your active agreements
-      </p>
+      <PageHeader title="Contracts" description="Your active agreements" />
 
       {isLoading ? (
         <p className="py-10 text-center text-[13px] text-neutral-500">Loading…</p>

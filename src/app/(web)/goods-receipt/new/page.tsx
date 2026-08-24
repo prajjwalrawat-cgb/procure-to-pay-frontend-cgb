@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import type { GrnCreateInput } from '@/lib/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
@@ -139,12 +139,10 @@ function NewReceiptForm(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="mb-1 text-[20px] font-semibold tracking-heading text-ink">
-        New goods receipt
-      </h1>
-      <p className="mb-4 text-[13px] text-muted">
-        Gate-to-post receipt{tenantSuffix(tenantName)}
-      </p>
+      <PageHeader
+        title="New goods receipt"
+        description={<>Gate-to-post receipt{tenantSuffix(tenantName)}</>}
+      />
 
       {/* Stepper */}
       <div className="mb-6 flex items-center gap-2">

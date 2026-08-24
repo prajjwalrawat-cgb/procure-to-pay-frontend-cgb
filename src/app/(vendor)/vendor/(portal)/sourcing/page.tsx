@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 
 import { useAcknowledge, useDecline, useInvitedRfqs } from '@/vendor/lib/sourcing';
@@ -10,17 +10,14 @@ export default function VendorSourcingPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-[1000px]">
-      <h1 className="tracking-heading text-ink mb-1 text-[20px] font-semibold">
-        RFQ invitations
-      </h1>
-      <p className="text-muted mb-4 text-[13px]">
-        Sealed bidding — your quote is private until the buyer&apos;s formal open
-        ceremony.
-      </p>
+      <PageHeader
+        title="RFQ invitations"
+        description="Sealed bidding — your quote is private until the buyer's formal open ceremony."
+      />
 
       {isLoading && <p className="text-muted">Loading…</p>}
       {data?.items.length === 0 && (
-        <p className="text-muted text-[13px]">No invitations yet.</p>
+        <p className="text-[13px] text-muted">No invitations yet.</p>
       )}
 
       <div className="space-y-3">
@@ -51,16 +48,16 @@ function InvitationCard({
   const decline = useDecline(rfq.id);
 
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
+    <div className="rounded-lg border border-line bg-panel p-4">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-accent font-mono text-[12px]">{rfq.number}</span>
+            <span className="font-mono text-[12px] text-accent">{rfq.number}</span>
             <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
             <Pill variant="info">{rfq.invitationStatus.toLowerCase()}</Pill>
           </div>
-          <h2 className="text-ink mt-1 text-[15px] font-semibold">{rfq.title}</h2>
-          <p className="text-muted text-[12px]">
+          <h2 className="mt-1 text-[15px] font-semibold text-ink">{rfq.title}</h2>
+          <p className="text-[12px] text-muted">
             {rfq.category} · deadline{' '}
             {rfq.bidDeadline
               ? new Date(rfq.bidDeadline).toLocaleDateString('en-IN')

@@ -1,5 +1,7 @@
 'use client';
 
+import { PageHeader } from '@/components/ui';
+
 import { PERMISSIONS, type Permission } from '@/lib/shared';
 import {
   Building2,
@@ -91,21 +93,20 @@ export default function SettingsPage(): React.JSX.Element {
   if (visible.length === 0) {
     return (
       <div className="mx-auto max-w-3xl">
-        <h1 className="text-[20px] font-semibold tracking-heading text-ink">Settings</h1>
-        <p className="mt-2 text-[13px] text-muted">
-          You do not have access to any settings. Ask an administrator if you need it.
-        </p>
+        <PageHeader
+          title="Settings"
+          description="You do not have access to any settings. Ask an administrator if you need it."
+        />
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-6xl pb-16">
-      <h1 className="text-[20px] font-semibold tracking-heading text-ink">Settings</h1>
-      <p className="mb-5 text-[13px] text-muted">
-        Manage organisation identity, GST registrations, branding, banking, vendor
-        categories and document fields.
-      </p>
+      <PageHeader
+        title="Settings"
+        description="Manage organisation identity, GST registrations, branding, banking, vendor categories and document fields."
+      />
 
       <div className="grid gap-6 border-t border-line pt-5 md:grid-cols-[220px_1fr]">
         <nav className="flex flex-col gap-4">

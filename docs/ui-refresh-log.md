@@ -394,12 +394,52 @@ Local `.env` also had `API_INTERNAL_URL` on port 3011 while the API listens on
 3001, so every server-side auth proxy call failed with ECONNREFUSED. Corrected
 to 3001 (gitignored, local only).
 
+### Phase 4 — the long tail
+
+Consistency work, not invention: `PageHeader` across every remaining shell page,
+so heading size, the display face, breadcrumbs and action placement stop
+drifting. **74 of 96 pages** now use it. The 22 that do not are standalone
+screens with no app shell — auth, the handheld scanner routes and the label
+print view — where a page header would be wrong.
+
+Done as three passes rather than one regex, because the headers were not
+uniform:
+
+1. **Simple shape** (h1 + muted paragraph, no actions) — 18 pages, scripted.
+2. **Flex-with-actions shape** — 16 pages, scripted with a balance-matching
+   `<div>` counter rather than a regex, since a nested div in the actions block
+   would otherwise swallow the closing tag.
+3. **Document-detail headers** (number as title, status pills as meta) — 7
+   pages by hand: contracts, invoices, RMA, the two vendor detail views, plus
+   team and the second header inside settings.
+
+Prettier was run on the changed files only, never repo-wide — the tree has a
+CRLF/LF mix and a bulk reformat would bury the real diff.
+
+**Two mistakes worth recording**, both mine, both caught by verification rather
+than review:
+
+- The first scripted pass left the description paragraph orphaned as
+  `/><p …>` glued to the closing tag on 14 pages. It typechecked and linted
+  clean; only reading the output caught it. Fixed with a second pass that folds
+  the paragraph into `description`.
+- A hand-edit on the vendor PO detail sliced one line short, keeping the
+  actions wrapper's `</div>` without its opening tag. Typecheck caught that one.
+
+**Consistency fix:** "New product" and "Add rule" were emerald while the other
+six page-level create actions were navy `primary`. Normalised. The two
+accent-variant buttons left alone are in-form submits — a different role.
+
+**Honesty sweep re-run across the newly converted pages:** no toast-only
+controls, no dead buttons, no unmarked provider verdicts. The only matches were
+existing code already routed through `VerificationResult`.
+
 ### Remaining
 
 | Phase | Scope | Status |
 |---|---|---|
 | 3 | Analytics, MSME §15 aging/compliance | **done** — 4 pages, validated chart palette |
-| 4 | Contracts, inventory (13 pages), items, settings, team, vendor portal (18 pages), audit | not started |
+| 4 | Contracts, inventory, items, settings, team, vendor portal, audit | **done** — 41 pages; 74/96 on `PageHeader` |
 
 Everything not yet converted still renders correctly — the token layer is
 global, so unconverted pages picked up the new palette automatically. What they

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -32,21 +32,21 @@ export default function ReturnsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">Returns</h1>
-          <p className="text-muted text-[13px]">
-            Customer returns &amp; restock decisions · vendor repair tracker
-          </p>
-        </div>
-        <Link href="/inventory">
-          <Button variant="ghost" size="sm">
-            Stock overview
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Returns"
+        description="Customer returns &amp; restock decisions · vendor repair tracker"
+        actions={
+          <>
+            <Link href="/inventory">
+              <Button variant="ghost" size="sm">
+                Stock overview
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
-      <div className="border-line mb-3 flex items-center gap-1 border-b">
+      <div className="mb-3 flex items-center gap-1 border-b border-line">
         {(
           [
             ['customer', 'Customer returns'],
@@ -61,7 +61,7 @@ export default function ReturnsPage(): React.JSX.Element {
               'border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
               (tab === k
                 ? 'border-accent text-ink'
-                : 'text-muted hover:text-ink border-transparent')
+                : 'border-transparent text-muted hover:text-ink')
             }
           >
             {label}
@@ -121,7 +121,7 @@ function CustomerReturnForm(): React.JSX.Element {
   const ready = productId && locationId && Number(qty) > 0;
 
   return (
-    <div className="border-line bg-panel mb-6 rounded-lg border p-4">
+    <div className="mb-6 rounded-lg border border-line bg-panel p-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Product" required>
@@ -195,13 +195,13 @@ function RestockQueue(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="text-faint mb-2 text-[11px] font-medium uppercase tracking-wide">
+      <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
         Awaiting restock decision ({rows.length})
       </h2>
       {error && <p className="mb-2 text-[12px] text-red-600">{error}</p>}
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2 font-medium">Returned</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -214,36 +214,36 @@ function RestockQueue(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="text-muted px-3 py-8 text-center">
+                <td colSpan={6} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-muted px-3 py-8 text-center">
+                <td colSpan={6} className="px-3 py-8 text-center text-muted">
                   No returns awaiting a decision.
                 </td>
               </tr>
             )}
             {rows.map((r) => (
-              <tr key={r.id} className="border-line border-t">
-                <td className="font-numeric text-muted px-3 py-2 text-[12px]">
+              <tr key={r.id} className="border-t border-line">
+                <td className="font-numeric px-3 py-2 text-[12px] text-muted">
                   {new Date(r.txnDate).toLocaleDateString('en-IN')}
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-ink">{r.productName}</div>
-                  <div className="font-numeric text-faint text-[11px]">
+                  <div className="font-numeric text-[11px] text-faint">
                     {r.productCode}
                   </div>
                 </td>
-                <td className="font-numeric text-text px-3 py-2 text-[12px]">
+                <td className="font-numeric px-3 py-2 text-[12px] text-text">
                   {r.orderId ?? '—'}
                 </td>
-                <td className="text-muted px-3 py-2 text-[12px]">
+                <td className="px-3 py-2 text-[12px] text-muted">
                   {r.productCondition ?? '—'}
                 </td>
-                <td className="font-numeric text-ink px-3 py-2 text-right">{r.qty}</td>
+                <td className="font-numeric px-3 py-2 text-right text-ink">{r.qty}</td>
                 <td className="px-3 py-2 text-right">
                   <button
                     type="button"
@@ -279,7 +279,7 @@ function RestockQueue(): React.JSX.Element {
           </tbody>
         </table>
       </div>
-      <p className="text-faint mt-2 text-[11px]">
+      <p className="mt-2 text-[11px] text-faint">
         Writing off posts a DAMAGE_WRITE_OFF entry linked to the return — the return
         itself is never edited.
       </p>
@@ -329,7 +329,7 @@ function VendorReturnForm(): React.JSX.Element {
   const ready = productId && locationId && Number(qty) > 0;
 
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
+    <div className="rounded-lg border border-line bg-panel p-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Product" required>

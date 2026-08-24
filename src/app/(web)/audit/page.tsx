@@ -1,7 +1,7 @@
 'use client';
 
 import type { AuditRecordView, AuditVerifyResult } from '@/lib/shared';
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import { useMemo, useState } from 'react';
 
 import { exportUrl, useAuditLog, verifyChain, type AuditFilters } from '@/lib/api/audit';
@@ -68,34 +68,32 @@ export default function AuditPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Audit log
-          </h1>
-          <p className="text-muted text-[13px]">
-            Tamper-evident, hash-chained. Last 30 days.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => void download('csv')}>
-            Export CSV
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => void download('pdf')}>
-            Export PDF
-          </Button>
-          <Button variant="accent" size="sm" onClick={() => void runVerify()}>
-            Verify chain
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Audit log"
+        description="Tamper-evident, hash-chained. Last 30 days."
+        actions={
+          <>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => void download('csv')}>
+                Export CSV
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => void download('pdf')}>
+                Export PDF
+              </Button>
+              <Button variant="accent" size="sm" onClick={() => void runVerify()}>
+                Verify chain
+              </Button>
+            </div>
+          </>
+        }
+      />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search actor or entity id…"
-          className="border-line w-64 rounded-sm border px-2.5 py-1.5 text-[13px] outline-none"
+          className="w-64 rounded-sm border border-line px-2.5 py-1.5 text-[13px] outline-none"
         />
         {ACTIONS.map((a) => (
           <Chip
@@ -115,11 +113,11 @@ export default function AuditPage(): React.JSX.Element {
         ))}
       </div>
 
-      {isLoading && <div className="text-muted text-[13px]">Loading…</div>}
+      {isLoading && <div className="text-[13px] text-muted">Loading…</div>}
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="border-line text-faint border-b text-[11px] uppercase tracking-wide">
+          <thead className="border-b border-line text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="p-2 text-left">Timestamp</th>
               <th className="p-2 text-left">Actor</th>
@@ -134,10 +132,10 @@ export default function AuditPage(): React.JSX.Element {
               <tr
                 key={r.id}
                 onClick={() => setOpenRow(r)}
-                className="border-line hover:bg-canvas cursor-pointer border-b last:border-0"
+                className="cursor-pointer border-b border-line last:border-0 hover:bg-canvas"
                 data-testid="audit-row"
               >
-                <td className="font-numeric text-muted p-2">
+                <td className="font-numeric p-2 text-muted">
                   {new Date(r.timestamp).toLocaleString('en-IN')}
                 </td>
                 <td className="p-2">{r.actorName ?? r.actorType}</td>
@@ -147,15 +145,15 @@ export default function AuditPage(): React.JSX.Element {
                 <td className="font-numeric p-2">
                   {r.entityType} <span className="text-faint">{r.entityId}</span>
                 </td>
-                <td className="font-numeric text-faint p-2">
+                <td className="font-numeric p-2 text-faint">
                   {r.hashCurrent.slice(0, 10)}…
                 </td>
-                <td className="text-muted p-2">{r.ipAddress ?? '—'}</td>
+                <td className="p-2 text-muted">{r.ipAddress ?? '—'}</td>
               </tr>
             ))}
             {data && data.items.length === 0 && !isLoading && (
               <tr>
-                <td colSpan={6} className="text-muted p-6 text-center">
+                <td colSpan={6} className="p-6 text-center text-muted">
                   No events for these filters.
                 </td>
               </tr>
@@ -208,12 +206,12 @@ function AuditDrawer({
       onClick={onClose}
     >
       <div
-        className="bg-panel border-line h-full w-full max-w-lg overflow-y-auto border-l p-5"
+        className="h-full w-full max-w-lg overflow-y-auto border-l border-line bg-panel p-5"
         role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-ink text-[15px] font-semibold">{row.action}</h3>
+          <h3 className="text-[15px] font-semibold text-ink">{row.action}</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
           </Button>
@@ -243,8 +241,8 @@ function JsonBlock({
 }): React.JSX.Element {
   return (
     <div>
-      <div className="text-faint mb-1 text-[10px] font-semibold uppercase">{title}</div>
-      <pre className="border-line bg-canvas font-numeric overflow-x-auto rounded-sm border p-2 text-[11px]">
+      <div className="mb-1 text-[10px] font-semibold uppercase text-faint">{title}</div>
+      <pre className="font-numeric overflow-x-auto rounded-sm border border-line bg-canvas p-2 text-[11px]">
         {value ? JSON.stringify(value, null, 2) : '—'}
       </pre>
     </div>
@@ -263,7 +261,7 @@ function Row({
   return (
     <div className="flex justify-between gap-3">
       <dt className="text-muted">{k}</dt>
-      <dd className={'text-text text-right ' + (mono ? 'font-numeric break-all' : '')}>
+      <dd className={'text-right text-text ' + (mono ? 'font-numeric break-all' : '')}>
         {v}
       </dd>
     </div>
@@ -284,16 +282,16 @@ function VerifyModal({
       onClick={onClose}
     >
       <div
-        className="bg-panel border-line w-full max-w-md rounded-xl border p-5 shadow-lg"
+        className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg"
         role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
         {result.verified ? (
-          <div className="bg-accent-wash text-accent-2 rounded-lg p-4 text-[13px] font-medium">
+          <div className="rounded-lg bg-accent-wash p-4 text-[13px] font-medium text-accent-2">
             Chain verified · {result.eventsChecked} events · no tampering detected
           </div>
         ) : (
-          <div className="bg-danger-wash text-danger rounded-lg p-4 text-[13px] font-medium">
+          <div className="rounded-lg bg-danger-wash p-4 text-[13px] font-medium text-danger">
             Chain BROKEN · first break at{' '}
             <span className="font-numeric">{result.firstBreakAt}</span>. See the incident
             runbook (docs/adr/006-audit-hash-chain.md).

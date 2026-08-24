@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import { ISSUE_DEPT } from '@/lib/shared';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -26,21 +26,19 @@ import {
 export default function IssuesPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Internal issues
-          </h1>
-          <p className="text-muted text-[13px]">
-            Photoshoot · Sales · Other — issue, track balance, receive returns
-          </p>
-        </div>
-        <Link href="/inventory">
-          <Button variant="ghost" size="sm">
-            Stock overview
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Internal issues"
+        description="Photoshoot · Sales · Other — issue, track balance, receive returns"
+        actions={
+          <>
+            <Link href="/inventory">
+              <Button variant="ghost" size="sm">
+                Stock overview
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <IssueForm />
       <OpenIssuesBoard />
@@ -92,7 +90,7 @@ function IssueForm(): React.JSX.Element {
   const ready = productId && locationId && Number(qty) > 0 && issuedToName;
 
   return (
-    <div className="border-line bg-panel mb-6 rounded-lg border p-4">
+    <div className="mb-6 rounded-lg border border-line bg-panel p-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Field label="Product" required>
@@ -190,13 +188,13 @@ function OpenIssuesBoard(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="text-faint mb-2 text-[11px] font-medium uppercase tracking-wide">
+      <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
         Open issues ({rows.length})
       </h2>
       {error && <p className="mb-2 text-[12px] text-red-600">{error}</p>}
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="px-3 py-2 font-medium">Issued</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -210,14 +208,14 @@ function OpenIssuesBoard(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
+                <td colSpan={7} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-muted px-3 py-8 text-center">
+                <td colSpan={7} className="px-3 py-8 text-center text-muted">
                   No open issues — everything has come back.
                 </td>
               </tr>
@@ -256,8 +254,8 @@ function OpenIssueRow({
     row.tentativeReturnDate !== null && new Date(row.tentativeReturnDate) < new Date();
 
   return (
-    <tr className="border-line border-t">
-      <td className="font-numeric text-muted px-3 py-2 text-[12px]">
+    <tr className="border-t border-line">
+      <td className="font-numeric px-3 py-2 text-[12px] text-muted">
         {new Date(row.txnDate).toLocaleDateString('en-IN')}
         {overdue && (
           <Pill variant="danger" className="ml-1.5">
@@ -267,13 +265,13 @@ function OpenIssueRow({
       </td>
       <td className="px-3 py-2">
         <div className="text-ink">{row.productName}</div>
-        <div className="font-numeric text-faint text-[11px]">{row.productCode}</div>
+        <div className="font-numeric text-[11px] text-faint">{row.productCode}</div>
       </td>
       <td className="px-3 py-2">
         <Pill variant="info">{row.issueDept ?? '—'}</Pill>
       </td>
-      <td className="text-text px-3 py-2 text-[12px]">{row.issuedToName ?? '—'}</td>
-      <td className="font-numeric text-muted px-3 py-2 text-right">{row.qty}</td>
+      <td className="px-3 py-2 text-[12px] text-text">{row.issuedToName ?? '—'}</td>
+      <td className="font-numeric px-3 py-2 text-right text-muted">{row.qty}</td>
       <td className="font-numeric px-3 py-2 text-right font-medium text-amber-700">
         {balance}
       </td>
@@ -286,7 +284,7 @@ function OpenIssueRow({
             value={qty}
             onChange={(e) => setQty(e.target.value)}
             placeholder={String(balance)}
-            className="border-line bg-panel text-text w-20 rounded-md border px-2 py-1 text-[12px] outline-none"
+            className="w-20 rounded-md border border-line bg-panel px-2 py-1 text-[12px] text-text outline-none"
           />
           <button
             type="button"
@@ -298,7 +296,7 @@ function OpenIssueRow({
                 { onError: (e) => onError(e.message), onSuccess: () => setQty('') },
               );
             }}
-            className="text-accent-2 text-[12px] font-medium hover:underline"
+            className="text-[12px] font-medium text-accent-2 hover:underline"
           >
             Return
           </button>

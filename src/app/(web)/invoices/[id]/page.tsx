@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill, VerificationResult } from '@/components/ui';
+import { Button, PageHeader, Pill, VerificationResult } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -34,7 +34,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const { isSimulated } = useProviderLiveness();
 
   if (isLoading || !data) {
-    return <div className="text-muted p-6 text-[13px]">Loading invoice…</div>;
+    return <div className="p-6 text-[13px] text-muted">Loading invoice…</div>;
   }
 
   const openExceptions = data.exceptions.filter((e) => !e.resolved);
@@ -82,33 +82,36 @@ export default function InvoiceDetailPage(): React.JSX.Element {
     <div className="mx-auto max-w-6xl pb-20">
       <Link
         href="/invoices"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to invoices
       </Link>
 
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          {data.status === 'MATCH_EXCEPTION' && (
-            <span className="text-danger text-[11px] font-semibold uppercase tracking-wide">
-              Match exception
-            </span>
-          )}
-          <h1 className="tracking-heading text-ink flex items-center gap-2 text-[20px] font-semibold">
-            <span className="font-numeric">{data.number}</span>
+      <PageHeader
+        title={data.number}
+        numeric
+        meta={
+          <>
             <Pill variant={statusVariant(data.status)} dot>
               {statusLabel(data.status)}
             </Pill>
-          </h1>
-          <p className="text-muted text-[13px]">
+            {data.status === 'MATCH_EXCEPTION' && (
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-danger">
+                Match exception
+              </span>
+            )}
+          </>
+        }
+        description={
+          <>
             <EntityRef kind="vendor" id={data.vendor.id}>
               {data.vendor.name}
             </EntityRef>{' '}
             · Ref <span className="font-numeric">{data.vendorInvoiceRef}</span> · Source{' '}
             {data.source}
-          </p>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Stage strip */}
       <div className="mb-5 flex items-center gap-1 overflow-x-auto">
@@ -116,7 +119,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           <span
             key={s.key}
             className={
-              'rounded-xs whitespace-nowrap px-2.5 py-1 text-[12px] font-medium ' +
+              'whitespace-nowrap rounded-xs px-2.5 py-1 text-[12px] font-medium ' +
               (s.state === 'done'
                 ? 'bg-accent-wash text-accent-2'
                 : s.state === 'active'
@@ -133,7 +136,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         <div className="flex flex-col gap-5">
           {/* 3-way match */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">3-way match</h2>
+            <h2 className="mb-2 text-[14px] font-semibold text-ink">3-way match</h2>
             <div className="grid gap-3 md:grid-cols-3">
               <MatchCard title="Purchase order" subtitle={data.po?.number ?? '—'}>
                 {data.poLines.map((l) => (
@@ -146,10 +149,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 ))}
               </MatchCard>
               <MatchCard title="Goods receipt" subtitle={data.grn?.number ?? '—'}>
-                <div className="text-muted text-[12px]">
+                <div className="text-[12px] text-muted">
                   QC: <span className="text-text">{data.grn?.qcStatus ?? '—'}</span>
                 </div>
-                <div className="text-muted mt-1 text-[12px]">
+                <div className="mt-1 text-[12px] text-muted">
                   {data.grn
                     ? 'All ordered lines received.'
                     : 'No goods receipt yet — quantities cannot be verified.'}
@@ -172,24 +175,24 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           {/* Exceptions */}
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-ink text-[14px] font-semibold">
+              <h2 className="text-[14px] font-semibold text-ink">
                 Exceptions ({openExceptions.length} open)
               </h2>
             </div>
             {data.suggestedResolution && (
-              <div className="bg-info-wash text-info mb-3 rounded-sm px-3 py-2 text-[12px]">
+              <div className="mb-3 rounded-sm bg-info-wash px-3 py-2 text-[12px] text-info">
                 Suggested: {data.suggestedResolution}
               </div>
             )}
             {openExceptions.length === 0 &&
               (matched ? (
-                <div className="bg-accent-wash text-accent-2 rounded-sm px-3 py-2 text-[12px]">
+                <div className="rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
                   All exceptions resolved. Ready to route for approval.
                 </div>
               ) : (
-                <div className="bg-info-wash text-info rounded-sm px-3 py-2 text-[12px]">
-                  The 3-way match has not run yet ({statusLabel(data.status)}), so
-                  nothing has been checked against the PO or the goods receipt.
+                <div className="rounded-sm bg-info-wash px-3 py-2 text-[12px] text-info">
+                  The 3-way match has not run yet ({statusLabel(data.status)}), so nothing
+                  has been checked against the PO or the goods receipt.
                 </div>
               ))}
             <div className="flex flex-col gap-2">
@@ -197,7 +200,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 <div
                   key={e.id}
                   data-testid={`exc-${e.type}`}
-                  className="border-line bg-panel flex items-center justify-between rounded-lg border p-3"
+                  className="flex items-center justify-between rounded-lg border border-line bg-panel p-3"
                 >
                   <div>
                     <div className="flex items-center gap-2">
@@ -205,14 +208,14 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         {e.type.replace(/_/g, ' ')}
                       </Pill>
                       {e.impactWithTax && (
-                        <span className="font-numeric text-danger text-[12px]">
+                        <span className="font-numeric text-[12px] text-danger">
                           +{inr(e.impactWithTax)}
                         </span>
                       )}
                     </div>
-                    <p className="text-muted mt-1 text-[12px]">{e.message}</p>
+                    <p className="mt-1 text-[12px] text-muted">{e.message}</p>
                     {e.resolved && (
-                      <p className="text-accent-2 mt-0.5 text-[11px]">
+                      <p className="mt-0.5 text-[11px] text-accent-2">
                         Resolved · {e.resolutionAction?.replace(/_/g, ' ')}
                       </p>
                     )}
@@ -229,7 +232,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
 
           {/* Approval routing — live (Slice 2) */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval routing</h2>
+            <h2 className="mb-2 text-[14px] font-semibold text-ink">Approval routing</h2>
             <div className="flex flex-wrap items-center gap-2">
               {data.liveApprovalChain.map((s) => (
                 <span
@@ -245,10 +248,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                           : 'border-line bg-panel')
                   }
                 >
-                  <span className="bg-canvas font-numeric flex h-5 w-5 items-center justify-center rounded-full text-[10px]">
+                  <span className="font-numeric flex h-5 w-5 items-center justify-center rounded-full bg-canvas text-[10px]">
                     {s.stepNo}
                   </span>
-                  <span className="text-text font-medium">
+                  <span className="font-medium text-text">
                     {s.approverName ?? s.role.replace(/_/g, ' ')}
                   </span>
                   <Pill
@@ -272,17 +275,17 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                       : s.decision.replace(/_/g, ' ')}
                   </Pill>
                   {s.isEscalation && (
-                    <span className="text-warn text-[10px] font-semibold">ESC</span>
+                    <span className="text-[10px] font-semibold text-warn">ESC</span>
                   )}
                   {s.delegatedFromName && (
-                    <span className="text-violet text-[10px]">
+                    <span className="text-[10px] text-violet">
                       via {s.delegatedFromName}
                     </span>
                   )}
                 </span>
               ))}
               {data.liveApprovalChain.length === 0 && (
-                <span className="text-muted text-[12px]">
+                <span className="text-[12px] text-muted">
                   No approval steps for this amount.
                 </span>
               )}
@@ -291,7 +294,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
 
           {/* Activity + payments + comments */}
           <section>
-            <div className="border-line mb-2 flex items-center gap-1 border-b">
+            <div className="mb-2 flex items-center gap-1 border-b border-line">
               {(['activity', 'payments'] as const).map((t) => (
                 <button
                   key={t}
@@ -301,7 +304,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     'border-b-2 px-3 py-1.5 text-[13px] font-medium capitalize ' +
                     (activityTab === t
                       ? 'border-accent text-ink'
-                      : 'text-muted hover:text-text border-transparent')
+                      : 'border-transparent text-muted hover:text-text')
                   }
                 >
                   {t}
@@ -309,10 +312,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               ))}
             </div>
             {activityTab === 'activity' ? (
-              <ul className="border-line mb-3 flex flex-col gap-1.5 border-l pl-4">
+              <ul className="mb-3 flex flex-col gap-1.5 border-l border-line pl-4">
                 {data.activity.map((a) => (
-                  <li key={a.id} className="text-muted text-[12px]">
-                    <span className="text-text font-medium">
+                  <li key={a.id} className="text-[12px] text-muted">
+                    <span className="font-medium text-text">
                       {a.action.replace(/_/g, ' ')}
                     </span>{' '}
                     ·{' '}
@@ -325,11 +328,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             ) : (
               <div className="mb-3">
                 {data.payment ? (
-                  <div className="border-line bg-panel rounded-lg border p-3 text-[12px]">
+                  <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
                     <div className="flex items-center justify-between">
                       <Link
                         href={`/payment-runs/${data.payment.paymentRunId}`}
-                        className="font-numeric text-accent-2 font-medium"
+                        className="font-numeric font-medium text-accent-2"
                       >
                         {data.payment.paymentRunNumber}
                       </Link>
@@ -345,7 +348,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     </dl>
                   </div>
                 ) : (
-                  <div className="text-muted text-[12px]">
+                  <div className="text-[12px] text-muted">
                     Not yet paid. Payments appear here once a run is submitted.
                   </div>
                 )}
@@ -356,7 +359,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Add an internal comment…"
-                className="border-line bg-panel focus-visible:ring-accent flex-1 rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2"
+                className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
               <Button
                 size="sm"
@@ -379,11 +382,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
 
         {/* Right panel */}
         <aside className="flex flex-col gap-4">
-          <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint text-[11px] uppercase tracking-wide">
+          <div className="rounded-lg border border-line bg-panel p-4">
+            <div className="text-[11px] uppercase tracking-wide text-faint">
               Amount payable
             </div>
-            <div className="font-numeric tracking-display text-ink mt-1 text-[22px] font-semibold">
+            <div className="font-numeric mt-1 text-[22px] font-semibold tracking-display text-ink">
               {inr(data.amounts.grossAmount)}
             </div>
             <dl className="mt-3 flex flex-col gap-1 text-[12px]">
@@ -393,23 +396,23 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               />
               <Row label="Tax" value={inr(data.amounts.taxAmount)} />
               <Row label="TDS 194Q" value={`- ${inr(data.amounts.tdsAmount)}`} />
-              <div className="border-line my-1 border-t" />
+              <div className="my-1 border-t border-line" />
               <Row label="Net payable" value={inr(data.amounts.netPayable)} strong />
             </dl>
           </div>
 
           {data.payment && (
-            <div className="border-accent/30 bg-accent-wash rounded-lg border p-4">
+            <div className="rounded-lg border border-accent/30 bg-accent-wash p-4">
               <div className="flex items-center justify-between">
-                <span className="text-accent-2 text-[12px] font-semibold">Payment</span>
+                <span className="text-[12px] font-semibold text-accent-2">Payment</span>
                 {data.payment.isStub && <Pill variant="warn">Stub UTR</Pill>}
               </div>
-              <div className="font-numeric text-ink mt-1 text-[13px]">
+              <div className="font-numeric mt-1 text-[13px] text-ink">
                 {data.payment.utr}
               </div>
               <Link
                 href={`/payment-runs/${data.payment.paymentRunId}`}
-                className="text-accent-2 mt-1 inline-block text-[11px]"
+                className="mt-1 inline-block text-[11px] text-accent-2"
               >
                 {data.payment.paymentRunNumber} →
               </Link>
@@ -417,24 +420,24 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           )}
 
           {data.msme && data.msme.bucket !== 'SAFE' && (
-            <div className="border-danger/30 bg-danger-wash rounded-lg border p-4">
+            <div className="rounded-lg border border-danger/30 bg-danger-wash p-4">
               <div className="flex items-center justify-between">
-                <span className="text-danger text-[12px] font-semibold">
+                <span className="text-[12px] font-semibold text-danger">
                   MSME §15 clock
                 </span>
                 <Pill variant={msmeVariant(data.msme.bucket)} dot>
                   {data.msme.daysRemaining} days left
                 </Pill>
               </div>
-              <p className="text-danger/80 mt-1 text-[11px]">
+              <p className="mt-1 text-[11px] text-danger/80">
                 Due {new Date(data.msme.dueDate).toLocaleDateString('en-IN')}. Pay within
                 the 45-day cap to avoid interest.
               </p>
             </div>
           )}
 
-          <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+          <div className="rounded-lg border border-line bg-panel p-4">
+            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
               Compliance
             </div>
             <dl className="flex flex-col gap-1.5 text-[12px]">
@@ -479,8 +482,8 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             </dl>
           </div>
 
-          <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+          <div className="rounded-lg border border-line bg-panel p-4">
+            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
               Linked documents
             </div>
             <div className="flex flex-col gap-1.5 text-[12px]">
@@ -508,11 +511,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             </div>
           </div>
 
-          <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+          <div className="rounded-lg border border-line bg-panel p-4">
+            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
               Vendor snapshot
             </div>
-            <div className="text-ink text-[13px] font-medium">{data.vendor.name}</div>
+            <div className="text-[13px] font-medium text-ink">{data.vendor.name}</div>
             <dl className="mt-1 flex flex-col gap-1 text-[12px]">
               <Row label="Risk score" value={`A · ${data.vendor.riskScore ?? '—'}`} />
               <Row label="FYTD spend" value={inrCompact(data.vendor.fytdSpend)} />
@@ -526,7 +529,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
       </div>
 
       {/* Sticky action bar */}
-      <div className="border-line bg-panel/95 fixed bottom-0 left-0 right-0 z-40 border-t backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
           {data.status === 'AWAITING_APPROVAL' ? (
             data.canDecide ? (
@@ -535,7 +538,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                   value={decisionComment}
                   onChange={(e) => setDecisionComment(e.target.value)}
                   placeholder="Add a decision comment…"
-                  className="border-line bg-panel flex-1 rounded-sm border px-3 py-2 text-[13px] outline-none"
+                  className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-[13px] outline-none"
                 />
                 <div className="flex items-center gap-2">
                   <Button
@@ -565,7 +568,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               </>
             ) : (
               <div
-                className="text-muted ml-auto text-[13px]"
+                className="ml-auto text-[13px] text-muted"
                 title="Waiting for the current approver"
               >
                 Waiting for{' '}
@@ -580,9 +583,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               onClick={onRoute}
               disabled={route.isPending || openExceptions.length > 0 || !matched}
               title={
-                matched
-                  ? undefined
-                  : 'The 3-way match has not run on this invoice yet'
+                matched ? undefined : 'The 3-way match has not run on this invoice yet'
               }
             >
               Resolve &amp; route for approval
@@ -614,12 +615,12 @@ function MatchCard({
   return (
     <div
       className={
-        'bg-panel rounded-lg border p-3 ' +
+        'rounded-lg border bg-panel p-3 ' +
         (accent === 'danger' ? 'border-danger/40' : 'border-line')
       }
     >
-      <div className="text-ink text-[12px] font-semibold">{title}</div>
-      <div className="font-numeric text-faint mb-2 text-[11px]">{subtitle}</div>
+      <div className="text-[12px] font-semibold text-ink">{title}</div>
+      <div className="font-numeric mb-2 text-[11px] text-faint">{subtitle}</div>
       <div className="flex flex-col gap-1">{children}</div>
     </div>
   );
@@ -666,11 +667,11 @@ function Row({
   const isText = typeof value === 'string' || typeof value === 'number';
   return (
     <div className="flex items-center justify-between gap-2">
-      <dt className="text-muted shrink-0">{label}</dt>
+      <dt className="shrink-0 text-muted">{label}</dt>
       <dd
         className={
           (isText ? 'font-numeric text-right ' : '') +
-          (strong ? 'text-ink font-semibold' : 'text-text')
+          (strong ? 'font-semibold text-ink' : 'text-text')
         }
       >
         {value}

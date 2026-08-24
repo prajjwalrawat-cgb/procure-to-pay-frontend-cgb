@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -202,19 +202,21 @@ export default function CreatePoPage(): React.JSX.Element {
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisition
       </Link>
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-heading text-ink">
-            Create purchase orders
-          </h1>
-          <p className="text-[13px] text-muted">
+      <PageHeader
+        title="Create purchase orders"
+        description={
+          <>
             Split-award <span className="font-numeric">{data.number}</span> · {data.title}
-          </p>
-        </div>
-        <Button variant="accent" size="sm" disabled={saving} onClick={onSaveAll}>
-          Save all as drafts
-        </Button>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Button variant="accent" size="sm" disabled={saving} onClick={onSaveAll}>
+              Save all as drafts
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
         {/* Left — PR lines with balance */}

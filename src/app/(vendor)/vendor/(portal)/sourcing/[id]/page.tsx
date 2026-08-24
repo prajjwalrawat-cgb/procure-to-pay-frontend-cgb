@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import { Button, Input, PageHeader, Pill } from '@/components/ui';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { QuoteLineInput, SpecCompliance } from '@/lib/shared';
@@ -60,7 +60,10 @@ function daysLeft(deadline: string | null): { text: string; urgent: boolean } | 
   const ms = new Date(deadline).getTime() - Date.now();
   if (ms <= 0) return { text: 'Bidding has closed', urgent: true };
   const days = Math.ceil(ms / 86_400_000);
-  return { text: days === 1 ? 'Closes tomorrow' : `Closes in ${days} days`, urgent: days <= 2 };
+  return {
+    text: days === 1 ? 'Closes tomorrow' : `Closes in ${days} days`,
+    urgent: days <= 2,
+  };
 }
 
 export default function VendorRfqDetailPage(): React.JSX.Element {
@@ -99,7 +102,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
   }, [rfq, lines.length]);
 
   if (isLoading || !rfq)
-    return <div className="text-muted p-8 text-center">Loading…</div>;
+    return <div className="p-8 text-center text-muted">Loading…</div>;
 
   const lineTotal = (l: LineDraft): number => {
     const qty = Number(l.qtyQuoted) || 0;
@@ -141,7 +144,11 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
       deviationNotes: l.deviationNotes || null,
     }));
     updateQuote.mutate(
-      { validityDays: Number(validityDays) || 30, paymentTermsOffered: 'NET_45', lines: payload },
+      {
+        validityDays: Number(validityDays) || 30,
+        paymentTermsOffered: 'NET_45',
+        lines: payload,
+      },
       {
         onSuccess: () => toast('Draft saved', 'success'),
         onError: (e) => toast(e.message, 'error'),
@@ -180,7 +187,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
     <div className="mx-auto max-w-[980px] pb-24">
       <div className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-accent font-mono text-[12px]">{rfq.number}</span>
+          <span className="font-mono text-[12px] text-accent">{rfq.number}</span>
           <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
           {closing && (
             <Pill variant={closing.urgent ? 'danger' : 'success'} dot>
@@ -188,17 +195,19 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
             </Pill>
           )}
         </div>
-        <h1 className="tracking-heading text-ink mt-1 text-[20px] font-semibold">
-          {rfq.title}
-        </h1>
-        <p className="text-muted text-[13px]">
-          {rfq.category} · INCOTERM {rfq.incotermDefault} · {rfq.paymentTermsDefault} ·
-          quote in {rfq.currency ?? 'INR'}
-        </p>
+        <PageHeader
+          title={<>{rfq.title}</>}
+          description={
+            <>
+              {rfq.category} · INCOTERM {rfq.incotermDefault} · {rfq.paymentTermsDefault}{' '}
+              · quote in {rfq.currency ?? 'INR'}
+            </>
+          }
+        />
       </div>
 
       {proof && (
-        <div className="border-accent bg-accent-wash mb-4 rounded-lg border p-4 text-[13px]">
+        <div className="mb-4 rounded-lg border border-accent bg-accent-wash p-4 text-[13px]">
           <strong>Quote submitted.</strong> Proof-of-submission hash:{' '}
           <span className="font-mono">{proof}</span>. Keep it — it proves what you sent
           and when, before any envelope was opened.
@@ -207,7 +216,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
 
       {!quoteId ? (
         <Section title="Your quote">
-          <p className="text-muted mb-3 text-[13px]">
+          <p className="mb-3 text-[13px] text-muted">
             Start a draft to price each line. Nothing reaches the buyer until you submit,
             and even then it stays sealed until the open ceremony.
           </p>
@@ -219,10 +228,10 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
         <>
           <Section title="Your quote">
             {lines.map((l, i) => (
-              <div key={l.rfqLineId} className="border-line mb-3 rounded-md border p-3">
+              <div key={l.rfqLineId} className="mb-3 rounded-md border border-line p-3">
                 <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-ink text-[13px] font-medium">{l.itemDesc}</span>
-                  <span className="text-muted text-[12px]">
+                  <span className="text-[13px] font-medium text-ink">{l.itemDesc}</span>
+                  <span className="text-[12px] text-muted">
                     asked: {l.qtyRequired} {l.uom}
                     {l.hsnCode ? ` · HSN ${l.hsnCode}` : ''} · tax{' '}
                     {(Number(l.taxRate) * 100).toFixed(0)}%
@@ -248,13 +257,18 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                     disabled={submitted}
                   />
                   <label className="block">
-                    <span className="text-muted mb-1 block text-[12px]">Compliance</span>
+                    <span className="mb-1 block text-[12px] text-muted">Compliance</span>
                     <select
-                      className="border-line bg-panel h-9 w-full rounded-md border px-2 text-[13px]"
+                      className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
                       value={l.specCompliance}
                       disabled={submitted}
                       onChange={(e) =>
-                        upd(setLines, i, 'specCompliance', e.target.value as SpecCompliance)
+                        upd(
+                          setLines,
+                          i,
+                          'specCompliance',
+                          e.target.value as SpecCompliance,
+                        )
                       }
                     >
                       <option value="FULL">Full</option>
@@ -265,7 +279,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                 </div>
                 <div className="mt-2 flex flex-wrap items-end justify-between gap-2">
                   <label className="block flex-1">
-                    <span className="text-muted mb-1 block text-[12px]">
+                    <span className="mb-1 block text-[12px] text-muted">
                       {COMPLIANCE_HINT[l.specCompliance]}
                     </span>
                     <Input
@@ -279,34 +293,34 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                       onChange={(e) => upd(setLines, i, 'deviationNotes', e.target.value)}
                     />
                   </label>
-                  <span className="text-ink font-numeric text-[13px]">
+                  <span className="font-numeric text-[13px] text-ink">
                     {money(lineTotal(l))}
                   </span>
                 </div>
               </div>
             ))}
 
-            <div className="border-line mt-3 flex flex-col items-end gap-1 border-t pt-3 text-[13px]">
+            <div className="mt-3 flex flex-col items-end gap-1 border-t border-line pt-3 text-[13px]">
               <span className="text-muted">Subtotal {money(subtotal)}</span>
               <span className="text-muted">Tax {money(taxTotal)}</span>
-              <span className="text-ink font-numeric text-[15px] font-semibold">
+              <span className="font-numeric text-[15px] font-semibold text-ink">
                 Total {money(subtotal + taxTotal)}
               </span>
             </div>
           </Section>
 
           <Section title="Attachments">
-            <p className="text-muted mb-3 text-[13px]">
+            <p className="mb-3 text-[13px] text-muted">
               Attach your own quotation document, technical specs or certificates. PDF or
               image, up to 10 MB each.
             </p>
             {(quote?.attachments ?? []).map((a) => (
               <div
                 key={a.id}
-                className="border-line flex items-center justify-between border-t py-2 text-[13px] first:border-0"
+                className="flex items-center justify-between border-t border-line py-2 text-[13px] first:border-0"
               >
                 <span className="truncate">{a.filename}</span>
-                <span className="text-muted shrink-0 text-[12px]">
+                <span className="shrink-0 text-[12px] text-muted">
                   {a.docType.replace(/_/g, ' ').toLowerCase()} · {fileSize(a.sizeBytes)}
                 </span>
               </div>
@@ -314,7 +328,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
             {!submitted && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <select
-                  className="border-line bg-panel h-9 rounded-md border px-2 text-[13px]"
+                  className="h-9 rounded-md border border-line bg-panel px-2 text-[13px]"
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
                 >
@@ -335,7 +349,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                   className="text-[12px]"
                 />
                 {uploadFile.isPending && (
-                  <span className="text-muted text-[12px]">Uploading…</span>
+                  <span className="text-[12px] text-muted">Uploading…</span>
                 )}
               </div>
             )}
@@ -345,10 +359,13 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
 
       <Section title="Public Q&amp;A">
         {rfq.questions.length === 0 && (
-          <p className="text-muted text-[13px]">No public answers yet.</p>
+          <p className="text-[13px] text-muted">No public answers yet.</p>
         )}
         {rfq.questions.map((q) => (
-          <div key={q.id} className="border-line border-t py-2 text-[13px] first:border-0">
+          <div
+            key={q.id}
+            className="border-t border-line py-2 text-[13px] first:border-0"
+          >
             <p>{q.questionText}</p>
             {q.answerText && <p className="text-accent-2">↳ {q.answerText}</p>}
           </div>
@@ -356,7 +373,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
       </Section>
 
       {quoteId && !submitted && (
-        <div className="border-line bg-panel fixed inset-x-0 bottom-0 border-t">
+        <div className="fixed inset-x-0 bottom-0 border-t border-line bg-panel">
           <div className="mx-auto flex max-w-[980px] flex-wrap items-center gap-3 px-4 py-3">
             <label className="flex items-center gap-2 text-[12px]">
               <span className="text-muted">Validity (days)</span>
@@ -366,7 +383,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                 onChange={(e) => setValidityDays(e.target.value)}
               />
             </label>
-            <span className="text-muted ml-auto text-[13px]">
+            <span className="ml-auto text-[13px] text-muted">
               Total {money(subtotal + taxTotal)}
             </span>
             <Button variant="accent" onClick={saveLines} disabled={updateQuote.isPending}>
@@ -395,8 +412,8 @@ function Section({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-3 text-[14px] font-semibold">{title}</h2>
+    <div className="mb-4 rounded-lg border border-line bg-panel p-4">
+      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -415,8 +432,12 @@ function LabelledInput({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="text-muted mb-1 block text-[12px]">{label}</span>
-      <Input value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} />
+      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <Input
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </label>
   );
 }

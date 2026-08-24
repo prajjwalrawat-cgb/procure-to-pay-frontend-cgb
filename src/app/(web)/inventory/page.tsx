@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -32,55 +32,57 @@ export default function InventoryPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-7xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            Stock overview
-          </h1>
-          <p className="text-muted text-[13px]">
-            {data?.totalEstimate ?? 0} products
+      <PageHeader
+        title="Stock overview"
+        description={
+          <>
+            {data?.totalEstimate ?? 0} products{' '}
             {lowCount > 0 && ` · ${lowCount} at or below reorder point`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* The floor's entry point. Discoverable from the desk so a supervisor
-              can find it and point a stores officer at it; the scanner itself is
-              built for a handset. */}
-          <Link href="/scan" title="Barcode scanner — designed for a phone">
-            <Button variant="ghost" size="sm">
-              Scanner
-            </Button>
-          </Link>
-          {/* For products with no manufacturer EAN — prints their own code. */}
-          <Link href="/labels?type=product" target="_blank">
-            <Button variant="ghost" size="sm">
-              Print labels
-            </Button>
-          </Link>
-          <Link href="/inventory/bulk-upload">
-            <Button variant="ghost" size="sm">
-              Bulk upload
-            </Button>
-          </Link>
-          <Link href="/inventory/products/new">
-            <Button variant="accent" size="sm">
-              New product
-            </Button>
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <div className="flex items-center gap-2">
+              {/* The floor's entry point. Discoverable from the desk so a supervisor
+                can find it and point a stores officer at it; the scanner itself is
+                built for a handset. */}
+              <Link href="/scan" title="Barcode scanner — designed for a phone">
+                <Button variant="ghost" size="sm">
+                  Scanner
+                </Button>
+              </Link>
+              {/* For products with no manufacturer EAN — prints their own code. */}
+              <Link href="/labels?type=product" target="_blank">
+                <Button variant="ghost" size="sm">
+                  Print labels
+                </Button>
+              </Link>
+              <Link href="/inventory/bulk-upload">
+                <Button variant="ghost" size="sm">
+                  Bulk upload
+                </Button>
+              </Link>
+              <Link href="/inventory/products/new">
+                <Button variant="primary" size="sm">
+                  New product
+                </Button>
+              </Link>
+            </div>
+          </>
+        }
+      />
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search name, code, colour or legacy SKU…"
-          className="border-line bg-panel text-text placeholder:text-faint focus:border-accent min-w-[260px] flex-1 rounded-md border px-3 py-1.5 text-[13px] outline-none"
+          className="min-w-[260px] flex-1 rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none placeholder:text-faint focus:border-accent"
         />
         <select
           value={locationId}
           onChange={(e) => setLocationId(e.target.value)}
-          className="border-line bg-panel text-text rounded-md border px-3 py-1.5 text-[13px] outline-none"
+          className="rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none"
         >
           <option value="">All locations</option>
           {(locations.data?.items ?? []).map((l) => (
@@ -90,7 +92,7 @@ export default function InventoryPage(): React.JSX.Element {
             </option>
           ))}
         </select>
-        <label className="text-muted flex items-center gap-1.5 text-[13px]">
+        <label className="flex items-center gap-1.5 text-[13px] text-muted">
           <input
             type="checkbox"
             checked={lowStock}
@@ -100,9 +102,9 @@ export default function InventoryPage(): React.JSX.Element {
         </label>
       </div>
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
             <tr>
               <th className="w-12 px-3 py-2 text-right font-medium">S. No.</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -115,20 +117,23 @@ export default function InventoryPage(): React.JSX.Element {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="text-muted px-3 py-8 text-center">
+                <td colSpan={6} className="px-3 py-8 text-center text-muted">
                   Loading…
                 </td>
               </tr>
             )}
             {!isLoading && items.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-muted px-3 py-8 text-center">
+                <td colSpan={6} className="px-3 py-8 text-center text-muted">
                   {q || locationId || lowStock ? (
                     'No products match this view.'
                   ) : (
                     <>
                       No products yet. Start by adding a{' '}
-                      <Link href="/inventory/locations" className="text-accent-2 underline">
+                      <Link
+                        href="/inventory/locations"
+                        className="text-accent-2 underline"
+                      >
                         location
                       </Link>
                       , then{' '}
@@ -155,18 +160,18 @@ export default function InventoryPage(): React.JSX.Element {
               <tr
                 key={p.id}
                 onClick={() => setSelected(p.id)}
-                className="border-line hover:bg-canvas/60 cursor-pointer border-t"
+                className="cursor-pointer border-t border-line hover:bg-canvas/60"
               >
                 {/* Position in the current view, so it renumbers with filters. */}
-                <td className="font-numeric text-faint px-3 py-2 text-right text-[12px]">
+                <td className="font-numeric px-3 py-2 text-right text-[12px] text-faint">
                   {i + 1}
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-2.5">
                     <ProductThumb url={p.imageUrl} alt={p.name} />
                     <div className="min-w-0">
-                      <div className="text-ink truncate font-medium">{p.name}</div>
-                      <div className="font-numeric text-faint text-[11px]">
+                      <div className="truncate font-medium text-ink">{p.name}</div>
+                      <div className="font-numeric text-[11px] text-faint">
                         {p.code}
                         {p.colour ? ` · ${p.colour}` : ''}
                       </div>
@@ -178,7 +183,7 @@ export default function InventoryPage(): React.JSX.Element {
                     {p.category}
                   </Pill>
                 </td>
-                <td className="text-muted px-3 py-2 text-[12px]">
+                <td className="px-3 py-2 text-[12px] text-muted">
                   {p.locations.length === 0
                     ? '—'
                     : p.locations
@@ -188,7 +193,7 @@ export default function InventoryPage(): React.JSX.Element {
                         )
                         .join(' · ')}
                 </td>
-                <td className="font-numeric text-muted px-3 py-2 text-right">
+                <td className="font-numeric px-3 py-2 text-right text-muted">
                   {p.reorderPoint ?? '—'}
                 </td>
                 <td className="px-3 py-2 text-right">

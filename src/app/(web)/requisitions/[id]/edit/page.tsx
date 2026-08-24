@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import { Button, Input, PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -190,10 +190,13 @@ export default function EditRequisitionPage(): React.JSX.Element {
       >
         <ArrowLeft size={14} /> Back to {data.number}
       </Link>
-      <h1 className="mb-4 text-[20px] font-semibold tracking-heading text-ink">
-        Edit {data.number} <Pill variant="gray">Draft</Pill>
-      </h1>
-
+      <PageHeader
+        title={
+          <>
+            Edit {data.number} <Pill variant="gray">Draft</Pill>
+          </>
+        }
+      />
       <Section title="Basics">
         <Field label="Title · min 5 characters">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />

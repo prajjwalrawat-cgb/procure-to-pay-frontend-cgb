@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import { Button, Input, PageHeader, Pill } from '@/components/ui';
 import { Money } from '@/lib/shared';
 import { Download, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -72,36 +72,34 @@ export default function VendorInvoicesPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="tracking-heading text-ink text-[20px] font-semibold">
-            My invoices
-          </h1>
-          <p className="text-muted text-[13px]">
-            Invoices you have submitted and their live status
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={exportCsv}
-            disabled={rows.length === 0}
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Export
-          </Button>
-          <Link href="/vendor/invoices/submit">
-            <Button variant="accent" size="sm">
-              Submit invoice
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="My invoices"
+        description="Invoices you have submitted and their live status"
+        actions={
+          <>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={exportCsv}
+                disabled={rows.length === 0}
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Export
+              </Button>
+              <Link href="/vendor/invoices/submit">
+                <Button variant="accent" size="sm">
+                  Submit invoice
+                </Button>
+              </Link>
+            </div>
+          </>
+        }
+      />
 
       {/* Toolbar */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search className="text-faint pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-faint" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -113,7 +111,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
           aria-label="Filter by status"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="border-line bg-panel text-text focus-visible:ring-accent h-8 rounded-sm border px-2.5 text-[13px] outline-none focus-visible:ring-2"
+          className="h-8 rounded-sm border border-line bg-panel px-2.5 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <option value="all">All statuses</option>
           {statuses.map((s) => (
@@ -122,15 +120,15 @@ export default function VendorInvoicesPage(): React.JSX.Element {
             </option>
           ))}
         </select>
-        <span className="text-muted ml-auto text-[12px]">
+        <span className="ml-auto text-[12px] text-muted">
           {rows.length} shown · {inr(total.toString())}
         </span>
       </div>
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Invoice</th>
                 <th className="px-3 py-2.5 font-medium">Reference</th>
@@ -142,14 +140,14 @@ export default function VendorInvoicesPage(): React.JSX.Element {
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={5} className="text-muted px-3 py-10 text-center">
+                  <td colSpan={5} className="px-3 py-10 text-center text-muted">
                     Loading…
                   </td>
                 </tr>
               )}
               {!isLoading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-muted px-3 py-10 text-center">
+                  <td colSpan={5} className="px-3 py-10 text-center text-muted">
                     {(data?.length ?? 0) === 0
                       ? 'No invoices submitted yet.'
                       : 'No invoices match your filters.'}
@@ -157,14 +155,14 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                 </tr>
               )}
               {rows.map((inv: VendorInvoiceSummary) => (
-                <tr key={inv.id} className="border-line hover:bg-canvas/60 border-t">
-                  <td className="font-numeric text-ink px-3 py-2.5 font-medium">
+                <tr key={inv.id} className="border-t border-line hover:bg-canvas/60">
+                  <td className="font-numeric px-3 py-2.5 font-medium text-ink">
                     {inv.number}
                   </td>
-                  <td className="font-numeric text-muted px-3 py-2.5">
+                  <td className="font-numeric px-3 py-2.5 text-muted">
                     {inv.vendorInvoiceRef}
                   </td>
-                  <td className="font-numeric text-text px-3 py-2.5">
+                  <td className="font-numeric px-3 py-2.5 text-text">
                     {fmtDate(inv.invoiceDate)}
                   </td>
                   <td className="px-3 py-2.5">
@@ -172,7 +170,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                       {label(inv.status)}
                     </Pill>
                   </td>
-                  <td className="font-numeric text-ink px-3 py-2.5 text-right">
+                  <td className="font-numeric px-3 py-2.5 text-right text-ink">
                     {inr(inv.grossAmount)}
                   </td>
                 </tr>
