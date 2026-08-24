@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+
+import { scanQueue } from '@/lib/scan/queue';
+import { useSessionStore } from '@/store/session-store';
 
 import { SyncStatus } from './sync-status';
 
@@ -62,8 +65,9 @@ export function ScanShell({ children }: { children: ReactNode }): React.JSX.Elem
             </>
           )}
         </div>
-        <div className="px-3 pb-2">
+        <div className="space-y-1 px-3 pb-2">
           <SyncStatus />
+          <AccountBar />
         </div>
       </header>
 
@@ -78,6 +82,69 @@ export function ScanShell({ children }: { children: ReactNode }): React.JSX.Elem
           </Link>
         </footer>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Who is signed in, and the way out.
+ *
+ * Installed to a home screen, the scanner opens straight at /scan with no
+ * browser chrome — no address bar, no tabs, and on iOS its own cookie jar
+ * separate from Safari. Without this row, an operator signed in as the wrong
+ * user has no way to switch: the permission error is correct and the app is a
+ * dead end. That makes a sign-out control part of the shell, not a nicety.
+ */
+function AccountBar(): React.JSX.Element | null {
+  const router = useRouter();
+  const user = useSessionStore((s) => s.user);
+  const clear = useSessionStore((s) => s.clear);
+  const [pending, setPending] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  // Signing out drops the queue's only route to the server, so warn if scans
+  // are still waiting — they would sit on the device until someone signs back
+  // in, and the operator should know that before they tap.
+  useEffect(() => {
+    scanQueue
+      .all()
+      .then((rows) => setPending(rows.filter((r) => r.status === 'pending').length))
+      .catch(() => setPending(0));
+  }, []);
+
+  const signOut = useCallback(async () => {
+    if (pending > 0) {
+      const go = window.confirm(
+        `${pending} scan${pending === 1 ? '' : 's'} still waiting to sync. ` +
+          `They stay on this device until someone signs in again. Sign out anyway?`,
+      );
+      if (!go) return;
+    }
+    setBusy(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Offline: the local session still has to go, so carry on.
+    }
+    clear();
+    router.replace('/login?next=%2Fscan');
+  }, [clear, pending, router]);
+
+  if (!user) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-2 text-[12px]">
+      <span className="text-muted truncate">
+        Signed in as <span className="text-ink font-medium">{user.name || user.email}</span>
+      </span>
+      <button
+        type="button"
+        className="text-accent shrink-0 px-1 py-1 font-medium"
+        disabled={busy}
+        onClick={() => void signOut()}
+      >
+        {busy ? 'Signing out…' : 'Switch user'}
+      </button>
     </div>
   );
 }
