@@ -16,7 +16,23 @@ import { useProviderLiveness } from '@/lib/integration-status';
 import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
+/** Every provider whose usage and liveness this page reports. */
 const PROVIDERS: IntegrationProvider[] = ['OCR', 'GSP', 'EMAIL_INBOUND'];
+
+/**
+ * The subset that actually takes a per-tenant credential.
+ *
+ * GSTR-2B is the tenant's own tax data, so each tenant brings their own GSP
+ * account — nobody can fetch one company's return with another's credentials.
+ *
+ * OCR and inbound email are not like that. Both are configured for the whole
+ * deployment through the environment (`OCR_API_URL`,
+ * `EMAIL_INBOUND_WEBHOOK_SECRET`) and shared by every tenant. Offering them in
+ * this form invited a key that would be encrypted, stored, and then read by
+ * nothing — which is worse than not offering it, because it looks like it
+ * worked.
+ */
+const CREDENTIAL_PROVIDERS: IntegrationProvider[] = ['GSP'];
 const thisMonth = new Date().toISOString().slice(0, 7);
 
 export default function IntegrationsPage(): React.JSX.Element {
@@ -119,7 +135,9 @@ export default function IntegrationsPage(): React.JSX.Element {
           </div>
           <div className="space-y-2 border-t border-line pt-3">
             <p className="text-[12px] text-muted">
-              Set a credential (stored AES-256-GCM; never returned or logged).
+              Set a credential (stored AES-256-GCM; never returned or logged). Only
+              providers whose account belongs to this tenant appear here — OCR and inbound
+              email are configured once for the whole deployment.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <select
@@ -127,7 +145,7 @@ export default function IntegrationsPage(): React.JSX.Element {
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
               >
-                {PROVIDERS.map((p) => (
+                {CREDENTIAL_PROVIDERS.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
               </select>
