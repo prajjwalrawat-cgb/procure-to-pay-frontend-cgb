@@ -16,15 +16,6 @@ import type { VendorPoOption } from '@/lib/shared';
  * (ProcureFlow POs have line items rather than Tata-style "service headers", so a
  * single PO selection is all that's needed here.)
  */
-/**
- * Nothing left to bill on any line. Still offered — a supplier may have a
- * genuine reason to raise one more, and the buyer decides that, not this form —
- * but labelled, so it is not selected by mistake and then found to be an empty
- * form with every quantity at zero.
- */
-const fullyBilled = (p: VendorPoOption): boolean =>
-  p.lines.length > 0 && p.lines.every((l) => Number(l.qtyBillable) <= 0);
-
 export function PoSelectModal({
   pos,
   isLoading,
@@ -75,13 +66,14 @@ export function PoSelectModal({
             {options.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.number} · {p.lines.length} line{p.lines.length === 1 ? '' : 's'}
-                {fullyBilled(p) ? ' · fully invoiced' : ''}
               </option>
             ))}
           </select>
           {!isLoading && options.length === 0 && (
             <p className="mt-1 text-[12px] text-muted">
-              You have no active purchase orders to invoice against.
+              You have no purchase orders left to invoice against. Orders you have already
+              billed in full drop off this list — ask your buyer to amend one, or raise a
+              new order, if more needs billing.
             </p>
           )}
         </div>
