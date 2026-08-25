@@ -147,12 +147,18 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             <div className="grid gap-3 md:grid-cols-3">
               <MatchCard title="Purchase order" subtitle={data.po?.number ?? '—'}>
                 {data.poLines.map((l) => (
-                  <LineRow
-                    key={l.id}
-                    desc={l.itemDesc}
-                    qty={l.qtyOrdered}
-                    price={l.unitPrice}
-                  />
+                  <div key={l.id}>
+                    <LineRow desc={l.itemDesc} qty={l.qtyOrdered} price={l.unitPrice} />
+                    {/* Ordered quantity alone reads as headroom. Two invoices of
+                        200 against an order for 1000 each look like a fifth of
+                        it, and neither page mentions the other. */}
+                    {Number(l.qtyInvoicedElsewhere) > 0 && (
+                      <div className="mt-0.5 text-[11px] text-warn">
+                        {l.qtyInvoicedElsewhere} already invoiced on other invoices ·{' '}
+                        {remainingOn(l)} left
+                      </div>
+                    )}
+                  </div>
                 ))}
               </MatchCard>
               <MatchCard title="Goods receipt" subtitle={data.grn?.number ?? '—'}>
@@ -164,6 +170,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     ? 'All ordered lines received.'
                     : 'No goods receipt yet — quantities cannot be verified.'}
                 </div>
+                {!data.grn && receivedNothing(data.poLines) && (
+                  <div className="mt-1 text-[11px] text-warn">
+                    Nothing has been received against this order.
+                  </div>
+                )}
               </MatchCard>
               <MatchCard title="Invoice" subtitle={data.vendorInvoiceRef} accent="danger">
                 {data.lines.map((l) => (
@@ -748,6 +759,21 @@ function Row({
  * states get a colour; anything unrecognised stays neutral rather than being
  * guessed into green.
  */
+/** Ordered, less everything other live invoices have already claimed. */
+function remainingOn(l: { qtyOrdered: string; qtyInvoicedElsewhere: string }): string {
+  const left = Number(l.qtyOrdered) - Number(l.qtyInvoicedElsewhere);
+  return String(Math.max(left, 0));
+}
+
+/**
+ * Nothing received on any line. Distinct from "no GRN document": a receipt can
+ * exist and be empty, and the reviewer is being asked to approve payment for
+ * goods, so the quantity is the fact that matters.
+ */
+function receivedNothing(poLines: { qtyReceived: string }[]): boolean {
+  return poLines.length > 0 && poLines.every((l) => Number(l.qtyReceived) <= 0);
+}
+
 function complianceVariant(status: string): 'success' | 'danger' | 'warn' | 'gray' {
   const s = status.toUpperCase();
   if (['ACTIVE', 'MATCHED', 'VALID', 'CLEAR', 'FOUND'].includes(s)) return 'success';
