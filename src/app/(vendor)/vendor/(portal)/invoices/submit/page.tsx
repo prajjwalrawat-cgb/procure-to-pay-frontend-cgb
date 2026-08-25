@@ -24,6 +24,12 @@ interface LineDraft {
   /** Held as a **percentage** ('5'), like the buyer forms; converted on submit. */
   taxRate: string;
   poLineId: string | null;
+  /** Ordered / received / already billed, so the row can show its own arithmetic. */
+  qtyOrdered: string;
+  qtyReceived: string;
+  qtyInvoiced: string;
+  /** What the matcher will accept on this line. Seeds `qty`. */
+  qtyBillable: string;
 }
 
 // v2: taxRate switched from a wire fraction ('0.05') to a percentage ('5'), so
@@ -35,6 +41,23 @@ const amountOf = (l: LineDraft): string =>
   Money.of(l.qty || 0)
     .multiply(l.unitPrice || 0)
     .toString();
+/**
+ * Where the billable figure came from, in the supplier's own terms. They have
+ * no view of the buyer's goods receipts, so an unexplained quantity that is not
+ * the one on their PO reads as a mistake by the portal.
+ */
+const basisLabel = (l: LineDraft): string => {
+  const parts = [`${l.qtyOrdered} ordered`];
+  if (Number(l.qtyReceived) > 0) parts.push(`${l.qtyReceived} received`);
+  if (Number(l.qtyInvoiced) > 0) parts.push(`${l.qtyInvoiced} already invoiced`);
+  parts.push(`${l.qtyBillable} billable`);
+  return parts.join(' · ');
+};
+
+/** Warn, never block: over-billing is the buyer's call, not the portal's. */
+const overBillable = (l: LineDraft): boolean =>
+  Number(l.qty || 0) > Number(l.qtyBillable || 0);
+
 /** GST on a line, at the percentage the vendor is billing. */
 const taxOf = (l: LineDraft): string =>
   Money.of(amountOf(l))
@@ -65,10 +88,18 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       lineNo: l.lineNo,
       itemDesc: l.itemDesc,
       uom: l.uom,
-      qty: l.qtyOrdered,
+      // Seeded from what is still billable, NOT from the full ordered quantity.
+      // On a part-billed or part-received PO the ordered figure is one the
+      // matcher will reject outright, and offering it as the default walks the
+      // supplier into an exception this form had the data to prevent.
+      qty: l.qtyBillable,
       unitPrice: l.unitPrice,
       taxRate: rateToPercent(l.taxRate),
       poLineId: l.id,
+      qtyOrdered: l.qtyOrdered,
+      qtyReceived: l.qtyReceived,
+      qtyInvoiced: l.qtyInvoiced,
+      qtyBillable: l.qtyBillable,
     }));
     // Restore a device-local draft for this PO if one exists.
     const raw =
@@ -261,6 +292,15 @@ export default function SubmitInvoicePage(): React.JSX.Element {
                     <td className="px-3 py-2">
                       <div className="text-text">{l.itemDesc}</div>
                       <div className="text-[11px] text-faint">{l.uom}</div>
+                      {/* The supplier cannot see the buyer's goods receipts, so
+                          without this the seeded quantity looks arbitrary. */}
+                      <div className="mt-1 text-[11px] text-faint">{basisLabel(l)}</div>
+                      {overBillable(l) && (
+                        <div className="mt-1 text-[11px] text-warn">
+                          Over the {l.qtyBillable} still billable — this will be held for
+                          buyer review.
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       <Input
