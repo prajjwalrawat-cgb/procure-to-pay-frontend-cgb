@@ -38,6 +38,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   }
 
   const openExceptions = data.exceptions.filter((e) => !e.resolved);
+  // An exception someone waved through is not the same as one that never
+  // fired. "0 open" reads identically for a clean match and for an overridden
+  // HIGH GRN_MISSING, so overrides are counted and shown separately.
+  const overridden = data.exceptions.filter(
+    (e) => e.resolved && (e.severity === 'HIGH' || e.severity === 'CRITICAL'),
+  );
   // An empty exception list means "clean match" only once a match has run. While
   // OCR is pending or has failed, the matcher has never looked at this invoice,
   // so zero exceptions says nothing — and routing on it would send an unmatched
@@ -176,7 +182,8 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           <section>
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[14px] font-semibold text-ink">
-                Exceptions ({openExceptions.length} open)
+                Exceptions ({openExceptions.length} open
+                {overridden.length > 0 && ` · ${overridden.length} overridden`})
               </h2>
             </div>
             {data.suggestedResolution && (
@@ -186,9 +193,21 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             )}
             {openExceptions.length === 0 &&
               (matched ? (
-                <div className="rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
-                  All exceptions resolved. Ready to route for approval.
-                </div>
+                overridden.length > 0 ? (
+                  // Not "all clear": a HIGH/CRITICAL was overridden by a human, not
+                  // satisfied by the data. The approver is the one who has to weigh
+                  // that, so name it instead of painting the section green.
+                  <div className="rounded-sm border border-warn/30 bg-warn-wash px-3 py-2 text-[12px] text-warn">
+                    No exceptions are open, but {overridden.length}{' '}
+                    {overridden.length === 1 ? 'was' : 'were'} overridden rather than
+                    cleared by matching data. Review the override reason below before
+                    approving.
+                  </div>
+                ) : (
+                  <div className="rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
+                    All exceptions resolved. Ready to route for approval.
+                  </div>
+                )
               ) : (
                 <div className="rounded-sm bg-info-wash px-3 py-2 text-[12px] text-info">
                   The 3-way match has not run yet ({statusLabel(data.status)}), so nothing
@@ -204,9 +223,27 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <Pill variant={e.resolved ? 'success' : 'danger'} dot>
+                      {/* Green is for a variance accepted inside tolerance. An
+                          overridden HIGH — "we skipped the goods-receipt check"
+                          — is not a success, and painting it green is the same
+                          reassuring-default failure as a sandbox CLEAR. */}
+                      <Pill
+                        variant={
+                          !e.resolved
+                            ? 'danger'
+                            : e.severity === 'HIGH' || e.severity === 'CRITICAL'
+                              ? 'warn'
+                              : 'success'
+                        }
+                        dot
+                      >
                         {e.type.replace(/_/g, ' ')}
                       </Pill>
+                      {!e.resolved && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-faint">
+                          {e.severity}
+                        </span>
+                      )}
                       {e.impactWithTax && (
                         <span className="font-numeric text-[12px] text-danger">
                           +{inr(e.impactWithTax)}
@@ -215,9 +252,31 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     </div>
                     <p className="mt-1 text-[12px] text-muted">{e.message}</p>
                     {e.resolved && (
-                      <p className="mt-0.5 text-[11px] text-accent-2">
-                        Resolved · {e.resolutionAction?.replace(/_/g, ' ')}
-                      </p>
+                      <div className="mt-1 text-[11px]">
+                        <p
+                          className={
+                            e.severity === 'HIGH' || e.severity === 'CRITICAL'
+                              ? 'font-medium text-warn'
+                              : 'text-accent-2'
+                          }
+                        >
+                          {e.severity === 'HIGH' || e.severity === 'CRITICAL'
+                            ? `${e.severity} exception overridden`
+                            : 'Resolved'}
+                          {e.resolutionAction
+                            ? ` · ${e.resolutionAction.replace(/_/g, ' ').toLowerCase()}`
+                            : ''}
+                          {e.resolvedByName ? ` · by ${e.resolvedByName}` : ''}
+                          {e.resolvedAt
+                            ? ` · ${new Date(e.resolvedAt).toLocaleDateString('en-IN')}`
+                            : ''}
+                        </p>
+                        {e.resolutionNotes && (
+                          <p className="mt-0.5 italic text-muted">
+                            “{e.resolutionNotes}”
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                   {!e.resolved && (
