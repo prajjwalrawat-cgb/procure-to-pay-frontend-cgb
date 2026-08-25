@@ -8,8 +8,11 @@ import { useSessionStore } from '@/vendor/store/session-store';
 /**
  * Single-flight refresh — concurrent 401s must share one call, because the
  * refresh token rotates and only the first would otherwise succeed.
+ *
+ * Exported so the shell's bootstrap shares it; a raw `fetch` there sat outside
+ * the guard and raced this one on every hard load.
  */
-const refreshAccessToken = createRefresher({
+export const refreshAccessToken = createRefresher({
   endpoint: '/api/vendor/auth/refresh',
   onToken: (accessToken) => {
     const { user, setSession } = useSessionStore.getState();

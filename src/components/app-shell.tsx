@@ -18,6 +18,7 @@ import { NotificationsTray } from '@/components/notifications-tray';
 import { LIVE_ROUTES, NAV_GROUPS } from '@/config/nav';
 import { useSidebarCounts } from '@/lib/api/inbox';
 import { useUnreadCount } from '@/lib/api/notifications';
+import { refreshAccessToken } from '@/lib/api-client';
 import { API_URL } from '@/lib/env';
 import { useSessionStore, type SessionUser } from '@/store/session-store';
 import { useUiStore } from '@/store/ui-store';
@@ -65,18 +66,28 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     }),
   }));
 
-  // Bootstrap: exchange the httpOnly refresh cookie for an access token + load
-  // the profile, so the topbar can show who is signed in.
+  /*
+   * Bootstrap: exchange the httpOnly refresh cookie for an access token + load
+   * the profile, so the topbar can show who is signed in.
+   *
+   * Goes through the shared single-flight refresher, NOT a raw fetch. The
+   * refresh token rotates on use, so two concurrent exchanges mean the second
+   * presents a token the first already consumed and is told the session is
+   * dead. A raw fetch here was a second caller outside the guard, racing every
+   * query that mounted alongside this effect and 401'd on the empty in-memory
+   * token — which is why a hard refresh signed people out intermittently, and
+   * almost always when done straight after logging in, when the two fire
+   * closest together.
+   */
   useEffect(() => {
     if (user) return;
     let cancelled = false;
     void (async () => {
-      const refreshed = await fetch('/api/auth/refresh', { method: 'POST' });
-      if (!refreshed.ok) {
+      const accessToken = await refreshAccessToken();
+      if (!accessToken) {
         router.replace('/login');
         return;
       }
-      const { accessToken } = (await refreshed.json()) as { accessToken: string };
       const meRes = await fetch(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -132,7 +143,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     .toUpperCase();
 
   return (
-    <div className="bg-paper flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-paper">
       <a href="#main-content" className="pf-skip-link">
         Skip to content
       </a>
@@ -141,11 +152,11 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
         <Sidebar
           brand={
             <div className="flex items-center gap-2">
-              <span className="bg-gold text-navy flex h-6 w-6 items-center justify-center rounded-sm">
+              <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-gold text-navy">
                 <span className="font-numeric text-[12px] font-bold">P</span>
               </span>
               {(!sidebarCollapsed || mobileNavOpen) && (
-                <span className="tracking-heading text-on-navy text-[14px] font-semibold">
+                <span className="text-[14px] font-semibold tracking-heading text-on-navy">
                   ProcureFlow
                 </span>
               )}
@@ -182,10 +193,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
             </div>
           }
         />
-        <main
-          id="main-content"
-          className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6"
-        >
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
           {children}
         </main>
       </div>
@@ -263,18 +271,20 @@ function AccountMenu({
       {open ? (
         <div
           role="menu"
-          className="border-line absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border bg-white shadow-lg"
+          className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border border-line bg-white shadow-lg"
         >
-          <div className="border-line border-b px-3 py-2">
-            <p className="text-ink truncate text-[13px] font-medium">{user?.name ?? 'Signed in'}</p>
+          <div className="border-b border-line px-3 py-2">
+            <p className="truncate text-[13px] font-medium text-ink">
+              {user?.name ?? 'Signed in'}
+            </p>
             {user?.email ? (
-              <p className="text-muted truncate text-[12px]">{user.email}</p>
+              <p className="truncate text-[12px] text-muted">{user.email}</p>
             ) : null}
           </div>
           <button
             type="button"
             role="menuitem"
-            className="text-danger hover:bg-canvas block w-full px-3 py-2 text-left text-[13px]"
+            className="block w-full px-3 py-2 text-left text-[13px] text-danger hover:bg-canvas"
             onClick={() => {
               setOpen(false);
               void onLogout();

@@ -12,8 +12,12 @@ import { useSessionStore } from '@/store/session-store';
  * refresh token rotates, so only the first would succeed and the rest would
  * 401 and bounce the user to login. Instead they all await the one in-flight
  * refresh and share its new access token.
+ *
+ * Exported because the shell's bootstrap must go through it too. It used to
+ * call the endpoint with a raw `fetch`, which put a second uncoordinated caller
+ * outside the single-flight guard — see app-shell.tsx.
  */
-const refreshAccessToken = createRefresher({
+export const refreshAccessToken = createRefresher({
   endpoint: '/api/auth/refresh',
   onToken: (accessToken) => {
     const { user, setSession } = useSessionStore.getState();

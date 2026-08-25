@@ -13,6 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { NAV_GROUPS, VENDOR_LIVE_ROUTES } from '@/vendor/config/nav';
+import { refreshAccessToken } from '@/vendor/lib/api-client';
 import { useSessionStore } from '@/vendor/store/session-store';
 import { useVendorUiStore } from '@/vendor/store/ui-store';
 
@@ -34,11 +35,15 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
 
   // Verify the session is still valid on load; the vendor shell reads no
   // tenanted API in Slice 0, so we only refresh the token, not a profile.
+  //
+  // Through the shared single-flight refresher: a raw fetch here raced the
+  // portal's own 401-driven refresh, and since the refresh token rotates the
+  // loser was told the session had ended. See app-shell.tsx for the same fix.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const refreshed = await fetch(`/api/vendor/auth/refresh`, { method: 'POST' });
-      if (!refreshed.ok && !cancelled) router.replace('/vendor/login');
+      const accessToken = await refreshAccessToken();
+      if (!accessToken && !cancelled) router.replace('/vendor/login');
     })();
     return () => {
       cancelled = true;
@@ -78,7 +83,7 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
   );
 
   return (
-    <div className="bg-paper flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-paper">
       <a href="#vendor-main" className="pf-skip-link">
         Skip to content
       </a>
@@ -88,11 +93,11 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
           <div className="flex items-center gap-2">
             {/* Gold badge and on-navy text: the rail is navy, so the
                 ink-on-white treatment this shell carried was invisible. */}
-            <span className="bg-gold text-navy flex h-6 w-6 shrink-0 items-center justify-center rounded-sm">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-gold text-navy">
               <span className="font-numeric text-[12px] font-bold">P</span>
             </span>
             {(!sidebarCollapsed || mobileNavOpen) && (
-              <span className="tracking-heading text-on-navy text-[14px] font-semibold">
+              <span className="text-[14px] font-semibold tracking-heading text-on-navy">
                 Vendor Portal
               </span>
             )}
@@ -115,7 +120,7 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
           onOpenCommand={() => setCommandOpen(true)}
           right={
             <div className="flex items-center gap-2 pl-1">
-              <span className="text-on-navy-muted hidden text-[12px] sm:inline">
+              <span className="hidden text-[12px] text-on-navy-muted sm:inline">
                 {user?.name ?? 'Vendor'}
               </span>
               <Button variant="onNavy" size="sm" onClick={() => void logout()}>

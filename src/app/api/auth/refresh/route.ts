@@ -18,9 +18,20 @@ export async function POST(): Promise<NextResponse> {
 
   const data = await upstream.json();
   if (!upstream.ok) {
-    const res = NextResponse.json({ error: 'refresh_failed' }, { status: 401 });
-    res.cookies.delete(REFRESH_COOKIE);
-    return res;
+    /*
+     * Do NOT delete the cookie here.
+     *
+     * The refresh token rotates in place, so a failure is not proof the session
+     * is over — it can equally mean another tab refreshed a moment earlier and
+     * this request presented the token that one consumed. Deleting on that
+     * basis destroyed the cookie the successful tab had just been issued,
+     * turning one tab's lost race into every tab being signed out.
+     *
+     * Leaving a dead token in the jar costs nothing: it is httpOnly, the server
+     * rejects it, and the next sign-in overwrites it. The client calls
+     * endSession on this 401 anyway, which clears the store and redirects.
+     */
+    return NextResponse.json({ error: 'refresh_failed' }, { status: 401 });
   }
 
   const res = NextResponse.json({
