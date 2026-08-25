@@ -101,6 +101,24 @@ export function useRetryOcr(invoiceId: string) {
   });
 }
 
+/**
+ * Re-evaluate an invoice against the PO and goods receipt.
+ *
+ * Needed whenever the inputs moved after the last run — a goods receipt was
+ * posted, a sibling invoice was rejected, or the matcher's own rules changed.
+ * Exceptions are reconciled rather than duplicated, and resolved ones stay
+ * resolved, so running it again is safe.
+ */
+export function useRunMatch(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch(`/invoices/${invoiceId}/match/run`, { method: 'POST' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
 export function useAddComment(invoiceId: string) {
   const qc = useQueryClient();
   return useMutation({

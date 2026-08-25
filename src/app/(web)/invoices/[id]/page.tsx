@@ -16,6 +16,7 @@ import {
   useInvoice,
   useResolveAndRoute,
   useRetryOcr,
+  useRunMatch,
 } from '@/lib/api/invoices';
 import { exceptionLabel, impactLabel } from '@/lib/exception-display';
 import { inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
@@ -29,6 +30,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const { data, isLoading } = useInvoice(id);
   const route = useResolveAndRoute(id);
   const retryOcr = useRetryOcr(id);
+  const runMatch = useRunMatch(id);
   const addComment = useAddComment(id);
   const decide = useDecide();
   const toast = useToastStore((s) => s.push);
@@ -209,6 +211,26 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 Exceptions ({openExceptions.length} open
                 {overridden.length > 0 && ` · ${overridden.length} overridden`})
               </h2>
+              {/* The inputs move after a match has run — a goods receipt is
+                  posted, a sibling invoice is rejected, the rules themselves
+                  change — and until now nothing re-evaluated an invoice short
+                  of resolving an exception, which is a different act entirely. */}
+              {matched && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() =>
+                    runMatch.mutate(undefined, {
+                      onSuccess: () => toast('Match re-run', 'success'),
+                      onError: (e) =>
+                        toast((e as Error).message || 'Could not re-run', 'error'),
+                    })
+                  }
+                  disabled={runMatch.isPending}
+                >
+                  {runMatch.isPending ? 'Re-running…' : 'Re-run match'}
+                </Button>
+              )}
             </div>
             {data.suggestedResolution && (
               <div className="mb-3 rounded-sm bg-info-wash px-3 py-2 text-[12px] text-info">
