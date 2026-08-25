@@ -12,6 +12,7 @@ import { EntityRef } from '@/components/entity-ref';
 import { ResolveModal } from '@/components/invoices/resolve-modal';
 import { useDecide } from '@/lib/api/inbox';
 import { useAddComment, useInvoice, useResolveAndRoute } from '@/lib/api/invoices';
+import { exceptionLabel, impactLabel } from '@/lib/exception-display';
 import { inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
 import { COMPLIANCE_PROVIDER, useProviderLiveness } from '@/lib/integration-status';
 import { useToastStore } from '@/store/toast-store';
@@ -237,16 +238,19 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         }
                         dot
                       >
-                        {e.type.replace(/_/g, ' ')}
+                        {exceptionLabel(e.type)}
                       </Pill>
                       {!e.resolved && (
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-faint">
                           {e.severity}
                         </span>
                       )}
-                      {e.impactWithTax && (
+                      {/* Zero-impact control failures render nothing rather
+                          than "+₹0.00", which reads as "no money at stake"
+                          when the truth is "this was never priced". */}
+                      {impactLabel(e.impactWithTax) && (
                         <span className="font-numeric text-[12px] text-danger">
-                          +{inr(e.impactWithTax)}
+                          {impactLabel(e.impactWithTax)}
                         </span>
                       )}
                     </div>
