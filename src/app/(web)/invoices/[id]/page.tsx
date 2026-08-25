@@ -154,8 +154,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         it, and neither page mentions the other. */}
                     {Number(l.qtyInvoicedElsewhere) > 0 && (
                       <div className="mt-0.5 text-[11px] text-warn">
-                        {l.qtyInvoicedElsewhere} already invoiced on other invoices ·{' '}
-                        {remainingOn(l)} left
+                        {l.qtyInvoicedElsewhere} already invoiced on{' '}
+                        {data.relatedInvoices.length === 1
+                          ? 'another invoice'
+                          : `${data.relatedInvoices.length} other invoices`}{' '}
+                        · {remainingOn(l)} left
                       </div>
                     )}
                   </div>
@@ -555,6 +558,41 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               <Row label="e-Way bill" value={data.compliance.ewaybillNo ?? '—'} />
             </dl>
           </div>
+
+          {/* Its own panel rather than a line in Linked documents: being told
+              other invoices exist and being unable to see which is the gap this
+              closes, and a reviewer deciding on an amount should not have to
+              open the PO to find the competing claims. */}
+          {data.relatedInvoices.length > 0 && (
+            <div className="rounded-lg border border-warn/30 bg-panel p-4">
+              <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+                Also invoiced against {data.po?.number ?? 'this PO'}
+              </div>
+              <div className="flex flex-col gap-2">
+                {data.relatedInvoices.map((r) => (
+                  <div key={r.id} className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <EntityRef kind="invoice" id={r.id}>
+                        {r.number}
+                      </EntityRef>
+                      <div className="truncate text-[11px] text-faint">
+                        {r.vendorInvoiceRef} ·{' '}
+                        {new Date(r.invoiceDate).toLocaleDateString('en-IN')}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="font-numeric text-[12px] text-text">
+                        {inr(r.grossAmount)}
+                      </div>
+                      <Pill variant={statusVariant(r.status)}>
+                        {statusLabel(r.status)}
+                      </Pill>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
             <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">

@@ -17,6 +17,12 @@ const STATUS_LABELS: Record<string, string> = {
   RECEIVED: 'Received',
   OCR_PENDING: 'OCR pending',
   OCR_DONE: 'Matched',
+  // The three manual-fallback states. Unlabelled until now, so they rendered
+  // as the raw enum name in neutral grey — "OCR_FAILED" reads as a system
+  // detail rather than as an invoice sitting in a queue waiting for a person.
+  OCR_FAILED: 'OCR failed',
+  OCR_LOW_CONFIDENCE: 'Low confidence',
+  PENDING_VENDOR_MATCH: 'Unknown sender',
   MATCH_EXCEPTION: 'Exception',
   AWAITING_APPROVAL: 'Awaiting approval',
   APPROVED: 'Approved',
@@ -76,6 +82,11 @@ export function statusVariant(status: string): PillVariant {
     case 'IN_PROGRESS':
     case 'CONDITIONAL_PASS':
     case 'ISSUED':
+    // Stalled rather than in flight: each needs a person before it moves
+    // again, unlike OCR_PENDING which clears itself.
+    case 'OCR_FAILED':
+    case 'OCR_LOW_CONFIDENCE':
+    case 'PENDING_VENDOR_MATCH':
       return 'warn';
     case 'OCR_PENDING':
     case 'RECEIVED':
