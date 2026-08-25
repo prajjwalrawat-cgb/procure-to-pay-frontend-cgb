@@ -85,6 +85,22 @@ export function useResolveAndRoute(invoiceId: string) {
   });
 }
 
+/**
+ * Re-queue extraction for an invoice stuck before the matcher ever ran.
+ *
+ * The OCR job is enqueued once, at creation, so an invoice whose job is lost
+ * has no route back on its own — and no screen offered one until this existed.
+ */
+export function useRetryOcr(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch(`/invoices/${invoiceId}/ocr/retry`, { method: 'POST' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
 export function useAddComment(invoiceId: string) {
   const qc = useQueryClient();
   return useMutation({

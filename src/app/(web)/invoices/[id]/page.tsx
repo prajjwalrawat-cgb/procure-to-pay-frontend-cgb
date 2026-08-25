@@ -11,7 +11,12 @@ import { DocumentLedger } from '@/components/document-ledger';
 import { EntityRef } from '@/components/entity-ref';
 import { ResolveModal } from '@/components/invoices/resolve-modal';
 import { useDecide } from '@/lib/api/inbox';
-import { useAddComment, useInvoice, useResolveAndRoute } from '@/lib/api/invoices';
+import {
+  useAddComment,
+  useInvoice,
+  useResolveAndRoute,
+  useRetryOcr,
+} from '@/lib/api/invoices';
 import { exceptionLabel, impactLabel } from '@/lib/exception-display';
 import { inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
 import { COMPLIANCE_PROVIDER, useProviderLiveness } from '@/lib/integration-status';
@@ -23,6 +28,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const router = useRouter();
   const { data, isLoading } = useInvoice(id);
   const route = useResolveAndRoute(id);
+  const retryOcr = useRetryOcr(id);
   const addComment = useAddComment(id);
   const decide = useDecide();
   const toast = useToastStore((s) => s.push);
@@ -50,6 +56,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // so zero exceptions says nothing — and routing on it would send an unmatched
   // invoice into the approval chain. These are the states the matcher leaves.
   const matched = data.status === 'OCR_DONE' || data.status === 'MATCH_EXCEPTION';
+  // Mirrors the server guard: past these two, lines exist and may have been
+  // corrected by hand, and re-extracting would overwrite that work.
+  const retryable = data.status === 'OCR_PENDING' || data.status === 'OCR_FAILED';
 
   const onRoute = (): void => {
     route.mutate(undefined, {
@@ -225,8 +234,29 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 )
               ) : (
                 <div className="rounded-sm bg-info-wash px-3 py-2 text-[12px] text-info">
-                  The 3-way match has not run yet ({statusLabel(data.status)}), so nothing
-                  has been checked against the PO or the goods receipt.
+                  <div>
+                    The 3-way match has not run yet ({statusLabel(data.status)}), so
+                    nothing has been checked against the PO or the goods receipt.
+                  </div>
+                  {/* Without this an invoice whose extraction never completed is
+                      simply stuck: the job is queued once at creation, the
+                      matcher never runs, and routing refuses it forever. The
+                      state was reachable and had no way out. */}
+                  {retryable && (
+                    <div className="mt-2 flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => retryOcr.mutate()}
+                        disabled={retryOcr.isPending}
+                      >
+                        {retryOcr.isPending ? 'Queueing…' : 'Retry extraction'}
+                      </Button>
+                      <span className="text-[11px] text-muted">
+                        Re-reads the attached document. Safe to run more than once.
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             <div className="flex flex-col gap-2">
