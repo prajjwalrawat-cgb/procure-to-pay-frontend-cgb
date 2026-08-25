@@ -73,8 +73,8 @@ export default function IntegrationsPage(): React.JSX.Element {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Credential vault */}
-        <div className="border-line bg-panel rounded-lg border p-4">
-          <h2 className="text-ink mb-2 text-[13px] font-semibold">Credentials</h2>
+        <div className="rounded-lg border border-line bg-panel p-4">
+          <h2 className="mb-2 text-[13px] font-semibold text-ink">Credentials</h2>
           <div className="mb-3 space-y-1">
             {PROVIDERS.map((p) => {
               const c = configured.get(p);
@@ -90,10 +90,20 @@ export default function IntegrationsPage(): React.JSX.Element {
                         back real. A configured-but-sandbox credential (the demo
                         tenant's GSP is exactly that) previously rendered the same
                         green "configured" as a live one. */}
-                    {!c ? (
+                    {/* Order matters. "using sandbox simulator" keyed off the
+                        absence of a tenant credential, which says nothing about
+                        a provider configured through the environment: OCR has
+                        no credential row by design and was labelled a simulator
+                        while returning real extractions. Recorded behaviour
+                        decides first; the credential only colours the wording. */}
+                    {!simulated ? (
+                      <Pill variant="success" dot>
+                        live{c?.label ? ` · ${c.label}` : ''}
+                      </Pill>
+                    ) : !c ? (
                       <Pill variant="gray">using sandbox simulator</Pill>
                     ) : (
-                      <Pill variant={simulated ? 'outline' : 'success'} dot={!simulated}>
+                      <Pill variant="outline">
                         configured{c.label ? ` · ${c.label}` : ''}
                       </Pill>
                     )}
@@ -107,13 +117,13 @@ export default function IntegrationsPage(): React.JSX.Element {
               );
             })}
           </div>
-          <div className="border-line space-y-2 border-t pt-3">
-            <p className="text-muted text-[12px]">
+          <div className="space-y-2 border-t border-line pt-3">
+            <p className="text-[12px] text-muted">
               Set a credential (stored AES-256-GCM; never returned or logged).
             </p>
             <div className="grid grid-cols-2 gap-2">
               <select
-                className="border-line rounded-md border px-2 py-1.5 text-[13px]"
+                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
               >
@@ -122,19 +132,19 @@ export default function IntegrationsPage(): React.JSX.Element {
                 ))}
               </select>
               <input
-                className="border-line rounded-md border px-2 py-1.5 text-[13px]"
+                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
                 placeholder="Label (optional)"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
               />
               <input
-                className="border-line rounded-md border px-2 py-1.5 text-[13px]"
+                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
                 placeholder="Key (e.g. apiKey)"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
               />
               <input
-                className="border-line rounded-md border px-2 py-1.5 text-[13px]"
+                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
                 placeholder="Secret value"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
@@ -143,7 +153,7 @@ export default function IntegrationsPage(): React.JSX.Element {
             <button
               type="button"
               onClick={save}
-              className="bg-ink rounded-md px-3 py-1.5 text-[13px] font-medium text-white"
+              className="rounded-md bg-ink px-3 py-1.5 text-[13px] font-medium text-white"
             >
               Save credential
             </button>
@@ -151,9 +161,9 @@ export default function IntegrationsPage(): React.JSX.Element {
         </div>
 
         {/* Usage + jobs */}
-        <div className="border-line bg-panel rounded-lg border p-4">
+        <div className="rounded-lg border border-line bg-panel p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-ink text-[13px] font-semibold">Usage — {thisMonth}</h2>
+            <h2 className="text-[13px] font-semibold text-ink">Usage — {thisMonth}</h2>
             <button
               type="button"
               onClick={async () => {
@@ -167,18 +177,18 @@ export default function IntegrationsPage(): React.JSX.Element {
                   push(e instanceof Error ? e.message : 'Failed', 'error');
                 }
               }}
-              className="border-line text-text hover:bg-canvas rounded-md border px-3 py-1.5 text-[12px]"
+              className="rounded-md border border-line px-3 py-1.5 text-[12px] text-text hover:bg-canvas"
             >
               Run GSTR-2B reconciliation
             </button>
           </div>
           {!usage || usage.rows.length === 0 ? (
-            <p className="text-muted py-6 text-center text-[13px]">
+            <p className="py-6 text-center text-[13px] text-muted">
               No integration calls yet.
             </p>
           ) : (
             <table className="w-full text-[13px]">
-              <thead className="text-muted border-line border-b text-left text-[12px]">
+              <thead className="border-b border-line text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1.5 font-medium">Operation</th>
                   <th className="py-1.5 text-right font-medium">Calls</th>
@@ -190,7 +200,7 @@ export default function IntegrationsPage(): React.JSX.Element {
                 {usage.rows.map((r) => (
                   <tr
                     key={`${r.provider}-${r.operation}`}
-                    className="border-line border-b last:border-0"
+                    className="border-b border-line last:border-0"
                   >
                     <td className="py-1.5">
                       <span className="flex flex-wrap items-center gap-1.5">
@@ -226,7 +236,7 @@ export default function IntegrationsPage(): React.JSX.Element {
         </div>
       </div>
 
-      <p className="text-muted mt-4 text-[12px]">
+      <p className="mt-4 text-[12px] text-muted">
         Invoice intake queues (email → invoice, manual OCR review) live under{' '}
         <Link href="/invoices/intake" className="text-accent-2">
           Invoices → Intake

@@ -17,10 +17,17 @@
  * recorded GSP call comes back simulated). Trusting `configured` alone renders
  * a green MATCHED for a mock reconciliation.
  *
- * So the primary signal is behavioural, from `/integrations/usage`: a provider
- * counts as live only if it has actually recorded calls this month AND not all
- * of them were simulated. `configured && isActive` is kept as a necessary
- * precondition, not a sufficient one.
+ * So the signal is behavioural, from `/integrations/usage`: a provider counts
+ * as live only if it has actually recorded calls this month AND not all of them
+ * were simulated.
+ *
+ * Credential status is deliberately NOT part of the test. It was, as a
+ * "necessary precondition", and that broke every provider configured through
+ * the environment rather than through a tenant credential — OCR goes live by
+ * setting OCR_API_URL and has no credential row at all, so it reported itself
+ * simulated however many real documents it read. The call records subsume the
+ * check anyway: a sandbox key produces simulated calls and fails this test on
+ * its own.
  *
  * ── Fail closed ────────────────────────────────────────────────────────────
  * Loading, missing provider, zero recorded calls, or an errored request all
@@ -35,7 +42,7 @@
 
 import type { IntegrationProvider } from '@/lib/shared';
 
-import { useCredentialStatus, useIntegrationUsage } from '@/lib/api/integrations';
+import { useIntegrationUsage } from '@/lib/api/integrations';
 
 /** Current month as the API's `YYYY-MM`. */
 function currentMonth(): string {
@@ -52,17 +59,28 @@ export interface ProviderLiveness {
 }
 
 export function useProviderLiveness(): ProviderLiveness {
-  const { data: creds, isLoading: loadingCreds } = useCredentialStatus();
+  // Only usage is consulted now, so only usage is waited on — blocking the
+  // verdict on a credential fetch it no longer reads just delayed the answer.
   const { data: usage, isLoading: loadingUsage } = useIntegrationUsage(currentMonth());
 
   const isLive = (provider: IntegrationProvider): boolean => {
-    if (!creds || !usage) return false; // fail closed while loading or on error
+    if (!usage) return false; // fail closed while loading or on error
 
-    // Necessary precondition: somebody has wired this provider up at all.
-    const cred = creds.find((c) => c.provider === provider);
-    if (!cred?.configured || !cred.isActive) return false;
-
-    // Sufficient evidence: at least one real, non-simulated call on record.
+    /*
+     * Recorded behaviour is the whole test. A provider with real,
+     * non-simulated calls on record is live — it could not have made them
+     * otherwise.
+     *
+     * A tenant-credential precondition used to sit in front of this, and it was
+     * wrong for any provider wired through the environment rather than through
+     * TenantIntegrationCredential. OCR is exactly that: it goes live by setting
+     * OCR_API_URL, so no credential row ever exists for it, and the guard
+     * reported it simulated no matter how many real documents it read.
+     *
+     * Dropping it loses nothing. It existed to stop a configured-but-sandbox
+     * credential reading as live, and the call records handle that better — a
+     * sandbox key produces simulated calls, which fail this test anyway.
+     */
     const rows = usage.rows.filter((r) => r.provider === provider);
     const calls = rows.reduce((n, r) => n + r.calls, 0);
     const simulated = rows.reduce((n, r) => n + r.simulatedCalls, 0);
@@ -72,7 +90,7 @@ export function useProviderLiveness(): ProviderLiveness {
   return {
     isLive,
     isSimulated: (p) => !isLive(p),
-    isLoading: loadingCreds || loadingUsage,
+    isLoading: loadingUsage,
   };
 }
 
