@@ -22,6 +22,7 @@ const EXCEPTION_LABEL: Partial<Record<ExceptionType, string>> = {
   GSTR2B_MISMATCH: 'GSTR-2B mismatch',
   UOM_MISMATCH: 'Unit of measure',
   DATE_SEQUENCE: 'Date out of sequence',
+  DOCUMENT_MISMATCH: 'Document disagrees with record',
   PO_NOT_OPEN: 'PO not open for invoicing',
   AMOUNT_MISMATCH: 'Total disagrees with lines',
   VENDOR_BLOCKED: 'Vendor blocked',
