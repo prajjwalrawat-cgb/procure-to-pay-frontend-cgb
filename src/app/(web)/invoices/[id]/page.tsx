@@ -247,7 +247,20 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                       <Button
                         size="sm"
                         variant="default"
-                        onClick={() => retryOcr.mutate()}
+                        onClick={() =>
+                          retryOcr.mutate(undefined, {
+                            onSuccess: () =>
+                              toast('Extraction queued — refresh in a moment', 'success'),
+                            // Clicking and seeing nothing happen is worse than
+                            // an error: the first attempt 403'd and the only
+                            // trace was in the network tab.
+                            onError: (e) =>
+                              toast(
+                                (e as Error).message || 'Could not queue extraction',
+                                'error',
+                              ),
+                          })
+                        }
                         disabled={retryOcr.isPending}
                       >
                         {retryOcr.isPending ? 'Queueing…' : 'Retry extraction'}
