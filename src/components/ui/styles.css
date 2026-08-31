@@ -42,6 +42,13 @@
 html {
   font-size: 13.5px;
   line-height: 1.5;
+  /*
+   * The app shell is a full-height flex column that scrolls its own <main>, so
+   * the document itself has nothing left to scroll. Without this it still found
+   * about 20px — enough to drag the whole chrome, sidebar and topbar included,
+   * up out of view while the reader thought they were scrolling the page.
+   */
+  overflow: hidden;
 }
 
 body {

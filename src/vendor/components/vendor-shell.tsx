@@ -129,7 +129,13 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
             </div>
           }
         />
-        <main id="vendor-main" className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
+        {/* Same containment as the buyer shell — the sidebar is shared, and its
+            nav overflows on a short window, so an uncontained scroll here
+            chains straight into it. */}
+        <main
+          id="vendor-main"
+          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 lg:p-6"
+        >
           {children}
         </main>
       </div>

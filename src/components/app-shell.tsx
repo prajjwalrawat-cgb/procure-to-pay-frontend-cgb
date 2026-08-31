@@ -193,7 +193,13 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
             </div>
           }
         />
-        <main id="main-content" className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
+        {/* overscroll-contain stops the chain: without it, hitting the bottom of
+          the content carried on scrolling into whatever was behind it — on a
+          laptop-height window that is the sidebar, whose own nav overflows. */}
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 lg:p-6"
+        >
           {children}
         </main>
       </div>

@@ -85,12 +85,19 @@ export function Sidebar({
     };
   }, [mobileOpen, onMobileClose]);
 
+  // The nav genuinely overflows on a short window — around 830px of items in
+  // 700px of space — so it must scroll. `overscroll-contain` keeps that scroll
+  // to itself rather than letting it chain out to the page, or the page's chain
+  // into it.
   const nav = (
-    <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Main">
+    <nav
+      className="flex-1 overflow-y-auto overscroll-contain px-2 py-3"
+      aria-label="Main"
+    >
       {groups.map((group, gi) => (
         <div key={group.heading ?? gi} className="mb-4">
           {group.heading && !collapsed && (
-            <div className="text-on-navy-muted/70 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide">
+            <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-on-navy-muted/70">
               {group.heading}
             </div>
           )}
@@ -101,7 +108,7 @@ export function Sidebar({
               const content = (
                 <span
                   className={cn(
-                    'duration-hover relative flex items-center gap-2.5 rounded-sm px-2 py-1.5 text-[13px] font-medium transition-colors',
+                    'relative flex items-center gap-2.5 rounded-sm px-2 py-1.5 text-[13px] font-medium transition-colors duration-hover',
                     active
                       ? 'bg-navy-3 text-on-navy'
                       : 'text-on-navy-muted hover:bg-navy-2 hover:text-on-navy',
@@ -111,13 +118,13 @@ export function Sidebar({
                   {active && (
                     <span
                       aria-hidden
-                      className="bg-gold absolute -left-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-sm"
+                      className="absolute -left-2 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-sm bg-gold"
                     />
                   )}
                   <Icon className="h-4 w-4 shrink-0" aria-hidden />
                   {!collapsed && <span className="truncate">{item.label}</span>}
                   {!collapsed && item.badge ? (
-                    <span className="bg-gold text-navy ml-auto flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold">
+                    <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-navy">
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   ) : null}
@@ -132,7 +139,7 @@ export function Sidebar({
   );
 
   const brandBar = (
-    <div className="border-navy-3 flex h-14 shrink-0 items-center gap-2 border-b px-4">
+    <div className="flex h-14 shrink-0 items-center gap-2 border-b border-navy-3 px-4">
       {brand}
     </div>
   );
@@ -142,13 +149,13 @@ export function Sidebar({
       {/* Desktop rail */}
       <aside
         className={cn(
-          'bg-navy pf-navy-surface duration-panel hidden h-screen shrink-0 flex-col transition-[width] lg:flex',
+          'pf-navy-surface hidden h-screen shrink-0 flex-col bg-navy transition-[width] duration-panel lg:flex',
           collapsed ? 'w-16' : 'w-60',
         )}
       >
         {brandBar}
         {nav}
-        {footer && <div className="border-navy-3 border-t p-2">{footer}</div>}
+        {footer && <div className="border-t border-navy-3 p-2">{footer}</div>}
       </aside>
 
       {/* Mobile drawer */}
@@ -157,28 +164,28 @@ export function Sidebar({
         aria-hidden={!mobileOpen}
       >
         <div
-          className="bg-navy/60 fixed inset-0 z-40 backdrop-blur-sm"
+          className="fixed inset-0 z-40 bg-navy/60 backdrop-blur-sm"
           onClick={onMobileClose}
         />
         <aside
-          className="bg-navy pf-navy-surface fixed inset-y-0 left-0 z-50 flex w-[17rem] max-w-[85vw] flex-col shadow-xl"
+          className="pf-navy-surface fixed inset-y-0 left-0 z-50 flex w-[17rem] max-w-[85vw] flex-col bg-navy shadow-xl"
           role="dialog"
           aria-modal="true"
           aria-label="Navigation"
         >
-          <div className="border-navy-3 flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <div className="flex h-14 shrink-0 items-center gap-2 border-b border-navy-3 px-4">
             {brand}
             <button
               type="button"
               onClick={onMobileClose}
               aria-label="Close navigation"
-              className="text-on-navy-muted hover:bg-navy-3 hover:text-on-navy ml-auto rounded-sm p-1.5"
+              className="ml-auto rounded-sm p-1.5 text-on-navy-muted hover:bg-navy-3 hover:text-on-navy"
             >
               <X className="h-4 w-4" aria-hidden />
             </button>
           </div>
           {nav}
-          {footer && <div className="border-navy-3 border-t p-2">{footer}</div>}
+          {footer && <div className="border-t border-navy-3 p-2">{footer}</div>}
         </aside>
       </div>
     </>
