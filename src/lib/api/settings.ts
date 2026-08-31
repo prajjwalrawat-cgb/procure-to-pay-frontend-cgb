@@ -52,13 +52,13 @@ export function useUpdateOrganisation() {
 }
 
 /** Multipart, so no JSON Content-Type: `apiFetch` detects FormData. */
-export function useUploadLogo() {
+function useBrandingUpload(path: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (file: File) => {
       const form = new FormData();
       form.append('file', file);
-      return apiFetch<OrganisationSettings>('/settings/organisation/logo', {
+      return apiFetch<OrganisationSettings>(path, {
         method: 'POST',
         body: form,
       });
@@ -66,6 +66,12 @@ export function useUploadLogo() {
     onSuccess: (data) => qc.setQueryData(settingsKeys.organisation, data),
   });
 }
+
+export const useUploadLogo = () => useBrandingUpload('/settings/organisation/logo');
+
+/** The authorised signature printed on the PO PDF's sign-off block. */
+export const useUploadSignature = () =>
+  useBrandingUpload('/settings/organisation/signature');
 
 // ── GST registrations (branches) ───────────────────────────────────────────
 
