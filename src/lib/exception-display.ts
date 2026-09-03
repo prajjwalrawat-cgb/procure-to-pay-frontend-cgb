@@ -26,6 +26,7 @@ const EXCEPTION_LABEL: Partial<Record<ExceptionType, string>> = {
   PO_NOT_OPEN: 'PO not open for invoicing',
   AMOUNT_MISMATCH: 'Total disagrees with lines',
   VENDOR_BLOCKED: 'Vendor blocked',
+  VENDOR_MISMATCH: 'Different supplier on the document',
 };
 
 export function exceptionLabel(type: string): string {
