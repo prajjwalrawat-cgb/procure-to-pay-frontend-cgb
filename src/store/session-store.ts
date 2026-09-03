@@ -7,6 +7,11 @@ export interface SessionUser {
   email: string;
   name: string;
   roles: string[];
+  /** Effective permissions from the API — the role bundles plus whatever the
+   *  tenant's active approval matrices grant those roles. Optional so a session
+   *  restored from an older payload still renders; `useHasPermission` falls
+   *  back to deriving from `roles` when it is absent. */
+  perms?: string[];
   mfaEnabled: boolean;
   /** The signed-in user's own organisation, from /users/me or login. Screens
    *  that display the buying org's name read it from here — never a literal,

@@ -19,7 +19,12 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import type { IntegrationProvider, OnboardingDetailResponse } from '@/lib/shared';
+import type {
+  IntegrationProvider,
+  OnboardingApprovalStep,
+  OnboardingDetailResponse,
+  OnboardingReviewDecision,
+} from '@/lib/shared';
 
 import { useProviderLiveness } from '@/lib/integration-status';
 import {
@@ -49,24 +54,125 @@ const DOC_VARIANT: Record<string, 'success' | 'warn' | 'danger' | 'gray'> = {
   EXPIRED: 'danger',
 };
 
+const DECISION_COPY: Record<
+  OnboardingReviewDecision,
+  { label: string; variant: 'success' | 'warn' | 'danger' | 'gray'; blurb: string }
+> = {
+  APPROVED: {
+    label: 'Approved',
+    variant: 'success',
+    blurb:
+      'The chain is complete and the vendor has been activated — they can be put on a PO and paid.',
+  },
+  REJECTED: {
+    label: 'Rejected',
+    variant: 'danger',
+    blurb: 'The application was turned down. The vendor cannot be transacted with.',
+  },
+  RETURNED_FOR_INFO: {
+    label: 'Returned for info',
+    variant: 'warn',
+    blurb: 'Sent back to the vendor. It returns to this queue once they resubmit.',
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    variant: 'gray',
+    blurb: 'The invitation was withdrawn before the vendor submitted.',
+  },
+};
+
+const CHAIN_DOT: Record<OnboardingApprovalStep['decision'], string> = {
+  APPROVED: 'text-accent-2',
+  REJECTED: 'text-danger',
+  CHANGES_REQUESTED: 'text-warn',
+  DELEGATED: 'text-muted',
+  PENDING: 'text-faint',
+};
+
+const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString();
+
+/** The approval chain, so "who has it now" and "who already signed" are visible
+ *  rather than inferred. Rendered under every non-actionable panel state. */
+function ChainTrail({
+  chain,
+}: {
+  chain: OnboardingApprovalStep[];
+}): React.JSX.Element | null {
+  if (chain.length === 0) return null;
+  return (
+    <ul className="mt-3 space-y-1 border-t border-line pt-3">
+      {chain.map((step) => (
+        <li key={`${step.stepNo}-${step.name}`} className="text-[12px]">
+          <span className={CHAIN_DOT[step.decision]}>●</span>{' '}
+          <span className="text-ink">
+            {step.approverName ?? step.role.replace(/_/g, ' ')}
+          </span>{' '}
+          <span className="text-muted">
+            —{' '}
+            {step.decision === 'PENDING'
+              ? step.isCurrent
+                ? 'with them now'
+                : 'not yet reached'
+              : step.decision.replace(/_/g, ' ').toLowerCase()}
+            {step.decidedAt && ` ${fmtDate(step.decidedAt)}`}
+          </span>
+          {step.comment && <p className="pl-4 italic text-muted">“{step.comment}”</p>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * What stands between this onboarding and a decision.
  *
- * The panel used to say only "not currently awaiting your review", which is
- * true of two very different situations: a vendor who has not submitted, and a
- * submission sitting with a different approver. Naming the outstanding work
- * turns a dead end into something the officer can act on — usually by chasing
- * the vendor, which is what Return for info is for.
+ * `canReview: false` covers three unrelated situations — nothing submitted yet,
+ * someone else's turn, and already decided — and the panel used to describe all
+ * of them as "waiting on another approver in the chain". An approver who had
+ * just approved a vendor was told their own decision was still pending, which
+ * is why the outcome is now read from `reviewDecision` first and the chain is
+ * printed underneath either way.
  */
 function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.Element {
-  if (data.submittedAt) {
+  // Tolerate an API that predates these fields. A deployed frontend can outrun
+  // the API it talks to (or vice versa), and reading `.find` off an absent
+  // array throws during render — which Next reports only as a dead worker,
+  // several layers away from the actual cause.
+  const chain = data.approvalChain ?? [];
+
+  if (data.reviewDecision) {
+    const copy = DECISION_COPY[data.reviewDecision];
     return (
-      <p className="text-[13px] text-muted">
-        Submitted on {new Date(data.submittedAt).toLocaleDateString()} — waiting on
-        another approver in the chain, so there is nothing for you to decide here.
-      </p>
+      <div className="space-y-2 text-[13px]">
+        <Pill variant={copy.variant} dot>
+          {copy.label}
+          {data.decisionAt && ` · ${fmtDate(data.decisionAt)}`}
+        </Pill>
+        <p className="text-muted">{copy.blurb}</p>
+        <ChainTrail chain={chain} />
+      </div>
     );
   }
+
+  if (data.submittedAt) {
+    // Name who is actually holding it. "Another approver" was true but useless:
+    // the officer's next move is to chase a person, and this says which one.
+    const current = chain.find((s) => s.isCurrent && s.decision === 'PENDING');
+    const holder =
+      current && (current.approverName ?? current.role.replace(/_/g, ' ').toLowerCase());
+    return (
+      <div className="space-y-2 text-[13px]">
+        <p className="text-muted">
+          Submitted on {fmtDate(data.submittedAt)} —{' '}
+          {holder
+            ? `it is with ${holder} at step ${current?.stepNo}, so there is nothing for you to decide here.`
+            : 'waiting on another approver in the chain, so there is nothing for you to decide here.'}
+        </p>
+        <ChainTrail chain={chain} />
+      </div>
+    );
+  }
+
   const outstanding = data.steps.filter((s) => !s.done);
   return (
     <div className="space-y-2 text-[13px]">
@@ -203,8 +309,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   );
   // Documents are auto-verified against the PAN and GSTN registries; if
   // either is answering from a sandbox, an AUTO VERIFIED badge is unearned.
-  const statutoryVerificationSimulated =
-    isSimulated('PAN') || isSimulated('GSTN');
+  const statutoryVerificationSimulated = isSimulated('PAN') || isSimulated('GSTN');
   // The penny drop has no row of its own to chip, so its liveness is read
   // straight off the provider registry.
   const pennyDropSimulated = isSimulated('PENNY_DROP');
@@ -258,7 +363,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               <button
                 type="button"
                 onClick={() => setRenaming(true)}
-                className="text-muted hover:text-ink duration-hover text-[12px] font-medium underline transition-colors"
+                className="text-[12px] font-medium text-muted underline transition-colors duration-hover hover:text-ink"
               >
                 Edit name
               </button>
@@ -638,7 +743,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Comment / reason (required to return or reject)…"
-                    className="bg-panel mb-3 w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
+                    className="mb-3 w-full rounded-md border border-line bg-panel px-3 py-2 text-[13px] text-ink"
                     rows={4}
                   />
                   <div className="space-y-2">
