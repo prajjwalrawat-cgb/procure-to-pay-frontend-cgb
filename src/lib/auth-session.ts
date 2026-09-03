@@ -64,7 +64,20 @@ export function endSession(loginPath: string, clear: () => void): void {
   if (pathname === loginPath) return;
 
   redirecting = true;
-  const next = encodeURIComponent(`${pathname}${search}`);
+  /*
+   * Drop any `next` already on the URL before capturing it as the new one.
+   *
+   * Without this the parameter nests inside itself on every bounce, re-encoded
+   * each time: `/?next=%2F%3Fnext%3D%252F%253Fnext%253D…`. One transient
+   * refresh failure while sitting on a page that had already been bounced once
+   * was enough to start it, and the URL then doubled in length per cycle. The
+   * destination never changes — only the encoding grows — so the parameter is
+   * pure noise after the first hop.
+   */
+  const params = new URLSearchParams(search);
+  params.delete('next');
+  const rest = params.toString();
+  const next = encodeURIComponent(`${pathname}${rest ? `?${rest}` : ''}`);
   window.location.replace(`${loginPath}?next=${next}`);
 }
 
@@ -83,5 +96,12 @@ export function safeNextPath(next: string | null, fallback: string): string {
   }
   // Must be a rooted path, and not protocol-relative ("//evil.com").
   if (!decoded.startsWith('/') || decoded.startsWith('//')) return fallback;
+  /*
+   * Refuse a destination that is itself another bounce. Belt and braces with
+   * the strip in `endSession`: a link from an older build, a bookmarked URL, or
+   * anything else carrying a nested `next` would otherwise send the user
+   * straight back into the loop the moment they signed in.
+   */
+  if (decoded.includes('next=')) return fallback;
   return decoded;
 }

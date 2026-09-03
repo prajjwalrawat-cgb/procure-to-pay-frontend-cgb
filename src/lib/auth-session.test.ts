@@ -82,3 +82,19 @@ describe('safeNextPath', () => {
     expect(safeNextPath('javascript:alert(1)', '/vendor')).toBe('/vendor');
   });
 });
+
+describe('safeNextPath — bounce loops', () => {
+  it('refuses a destination that is itself another bounce', () => {
+    // The shape seen in the wild: `next` nested inside `next`, re-encoded on
+    // every cycle. Following it would put the user straight back in the loop.
+    expect(safeNextPath('%2F%3Fnext%3D%252F%253Fnext%253D%25252F', '/')).toBe('/');
+  });
+
+  it('still honours an ordinary destination', () => {
+    expect(safeNextPath('%2Finvoices%2Finv_1', '/')).toBe('/invoices/inv_1');
+  });
+
+  it('still refuses an off-site destination', () => {
+    expect(safeNextPath('%2F%2Fevil.example', '/')).toBe('/');
+  });
+});
