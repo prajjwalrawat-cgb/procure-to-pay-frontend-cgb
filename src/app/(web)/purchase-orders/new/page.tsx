@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { CustomFieldInputs } from '@/components/custom-fields';
+import { DuplicatePoDialog } from '@/components/purchase-orders/duplicate-po-dialog';
 import type { DraftTerm } from '@/components/purchase-orders/po-terms-editor';
 import {
   PoTermsEditor,
@@ -28,6 +29,8 @@ import {
   useUploadPoAttachment,
 } from '@/lib/api/purchase-orders';
 import { useCostCenters, usePlants, useVendors } from '@/lib/api/refs';
+import type { DuplicatePoMatch } from '@/lib/duplicate-po';
+import { duplicatePosFromError } from '@/lib/duplicate-po';
 import { inr } from '@/lib/format';
 import { percentToRate } from '@/lib/rate';
 import { INCOTERM_OPTIONS, PAYMENT_TERM_OPTIONS } from '@/lib/refs';
@@ -116,6 +119,8 @@ export default function NewSpotBuyPage(): React.JSX.Element {
   // defined none, in which case the section renders nothing.
   const [customFields, setCustomFields] = useState<CustomFieldValues>({});
   const [billToPlantId, setBillToPlantId] = useState<string>('');
+  // Orders the server matched this one against; non-null opens the confirm step.
+  const [duplicates, setDuplicates] = useState<DuplicatePoMatch | null>(null);
 
   // Object URLs leak until revoked, so the lifetime is tied to the chosen file.
   useEffect(() => {
@@ -201,11 +206,16 @@ export default function NewSpotBuyPage(): React.JSX.Element {
    * is three calls in sequence. The order matters: if the quote upload fails the
    * draft still exists and the user is taken to it rather than losing the whole
    * form, with a toast saying what is missing.
+   *
+   * `confirmDuplicate` is the buyer's answer to the duplicate warning below —
+   * false on the first attempt, true on the retry once they have seen what the
+   * server matched. Nothing else about the body changes, so the retry re-runs
+   * this whole sequence rather than resuming a half-created order.
    */
-  const onSubmit = async (): Promise<void> => {
+  const submit = async (confirmDuplicate: boolean): Promise<void> => {
     setSaving(true);
     try {
-      const { id } = await createPo.mutateAsync(buildBody());
+      const { id } = await createPo.mutateAsync({ ...buildBody(), confirmDuplicate });
 
       if (quote) {
         try {
@@ -231,10 +241,20 @@ export default function NewSpotBuyPage(): React.JSX.Element {
       toast('Spot-buy PO drafted', 'success');
       router.push(`/purchase-orders/${id}`);
     } catch (e) {
+      // A duplicate match is a question for the buyer, not a failure — the form
+      // is left exactly as it is and the dialog asks it.
+      const matched = duplicatePosFromError(e);
+      if (matched) {
+        setDuplicates(matched);
+        setSaving(false);
+        return;
+      }
       toast(e instanceof Error ? e.message : 'Could not create the PO', 'error');
       setSaving(false);
     }
   };
+
+  const onSubmit = (): Promise<void> => submit(false);
 
   return (
     <div className="mx-auto max-w-4xl pb-8">
@@ -675,6 +695,16 @@ export default function NewSpotBuyPage(): React.JSX.Element {
           </Button>
         )}
       </div>
+
+      <DuplicatePoDialog
+        match={duplicates}
+        busy={saving}
+        onCancel={() => setDuplicates(null)}
+        onConfirm={() => {
+          setDuplicates(null);
+          void submit(true);
+        }}
+      />
     </div>
   );
 }

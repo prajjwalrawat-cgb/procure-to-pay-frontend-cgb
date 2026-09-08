@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { PaymentTermKind, PoCreateInput, RequisitionLineView } from '@/lib/shared';
 
+import { DuplicatePoDialog } from '@/components/purchase-orders/duplicate-po-dialog';
 import type { DraftTerm } from '@/components/purchase-orders/po-terms-editor';
 import {
   PoTermsEditor,
@@ -17,6 +18,8 @@ import { useClauseLibrary } from '@/lib/api/contracts';
 import { useCreatePurchaseOrder, useSetPoTerms } from '@/lib/api/purchase-orders';
 import { useVendors } from '@/lib/api/refs';
 import { useRequisition } from '@/lib/api/requisitions';
+import type { DuplicatePoMatch } from '@/lib/duplicate-po';
+import { duplicatePosFromError } from '@/lib/duplicate-po';
 import { inr } from '@/lib/format';
 import { INCOTERM_OPTIONS, PAYMENT_TERM_OPTIONS } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
@@ -81,6 +84,14 @@ export default function CreatePoPage(): React.JSX.Element {
   }, []);
   const [cards, setCards] = useState<PoCard[]>(() => [blankCard(defaultDate)]);
   const [saving, setSaving] = useState(false);
+  // Orders the server matched against the card it stopped on; non-null opens
+  // the confirm step. `pending` is where to pick the split-award back up.
+  const [duplicates, setDuplicates] = useState<DuplicatePoMatch | null>(null);
+  const [pending, setPending] = useState<{
+    cards: PoCard[];
+    index: number;
+    createdIds: string[];
+  } | null>(null);
 
   if (isLoading || !data) {
     return <div className="p-6 text-[13px] text-muted">Loading requisition…</div>;
@@ -135,38 +146,60 @@ export default function CreatePoPage(): React.JSX.Element {
     return null;
   };
 
-  const onSaveAll = async (): Promise<void> => {
-    const err = validate();
-    if (err) {
-      toast(err, 'error');
-      return;
-    }
+  const bodyFor = (card: PoCard, confirmDuplicate: boolean): PoCreateInput => {
+    const term = PAYMENT_TERM_OPTIONS.find((t) => t.value === card.paymentKind);
+    return {
+      kind: 'FROM_PR',
+      requisitionId: id,
+      vendorId: card.vendorId,
+      deliveryTerms: card.deliveryTerms as PoCreateInput['deliveryTerms'],
+      paymentTerms: {
+        kind: card.paymentKind as PaymentTermKind,
+        days: term?.days ?? null,
+        // Captured with the order so the PO prints the wording chosen here.
+        label: term?.label ?? null,
+      },
+      expectedDeliveryDate: new Date(
+        `${card.expectedDeliveryDate}T00:00:00.000Z`,
+      ).toISOString(),
+      deliveryAddress: card.deliveryLine1 ? { line1: card.deliveryLine1 } : null,
+      lines: prLines
+        .filter((l) => num(card.lines[l.id]) > 0)
+        .map((l) => ({ prLineId: l.id, qtyOrdered: card.lines[l.id] })),
+      confirmDuplicate,
+    };
+  };
+
+  const finish = (createdIds: string[]): void => {
+    toast(`Created ${createdIds.length} PO draft(s)`, 'success');
+    const [first, ...rest] = createdIds;
+    const q = rest.length > 0 ? `?batch=${rest.join(',')}` : '';
+    router.push(`/purchase-orders/${first}${q}`);
+  };
+
+  /**
+   * Raise the split-award one card at a time, from `startIdx` on.
+   *
+   * A duplicate warning can land part-way through, by which point the earlier
+   * cards are already real POs — so the run is resumable rather than restarted:
+   * the card it stopped on is remembered, and confirming picks up from exactly
+   * there. Only that card carries the confirmation; the ones after it are
+   * checked afresh, since they are different orders.
+   */
+  const runFrom = async (
+    active: PoCard[],
+    startIdx: number,
+    createdIds: string[],
+    confirmFirst: boolean,
+  ): Promise<void> => {
     setSaving(true);
-    const active = cards.filter((c) => Object.values(c.lines).some((q) => num(q) > 0));
-    const createdIds: string[] = [];
+    let at = startIdx;
     try {
-      for (const card of active) {
-        const term = PAYMENT_TERM_OPTIONS.find((t) => t.value === card.paymentKind);
-        const body: PoCreateInput = {
-          kind: 'FROM_PR',
-          requisitionId: id,
-          vendorId: card.vendorId,
-          deliveryTerms: card.deliveryTerms as PoCreateInput['deliveryTerms'],
-          paymentTerms: {
-            kind: card.paymentKind as PaymentTermKind,
-            days: term?.days ?? null,
-            // Captured with the order so the PO prints the wording chosen here.
-            label: term?.label ?? null,
-          },
-          expectedDeliveryDate: new Date(
-            `${card.expectedDeliveryDate}T00:00:00.000Z`,
-          ).toISOString(),
-          deliveryAddress: card.deliveryLine1 ? { line1: card.deliveryLine1 } : null,
-          lines: prLines
-            .filter((l) => num(card.lines[l.id]) > 0)
-            .map((l) => ({ prLineId: l.id, qtyOrdered: card.lines[l.id] })),
-        };
-        const res = await createPo.mutateAsync(body);
+      for (; at < active.length; at += 1) {
+        const card = active[at]!;
+        const res = await createPo.mutateAsync(
+          bodyFor(card, confirmFirst && at === startIdx),
+        );
         createdIds.push(res.id);
 
         // The PO has to exist before its terms can hang off it. A failure here
@@ -184,14 +217,40 @@ export default function CreatePoPage(): React.JSX.Element {
           );
         }
       }
-      toast(`Created ${createdIds.length} PO draft(s)`, 'success');
-      const [first, ...rest] = createdIds;
-      const q = rest.length > 0 ? `?batch=${rest.join(',')}` : '';
-      router.push(`/purchase-orders/${first}${q}`);
+      finish(createdIds);
     } catch (e) {
+      const matched = duplicatePosFromError(e);
+      if (matched) {
+        setPending({ cards: active, index: at, createdIds });
+        setDuplicates(matched);
+        setSaving(false);
+        return;
+      }
       toast((e as Error).message, 'error');
       setSaving(false);
     }
+  };
+
+  const onSaveAll = async (): Promise<void> => {
+    const err = validate();
+    if (err) {
+      toast(err, 'error');
+      return;
+    }
+    const active = cards.filter((c) => Object.values(c.lines).some((q) => num(q) > 0));
+    await runFrom(active, 0, [], false);
+  };
+
+  /**
+   * Backing out of the warning. Whatever was raised before the stop really was
+   * raised, so the buyer is told and taken to it rather than left thinking the
+   * whole split-award was abandoned.
+   */
+  const onCancelDuplicate = (): void => {
+    const created = pending?.createdIds ?? [];
+    setDuplicates(null);
+    setPending(null);
+    if (created.length > 0) finish(created);
   };
 
   return (
@@ -427,6 +486,20 @@ export default function CreatePoPage(): React.JSX.Element {
           </Button>
         </div>
       </div>
+
+      <DuplicatePoDialog
+        match={duplicates}
+        busy={saving}
+        onCancel={onCancelDuplicate}
+        onConfirm={() => {
+          const resume = pending;
+          setDuplicates(null);
+          setPending(null);
+          if (resume) {
+            void runFrom(resume.cards, resume.index, resume.createdIds, true);
+          }
+        }}
+      />
     </div>
   );
 }
