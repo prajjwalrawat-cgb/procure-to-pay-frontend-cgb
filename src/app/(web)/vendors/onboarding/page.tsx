@@ -200,6 +200,14 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                         Cancelled
                       </Pill>
                     )}
+                    {/* Sits in this tab while the vendor fixes what was asked
+                        for — the row is not waiting on a reviewer, and without
+                        the pill it is indistinguishable from one that is. */}
+                    {o.reviewDecision === 'RETURNED_FOR_INFO' && (
+                      <Pill variant="warn" className="ml-2">
+                        With vendor
+                      </Pill>
+                    )}
                   </td>
                   <td className="text-muted px-3 py-2">{o.category ?? '—'}</td>
                   <td className="text-muted px-3 py-2">

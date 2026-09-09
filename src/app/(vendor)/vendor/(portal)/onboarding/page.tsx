@@ -289,6 +289,32 @@ function EntityTypeField({
   );
 }
 
+/**
+ * The fields each step writes, so the wizard can tell a step whose inputs have
+ * moved since the last save from one that is already stored. Mirrors the step
+ * payloads assembled in `payloadFor` — a field added there belongs here too, or
+ * an edit to it will not count as unsaved.
+ */
+const STEP_FIELDS: Record<number, string[]> = {
+  1: [
+    'legalEntityType',
+    'legalEntityName',
+    'tradeName',
+    'businessPan',
+    'addressLine1',
+    'city',
+    'stateCode',
+    'pincode',
+    'primaryContactName',
+    'primaryContactEmail',
+    'primaryContactPhone',
+  ],
+  2: ['gstin', 'udyamNumber'],
+  3: ['bankName', 'accountNumber', 'ifsc', 'holderName'],
+  // Step 4 sends a constant, not fields — there is nothing on it to leave unsaved.
+  4: [],
+};
+
 /** The banner for a wizard that is no longer the vendor's to act on — approved,
  *  awaiting a reviewer, or handed back for more information. */
 function onboardingStatus(data: ResumeResponse): {
@@ -320,7 +346,9 @@ function onboardingStatus(data: ResumeResponse): {
     return {
       pill: 'Under review',
       title: `Submitted on ${on} — awaiting your buyer's review`,
-      body: 'Nothing more to do for now. We will email you when a decision is made.',
+      body:
+        'Nothing more to do for now — your answers and documents are locked while ' +
+        'your buyer reads them. We will email you when a decision is made.',
       tone: 'info',
     };
   }
@@ -365,6 +393,11 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     branch: string | null;
   } | null>(null);
 
+  /** What the server last confirmed it holds — the yardstick for "unsaved".
+   *  Seeded with the form and moved forward by each successful step save. */
+  const [savedFields, setSavedFields] = useState<Record<string, string>>({});
+  const [savedIsMsme, setSavedIsMsme] = useState(false);
+
   // Seed the inputs from what the server already holds. Done once per
   // onboarding, not on every refetch: saving a step invalidates this query, and
   // re-seeding then would overwrite whatever the vendor has since typed.
@@ -376,6 +409,8 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     const hydrated = hydrateWizardForm(data?.wizardState);
     setF(hydrated.fields);
     setIsMsme(hydrated.isMsme);
+    setSavedFields(hydrated.fields);
+    setSavedIsMsme(hydrated.isMsme);
     setExtracted(data?.wizardState?.extracted ?? {});
   }, [onboardingId, data?.wizardState]);
 
@@ -396,6 +431,39 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     for (const [k, v] of localDocs) merged.set(k, v);
     return merged;
   }, [data, localDocs]);
+
+  /**
+   * Steps whose inputs have moved since they were last saved.
+   *
+   * The wizard keeps typing in page state, so switching steps never loses it —
+   * but Save step is what sends it, and nothing said so. A vendor who edited
+   * step 1, walked to step 4 and pressed Submit for review submitted the values
+   * from before the edit, with a success toast and no hint that what they had
+   * typed had gone nowhere. This is what Submit flushes first, and what the
+   * unsaved markers are drawn from.
+   */
+  const dirtySteps = useMemo(
+    () =>
+      Object.keys(STEP_FIELDS)
+        .map(Number)
+        .filter(
+          (n) =>
+            STEP_FIELDS[n]?.some(
+              (k) => (f[k] ?? '').trim() !== (savedFields[k] ?? '').trim(),
+            ) ||
+            (n === 2 && isMsme !== savedIsMsme),
+        ),
+    [f, savedFields, isMsme, savedIsMsme],
+  );
+
+  /** Nothing typed is lost to a closed tab either — the browser's own prompt is
+   *  the only thing that can interrupt a navigation away from the page. */
+  useEffect(() => {
+    if (dirtySteps.length === 0) return;
+    const warn = (e: BeforeUnloadEvent): void => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirtySteps.length]);
 
   // The bank follows from the IFSC, so it is looked up as the vendor types
   // rather than asked for. A code the directory does not know clears the field
@@ -466,50 +534,10 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     return field;
   };
 
-  const persist = (stepNumber: number, payload: SaveStepInput): void => {
-    // Validate against this step's schema before sending. The API enforces the
-    // same rules, but it answers with a generic 422 whose per-field detail used
-    // to be dropped — checking here names the offending field immediately.
-    const schema = ONBOARDING_STEP_SCHEMAS[stepNumber];
-    const parsed = schema?.safeParse(payload);
-    if (parsed && !parsed.success) {
-      setFieldErrors(zodFieldErrors(parsed.error));
-      toast(zodSummary(parsed.error, 'Check the highlighted fields'), 'error');
-      return;
-    }
-    setFieldErrors({});
-
-    saveStep.mutate(
-      { stepNumber, data: payload },
-      {
-        onSuccess: () => {
-          toast(`Step ${stepNumber} saved`, 'success');
-          setStep(Math.min(ONBOARDING_STEP_COUNT, stepNumber + 1));
-        },
-        onError: (e) => {
-          // Server-only rejections (PAN/GSTIN verification, penny-drop mismatch)
-          // still land on the right input.
-          if (e instanceof ApiError) setFieldErrors(e.fieldErrors);
-          toast(e.message, 'error');
-        },
-      },
-    );
-  };
-
-  const saveCurrent = (): void => {
-    if (step === 1) {
-      // The API refuses this too; catching it here keeps the vendor on the
-      // panel that has the file pickers rather than bouncing them off a 422.
-      if (missingStatutoryDocs.length > 0) {
-        toast(
-          `Upload your ${missingStatutoryDocs
-            .map(vendorDocumentLabel)
-            .join(' and ')} first — we fill this step in from them.`,
-          'error',
-        );
-        return;
-      }
-      persist(1, {
+  /** What a given step would send right now, assembled from the form. */
+  const payloadFor = (stepNumber: number): SaveStepInput => {
+    if (stepNumber === 1) {
+      return {
         legalEntityType: f.legalEntityType ?? '',
         legalEntityName: f.legalEntityName ?? '',
         tradeName: f.tradeName?.trim() || null,
@@ -521,25 +549,91 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         primaryContactName: f.primaryContactName ?? '',
         primaryContactEmail: f.primaryContactEmail ?? '',
         primaryContactPhone: f.primaryContactPhone ?? '',
-      } as SaveStepInput);
-    } else if (step === 2) {
-      persist(2, {
+      } as SaveStepInput;
+    }
+    if (stepNumber === 2) {
+      return {
         gstin: f.gstin ?? '',
         isMsme,
         udyamNumber: isMsme ? (f.udyamNumber ?? null) : null,
-      } as SaveStepInput);
-    } else if (step === 3) {
-      persist(3, {
+      } as SaveStepInput;
+    }
+    if (stepNumber === 3) {
+      return {
         // Only sent for an IFSC the directory could not resolve; otherwise the
         // API overwrites it with the directory's name anyway.
         bankName: bankFromIfsc?.bank ?? f.bankName ?? '',
         accountNumber: f.accountNumber ?? '',
         ifsc: (f.ifsc ?? '').trim().toUpperCase(),
         holderName: f.holderName ?? '',
-      } as SaveStepInput);
-    } else if (step === 4) {
-      persist(4, { documentsConfirmed: true } as SaveStepInput);
+      } as SaveStepInput;
     }
+    return { documentsConfirmed: true } as SaveStepInput;
+  };
+
+  /**
+   * Send one step and record that it is stored.
+   *
+   * Resolves to whether it stuck, so Submit can flush several in order and stop
+   * at the first that does not. A rejection puts the vendor on the step that was
+   * rejected with its fields marked — being told "pincode is invalid" while
+   * looking at the documents step explains nothing.
+   */
+  const persist = async (
+    stepNumber: number,
+    opts: { advance?: boolean; quiet?: boolean } = {},
+  ): Promise<boolean> => {
+    if (stepNumber === 1 && missingStatutoryDocs.length > 0) {
+      // The API refuses this too; catching it here keeps the vendor on the
+      // panel that has the file pickers rather than bouncing them off a 422.
+      setStep(1);
+      toast(
+        `Upload your ${missingStatutoryDocs
+          .map(vendorDocumentLabel)
+          .join(' and ')} first — we fill this step in from them.`,
+        'error',
+      );
+      return false;
+    }
+    const payload = payloadFor(stepNumber);
+    // Validate against this step's schema before sending. The API enforces the
+    // same rules, but it answers with a generic 422 whose per-field detail used
+    // to be dropped — checking here names the offending field immediately.
+    const schema = ONBOARDING_STEP_SCHEMAS[stepNumber];
+    const parsed = schema?.safeParse(payload);
+    if (parsed && !parsed.success) {
+      setStep(stepNumber);
+      setFieldErrors(zodFieldErrors(parsed.error));
+      toast(zodSummary(parsed.error, 'Check the highlighted fields'), 'error');
+      return false;
+    }
+    setFieldErrors({});
+
+    try {
+      await saveStep.mutateAsync({ stepNumber, data: payload });
+    } catch (e) {
+      // Server-only rejections (PAN/GSTIN verification, penny-drop mismatch)
+      // still land on the right input.
+      setStep(stepNumber);
+      if (e instanceof ApiError) setFieldErrors(e.fieldErrors);
+      toast(e instanceof Error ? e.message : 'Could not save this step', 'error');
+      return false;
+    }
+    // The yardstick moves only on a save the server accepted, so a step stays
+    // marked unsaved for exactly as long as it is.
+    setSavedFields((prev) => {
+      const next = { ...prev };
+      for (const k of STEP_FIELDS[stepNumber] ?? []) next[k] = f[k] ?? '';
+      return next;
+    });
+    if (stepNumber === 2) setSavedIsMsme(isMsme);
+    if (!opts.quiet) toast(`Step ${stepNumber} saved`, 'success');
+    if (opts.advance) setStep(Math.min(ONBOARDING_STEP_COUNT, stepNumber + 1));
+    return true;
+  };
+
+  const saveCurrent = (): void => {
+    void persist(step, { advance: true });
   };
 
   /**
@@ -679,7 +773,19 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     (d) => !uploadedDocs.has(d),
   );
 
-  const doSubmit = (): void => {
+  const doSubmit = async (): Promise<void> => {
+    // Anything typed and not saved goes with the submission rather than being
+    // dropped by it, and so does a step never saved at all — the API rejects a
+    // submission with an unsaved step, and "Step 3 is not complete" names a step
+    // rather than the field that is wrong. In step order: step 2's GSTIN is
+    // checked against step 1's PAN, so saving them out of order would reject a
+    // consistent pair.
+    const toFlush = [1, 2, 3, 4].filter(
+      (n) => dirtySteps.includes(n) || !data.wizardState?.steps?.[`step${n}`]?.done,
+    );
+    for (const n of toFlush) {
+      if (!(await persist(n, { quiet: true }))) return;
+    }
     submit.mutate(undefined, {
       onSuccess: () => toast('Onboarding submitted for review', 'success'),
       onError: (e) => toast(e.message, 'error'),
@@ -726,7 +832,10 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             <span className="text-[14px] font-semibold text-ink">{status.title}</span>
           </div>
           <p className="mt-1.5 text-[13px] text-muted">{status.body}</p>
-          {data.reviewNotes && (
+          {/* Only while the note is still something to act on. Once the vendor
+              has sent it back, repeating "reviewer note" under "under review"
+              reads as a fresh request rather than the one they just answered. */}
+          {data.reviewNotes && data.reviewDecision === 'RETURNED_FOR_INFO' && (
             <p className="mt-1.5 text-[13px] text-muted">
               Reviewer note: {data.reviewNotes}
             </p>
@@ -751,6 +860,9 @@ export default function OnboardingWizardPage(): React.JSX.Element {
               }`}
             >
               {n}. {name}
+              {/* An edit that has not been sent yet. Without it the only
+                  difference between typed and saved was invisible. */}
+              {dirtySteps.includes(n) && <span className="text-warn"> •</span>}
             </button>
           );
         })}
@@ -763,337 +875,345 @@ export default function OnboardingWizardPage(): React.JSX.Element {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {step === 1 && (
-            <>
-              <div className="rounded-md border border-line bg-canvas/60 p-3">
-                <p className="text-[13px] font-medium text-ink">
-                  Start with your documents
-                </p>
-                <p className="mt-0.5 text-[12px] text-muted">
-                  Upload your GST registration certificate and PAN card (PDF or image, max
-                  10 MB). We read them and fill in the fields below — your GSTIN is
-                  checked against GSTN, and your PAN and state are taken from it rather
-                  than typed.
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {ONBOARDING_STEP1_DOCUMENTS.map((d) => renderDocButton(d))}
-                </div>
-                <ExtractionNotes
-                  results={extractionNotes}
-                  forDocs={ONBOARDING_STEP1_DOCUMENTS}
-                />
-
-                {missingStatutoryDocs.length > 0 && (
-                  <p className="mt-2 text-[12px] text-warn">
-                    The fields below stay empty until we have your{' '}
-                    {missingStatutoryDocs.map(vendorDocumentLabel).join(' and ')} — they
-                    are read off them, and they are required to submit either way.
+          {/* Read-only is the server's decision (`editable`), and hiding Save
+              was not enough to express it: every input stayed live, so a vendor
+              waiting on a review could type over their submitted answers and
+              lose them on the next refresh. `contents` keeps the layout while
+              the fieldset disables everything inside it. Step navigation sits
+              outside, so a submitted application is still readable end to end. */}
+          <fieldset disabled={!editable} className="contents">
+            {step === 1 && (
+              <>
+                <div className="rounded-md border border-line bg-canvas/60 p-3">
+                  <p className="text-[13px] font-medium text-ink">
+                    Start with your documents
                   </p>
-                )}
-              </div>
-
-              <Field
-                label="Legal entity name"
-                value={f.legalEntityName ?? ''}
-                onChange={set('legalEntityName')}
-                error={fieldErrors.legalEntityName}
-                hint="As registered — for a proprietorship this is the proprietor's own name, matching the PAN"
-                provenance={provenance('legalEntityName')}
-              />
-              <Field
-                label="Trade name"
-                value={f.tradeName ?? ''}
-                onChange={set('tradeName')}
-                error={fieldErrors.tradeName}
-                hint="What the business trades as. This is the name your buyer sees on POs and invoices."
-                provenance={provenance('tradeName')}
-              />
-              <EntityTypeField
-                value={f.legalEntityType ?? ''}
-                onChange={set('legalEntityType')}
-                error={fieldErrors.legalEntityType}
-                provenance={provenance('legalEntityType')}
-              />
-              <Field
-                label="Business PAN"
-                value={f.businessPan ?? ''}
-                onChange={set('businessPan')}
-                placeholder="AFMFS3755D"
-                error={fieldErrors.businessPan}
-                hint="10 characters. Not your GSTIN — the PAN is characters 3–12 of it."
-                provenance={provenance('businessPan')}
-              />
-              <Field
-                label="Address"
-                value={f.addressLine1 ?? ''}
-                onChange={set('addressLine1')}
-                error={fieldErrors.addressLine1}
-                provenance={provenance('addressLine1')}
-              />
-              <div className="grid grid-cols-3 gap-2">
-                <Field
-                  label="City"
-                  value={f.city ?? ''}
-                  onChange={set('city')}
-                  error={fieldErrors.city}
-                  provenance={provenance('city')}
-                />
-                <StateCodeField
-                  value={f.stateCode ?? ''}
-                  onChange={set('stateCode')}
-                  error={fieldErrors.stateCode}
-                  provenance={provenance('stateCode')}
-                />
-                <Field
-                  label="Pincode"
-                  value={f.pincode ?? ''}
-                  onChange={set('pincode')}
-                  placeholder="110055"
-                  error={fieldErrors.pincode}
-                  provenance={provenance('pincode')}
-                />
-              </div>
-              <Field
-                label="Contact name"
-                value={f.primaryContactName ?? ''}
-                onChange={set('primaryContactName')}
-                error={fieldErrors.primaryContactName}
-              />
-              <Field
-                label="Contact email"
-                type="email"
-                value={f.primaryContactEmail ?? ''}
-                onChange={set('primaryContactEmail')}
-                placeholder="name@company.com"
-                error={fieldErrors.primaryContactEmail}
-              />
-              <Field
-                label="Contact phone"
-                value={f.primaryContactPhone ?? ''}
-                onChange={set('primaryContactPhone')}
-                error={fieldErrors.primaryContactPhone}
-              />
-            </>
-          )}
-
-          {step === 2 && (
-            <>
-              <Field
-                label="GSTIN"
-                value={f.gstin ?? ''}
-                onChange={set('gstin')}
-                placeholder="07AFMFS3755D1ZS"
-                error={fieldErrors.gstin}
-                hint="15 characters: state code + PAN + 3 more"
-                provenance={provenance('gstin')}
-              />
-              <label className="flex items-center gap-2 text-[13px]">
-                <input
-                  type="checkbox"
-                  checked={isMsme}
-                  onChange={(e) => setIsMsme(e.target.checked)}
-                />
-                Registered MSME
-              </label>
-              {isMsme && (
-                <Field
-                  label="Udyam number"
-                  value={f.udyamNumber ?? ''}
-                  onChange={set('udyamNumber')}
-                  error={fieldErrors.udyamNumber}
-                />
-              )}
-              <p className="text-[12px] text-muted">
-                GSTIN & PAN are re-checked against the statutory registries on save, and
-                the two must describe the same entity — characters 3–12 of a GSTIN are the
-                PAN.
-              </p>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <div className="rounded-md border border-line bg-canvas/60 p-3">
-                <p className="text-[13px] font-medium text-ink">
-                  Upload a cancelled cheque
-                </p>
-                <p className="mt-0.5 text-[12px] text-muted">
-                  We read the IFSC and account number off it. The IFSC tells us which bank
-                  and branch the account is at, so you never type a bank name.
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {renderDocButton('CANCELLED_CHEQUE')}
-                </div>
-                <ExtractionNotes
-                  results={extractionNotes}
-                  forDocs={['CANCELLED_CHEQUE']}
-                />
-              </div>
-
-              <Field
-                label="IFSC"
-                value={f.ifsc ?? ''}
-                onChange={set('ifsc')}
-                placeholder="HDFC0001234"
-                error={fieldErrors.ifsc}
-                hint="11 characters, from your cheque: 4 letters, a 0, then 6 more"
-                provenance={provenance('ifsc')}
-              />
-              {/* Read-only and resolved, or asked for only when the directory has
-                  never heard of the code the vendor typed. */}
-              {bankFromIfsc ? (
-                <div>
-                  <div className="mb-1 flex items-center gap-2">
-                    <label className="block text-[12px] font-medium text-muted">
-                      Bank
-                    </label>
-                    <Pill variant="success" dot>
-                      Resolved from your IFSC
-                    </Pill>
+                  <p className="mt-0.5 text-[12px] text-muted">
+                    Upload your GST registration certificate and PAN card (PDF or image, max
+                    10 MB). We read them and fill in the fields below — your GSTIN is
+                    checked against GSTN, and your PAN and state are taken from it rather
+                    than typed.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {ONBOARDING_STEP1_DOCUMENTS.map((d) => renderDocButton(d))}
                   </div>
-                  <Input
-                    value={
-                      bankFromIfsc.branch
-                        ? `${bankFromIfsc.bank} — ${bankFromIfsc.branch}`
-                        : bankFromIfsc.bank
-                    }
-                    readOnly
-                    className="cursor-not-allowed bg-canvas text-muted"
+                  <ExtractionNotes
+                    results={extractionNotes}
+                    forDocs={ONBOARDING_STEP1_DOCUMENTS}
+                  />
+
+                  {missingStatutoryDocs.length > 0 && (
+                    <p className="mt-2 text-[12px] text-warn">
+                      The fields below stay empty until we have your{' '}
+                      {missingStatutoryDocs.map(vendorDocumentLabel).join(' and ')} — they
+                      are read off them, and they are required to submit either way.
+                    </p>
+                  )}
+                </div>
+
+                <Field
+                  label="Legal entity name"
+                  value={f.legalEntityName ?? ''}
+                  onChange={set('legalEntityName')}
+                  error={fieldErrors.legalEntityName}
+                  hint="As registered — for a proprietorship this is the proprietor's own name, matching the PAN"
+                  provenance={provenance('legalEntityName')}
+                />
+                <Field
+                  label="Trade name"
+                  value={f.tradeName ?? ''}
+                  onChange={set('tradeName')}
+                  error={fieldErrors.tradeName}
+                  hint="What the business trades as. This is the name your buyer sees on POs and invoices."
+                  provenance={provenance('tradeName')}
+                />
+                <EntityTypeField
+                  value={f.legalEntityType ?? ''}
+                  onChange={set('legalEntityType')}
+                  error={fieldErrors.legalEntityType}
+                  provenance={provenance('legalEntityType')}
+                />
+                <Field
+                  label="Business PAN"
+                  value={f.businessPan ?? ''}
+                  onChange={set('businessPan')}
+                  placeholder="AFMFS3755D"
+                  error={fieldErrors.businessPan}
+                  hint="10 characters. Not your GSTIN — the PAN is characters 3–12 of it."
+                  provenance={provenance('businessPan')}
+                />
+                <Field
+                  label="Address"
+                  value={f.addressLine1 ?? ''}
+                  onChange={set('addressLine1')}
+                  error={fieldErrors.addressLine1}
+                  provenance={provenance('addressLine1')}
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <Field
+                    label="City"
+                    value={f.city ?? ''}
+                    onChange={set('city')}
+                    error={fieldErrors.city}
+                    provenance={provenance('city')}
+                  />
+                  <StateCodeField
+                    value={f.stateCode ?? ''}
+                    onChange={set('stateCode')}
+                    error={fieldErrors.stateCode}
+                    provenance={provenance('stateCode')}
+                  />
+                  <Field
+                    label="Pincode"
+                    value={f.pincode ?? ''}
+                    onChange={set('pincode')}
+                    placeholder="110055"
+                    error={fieldErrors.pincode}
+                    provenance={provenance('pincode')}
                   />
                 </div>
-              ) : (
                 <Field
-                  label="Bank name"
-                  value={f.bankName ?? ''}
-                  onChange={set('bankName')}
-                  error={fieldErrors.bankName}
-                  hint={
-                    (f.ifsc ?? '').length >= 11
-                      ? 'We could not find that IFSC in the bank directory — check it, or enter your bank name.'
-                      : 'Filled in for you once you enter a valid IFSC.'
-                  }
+                  label="Contact name"
+                  value={f.primaryContactName ?? ''}
+                  onChange={set('primaryContactName')}
+                  error={fieldErrors.primaryContactName}
                 />
-              )}
-              <Field
-                label="Account number"
-                value={f.accountNumber ?? ''}
-                onChange={set('accountNumber')}
-                error={fieldErrors.accountNumber}
-                provenance={provenance('accountNumber')}
-              />
-              <Field
-                label="Account holder name"
-                value={f.holderName ?? ''}
-                onChange={set('holderName')}
-                error={fieldErrors.holderName}
-                hint="Exactly as the bank has it — a penny drop checks this name against the account"
-              />
-              <p className="text-[12px] text-muted">
-                On save we credit a rupee to the account and compare the name the bank
-                returns with the one above. A mismatch does not stop you here, but your
-                buyer has to clear it before your account goes live.
-              </p>
-            </>
-          )}
-
-          {step === 4 && (
-            <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-[13px] text-muted">
-                  Two documents are required here (PDF or image, max 10 MB). The cancelled
-                  cheque is the one you were asked for on the banking step.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {ONBOARDING_STEP4_DOCUMENTS.map((d) => renderDocButton(d))}
-                </div>
-              </div>
-
-              {/* Commercial material, not compliance: offered plainly rather than
-                  hidden behind the "other documents" toggle, because a vendor who
-                  has a catalogue should be invited to attach it — and one who has
-                  none is never held up by it. */}
-              <div>
-                <p className="mb-2 text-[12px] text-muted">
-                  Optional — attach your product or price catalogue if you have one. Your
-                  buyer can browse it when sourcing.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {ONBOARDING_OPTIONAL_DOCUMENTS.map((d) => renderDocButton(d))}
-                </div>
-              </div>
-
-              {/* The statutory pair is asked for on step 1, where it drives the
-                  auto-fill — but it is just as mandatory as the two above, and a
-                  vendor who skipped it there would otherwise be stopped here by a
-                  message about documents with no picker in front of them. */}
-              <div
-                className={`rounded-md border p-3 ${
-                  missingStatutoryDocs.length > 0
-                    ? 'border-warn/40 bg-warn-wash'
-                    : 'border-line bg-canvas/60'
-                }`}
-              >
-                <p className="text-[12px] text-muted">
-                  {missingStatutoryDocs.length > 0
-                    ? 'Still required — asked for in step 1, where they fill the form in for you:'
-                    : 'Collected in step 1:'}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {ONBOARDING_STEP1_DOCUMENTS.map((d) => renderDocButton(d))}
-                </div>
-                <ExtractionNotes
-                  results={extractionNotes}
-                  forDocs={ONBOARDING_STEP1_DOCUMENTS}
+                <Field
+                  label="Contact email"
+                  type="email"
+                  value={f.primaryContactEmail ?? ''}
+                  onChange={set('primaryContactEmail')}
+                  placeholder="name@company.com"
+                  error={fieldErrors.primaryContactEmail}
                 />
-              </div>
+                <Field
+                  label="Contact phone"
+                  value={f.primaryContactPhone ?? ''}
+                  onChange={set('primaryContactPhone')}
+                  error={fieldErrors.primaryContactPhone}
+                />
+              </>
+            )}
 
-              {/* Everything else lives behind one toggle. The category's usual
-                  extras are listed first inside it, because they are the ones a
-                  buyer is most likely to come back and ask for — but none of them
-                  block submission, so none of them belong on the surface. */}
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowOtherDocs((v) => !v)}
-                  className="text-brand text-[12px] font-medium hover:underline"
-                >
-                  {showOtherDocs ? '− Hide other documents' : '+ Add other documents'}
-                </button>
-                {showOtherDocs && (
-                  <div className="mt-2 space-y-3">
-                    {suggestedDocs.length > 0 && (
-                      <div>
-                        <p className="mb-2 text-[12px] text-muted">
-                          {categoryCfg
-                            ? `Commonly asked for in ${categoryCfg.displayName}`
-                            : 'Commonly asked for'}
-                          . Your buyer may request these during review.
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {suggestedDocs.map((d) => renderDocButton(d))}
-                        </div>
-                      </div>
-                    )}
-                    {otherDocs.length > 0 && (
-                      <div>
-                        {suggestedDocs.length > 0 && (
-                          <p className="mb-2 text-[12px] text-muted">Anything else:</p>
-                        )}
-                        <div className="flex flex-wrap gap-2">
-                          {otherDocs.map((d) => renderDocButton(d))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            {step === 2 && (
+              <>
+                <Field
+                  label="GSTIN"
+                  value={f.gstin ?? ''}
+                  onChange={set('gstin')}
+                  placeholder="07AFMFS3755D1ZS"
+                  error={fieldErrors.gstin}
+                  hint="15 characters: state code + PAN + 3 more"
+                  provenance={provenance('gstin')}
+                />
+                <label className="flex items-center gap-2 text-[13px]">
+                  <input
+                    type="checkbox"
+                    checked={isMsme}
+                    onChange={(e) => setIsMsme(e.target.checked)}
+                  />
+                  Registered MSME
+                </label>
+                {isMsme && (
+                  <Field
+                    label="Udyam number"
+                    value={f.udyamNumber ?? ''}
+                    onChange={set('udyamNumber')}
+                    error={fieldErrors.udyamNumber}
+                  />
                 )}
-              </div>
+                <p className="text-[12px] text-muted">
+                  GSTIN & PAN are re-checked against the statutory registries on save, and
+                  the two must describe the same entity — characters 3–12 of a GSTIN are the
+                  PAN.
+                </p>
+              </>
+            )}
 
-              <p className="border-t border-line pt-4 text-[12px] text-muted">
-                By submitting you self-declare no sanctions exposure. Sanctions screening
-                runs automatically on submission.
-              </p>
-            </div>
-          )}
+            {step === 3 && (
+              <>
+                <div className="rounded-md border border-line bg-canvas/60 p-3">
+                  <p className="text-[13px] font-medium text-ink">
+                    Upload a cancelled cheque
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-muted">
+                    We read the IFSC and account number off it. The IFSC tells us which bank
+                    and branch the account is at, so you never type a bank name.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {renderDocButton('CANCELLED_CHEQUE')}
+                  </div>
+                  <ExtractionNotes
+                    results={extractionNotes}
+                    forDocs={['CANCELLED_CHEQUE']}
+                  />
+                </div>
+
+                <Field
+                  label="IFSC"
+                  value={f.ifsc ?? ''}
+                  onChange={set('ifsc')}
+                  placeholder="HDFC0001234"
+                  error={fieldErrors.ifsc}
+                  hint="11 characters, from your cheque: 4 letters, a 0, then 6 more"
+                  provenance={provenance('ifsc')}
+                />
+                {/* Read-only and resolved, or asked for only when the directory has
+                    never heard of the code the vendor typed. */}
+                {bankFromIfsc ? (
+                  <div>
+                    <div className="mb-1 flex items-center gap-2">
+                      <label className="block text-[12px] font-medium text-muted">
+                        Bank
+                      </label>
+                      <Pill variant="success" dot>
+                        Resolved from your IFSC
+                      </Pill>
+                    </div>
+                    <Input
+                      value={
+                        bankFromIfsc.branch
+                          ? `${bankFromIfsc.bank} — ${bankFromIfsc.branch}`
+                          : bankFromIfsc.bank
+                      }
+                      readOnly
+                      className="cursor-not-allowed bg-canvas text-muted"
+                    />
+                  </div>
+                ) : (
+                  <Field
+                    label="Bank name"
+                    value={f.bankName ?? ''}
+                    onChange={set('bankName')}
+                    error={fieldErrors.bankName}
+                    hint={
+                      (f.ifsc ?? '').length >= 11
+                        ? 'We could not find that IFSC in the bank directory — check it, or enter your bank name.'
+                        : 'Filled in for you once you enter a valid IFSC.'
+                    }
+                  />
+                )}
+                <Field
+                  label="Account number"
+                  value={f.accountNumber ?? ''}
+                  onChange={set('accountNumber')}
+                  error={fieldErrors.accountNumber}
+                  provenance={provenance('accountNumber')}
+                />
+                <Field
+                  label="Account holder name"
+                  value={f.holderName ?? ''}
+                  onChange={set('holderName')}
+                  error={fieldErrors.holderName}
+                  hint="Exactly as the bank has it — a penny drop checks this name against the account"
+                />
+                <p className="text-[12px] text-muted">
+                  On save we credit a rupee to the account and compare the name the bank
+                  returns with the one above. A mismatch does not stop you here, but your
+                  buyer has to clear it before your account goes live.
+                </p>
+              </>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-4">
+                <div>
+                  <p className="mb-2 text-[13px] text-muted">
+                    Two documents are required here (PDF or image, max 10 MB). The cancelled
+                    cheque is the one you were asked for on the banking step.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {ONBOARDING_STEP4_DOCUMENTS.map((d) => renderDocButton(d))}
+                  </div>
+                </div>
+
+                {/* Commercial material, not compliance: offered plainly rather than
+                    hidden behind the "other documents" toggle, because a vendor who
+                    has a catalogue should be invited to attach it — and one who has
+                    none is never held up by it. */}
+                <div>
+                  <p className="mb-2 text-[12px] text-muted">
+                    Optional — attach your product or price catalogue if you have one. Your
+                    buyer can browse it when sourcing.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {ONBOARDING_OPTIONAL_DOCUMENTS.map((d) => renderDocButton(d))}
+                  </div>
+                </div>
+
+                {/* The statutory pair is asked for on step 1, where it drives the
+                    auto-fill — but it is just as mandatory as the two above, and a
+                    vendor who skipped it there would otherwise be stopped here by a
+                    message about documents with no picker in front of them. */}
+                <div
+                  className={`rounded-md border p-3 ${
+                    missingStatutoryDocs.length > 0
+                      ? 'border-warn/40 bg-warn-wash'
+                      : 'border-line bg-canvas/60'
+                  }`}
+                >
+                  <p className="text-[12px] text-muted">
+                    {missingStatutoryDocs.length > 0
+                      ? 'Still required — asked for in step 1, where they fill the form in for you:'
+                      : 'Collected in step 1:'}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {ONBOARDING_STEP1_DOCUMENTS.map((d) => renderDocButton(d))}
+                  </div>
+                  <ExtractionNotes
+                    results={extractionNotes}
+                    forDocs={ONBOARDING_STEP1_DOCUMENTS}
+                  />
+                </div>
+
+                {/* Everything else lives behind one toggle. The category's usual
+                    extras are listed first inside it, because they are the ones a
+                    buyer is most likely to come back and ask for — but none of them
+                    block submission, so none of them belong on the surface. */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOtherDocs((v) => !v)}
+                    className="text-brand text-[12px] font-medium hover:underline"
+                  >
+                    {showOtherDocs ? '− Hide other documents' : '+ Add other documents'}
+                  </button>
+                  {showOtherDocs && (
+                    <div className="mt-2 space-y-3">
+                      {suggestedDocs.length > 0 && (
+                        <div>
+                          <p className="mb-2 text-[12px] text-muted">
+                            {categoryCfg
+                              ? `Commonly asked for in ${categoryCfg.displayName}`
+                              : 'Commonly asked for'}
+                            . Your buyer may request these during review.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedDocs.map((d) => renderDocButton(d))}
+                          </div>
+                        </div>
+                      )}
+                      {otherDocs.length > 0 && (
+                        <div>
+                          {suggestedDocs.length > 0 && (
+                            <p className="mb-2 text-[12px] text-muted">Anything else:</p>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            {otherDocs.map((d) => renderDocButton(d))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <p className="border-t border-line pt-4 text-[12px] text-muted">
+                  By submitting you self-declare no sanctions exposure. Sanctions screening
+                  runs automatically on submission.
+                </p>
+              </div>
+            )}
+          </fieldset>
 
           <div className="mt-4 flex justify-between border-t border-line pt-4">
             <Button
@@ -1113,7 +1233,11 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   Save step
                 </Button>
                 {step === ONBOARDING_STEP_COUNT && (
-                  <Button variant="accent" onClick={doSubmit} disabled={submit.isPending}>
+                  <Button
+                    variant="accent"
+                    onClick={() => void doSubmit()}
+                    disabled={submit.isPending || saveStep.isPending}
+                  >
                     Submit for review
                   </Button>
                 )}
@@ -1123,10 +1247,19 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      {editable && completionPct === 100 && (
-        <p className="mt-3 text-[13px] text-accent-2">
-          <Pill variant="success">Ready</Pill> All steps complete — submit for review.
+      {editable && dirtySteps.length > 0 ? (
+        <p className="mt-3 text-[13px] text-warn">
+          <Pill variant="warn">Unsaved</Pill> Your changes on{' '}
+          {dirtySteps.map((n) => `step ${n}`).join(' and ')} are not saved yet — use Save
+          step, or submit for review and we will save them first.
         </p>
+      ) : (
+        editable &&
+        completionPct === 100 && (
+          <p className="mt-3 text-[13px] text-accent-2">
+            <Pill variant="success">Ready</Pill> All steps complete — submit for review.
+          </p>
+        )
       )}
     </div>
   );

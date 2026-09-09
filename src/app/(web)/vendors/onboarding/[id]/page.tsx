@@ -95,31 +95,63 @@ const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString();
  *  rather than inferred. Rendered under every non-actionable panel state. */
 function ChainTrail({
   chain,
+  caption,
+  pendingLabel,
 }: {
   chain: OnboardingApprovalStep[];
+  /** Heading above the list, when the chain needs framing (a prospective one). */
+  caption?: string;
+  /** Overrides "with them now" / "not yet reached" for a chain that is not
+   *  running — a returned application holds no live approval, so saying it is
+   *  with someone now would be wrong. */
+  pendingLabel?: string;
 }): React.JSX.Element | null {
   if (chain.length === 0) return null;
   return (
-    <ul className="mt-3 space-y-1 border-t border-line pt-3">
-      {chain.map((step) => (
-        <li key={`${step.stepNo}-${step.name}`} className="text-[12px]">
-          <span className={CHAIN_DOT[step.decision]}>●</span>{' '}
-          <span className="text-ink">
-            {step.approverName ?? step.role.replace(/_/g, ' ')}
-          </span>{' '}
-          <span className="text-muted">
-            —{' '}
-            {step.decision === 'PENDING'
-              ? step.isCurrent
-                ? 'with them now'
-                : 'not yet reached'
-              : step.decision.replace(/_/g, ' ').toLowerCase()}
-            {step.decidedAt && ` ${fmtDate(step.decidedAt)}`}
-          </span>
-          {step.comment && <p className="pl-4 italic text-muted">“{step.comment}”</p>}
-        </li>
-      ))}
-    </ul>
+    <div className="mt-3 border-t border-line pt-3">
+      {caption && <p className="mb-1 text-[12px] text-muted">{caption}</p>}
+      <ul className="space-y-1">
+        {chain.map((step) => (
+          <li key={`${step.stepNo}-${step.name}`} className="text-[12px]">
+            <span className={CHAIN_DOT[step.decision]}>●</span>{' '}
+            <span className="text-ink">
+              {step.approverName ?? step.role.replace(/_/g, ' ')}
+            </span>{' '}
+            <span className="text-muted">
+              —{' '}
+              {step.decision === 'PENDING'
+                ? (pendingLabel ?? (step.isCurrent ? 'with them now' : 'not yet reached'))
+                : step.decision.replace(/_/g, ' ').toLowerCase()}
+              {step.decidedAt && ` ${fmtDate(step.decidedAt)}`}
+            </span>
+            {step.comment && <p className="pl-4 italic text-muted">“{step.comment}”</p>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** What the reviewer asked the vendor to fix, as a list. Shown while the
+ *  application is with the vendor, and again on the re-submission — the
+ *  reviewer's own request is the checklist they read the new answers against. */
+function AskedFor({
+  items,
+  heading,
+}: {
+  items: string[];
+  heading: string;
+}): React.JSX.Element | null {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <p className="text-[12px] text-muted">{heading}</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] text-ink">
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -139,6 +171,31 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
   // array throws during render — which Next reports only as a dead worker,
   // several layers away from the actual cause.
   const chain = data.approvalChain ?? [];
+
+  // Returned is the one outcome that is not an ending: the file is with the
+  // vendor, the chain has been cleared, and it comes back when they re-submit.
+  // Saying only "returned for info" next to a live Approve button (which is what
+  // this panel used to do) reads as though a decision is still expected here.
+  if (data.reviewDecision === 'RETURNED_FOR_INFO') {
+    return (
+      <div className="space-y-2 text-[13px]">
+        <Pill variant="warn" dot>
+          Returned for info{data.decisionAt && ` · ${fmtDate(data.decisionAt)}`}
+        </Pill>
+        <p className="text-muted">
+          It is with the vendor now — they can change their answers and upload new
+          documents. There is nothing to decide until they submit again, which puts it
+          back in the queue and in the approver&apos;s inbox.
+        </p>
+        <AskedFor items={data.returnForInfoItems ?? []} heading="What you asked for:" />
+        <ChainTrail
+          chain={chain}
+          caption="Who it goes to when they re-submit"
+          pendingLabel="on re-submission"
+        />
+      </div>
+    );
+  }
 
   if (data.reviewDecision) {
     const copy = DECISION_COPY[data.reviewDecision];
@@ -737,8 +794,22 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               <CardTitle>Decision</CardTitle>
             </CardHeader>
             <CardContent>
-              {data.canReview ? (
+              {/* `canReview` is the live approval; the returned check is the
+                  state. They can disagree on a file returned before the return
+                  cleared the chain — and offering Approve on an application the
+                  vendor is editing is the one combination that must not render. */}
+              {data.canReview && data.reviewDecision !== 'RETURNED_FOR_INFO' ? (
                 <>
+                  {/* Kept after the vendor re-submits: the reviewer is reading
+                      the new answers against what they themselves asked for. */}
+                  {(data.returnForInfoItems ?? []).length > 0 && (
+                    <div className="mb-3 rounded-md border border-line bg-canvas/60 p-3">
+                      <AskedFor
+                        items={data.returnForInfoItems}
+                        heading="Previously returned for info — you asked for:"
+                      />
+                    </div>
+                  )}
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
