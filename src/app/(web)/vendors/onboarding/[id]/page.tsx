@@ -277,12 +277,18 @@ function RenameVendorDialog({
   const toast = useToastStore((s) => s.push);
 
   const submit = (): void => {
+    const legal = legalEntityName.trim();
     rename.mutate(
       {
         name: name.trim(),
-        // Only send the legal name when there is one to send, so a vendor who
-        // has not reached wizard step 1 yet is not given an empty string.
-        ...(legalEntityName.trim() ? { legalEntityName: legalEntityName.trim() } : {}),
+        // Send the legal name only when it was actually edited. It is prefilled
+        // with what is on file, and the API rejects *any* legal name on an
+        // activated vendor — so submitting the untouched value failed every
+        // display-name correction on a live vendor. Also skipped when blank, so
+        // a vendor who has not reached wizard step 1 is not given an empty string.
+        ...(legal && legal !== (currentLegalName ?? '').trim()
+          ? { legalEntityName: legal }
+          : {}),
       },
       {
         onSuccess: () => {
