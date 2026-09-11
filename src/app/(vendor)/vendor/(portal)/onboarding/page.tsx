@@ -36,11 +36,13 @@ import {
   applyExtractedFields,
   hydrateWizardForm,
   lookupIfsc,
+  replaceIdentityFields,
   useCategoryOptions,
   useOnboarding,
   useSaveStep,
   useSubmitOnboarding,
   useUploadOnboardingDocFile,
+  withoutIdentityFields,
   type ResumeResponse,
   type UploadedDocResult,
 } from '@/vendor/lib/onboarding';
@@ -648,6 +650,13 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     // The merge rule lives in wizard-hydrate so it can be tested directly —
     // "does a document overwrite what the vendor typed?" is the question this
     // whole flow turns on, and it has two answers depending on when they typed.
+    if (result.supersedesIdentity) {
+      // A certificate for a different registration than the one saved: the old
+      // values described another entity, so they are replaced, not merged.
+      setF((prev) => replaceIdentityFields(prev, result.fields));
+      setExtracted((prev) => ({ ...withoutIdentityFields(prev), ...result.fields }));
+      return;
+    }
     setF((prev) => applyExtractedFields(prev, extracted, result.fields));
     setExtracted((prev) => ({ ...prev, ...result.fields }));
   };
@@ -675,6 +684,14 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             return;
           }
           applyExtraction(result);
+          if (result.supersedesIdentity) {
+            toast(
+              'New GST certificate read — it replaced the GSTIN and PAN saved earlier. ' +
+                'Check step 1, then save steps 1 and 2 again.',
+              'info',
+            );
+            return;
+          }
           const filled = Object.keys(result.fields).length;
           // The fields these documents fill live on step 1, so where the vendor
           // is told to look depends on where they uploaded from.

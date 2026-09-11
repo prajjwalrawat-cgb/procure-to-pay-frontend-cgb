@@ -19,7 +19,12 @@ import type { WizardState } from './wizard-hydrate';
 
 // Pure form-rebuilding logic lives apart from these network hooks so it can be
 // unit-tested without pulling in the api client.
-export { applyExtractedFields, hydrateWizardForm } from './wizard-hydrate';
+export {
+  applyExtractedFields,
+  hydrateWizardForm,
+  replaceIdentityFields,
+  withoutIdentityFields,
+} from './wizard-hydrate';
 export type { HydratedWizard, WizardState } from './wizard-hydrate';
 
 export interface UploadedDocument {
