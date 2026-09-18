@@ -5,10 +5,15 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type { InvoiceExceptionView } from '@/lib/shared';
+import {
+  PERMISSIONS,
+  type InvoiceExceptionView,
+  type InvoicePaymentInfo,
+} from '@/lib/shared';
 
 import { DocumentLedger } from '@/components/document-ledger';
 import { EntityRef } from '@/components/entity-ref';
+import { RecordPaymentModal } from '@/components/invoices/record-payment-modal';
 import { ResolveModal } from '@/components/invoices/resolve-modal';
 import { useDecide } from '@/lib/api/inbox';
 import {
@@ -21,6 +26,7 @@ import {
 import { exceptionLabel, impactLabel } from '@/lib/exception-display';
 import { inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
 import { COMPLIANCE_PROVIDER, useProviderLiveness } from '@/lib/integration-status';
+import { useHasPermission } from '@/lib/permissions';
 import { useToastStore } from '@/store/toast-store';
 
 export default function InvoiceDetailPage(): React.JSX.Element {
@@ -42,6 +48,8 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // No `simulated` flag rides on invoice compliance, so provenance is inferred
   // from whether live credentials exist for the provider behind each field.
   const { isSimulated } = useProviderLiveness();
+  const canPay = useHasPermission(PERMISSIONS.INVOICE_PAY);
+  const [recording, setRecording] = useState(false);
 
   if (isLoading || !data) {
     return <div className="p-6 text-[13px] text-muted">Loading invoice…</div>;
@@ -62,6 +70,22 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // Mirrors the server guard: past these two, lines exist and may have been
   // corrected by hand, and re-extracting would overwrite that work.
   const retryable = data.status === 'OCR_PENDING' || data.status === 'OCR_FAILED';
+  // A payment made outside a run can be recorded against an approved invoice
+  // with something still owing — unless a run already holds it, in which case
+  // that run is committed to paying its amount.
+  const partlyPaid = Number(data.amountPaid) > 0;
+  // Approved means cleared: the status alone can say APPROVED while an
+  // exception is still open or an approver has yet to decide (mirrors the API).
+  const payable =
+    (data.status === 'APPROVED' || data.status === 'PARTIALLY_PAID') &&
+    Number(data.amountOutstanding) > 0 &&
+    openExceptions.length === 0 &&
+    !data.liveApprovalChain.some((s) => s.decision === 'PENDING');
+  const remainingTds = Math.max(
+    Number(data.amounts.tdsAmount) -
+      data.payments.reduce((sum, p) => sum + Number(p.tds), 0),
+    0,
+  ).toFixed(2);
 
   const onRoute = (): void => {
     route.mutate(undefined, {
@@ -481,30 +505,13 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 ))}
               </ul>
             ) : (
-              <div className="mb-3">
-                {data.payment ? (
-                  <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
-                    <div className="flex items-center justify-between">
-                      <Link
-                        href={`/payment-runs/${data.payment.paymentRunId}`}
-                        className="font-numeric font-medium text-accent-2"
-                      >
-                        {data.payment.paymentRunNumber}
-                      </Link>
-                      {data.payment.isStub && <Pill variant="warn">Stub UTR</Pill>}
-                    </div>
-                    <dl className="mt-2 flex flex-col gap-1">
-                      <Row label="UTR" value={data.payment.utr} />
-                      <Row label="Net paid" value={inr(data.payment.net)} />
-                      <Row
-                        label="Paid on"
-                        value={new Date(data.payment.paidAt).toLocaleString('en-IN')}
-                      />
-                    </dl>
-                  </div>
+              <div className="mb-3 flex flex-col gap-2">
+                {data.payments.length > 0 ? (
+                  data.payments.map((p) => <PaymentCard key={p.id} payment={p} />)
                 ) : (
                   <div className="text-[12px] text-muted">
-                    Not yet paid. Payments appear here once a run is submitted.
+                    Not yet paid. Payments appear here once a run is confirmed by the
+                    bank, or when a payment made outside a run is recorded.
                   </div>
                 )}
               </div>
@@ -553,7 +560,37 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               <Row label="TDS 194Q" value={`- ${inr(data.amounts.tdsAmount)}`} />
               <div className="my-1 border-t border-line" />
               <Row label="Net payable" value={inr(data.amounts.netPayable)} strong />
+              {partlyPaid && (
+                <>
+                  <Row label="Paid so far" value={`- ${inr(data.amountPaid)}`} />
+                  <Row label="Outstanding" value={inr(data.amountOutstanding)} strong />
+                </>
+              )}
             </dl>
+            {data.activePaymentRun ? (
+              <p className="mt-3 text-[11px] text-muted">
+                In payment run{' '}
+                <Link
+                  href={`/payment-runs/${data.activePaymentRun.id}`}
+                  className="font-numeric text-accent-2"
+                >
+                  {data.activePaymentRun.number}
+                </Link>
+                . Change what it pays there.
+              </p>
+            ) : (
+              payable &&
+              canPay && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => setRecording(true)}
+                >
+                  Record payment
+                </Button>
+              )
+            )}
           </div>
 
           {data.payment && (
@@ -565,12 +602,21 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               <div className="font-numeric mt-1 text-[13px] text-ink">
                 {data.payment.utr}
               </div>
-              <Link
-                href={`/payment-runs/${data.payment.paymentRunId}`}
-                className="mt-1 inline-block text-[11px] text-accent-2"
-              >
-                {data.payment.paymentRunNumber} →
-              </Link>
+              {data.payment.paymentRunId ? (
+                <Link
+                  href={`/payment-runs/${data.payment.paymentRunId}`}
+                  className="mt-1 inline-block text-[11px] text-accent-2"
+                >
+                  {data.payment.paymentRunNumber} →
+                </Link>
+              ) : (
+                <div className="mt-1 text-[11px] text-accent-2">Recorded manually</div>
+              )}
+              {data.payments.length > 1 && (
+                <div className="mt-1 text-[11px] text-muted">
+                  {data.payments.length} payments — see the Payments tab
+                </div>
+              )}
             </div>
           )}
 
@@ -787,6 +833,49 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         exception={resolving}
         onClose={() => setResolving(null)}
       />
+      {/* Mounted only while open, so it starts from the current balance. */}
+      {recording && (
+        <RecordPaymentModal
+          open
+          invoiceId={id}
+          invoiceNumber={data.number}
+          grossAmount={data.amounts.grossAmount}
+          outstanding={data.amountOutstanding}
+          remainingTds={remainingTds}
+          onClose={() => setRecording(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PaymentCard({ payment: p }: { payment: InvoicePaymentInfo }): React.JSX.Element {
+  return (
+    <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
+      <div className="flex items-center justify-between">
+        {p.paymentRunId ? (
+          <Link
+            href={`/payment-runs/${p.paymentRunId}`}
+            className="font-numeric font-medium text-accent-2"
+          >
+            {p.paymentRunNumber}
+          </Link>
+        ) : (
+          <span className="font-medium text-text">
+            Recorded manually{p.mode ? ` · ${p.mode}` : ''}
+          </span>
+        )}
+        {p.isStub && <Pill variant="warn">Stub UTR</Pill>}
+      </div>
+      <dl className="mt-2 flex flex-col gap-1">
+        <Row label={p.mode === 'CHEQUE' ? 'Cheque no.' : 'UTR'} value={p.utr} />
+        <Row label="Settled" value={inr(p.gross)} />
+        {Number(p.tds) > 0 && <Row label="TDS withheld" value={inr(p.tds)} />}
+        <Row label="Net paid" value={inr(p.net)} />
+        <Row label="Paid on" value={new Date(p.paidAt).toLocaleDateString('en-IN')} />
+        {p.recordedByName && <Row label="Recorded by" value={p.recordedByName} />}
+      </dl>
+      {p.note && <p className="mt-1.5 italic text-muted">“{p.note}”</p>}
     </div>
   );
 }

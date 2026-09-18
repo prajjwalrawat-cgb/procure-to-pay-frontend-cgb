@@ -10,6 +10,7 @@ import { useMyInvoices, type VendorInvoiceSummary } from '@/vendor/lib/api/invoi
 
 const VARIANT: Record<string, 'success' | 'warn' | 'info' | 'gray'> = {
   PAID: 'success',
+  PARTIALLY_PAID: 'info',
   APPROVED: 'success',
   OCR_DONE: 'success',
   AWAITING_APPROVAL: 'warn',

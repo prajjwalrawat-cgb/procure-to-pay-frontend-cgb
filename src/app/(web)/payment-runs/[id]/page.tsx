@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowLeft, Download, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type { PaymentRunDetailResponse } from '@/lib/shared';
+import type { PaymentRunDetailResponse, PaymentRunItemView } from '@/lib/shared';
 
 import { DocumentLedger } from '@/components/document-ledger';
 
@@ -15,6 +15,7 @@ import {
   useDecidePaymentRun,
   usePaymentRun,
   useRemovePaymentItem,
+  useSetPaymentItemAmount,
   useSubmitForApproval,
 } from '@/lib/api/payments';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
@@ -177,7 +178,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                 <th className="w-8 px-3 py-2">#</th>
                 <th className="px-3 py-2 font-medium">Invoice</th>
                 <th className="px-3 py-2 font-medium">Vendor</th>
-                <th className="px-3 py-2 text-right font-medium">Gross</th>
+                <th className="px-3 py-2 text-right font-medium">Paying</th>
                 <th className="px-3 py-2 text-right font-medium">TDS</th>
                 <th className="px-3 py-2 text-right font-medium">Net</th>
                 {isDraft && <th className="w-8 px-3 py-2" />}
@@ -213,8 +214,8 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                       </Pill>
                     )}
                   </td>
-                  <td className="font-numeric text-text px-3 py-2 text-right">
-                    {inr(it.gross)}
+                  <td className="px-3 py-2 text-right">
+                    <PayAmountCell runId={id} item={it} editable={isDraft} />
                   </td>
                   <td className="font-numeric text-muted px-3 py-2 text-right">
                     {inr(it.tds)}
@@ -427,6 +428,123 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
       )}
 
       <SuggestDrawer runId={id} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+    </div>
+  );
+}
+
+/**
+ * What the run pays of one invoice. Starts at the invoice's outstanding
+ * balance; on a draft run it can be lowered to pay only part — the rest stays
+ * payable and the invoice reads "Partially paid" once the bank confirms.
+ */
+function PayAmountCell({
+  runId,
+  item,
+  editable,
+}: {
+  runId: string;
+  item: PaymentRunItemView;
+  editable: boolean;
+}): React.JSX.Element {
+  const toast = useToastStore((s) => s.push);
+  const setAmount = useSetPaymentItemAmount(runId);
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+  const outstanding = Number(item.outstanding);
+  const paidBefore = Number(item.paidBefore);
+
+  const start = (): void => {
+    setValue(Number(item.gross).toFixed(2));
+    setEditing(true);
+  };
+  const save = (amount: string): void =>
+    setAmount.mutate(
+      { invoiceId: item.invoiceId, amount },
+      {
+        onSuccess: () => {
+          setEditing(false);
+          toast(`${item.invoiceNumber} will pay ${inr(amount)}`, 'success');
+        },
+        onError: (e) => toast((e as Error).message, 'error'),
+      },
+    );
+  const share = (fraction: number): string =>
+    (Math.round(outstanding * fraction * 100) / 100).toFixed(2);
+
+  if (editing) {
+    const n = Number(value);
+    const valid = Number.isFinite(n) && n > 0 && n <= outstanding + 0.005;
+    return (
+      <div className="flex flex-col items-end gap-1">
+        <input
+          autoFocus
+          inputMode="decimal"
+          value={value}
+          aria-label={`Amount to pay on ${item.invoiceNumber}`}
+          aria-invalid={!valid}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && valid) save(n.toFixed(2));
+            if (e.key === 'Escape') setEditing(false);
+          }}
+          className="font-numeric w-28 rounded-sm border border-line bg-panel px-2 py-1 text-right text-[13px] outline-none aria-[invalid=true]:border-danger"
+        />
+        <div className="flex gap-1 text-[11px]">
+          <button
+            type="button"
+            className="text-muted hover:text-text"
+            onClick={() => setValue(share(1))}
+          >
+            Full
+          </button>
+          <span className="text-faint">·</span>
+          <button
+            type="button"
+            className="text-muted hover:text-text"
+            onClick={() => setValue(share(0.5))}
+          >
+            50%
+          </button>
+          <span className="text-faint">·</span>
+          <button
+            type="button"
+            className="font-medium text-accent-2 disabled:opacity-50"
+            disabled={!valid || setAmount.isPending}
+            onClick={() => save(n.toFixed(2))}
+          >
+            Save
+          </button>
+          <button type="button" className="text-muted" onClick={() => setEditing(false)}>
+            Cancel
+          </button>
+        </div>
+        <div className="text-[10px] text-faint">max {inr(item.outstanding)}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-end">
+      {editable ? (
+        <button
+          type="button"
+          onClick={start}
+          title="Change how much of this invoice the run pays"
+          className="font-numeric text-text underline decoration-line decoration-dotted underline-offset-2 hover:text-accent-2"
+        >
+          {inr(item.gross)}
+        </button>
+      ) : (
+        <span className="font-numeric text-text">{inr(item.gross)}</span>
+      )}
+      {item.isPartial && (
+        <span className="text-[10px] text-info">
+          part-payment · {inr(outstanding - Number(item.gross))} left after
+        </span>
+      )}
+      {paidBefore > 0 && (
+        <span className="text-[10px] text-faint">{inr(paidBefore)} paid earlier</span>
+      )}
     </div>
   );
 }

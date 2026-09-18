@@ -12,6 +12,7 @@ import type {
   InvoiceListResponse,
   InvoiceTab,
   InvoiceTabCounts,
+  RecordManualPaymentInput,
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
@@ -69,6 +70,24 @@ export function useResolveException(invoiceId: string) {
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: invoiceKeys.detail(invoiceId) });
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
+/**
+ * Record a payment made outside the app — a direct transfer or cheque — in
+ * full or in part. The next payment run then offers only what is left.
+ */
+export function useRecordPayment(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RecordManualPaymentInput) =>
+      apiFetch<{ status: 'PAID' | 'PARTIALLY_PAID' }>(`/invoices/${invoiceId}/payments`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },
   });
