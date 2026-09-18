@@ -1,17 +1,11 @@
 'use client';
 
-import {
-  Button,
-  DataState,
-  PageHeader,
-  Pill,
-  StageStrip,
-} from '@/components/ui';
+import { Badge, Button, DataState, PageHeader, Pill, StageStrip } from '@/components/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { useRfq } from '@/lib/api/sourcing';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { formatDateTime, inr, statusLabel, statusVariant } from '@/lib/format';
 
 const STAGES = [
   'DRAFT',
@@ -31,7 +25,7 @@ export default function RfqDetailPage(): React.JSX.Element {
 
   if (isLoading || error || !rfq) {
     return (
-      <div className="mx-auto max-w-[1400px]">
+      <div>
         <PageHeader title="RFQ" />
         <div className="border-line bg-panel rounded-lg border">
           <DataState
@@ -51,7 +45,7 @@ export default function RfqDetailPage(): React.JSX.Element {
   const stageIdx = STAGES.indexOf(rfq.status);
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div className="max-w-[1400px]">
       <PageHeader
         title={rfq.title}
         breadcrumbs={[
@@ -67,7 +61,7 @@ export default function RfqDetailPage(): React.JSX.Element {
             <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
           </>
         }
-        description={`${rfq.category}${rfq.subcategory ? ` · ${rfq.subcategory}` : ''}`}
+        description={`${rfq.category}${rfq.subcategory ? `, ${rfq.subcategory}` : ''}`}
         actions={
           <>
           {rfq.status === 'DRAFT' && (
@@ -85,7 +79,9 @@ export default function RfqDetailPage(): React.JSX.Element {
           {(rfq.status === 'COMMERCIAL_OPEN' || rfq.status === 'EVALUATION') && (
             <>
               <Link href={`/sourcing/${id}/evaluate`}>
-                <Button variant="accent" size="sm">Evaluate</Button>
+                {/* Secondary: Award is the decision this screen exists for, and
+                    two filled buttons side by side answer neither "what next". */}
+                <Button variant="secondary" size="sm">Evaluate</Button>
               </Link>
               <Link href={`/sourcing/${id}/award`}>
                 <Button variant="primary" size="sm">Award</Button>
@@ -117,7 +113,7 @@ export default function RfqDetailPage(): React.JSX.Element {
           {/* Lines */}
           <Section title="Lines">
             <table className="w-full text-[13px]">
-              <thead className="text-muted text-left">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1">#</th>
                   <th className="py-1">Item</th>
@@ -158,7 +154,7 @@ export default function RfqDetailPage(): React.JSX.Element {
           {/* Invitations */}
           <Section title="Invitations">
             <table className="w-full text-[13px]">
-              <thead className="text-muted text-left">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1">Vendor</th>
                   <th className="py-1">Source</th>
@@ -174,7 +170,7 @@ export default function RfqDetailPage(): React.JSX.Element {
                     <td className="py-1">{i.vendorName}</td>
                     <td className="text-muted py-1">{i.source.toLowerCase()}</td>
                     <td className="py-1">
-                      {i.isMsme ? <Pill variant="violet">MSME</Pill> : '—'}
+                      {i.isMsme ? <Badge variant="classification">MSME</Badge> : '—'}
                     </td>
                     <td className="py-1 tabular-nums">{i.historicalOtif ?? '—'}</td>
                     <td className="py-1 tabular-nums">{i.historicalQuality ?? '—'}</td>
@@ -218,7 +214,7 @@ export default function RfqDetailPage(): React.JSX.Element {
               {inr(rfq.estimatedValue)}
             </p>
             <p className="text-muted text-[12px]">
-              INCOTERM {rfq.incotermDefault} · {rfq.paymentTermsDefault}
+              INCOTERM {rfq.incotermDefault}, {rfq.paymentTermsDefault}
             </p>
           </Section>
 
@@ -273,7 +269,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <h2 className="text-muted mb-2 text-[12px] font-semibold uppercase tracking-wide">
+      <h2 className="text-muted mb-2 text-[12px] font-semibold ">
         {title}
       </h2>
       {children}
@@ -291,9 +287,5 @@ function Row({ label, value }: { label: string; value: string }): React.JSX.Elem
 }
 
 function fmt(iso: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  return formatDateTime(iso);
 }

@@ -1,7 +1,13 @@
 'use client';
 
 import type { InboxItem } from '@/lib/shared';
-import { Button, PageHeader, Pill, TableState } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+  TableState,
+} from '@/components/ui';
 import { CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -18,6 +24,25 @@ const FILTERS: { key: InboxFilterKey; label: string }[] = [
 ];
 
 const SLA_VARIANT = { ok: 'success', warn: 'warn', breach: 'danger' } as const;
+
+/**
+ * The SLA state, in words a reviewer can act on.
+ *
+ * The raw keys were rendered straight into the column — a lowercase "ok" and
+ * "breach" beside a document id. "Breach" states a fact about a contract; "3
+ * days over" states the thing the reviewer needs to know.
+ */
+const SLA_LABEL = {
+  ok: 'On time',
+  warn: 'Due soon',
+  breach: 'Overdue',
+} as const;
+
+/** `VENDOR_ONBOARDING` → `Vendor onboarding` */
+function documentTypeLabel(t: string): string {
+  const s = t.replace(/_/g, ' ').toLowerCase();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export default function InboxPage(): React.JSX.Element {
   const [filter, setFilter] = useState<InboxFilterKey>('waiting_on_me');
@@ -51,43 +76,35 @@ export default function InboxPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="My approvals"
         description="Documents routed to you for a decision."
         actions={
           selected.size > 0 ? (
             // Bulk-approving commits spend across several documents at once.
-            <Button variant="commit" size="sm" onClick={() => setConfirming(true)}>
+            <Button variant="primary" size="sm" onClick={() => setConfirming(true)}>
               Approve selected ({selected.size})
             </Button>
           ) : undefined
         }
       />
 
-      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={
-              'border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (filter === f.key
-                ? 'border-accent text-ink'
-                : 'text-muted border-transparent')
-            }
-          >
-            {f.label}
-            {f.key === 'waiting_on_me' && data?.counts.waiting_on_me
-              ? ` (${data.counts.waiting_on_me})`
-              : ''}
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-4"
+        items={FILTERS.map((f) => ({
+          key: f.key,
+          label: f.label,
+          count:
+            f.key === 'waiting_on_me' ? (data?.counts.waiting_on_me ?? undefined) : undefined,
+        }))}
+        value={filter}
+        onChange={(k) => setFilter(k as (typeof FILTERS)[number]['key'])}
+      />
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="border-line text-faint border-b text-[11px] uppercase tracking-wide">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="w-8 p-2"></th>
               <th className="p-2 text-left">Document</th>
@@ -127,15 +144,17 @@ export default function InboxPage(): React.JSX.Element {
                   />
                 </td>
                 <td className="p-2">
-                  <Link href={item.href} className="text-ink font-numeric font-medium">
-                    {item.number}
+                  {/* The type leads, because a queue of mixed documents is
+                      read by kind first. The identifier is often a raw id the
+                      server has no friendlier name for, so it goes underneath
+                      at meta size rather than standing in as the title. */}
+                  <Link href={item.href} className="text-ink font-medium hover:underline">
+                    {documentTypeLabel(item.documentType)}
                   </Link>
-                  <span className="text-faint ml-1 text-[11px]">{item.documentType}</span>
-                  {item.delegatedFromName && (
-                    <span className="text-violet ml-1 text-[11px]">
-                      · via {item.delegatedFromName}
-                    </span>
-                  )}
+                  <div className="font-numeric text-faint truncate text-[11px]">
+                    {item.number}
+                    {item.delegatedFromName ? ` — via ${item.delegatedFromName}` : ''}
+                  </div>
                 </td>
                 <td className="text-muted p-2">{item.submitterName ?? '—'}</td>
                 <td className="font-numeric p-2 text-right">
@@ -144,7 +163,7 @@ export default function InboxPage(): React.JSX.Element {
                 <td className="font-numeric p-2 text-right">{item.daysPending}d</td>
                 <td className="p-2">
                   <Pill variant={SLA_VARIANT[item.slaStatus]} dot>
-                    {item.slaStatus}
+                    {SLA_LABEL[item.slaStatus]}
                   </Pill>
                 </td>
                 <td className="p-2 text-right">
@@ -172,7 +191,7 @@ export default function InboxPage(): React.JSX.Element {
                 Cancel
               </Button>
               <Button
-                variant="accent"
+                variant="primary"
                 size="sm"
                 disabled={bulk.isPending}
                 onClick={doBulk}

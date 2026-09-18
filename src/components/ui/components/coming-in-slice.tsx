@@ -64,9 +64,11 @@ export function NotShipped({
         aria-label={`${label}: ${reason}`}
       >
         {children}
-        <span className="border-line bg-canvas text-faint rounded-xs border px-1 py-0 text-[9px] font-semibold uppercase tracking-wide">
-          {label}
-        </span>
+        {/* Plain muted text, not a bordered chip. This marker sits beside a
+            disabled button; a second bounded shape next to a button reads as a
+            second control, and at 9px in a border it was the loudest thing in
+            a quiet toolbar. */}
+        <span className="text-faint text-[11px]">{label}</span>
       </span>
     </InfoTip>
   );

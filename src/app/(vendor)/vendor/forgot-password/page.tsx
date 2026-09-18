@@ -59,7 +59,7 @@ export default function VendorForgotPasswordPage(): React.JSX.Element {
             </p>
             <Link
               href="/vendor/login"
-              className="text-brand mt-4 inline-block text-[13px] hover:underline"
+              className="text-accent mt-4 inline-block text-[13px] hover:underline"
             >
               Back to sign in →
             </Link>
@@ -90,7 +90,7 @@ export default function VendorForgotPasswordPage(): React.JSX.Element {
               )}
               <Button
                 type="submit"
-                variant="accent"
+                variant="primary"
                 disabled={loading}
                 className="mt-1 w-full"
               >

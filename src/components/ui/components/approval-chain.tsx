@@ -29,6 +29,7 @@ import * as React from 'react';
 
 import { cn } from '../lib/cn';
 import { Pill } from './pill';
+import { formatDateTime } from '@/lib/format';
 
 export interface ApprovalChainStep {
   approvalId?: string | null;
@@ -69,12 +70,7 @@ function slaLabel(dueAt: string, now: number): { text: string; overdue: boolean 
 }
 
 function decidedLabel(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso);
 }
 
 /** `PLANT_HEAD` → `Plant head` */
@@ -197,7 +193,7 @@ function StepRow({
           </span>
           <DecisionPill s={s} />
           {s.isEscalation && (
-            <span className="text-warn inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase">
+            <span className="text-warn inline-flex items-center gap-0.5 text-[10px] font-semibold ">
               <AlertTriangle className="h-3 w-3" aria-hidden /> Escalated
             </span>
           )}
@@ -214,9 +210,9 @@ function StepRow({
         </div>
 
         <p className="text-muted mt-0.5 text-[11px]">
-          Step {s.stepNo} · {s.name}
-          {s.approverName && ` · ${roleLabel(s.role)}`}
-          {s.delegatedFromName && ` · delegated from ${s.delegatedFromName}`}
+          Step {s.stepNo}, {s.name}
+          {s.approverName && `, ${roleLabel(s.role)}`}
+          {s.delegatedFromName && `, delegated from ${s.delegatedFromName}`}
         </p>
 
         {s.decidedAt && (
@@ -312,8 +308,8 @@ export function ApprovalChain({
                 />
               )}
               <div className="border-line bg-canvas/50 relative ml-1 rounded-lg border border-dashed py-1.5 pl-2 pr-2.5">
-                <p className="text-faint mb-0.5 pl-8 text-[10px] font-semibold uppercase tracking-wide">
-                  In parallel · all {seg.steps.length} must approve
+                <p className="text-faint mb-0.5 pl-8 text-[10px] font-semibold ">
+                  In parallel, all {seg.steps.length} must approve
                 </p>
                 {seg.steps.map((s) => (
                   <StepRow key={s.approvalId ?? `${s.stepNo}-${s.role}`} s={s} now={now} />

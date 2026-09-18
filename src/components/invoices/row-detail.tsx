@@ -21,7 +21,7 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
   return (
     <div className="grid gap-3 bg-canvas p-4 md:grid-cols-3">
       <div className="rounded-lg border border-line bg-panel p-3">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">
+        <div className="mb-2 text-[11px] font-semibold text-faint">
           3-way match
         </div>
         <div className="flex items-baseline justify-between">
@@ -43,7 +43,7 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
       </div>
 
       <div className="rounded-lg border border-line bg-panel p-3">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">
+        <div className="mb-2 text-[11px] font-semibold text-faint">
           Exceptions ({open.length})
         </div>
         <ul className="flex flex-col gap-1.5">
@@ -70,7 +70,7 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
       </div>
 
       <div className="rounded-lg border border-line bg-panel p-3">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">
+        <div className="mb-2 text-[11px] font-semibold text-faint">
           MSME clock
         </div>
         {data.msme ? (

@@ -3,9 +3,10 @@
 import { Button, Input } from '@/components/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { safeNextPath } from '@/lib/auth-session';
+import { SESSION_ENDED_PARAM } from '@/lib/session-ended';
 import { useSessionStore } from '@/vendor/store/session-store';
 
 interface LoginResult {
@@ -22,10 +23,21 @@ export default function VendorLoginPage(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  /*
+   * The session ended under them rather than them arriving here by choice, so
+   * say so — otherwise an expiry looks like the app randomly logging them out.
+   * Read once on mount (not via useSearchParams, which would opt this page out
+   * of static rendering) and dropped as soon as they start typing.
+   */
+  const [expired, setExpired] = useState(false);
+  useEffect(() => {
+    setExpired(new URLSearchParams(window.location.search).has(SESSION_ENDED_PARAM));
+  }, []);
 
   async function onSubmit(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     setError(null);
+    setExpired(false);
     setLoading(true);
     try {
       const res = await fetch(`/api/vendor/auth/login`, {
@@ -122,6 +134,12 @@ export default function VendorLoginPage(): React.JSX.Element {
               Forgot password?
             </Link>
 
+            {expired && !error && (
+              <p className="bg-warn-wash text-warn rounded-sm px-2.5 py-2 text-[12px]">
+                Your session expired. Please sign in again.
+              </p>
+            )}
+
             {error && (
               <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-[12px]">
                 {error}
@@ -130,7 +148,7 @@ export default function VendorLoginPage(): React.JSX.Element {
 
             <Button
               type="submit"
-              variant="accent"
+              variant="primary"
               disabled={loading}
               className="mt-1 w-full"
             >
@@ -140,7 +158,7 @@ export default function VendorLoginPage(): React.JSX.Element {
 
           <p className="text-muted mt-4 text-center text-[12px]">
             Are you a buyer?{' '}
-            <Link href="/login" className="text-brand hover:underline">
+            <Link href="/login" className="text-accent hover:underline">
               Buyer sign in
             </Link>
           </p>

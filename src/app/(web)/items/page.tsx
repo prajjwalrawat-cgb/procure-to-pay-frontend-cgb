@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  PageHeader,
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import type { ItemListItem } from '@/lib/shared';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -57,17 +63,17 @@ export default function ItemMasterPage(): React.JSX.Element {
   const truncated = (data?.totalEstimate ?? 0) > rows.length;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
         title="Item master"
         description={
-          <>{data?.totalEstimate ?? 0} SKUs · catalogue behind requisition lines</>
+          <>{data?.totalEstimate ?? 0} SKUs, catalogue behind requisition lines</>
         }
         actions={
           <>
             {canManage && (
               <Button
-                variant="accent"
+                variant="primary"
                 size="sm"
                 onClick={() => setTarget({ mode: 'create' })}
               >
@@ -88,7 +94,7 @@ export default function ItemMasterPage(): React.JSX.Element {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none"
+          className={controlClass}
         >
           <option value="">All categories</option>
           {categories.map((c) => (
@@ -100,7 +106,7 @@ export default function ItemMasterPage(): React.JSX.Element {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
-          className="rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none"
+          className={controlClass}
         >
           <option value="all">All statuses</option>
           <option value="active">Active only</option>
@@ -108,9 +114,9 @@ export default function ItemMasterPage(): React.JSX.Element {
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">SKU</th>
               <th className="px-3 py-2 font-medium">Item</th>
@@ -183,7 +189,7 @@ function ItemRow({
         <div className="flex items-center gap-1.5 text-text">
           {item.name}
           {!item.isActive && <Pill variant="danger">inactive</Pill>}
-          {item.isCapex && <Pill variant="violet">capex</Pill>}
+          {item.isCapex && <Badge variant="classification">Capex</Badge>}
         </div>
         {item.subcategory && (
           <div className="text-[11px] text-faint">{item.subcategory}</div>

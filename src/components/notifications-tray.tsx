@@ -78,7 +78,7 @@ export function NotificationsTray(): React.JSX.Element | null {
                 </span>
               </div>
               {n.body && <span className="text-muted pl-3.5 text-[12px]">{n.body}</span>}
-              <span className="text-faint pl-3.5 text-[10px] uppercase tracking-wide">
+              <span className="text-faint pl-3.5 text-[10px]">
                 {n.type.replace(/_/g, ' ').toLowerCase()}
               </span>
             </button>

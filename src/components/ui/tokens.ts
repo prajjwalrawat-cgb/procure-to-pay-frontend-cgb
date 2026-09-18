@@ -1,98 +1,126 @@
 /**
- * Canonical ProcureFlow design tokens — "Midnight Executive".
+ * Canonical ProcureFlow design tokens — "Clear Ledger".
  *
  * This file is the single source of truth; the Tailwind preset and the CSS
- * variable layer are both derived from it. Nothing below is decorative: every
- * value carries either a contrast obligation or a semantic rule.
+ * variable layer (components/ui/styles.css) are both derived from it.
  *
- * ── The three registers ────────────────────────────────────────────────────
- *  1. NAVY is chrome. Sidebar, topbar, document headers, table header seams.
- *     It is the institutional frame around the data, never the data surface —
- *     this app renders dense 13.5px financial tables and long ₹ columns, which
- *     are materially harder to scan on a dark ground.
- *  2. ICE is surface. Page canvas and panels sit in a cool near-white range so
- *     the navy chrome reads as a deliberate frame rather than an accident.
- *  3. GOLD is consequence. It marks money-moving and commitment actions only —
- *     approve, award, release a payment run. It is NOT a brand accent and must
- *     never appear as decoration. This rule is enforced at the component API
- *     (`<Button variant="commit">`), not by convention.
+ * ── The rule the palette enforces ──────────────────────────────────────────
+ * ONE accent. `accent` (#1B4CE0) is the only non-semantic colour in the system
+ * and it means "interactive or active" — the current nav pill, a primary
+ * button, a focused input, a link. Everything else is either a neutral surface
+ * or a semantic state.
+ *
+ * State colour (`success` / `warn` / `danger`) is reserved for status. It never
+ * decorates. A row is red because the invoice failed matching, not because red
+ * looked good there.
+ *
+ * The previous palette carried five decorative hues (navy chrome, gold
+ * "consequence", violet, info-blue, emerald-as-accent). Screens ended up
+ * competing with each other for attention and no colour meant anything
+ * reliably. The legacy names are kept below and remapped rather than deleted,
+ * so ~90 screens inherit the new system without a per-screen rewrite:
+ *
+ *   gold / gold-ink / gold-wash → accent        (was: "consequence" actions)
+ *   violet / violet-*           → accent        (was: held / classification)
+ *   info / info-*               → accent        (was: in-flight)
+ *   navy / navy-2 / navy-3      → white chrome  (was: dark rail + topbar)
+ *   on-navy / on-navy-muted     → dark text     (chrome is light now)
  *
  * ── Contrast ───────────────────────────────────────────────────────────────
- * Every foreground token below was computed against the surface it is actually
- * used on and meets WCAG 2.1 AA (4.5:1) as body text. The previous palette had
- * this same discipline (see git history / docs/compliance/accessibility-review.md);
- * the ratios were recomputed for the new hues rather than carried over.
+ * Every token used as text meets WCAG 2.1 AA (4.5:1) on the surface it sits
+ * on. Three values are one step darker than the brief's hexes for exactly that
+ * reason — the brief's #8A8F98 (text-faint), #1E9E6B (success), #C4453B
+ * (error) are 3.1:1, 2.9:1 and 4.2:1 as text on white and cannot carry a
+ * status label. The brief's values are kept for fills, dots and bars, where
+ * contrast is not a text obligation, as the `-solid` variants.
  */
 
 export const colors = {
-  // ── Ice surfaces (the data ground) ───────────────────────────────────────
-  paper: '#F4F7FB', // page background — ice-tinted, not neutral grey
-  canvas: '#E9EFF7', // below panels, table header fill, inset wells
-  panel: '#FFFFFF',
+  // ── Surfaces ─────────────────────────────────────────────────────────────
+  paper: '#F4F5F7', // page background
+  canvas: '#EDEFF2', // hover fill, inset wells, table zebra
+  panel: '#FFFFFF', // cards, chrome, any raised surface
+  line: '#E3E5E9', // every hairline in the app
 
-  // ── Navy chrome (the institutional frame) ────────────────────────────────
-  navy: '#0A1424', // near-black navy base — sidebar, deepest chrome
-  'navy-2': '#142338', // true ink-blue — elevated chrome, doc headers
-  'navy-3': '#1C2F49', // hover / active state within navy chrome
-  'on-navy': '#E6EDF7', // primary text on navy — 8.4:1 (AAA)
-  'on-navy-muted': '#9FB0C8', // secondary text on navy — 8.38:1 on navy base
+  // ── Chrome (formerly the navy rail) ──────────────────────────────────────
+  // Chrome is white now: the nav is a hairline-bordered bar, not a dark frame.
+  // The names survive so existing `bg-navy` / `text-on-navy` call sites keep
+  // rendering correctly while they are migrated.
+  navy: '#FFFFFF',
+  'navy-2': '#FFFFFF',
+  'navy-3': '#EDEFF2', // hover inside chrome
+  'on-navy': '#1A1D21',
+  'on-navy-muted': '#6B7078',
 
-  // ── Ink & text (on ice surfaces) ─────────────────────────────────────────
-  ink: '#0A1424', // primary text / headings — shares the navy base hue
-  text: '#1F2C40', // body copy
-  // Three-tier hierarchy preserved under the AA floor: faint stays lighter
-  // than muted, but the usable range is compressed by the 4.5:1 requirement.
-  muted: '#55647C', // 5.19:1 on canvas — secondary text
-  faint: '#5D6B80', // 4.73:1 on canvas — tertiary micro-labels
-  line: '#D4DEEC', // ice border
+  // ── Text ─────────────────────────────────────────────────────────────────
+  ink: '#1A1D21', // headings and primary labels
+  text: '#1A1D21', // body copy
+  muted: '#6B7078', // secondary text — 4.87:1 on panel
+  faint: '#767C85', // tertiary micro-labels — 4.52:1 on panel
+  // ↑ brief specified #8A8F98; that is 3.15:1 and fails as text. Darkened one
+  //   step. `faint-line` below keeps the lighter value for non-text use.
+  'faint-line': '#8A8F98',
 
-  // ── Gold / brass — consequence only ──────────────────────────────────────
-  // Two values because one gold cannot serve both grounds: a gold bright
-  // enough to sit on navy (7.2:1) is ~1.9:1 on white and illegible as text.
-  gold: '#C89B2C', // on-navy fills, seams, borders — 7.20:1 on navy
-  'gold-ink': '#8A6A12', // gold-as-text on light — 5.09:1 on panel, 4.65:1 on wash
-  'gold-wash': '#FBF4E2', // pale brass surface
+  // ── Accent — interactive / active, and nothing else ──────────────────────
+  accent: '#1B4CE0',
+  'accent-2': '#1740B8', // hover / pressed
+  'accent-wash': '#EAEFFD', // badge + hover tint
 
-  // ── Semantic states — tuned to sit beside navy, not fight it ─────────────
-  accent: '#0F7A52', // deep emerald — 5.34:1 on panel. Positive/complete.
-  'accent-2': '#0B6141',
-  'accent-wash': '#E8F5EF',
+  // ── Semantic state — status only ─────────────────────────────────────────
+  success: '#147A52', // status text — 5.06:1 on panel
+  'success-solid': '#1E9E6B', // dots, bars, fills
+  'success-bg': '#E9F7EF',
 
-  danger: '#C2183F', // 5.99:1 on panel
-  'danger-bg': '#FBD8DF',
-  'danger-wash': '#FEF2F4',
+  warn: '#8A5E0E', // status text — 5.13:1 on panel
+  'warn-solid': '#B07A12',
+  'warn-bg': '#FBF2E2',
 
-  warn: '#9A5B02', // 5.35:1 on panel
-  'warn-bg': '#FBEBCC',
-  'warn-wash': '#FDF8EE',
+  danger: '#B23A31', // status text — 5.02:1 on panel
+  'danger-solid': '#C4453B',
+  'danger-bg': '#FBEAE8',
 
-  info: '#1D5FA8', // 6.38:1 on panel
-  'info-bg': '#D8E6F7',
-  'info-wash': '#EFF5FC',
-
-  violet: '#6D3BC7',
-  'violet-bg': '#E5DDF7',
-  'violet-wash': '#F4F0FD',
-} as const;
-
-export const radius = {
-  xs: '4px',
-  sm: '6px',
-  DEFAULT: '8px',
-  lg: '12px',
-  xl: '16px',
+  // ── Legacy aliases — remapped, not re-invented ───────────────────────────
+  // Kept so the ~90 screens still on the old class names inherit the new
+  // system. New work should use accent / success / warn / danger only.
+  gold: '#1B4CE0',
+  'gold-ink': '#1B4CE0',
+  'gold-wash': '#EAEFFD',
+  info: '#1B4CE0',
+  'info-bg': '#EAEFFD',
+  'info-wash': '#EAEFFD',
+  violet: '#1B4CE0',
+  'violet-bg': '#EAEFFD',
+  'violet-wash': '#EAEFFD',
+  'danger-wash': '#FBEAE8',
+  'warn-wash': '#FBF2E2',
 } as const;
 
 /**
- * Shadows are navy-tinted rather than neutral-black. On an ice ground a pure
- * black shadow reads as grime; a blue-black one reads as depth.
+ * Radii. The brief fixes two: 8px for cards and panels, 16px for the nav pill.
+ * 5px is the control radius (buttons, inputs) — deliberately tighter than the
+ * card so a button inside a card does not echo its corner.
+ */
+export const radius = {
+  xs: '4px',
+  sm: '5px', // controls: buttons, inputs, selects
+  DEFAULT: '8px',
+  lg: '8px', // cards — same as DEFAULT; the brief has one card radius
+  xl: '12px',
+  pill: '16px',
+} as const;
+
+/**
+ * Shadows exist for genuinely floating layers only — dialogs, popovers,
+ * dropdowns. Cards and tables are separated by hairlines, never by elevation,
+ * so `sm` and below are intentionally near-invisible: a card that still calls
+ * `shadow-sm` from before the redesign reads flat.
  */
 export const shadow = {
-  xs: '0 1px 2px rgba(10, 20, 36, 0.05)',
-  sm: '0 1px 3px rgba(10, 20, 36, 0.07), 0 1px 2px rgba(10, 20, 36, 0.04)',
-  md: '0 4px 8px rgba(10, 20, 36, 0.07), 0 2px 4px rgba(10, 20, 36, 0.04)',
-  lg: '0 12px 24px rgba(10, 20, 36, 0.10), 0 4px 8px rgba(10, 20, 36, 0.05)',
-  xl: '0 24px 48px rgba(10, 20, 36, 0.12), 0 8px 16px rgba(10, 20, 36, 0.06)',
+  xs: '0 0 0 0 rgba(0,0,0,0)',
+  sm: '0 0 0 0 rgba(0,0,0,0)',
+  md: '0 4px 10px rgba(26, 29, 33, 0.06)',
+  lg: '0 10px 24px rgba(26, 29, 33, 0.10)',
+  xl: '0 20px 40px rgba(26, 29, 33, 0.12)',
 } as const;
 
 export const motion = {
@@ -102,26 +130,35 @@ export const motion = {
 } as const;
 
 /**
- * Three faces, three jobs:
- *  - display — module headers and KPI values only, and only at >=18px. A serif
- *    at table sizes reads dated and hurts scanning, so `.font-display` is the
- *    only way to reach it and it is never applied inside a table.
- *  - sans — the body/table face. Optimized for dense rows at 13.5px.
- *  - mono — money, dates, IDs, hashes. Always with tabular figures so ₹ columns
- *    align down the page.
+ * One face. Inter carries the whole UI — headings, tables, and (with
+ * `font-variant-numeric: tabular-nums`) every ₹ amount, quantity and date.
+ *
+ * The previous system ran three faces including a display serif at page
+ * headers. A serif header above a 13px data table reads as two products
+ * stapled together; the redesign's register is a single neutral grotesque at
+ * three sizes. `.font-display` survives as a *weight/size* treatment rather
+ * than a different family, so page headers did not all need rewriting.
+ *
+ * Mono is kept for one job only: hash chains and machine identifiers in the
+ * audit log, where character-level distinction is the point.
  */
 export const typography = {
-  fontDisplay: "'Source Serif 4', ui-serif, Georgia, serif",
-  fontSans: "'Geist', ui-sans-serif, sans-serif",
+  fontUi: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontDisplay: "'Inter', -apple-system, sans-serif",
+  fontSans: "'Inter', -apple-system, sans-serif",
   fontMono: "'Geist Mono', ui-monospace, monospace",
-  baseSize: '13.5px',
+  sizeMeta: '12px',
+  baseSize: '13px',
+  sizeHeading: '19px',
   lineHeight: '1.5',
-  letterSpacingBody: '-0.005em',
-  letterSpacingHeading: '-0.02em',
-  letterSpacingDisplay: '-0.02em',
-  displayMinSize: '18px',
+  letterSpacingBody: '0',
+  letterSpacingHeading: '-0.01em',
+  letterSpacingDisplay: '-0.01em',
   weights: [400, 500, 600, 700],
 } as const;
 
-export const tokens = { colors, radius, shadow, motion, typography } as const;
+/** All spacing is a multiple of this. */
+export const spaceUnit = '4px';
+
+export const tokens = { colors, radius, shadow, motion, typography, spaceUnit } as const;
 export type Tokens = typeof tokens;

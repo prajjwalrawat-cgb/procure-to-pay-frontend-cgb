@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  StepIndicator,
+  controlClass,
+} from '@/components/ui';
 import { ArrowLeft, FileText, Plus, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,7 +35,7 @@ import {
   useSubmitRequisition,
   type StagedAttachment,
 } from '@/lib/api/requisitions';
-import { inr } from '@/lib/format';
+import { formatDate, inr } from '@/lib/format';
 import { percentToRate, rateToPercent } from '@/lib/rate';
 import { NON_CATALOG_REASONS, PRIORITIES } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
@@ -240,7 +246,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-4xl pb-8">
+    <div className="max-w-4xl pb-8">
       <Link
         href="/requisitions"
         className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
@@ -252,38 +258,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
         description="Raise a purchase request for approval and sourcing."
       />
 
-      {/* Step indicator */}
-      <div className="mb-5 flex items-center gap-2">
-        {STEPS.map((label, i) => {
-          const n = i + 1;
-          const state = n === step ? 'active' : n < step ? 'done' : 'todo';
-          return (
-            <div key={label} className="flex items-center gap-2">
-              <span
-                className={
-                  'flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ' +
-                  (state === 'active'
-                    ? 'bg-ink text-white'
-                    : state === 'done'
-                      ? 'bg-accent-wash text-accent-2'
-                      : 'bg-canvas text-faint')
-                }
-              >
-                {n}
-              </span>
-              <span
-                className={
-                  'text-[12px] font-medium ' +
-                  (state === 'todo' ? 'text-faint' : 'text-text')
-                }
-              >
-                {label}
-              </span>
-              {n < STEPS.length && <span className="h-px w-6 bg-line" />}
-            </div>
-          );
-        })}
-      </div>
+      <StepIndicator steps={STEPS} current={step - 1} className="mb-5" />
 
       <div className="rounded-lg border border-line bg-panel p-5">
         {step === 1 && (
@@ -357,7 +332,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
         </Button>
         {step < 4 ? (
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={(step === 1 && !step1Valid) || (step === 2 && !step2Valid)}
             onClick={() => setStep((s) => s + 1)}
@@ -375,7 +350,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
               Save as draft
             </Button>
             <Button
-              variant="accent"
+              variant="primary"
               size="sm"
               disabled={
                 create.isPending ||
@@ -440,7 +415,7 @@ function StepBasics(props: {
             <option value="">Select cost centre…</option>
             {props.costCenters.map((cc) => (
               <option key={cc.id} value={cc.id}>
-                {cc.code} · {cc.name}
+                {cc.code}, {cc.name}
               </option>
             ))}
           </select>
@@ -461,7 +436,7 @@ function StepBasics(props: {
             {props.plants.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
-                {p.gstin ? ` · ${p.gstin}` : ''}
+                {p.gstin ? `, ${p.gstin}` : ''}
                 {p.isDefault ? ' (default)' : ''}
               </option>
             ))}
@@ -643,7 +618,7 @@ function LineEditor({
   return (
     <div className="rounded-lg border border-line bg-canvas/40 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+        <span className="text-[11px] font-semibold text-faint">
           Line {index + 1}
           {!isCatalogued && (
             <Pill variant="warn" className="ml-2">
@@ -840,7 +815,7 @@ function ItemPicker({
                 <span className="text-text">{it.name}</span>
               </span>
               <span className="text-muted">
-                {it.hsnCode} · {rateToPercent(it.gstRate)}%
+                {it.hsnCode}, {rateToPercent(it.gstRate)}%
               </span>
             </button>
           ))}
@@ -933,7 +908,7 @@ function StepAttachments(props: {
         <p className="text-[12px] text-muted">
           Quotations, vendor proforma invoices (PI), specs and drawings.
           <br />
-          PDF, JPG, PNG or TIFF · up to 15 MB each.
+          PDF, JPG, PNG or TIFF, up to 15 MB each.
         </p>
         <input
           ref={inputRef}
@@ -1033,12 +1008,12 @@ function StepReview(props: {
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 md:grid-cols-2">
         <ReviewRow label="Title" value={props.title} />
-        <ReviewRow label="Cost centre" value={cc ? `${cc.code} · ${cc.name}` : '—'} />
+        <ReviewRow label="Cost centre" value={cc ? `${cc.code}, ${cc.name}` : '—'} />
         <ReviewRow label="Priority" value={props.priority} />
         <ReviewRow
           label="Needed by"
           value={
-            props.neededBy ? new Date(props.neededBy).toLocaleDateString('en-IN') : '—'
+            props.neededBy ? formatDate(props.neededBy) : '—'
           }
         />
         <ReviewRow label="Lines" value={String(props.lineCount)} />
@@ -1061,8 +1036,9 @@ function StepReview(props: {
 
 // ── Shared bits ──────────────────────────────────────────────────────────────
 
-const inputCls =
-  'border-line bg-panel focus-visible:ring-accent w-full rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 function Field({
   label,
@@ -1077,7 +1053,7 @@ function Field({
     <label className="flex flex-col gap-1">
       <span className="flex items-center gap-2 text-[12px] font-medium text-muted">
         {label}
-        {hint && <span className="text-[11px] text-faint">· {hint}</span>}
+        {hint && <span className="text-[11px] text-faint"> {hint}</span>}
       </span>
       {children}
     </label>
@@ -1093,7 +1069,7 @@ function SmallField({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] uppercase tracking-wide text-faint">{label}</span>
+      <span className="text-[10px] text-faint">{label}</span>
       {children}
     </label>
   );

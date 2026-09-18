@@ -23,6 +23,7 @@ import {
   useVendorPo,
 } from '@/vendor/lib/api/purchase-orders';
 import { useToastStore } from '@/vendor/store/toast-store';
+import { formatDate, formatDateTime } from '@/lib/format';
 
 const STATUS_VARIANT: Record<string, 'success' | 'warn' | 'info' | 'gray'> = {
   ISSUED: 'info',
@@ -35,8 +36,8 @@ const STATUS_VARIANT: Record<string, 'success' | 'warn' | 'info' | 'gray'> = {
 
 const label = (status: string): string => status.replace(/_/g, ' ');
 const fmtDate = (iso: string | null): string =>
-  iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
-const fmtDateTime = (iso: string): string => new Date(iso).toLocaleString('en-IN');
+  iso ? formatDate(iso) : '—';
+const fmtDateTime = (iso: string): string => formatDateTime(iso);
 const inr = (v: string): string => Money.of(v || 0).toINR();
 
 function formatAddress(addr: DeliveryAddress | null): string {
@@ -96,12 +97,12 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-1 py-10 text-[13px] text-muted">Loading…</div>
+      <div className="px-1 py-10 text-[13px] text-muted">Loading…</div>
     );
   }
   if (!po) {
     return (
-      <div className="mx-auto max-w-4xl">
+      <div className="max-w-4xl">
         <BackLink />
         <p className="mt-4 text-[13px] text-muted">Purchase order not found.</p>
       </div>
@@ -109,7 +110,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl pb-10">
+    <div className="max-w-4xl pb-10">
       <BackLink />
 
       {/* Header */}
@@ -130,7 +131,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
         }
         description={
           <>
-            Ordered {fmtDate(po.orderedDate)} · Expected{' '}
+            Ordered {fmtDate(po.orderedDate)}, Expected{' '}
             {fmtDate(po.expectedDeliveryDate)}
           </>
         }
@@ -163,7 +164,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               </Button>
             ) : (
               <Button
-                variant="accent"
+                variant="primary"
                 size="sm"
                 onClick={onAcknowledge}
                 disabled={acknowledge.isPending}
@@ -197,7 +198,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
         <div className="overflow-hidden rounded-lg border border-line">
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
-              <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="px-3 py-2 font-medium">#</th>
                   <th className="px-3 py-2 font-medium">Description</th>
@@ -294,7 +295,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               <li key={q.id} className="rounded-sm border border-line bg-canvas/50 p-3">
                 <p className="whitespace-pre-wrap text-[13px] text-text">{q.body}</p>
                 <p className="mt-1.5 text-[11px] text-faint">
-                  {q.source} · {fmtDateTime(q.createdAt)}
+                  {q.source}, {fmtDateTime(q.createdAt)}
                 </p>
               </li>
             ))}
@@ -322,7 +323,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               Cancel
             </Button>
             <Button
-              variant="accent"
+              variant="primary"
               size="sm"
               onClick={onSubmitQuery}
               disabled={queryBody.trim().length === 0 || raiseQuery.isPending}
@@ -350,7 +351,7 @@ function BackLink(): React.JSX.Element {
 function Field({ label: l, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wide text-faint">{l}</dt>
+      <dt className="text-[11px] text-faint">{l}</dt>
       <dd className="mt-0.5 text-[13px] text-text">{value}</dd>
     </div>
   );

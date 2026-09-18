@@ -1,6 +1,6 @@
 'use client';
 
-import { ApprovalChain, Button, PageHeader, Pill, StageStrip } from '@/components/ui';
+import { ApprovalChain, Badge, Button, PageHeader, Pill, StageStrip } from '@/components/ui';
 import { AlertTriangle, ArrowLeft, FileText, Trash2, UploadCloud } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -24,8 +24,8 @@ import {
   useUploadRequisitionAttachment,
   useWithdrawRequisition,
 } from '@/lib/api/requisitions';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
-import { priorityVariant } from '@/lib/refs';
+import { formatDate, formatDateTime, inr, statusLabel, statusVariant } from '@/lib/format';
+import { priorityLabel, priorityVariant } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
 
 export default function RequisitionDetailPage(): React.JSX.Element {
@@ -94,7 +94,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-20">
+    <div className="pb-20">
       <Link
         href="/requisitions"
         className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
@@ -111,7 +111,9 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               {statusLabel(data.status)}
             </Pill>
             {data.priority !== 'STANDARD' && (
-              <Pill variant={priorityVariant(data.priority)}>{data.priority}</Pill>
+              <Badge variant={priorityVariant(data.priority)}>
+                {priorityLabel(data.priority)}
+              </Badge>
             )}
           </>
         }
@@ -120,8 +122,8 @@ export default function RequisitionDetailPage(): React.JSX.Element {
             <span className="text-text text-[15px] font-medium">{data.title}</span>
             <br />
             {data.requester.name}
-            {data.requester.deptName ? ` · ${data.requester.deptName}` : ''} · Needed{' '}
-            {data.neededBy ? new Date(data.neededBy).toLocaleDateString('en-IN') : '—'} ·{' '}
+            {data.requester.deptName ? `, ${data.requester.deptName}` : ''}, Needed{' '}
+            {data.neededBy ? formatDate(data.neededBy) : '—'} ,{' '}
             {data.agingDays}d old
           </>
         }
@@ -144,9 +146,9 @@ export default function RequisitionDetailPage(): React.JSX.Element {
           {/* Line items */}
           <section>
             <h2 className="text-ink mb-2 text-[14px] font-semibold">Line items</h2>
-            <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+            <div className="overflow-x-auto">
               <table className="w-full text-[12px]">
-                <thead className="bg-canvas text-faint text-left text-[10px] uppercase tracking-wide">
+                <thead className="border-line border-b text-left text-[12px] text-muted">
                   <tr>
                     <th className="px-3 py-2 font-medium">Item</th>
                     <th className="px-3 py-2 font-medium">HSN</th>
@@ -163,7 +165,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                         <div className="text-text">{l.itemDesc}</div>
                         <div className="font-numeric text-faint text-[10px]">
                           {l.skuCode ?? 'Non-catalogued'}
-                          {l.preferredVendor ? ` · ${l.preferredVendor.name}` : ''}
+                          {l.preferredVendor ? `, ${l.preferredVendor.name}` : ''}
                         </div>
                       </td>
                       <td className="font-numeric text-muted px-3 py-2">
@@ -217,7 +219,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                       <span className="font-numeric text-ink font-medium">
                         {po.number}
                       </span>{' '}
-                      <span className="text-muted">· {po.vendorName}</span>
+                      <span className="text-muted"> {po.vendorName}</span>
                     </span>
                     <span className="flex items-center gap-2">
                       <Pill variant={statusVariant(po.status)} dot>
@@ -250,9 +252,9 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                   <span className="text-text font-medium">
                     {a.action.replace(/_/g, ' ')}
                   </span>{' '}
-                  ·{' '}
+                  ,{' '}
                   <span className="font-numeric">
-                    {new Date(a.at).toLocaleString('en-IN')}
+                    {formatDateTime(a.at)}
                   </span>
                 </li>
               ))}
@@ -264,14 +266,13 @@ export default function RequisitionDetailPage(): React.JSX.Element {
             {data.comments.length > 0 && (
               <div className="mb-3 flex flex-col gap-2">
                 {data.comments.map((c) => (
-                  <div
-                    key={c.id}
+                  <div key={c.id}
                     className="border-line bg-panel rounded-lg border px-3 py-2 text-[12px]"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-text font-medium">{c.authorName}</span>
                       <span className="font-numeric text-faint text-[10px]">
-                        {new Date(c.createdAt).toLocaleString('en-IN')}
+                        {formatDateTime(c.createdAt)}
                       </span>
                     </div>
                     <p className="text-muted mt-0.5">{c.body}</p>
@@ -309,7 +310,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
         {/* Right panel */}
         <aside className="flex flex-col gap-4">
           <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint text-[11px] uppercase tracking-wide">Total</div>
+            <div className="text-faint text-[11px]">Total</div>
             <div className="font-numeric tracking-display text-ink mt-1 text-[22px] font-semibold">
               {inr(data.amounts.total)}
             </div>
@@ -328,7 +329,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
           {data.budget && <BudgetBlock budget={data.budget} />}
 
           <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+            <div className="text-faint mb-2 text-[11px]">
               Requester
             </div>
             <div className="text-ink text-[13px] font-medium">{data.requester.name}</div>
@@ -336,7 +337,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               <Row label="Department" value={data.requester.deptName ?? '—'} />
               <Row
                 label="Cost centre"
-                value={`${data.costCenter.code} · ${data.costCenter.name}`}
+                value={`${data.costCenter.code}, ${data.costCenter.name}`}
               />
               <Row label="Plant" value={data.plant.name} />
               <Row label="Delivery" value={data.deliveryLocation ?? '—'} />
@@ -344,7 +345,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
           </div>
 
           <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">
+            <div className="text-faint mb-2 text-[11px]">
               Scheduling
             </div>
             <dl className="flex flex-col gap-1 text-[12px]">
@@ -353,7 +354,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                 label="Needed by"
                 value={
                   data.neededBy
-                    ? new Date(data.neededBy).toLocaleDateString('en-IN')
+                    ? formatDate(data.neededBy)
                     : '—'
                 }
               />
@@ -396,7 +397,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                   Request changes
                 </Button>
                 <Button
-                  variant="commit"
+                  variant="primary"
                   disabled={decide.isPending}
                   onClick={() => onDecide('APPROVE')}
                 >
@@ -445,7 +446,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               )}
               {data.canSubmit && (
                 <Button
-                  variant="accent"
+                  variant="primary"
                   size="sm"
                   disabled={submit.isPending}
                   onClick={onSubmit}
@@ -455,7 +456,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               )}
               {data.canCreatePo && (
                 <Button
-                  variant="commit"
+                  variant="primary"
                   size="sm"
                   onClick={() => router.push(`/requisitions/${id}/create-po`)}
                 >
@@ -567,11 +568,11 @@ function AttachmentsSection(props: {
                   </span>
                 )}
                 <div className="text-muted text-[11px]">
-                  {DOC_TYPE_LABEL[a.docType] ?? a.docType} ·{' '}
-                  <span className="font-numeric">{fileSize(a.sizeBytes)}</span> ·{' '}
-                  {a.uploadedByName ?? 'Unknown'} ·{' '}
+                  {DOC_TYPE_LABEL[a.docType] ?? a.docType} ,{' '}
+                  <span className="font-numeric">{fileSize(a.sizeBytes)}</span>,{' '}
+                  {a.uploadedByName ?? 'Unknown'} ,{' '}
                   <span className="font-numeric">
-                    {new Date(a.uploadedAt).toLocaleDateString('en-IN')}
+                    {formatDate(a.uploadedAt)}
                   </span>
                 </div>
                 {a.addedAfterApproval && (
@@ -671,7 +672,7 @@ function BudgetBlock({ budget }: { budget: BudgetCheckResult }): React.JSX.Eleme
     allocated > 0 ? Math.min(100, ((committed + consumed) / allocated) * 100) : 0;
   return (
     <div className="border-line bg-panel rounded-lg border p-4">
-      <div className="text-faint mb-2 text-[11px] uppercase tracking-wide">Budget</div>
+      <div className="text-faint mb-2 text-[11px]">Budget</div>
       <dl className="flex flex-col gap-1 text-[12px]">
         <Row label="Allocated" value={inr(budget.allocated)} />
         <Row label="Committed" value={inr(budget.committed)} />
@@ -679,8 +680,7 @@ function BudgetBlock({ budget }: { budget: BudgetCheckResult }): React.JSX.Eleme
         <Row label="Remaining" value={inr(budget.remaining)} strong />
       </dl>
       <div className="bg-canvas mt-2 h-2 w-full overflow-hidden rounded-full">
-        <div
-          className={
+        <div className={
             'h-full rounded-full ' +
             (usedPct > 90 ? 'bg-danger' : usedPct > 70 ? 'bg-warn' : 'bg-accent')
           }

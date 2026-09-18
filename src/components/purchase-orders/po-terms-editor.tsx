@@ -1,6 +1,9 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import {
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import type { ClauseLibraryItem, PoTermInput } from '@/lib/shared';
 import { Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -72,8 +75,9 @@ export function toTermInputs(
   }));
 }
 
-const inputCls =
-  'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-2.5 py-1.5 text-[13px] outline-none';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 export function PoTermsEditor({
   libraryTerms,
@@ -134,7 +138,7 @@ export function PoTermsEditor({
 
       <div className="mt-2 rounded-lg border border-line p-3">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+          <span className="text-[11px] font-semibold text-faint">
             Special conditions
           </span>
           <button

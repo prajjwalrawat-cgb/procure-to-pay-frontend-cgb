@@ -1,32 +1,30 @@
-import type { NavGroup } from '@/components/ui';
-import {
-  ClipboardCheck,
-  FileText,
-  FolderClosed,
-  Gavel,
-  LayoutDashboard,
-  PackageCheck,
-  ReceiptText,
-  RotateCcw,
-  ScrollText,
-  UserCircle,
-} from 'lucide-react';
+import type { TopNavGroup, TopNavItem } from '@/components/ui';
 
-/** Vendor-portal sidebar (Master Context Slice 0). Dashboard is the landing
- *  shell; the rest render <ComingInSlice> until their slice ships. */
-export const NAV_GROUPS: NavGroup[] = [
+/**
+ * Vendor-portal navigation.
+ *
+ * Ten destinations, so the split is gentler than the buyer side: the seven a
+ * supplier works in daily are tabs, and the three account-shaped ones sit
+ * under "More". Same two-row top bar, same pill for the current section — a
+ * supplier who also buys should not have to learn two products.
+ */
+export const VENDOR_PRIMARY_NAV: TopNavItem[] = [
+  { label: 'Dashboard', href: '/vendor' },
+  { label: 'Sourcing', href: '/vendor/sourcing' },
+  { label: 'Purchase orders', href: '/vendor/purchase-orders' },
+  { label: 'Deliveries', href: '/vendor/receipts' },
+  { label: 'Invoices', href: '/vendor/invoices' },
+  { label: 'Contracts', href: '/vendor/contracts' },
+  { label: 'Returns', href: '/vendor/rma' },
+];
+
+export const VENDOR_OVERFLOW_NAV: TopNavGroup[] = [
   {
+    heading: 'Your account',
     items: [
-      { label: 'Dashboard', href: '/vendor', icon: LayoutDashboard },
-      { label: 'Onboarding', href: '/vendor/onboarding', icon: ClipboardCheck, slice: 7 },
-      { label: 'Invoices', href: '/vendor/invoices', icon: ReceiptText, slice: 1 },
-      { label: 'Sourcing', href: '/vendor/sourcing', icon: Gavel },
-      { label: 'Purchase orders', href: '/vendor/purchase-orders', icon: FileText },
-      { label: 'Contracts', href: '/vendor/contracts', icon: ScrollText },
-      { label: 'Deliveries', href: '/vendor/receipts', icon: PackageCheck },
-      { label: 'Returns', href: '/vendor/rma', icon: RotateCcw },
-      { label: 'Profile', href: '/vendor/profile', icon: UserCircle, slice: 7 },
-      { label: 'Documents', href: '/vendor/documents', icon: FolderClosed, slice: 7 },
+      { label: 'Onboarding', href: '/vendor/onboarding' },
+      { label: 'Profile', href: '/vendor/profile' },
+      { label: 'Documents', href: '/vendor/documents' },
     ],
   },
 ];

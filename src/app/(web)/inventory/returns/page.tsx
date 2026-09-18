@@ -1,6 +1,11 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -18,6 +23,7 @@ import {
   TextArea,
   TextInput,
 } from '../_components/form-controls';
+import { formatDate } from '@/lib/format';
 
 /**
  * Returns — customer return intake with its restock decision, plus the vendor
@@ -31,10 +37,10 @@ export default function ReturnsPage(): React.JSX.Element {
   const [tab, setTab] = useState<'customer' | 'vendor'>('customer');
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Returns"
-        description="Customer returns &amp; restock decisions · vendor repair tracker"
+        description="Customer returns &amp; restock decisions, vendor repair tracker"
         actions={
           <>
             <Link href="/inventory">
@@ -46,28 +52,15 @@ export default function ReturnsPage(): React.JSX.Element {
         }
       />
 
-      <div className="mb-3 flex items-center gap-1 border-b border-line">
-        {(
-          [
-            ['customer', 'Customer returns'],
-            ['vendor', 'Vendor returns'],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setTab(k)}
-            className={
-              'border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (tab === k
-                ? 'border-accent text-ink'
-                : 'border-transparent text-muted hover:text-ink')
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-3"
+        items={[
+          { key: 'customer', label: 'Customer returns' },
+          { key: 'vendor', label: 'Vendor returns' },
+        ]}
+        value={tab}
+        onChange={(k) => setTab(k as 'customer' | 'vendor')}
+      />
 
       {tab === 'customer' ? (
         <>
@@ -175,7 +168,7 @@ function CustomerReturnForm(): React.JSX.Element {
       <div className="mt-4 flex items-center justify-between">
         <FormResult error={error} success={success} />
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           disabled={!ready || ret.isPending}
           onClick={() => void submit()}
@@ -195,13 +188,13 @@ function RestockQueue(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
+      <h2 className="mb-2 text-[11px] font-medium text-faint">
         Awaiting restock decision ({rows.length})
       </h2>
-      {error && <p className="mb-2 text-[12px] text-red-600">{error}</p>}
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      {error && <p className="mb-2 text-[12px] text-danger">{error}</p>}
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Returned</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -229,7 +222,7 @@ function RestockQueue(): React.JSX.Element {
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-line">
                 <td className="font-numeric px-3 py-2 text-[12px] text-muted">
-                  {new Date(r.txnDate).toLocaleDateString('en-IN')}
+                  {formatDate(r.txnDate)}
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-ink">{r.productName}</div>
@@ -255,7 +248,7 @@ function RestockQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="text-[12px] font-medium text-emerald-700 hover:underline"
+                    className="text-[12px] font-medium text-success hover:underline"
                   >
                     Restock
                   </button>
@@ -269,7 +262,7 @@ function RestockQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="ml-3 text-[12px] font-medium text-red-600 hover:underline"
+                    className="ml-3 text-[12px] font-medium text-danger hover:underline"
                   >
                     Write off
                   </button>
@@ -377,7 +370,7 @@ function VendorReturnForm(): React.JSX.Element {
       <div className="mt-4 flex items-center justify-between">
         <FormResult error={error} success={success} />
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           disabled={!ready || ret.isPending}
           onClick={() => void submit()}

@@ -13,7 +13,9 @@ export const TabsList = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn('border-line inline-flex items-center gap-1 border-b', className)}
+    // Full width with its own hairline, and it scrolls rather than wraps —
+    // the same behaviour as <SubNav>, which is the other tab row in the app.
+    className={cn('border-line pf-scroll-x flex w-full items-center gap-1 border-b', className)}
     {...props}
   />
 ));
@@ -27,7 +29,7 @@ export const TabsTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'text-muted duration-hover border-b-2 border-transparent px-3 py-2 text-[13px] font-medium transition-colors',
-      'data-[state=active]:border-accent data-[state=active]:text-ink',
+      'data-[state=active]:border-accent data-[state=active]:text-accent whitespace-nowrap',
       className,
     )}
     {...props}

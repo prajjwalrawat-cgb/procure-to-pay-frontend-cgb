@@ -89,7 +89,7 @@ export function ProductCard({
           <h2 className="text-[15px] font-semibold">{p.name}</h2>
           <p className="text-[12px] text-muted">
             {p.code}
-            {p.colour ? ` · ${p.colour}` : ''} · on hand {p.currentStock} {p.unit}
+            {p.colour ? `, ${p.colour}` : ''}, on hand {p.currentStock} {p.unit}
           </p>
         </div>
         {resolved.matchType === 'fuzzy_gtin' ? (

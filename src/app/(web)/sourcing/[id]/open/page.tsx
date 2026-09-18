@@ -40,7 +40,7 @@ export default function OpenCeremonyPage(): React.JSX.Element {
   const twoEnvelope = rfq?.rfqType === 'TWO_ENVELOPE';
 
   return (
-    <div className="mx-auto max-w-[640px]">
+    <div className="max-w-[640px]">
       <PageHeader
         title={`Quote-open ceremony — ${rfq?.number ?? ''}`.trim()}
         breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Quote open' }]}
@@ -80,7 +80,7 @@ export default function OpenCeremonyPage(): React.JSX.Element {
               Open technical envelopes
             </Button>
             <Button
-              variant="accent"
+              variant="primary"
               onClick={() => fire(openComm, 'Commercial open')}
               disabled={openComm.isPending}
             >

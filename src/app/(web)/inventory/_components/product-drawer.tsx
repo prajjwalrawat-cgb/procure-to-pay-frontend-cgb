@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useDeactivateProduct, useProduct, useUpdateProduct } from '@/lib/api/inventory';
 import { Field, FormResult, TextArea, TextInput } from './form-controls';
 import { ProductThumb } from './product-thumb';
+import { formatDate, formatDateTime } from '@/lib/format';
 
 /**
  * Product detail drawer — the one place a warehouse user can confirm that
@@ -47,7 +48,7 @@ function Drawer({
         onClick={onClose}
         className="fixed inset-0 z-40 bg-black/20"
       />
-      <aside className="border-line bg-panel fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l shadow-xl">
+      <aside className="border-line bg-panel fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l">
         <header className="border-line bg-panel sticky top-0 flex items-start justify-between border-b px-5 py-4">
           <div className="min-w-0">
             <h2 className="tracking-heading text-ink truncate text-[16px] font-semibold">
@@ -55,7 +56,7 @@ function Drawer({
             </h2>
             <p className="font-numeric text-muted text-[12px]">
               {data?.code}
-              {data?.colour ? ` · ${data.colour}` : ''}
+              {data?.colour ? ` — ${data.colour}` : ''}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -102,20 +103,20 @@ function Drawer({
             <section>
               <SectionTitle>Stock summary</SectionTitle>
               <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-line bg-line">
-                <Stat label="Opening Stock" value={data.summary.openingStock} />
-                <Stat label="IN" value={data.summary.totalIn} />
-                <Stat label="Total Out" value={data.summary.totalOut} />
-                <Stat label="Return Qty." value={data.summary.returnQty} />
-                <Stat label="Damage Qty." value={data.summary.damageQty} />
+                <Stat label="Opening stock" value={data.summary.openingStock} />
+                <Stat label="Received" value={data.summary.totalIn} />
+                <Stat label="Issued out" value={data.summary.totalOut} />
+                <Stat label="Returned" value={data.summary.returnQty} />
+                <Stat label="Damaged" value={data.summary.damageQty} />
                 <Stat
-                  label="Current Stock"
+                  label="Current stock"
                   value={data.summary.currentStock}
                   emphasis
                   warn={data.lowStock}
                 />
               </div>
               {data.lowStock && (
-                <p className="text-[11px] text-amber-700 mt-1.5">
+                <p className="text-[11px] text-warn mt-1.5">
                   At or below the reorder point of {data.reorderPoint}.
                 </p>
               )}
@@ -137,7 +138,7 @@ function Drawer({
                 <p className="text-muted text-[13px]">No stock on hand.</p>
               ) : (
                 <table className="w-full text-[13px]">
-                  <thead className="text-faint text-left text-[11px] uppercase tracking-wide">
+                  <thead className="border-line border-b text-left text-[12px] text-muted">
                     <tr>
                       <th className="py-1 font-medium">Location</th>
                       <th className="py-1 font-medium">Rack No.</th>
@@ -163,9 +164,11 @@ function Drawer({
               <SectionTitle>Product details</SectionTitle>
               <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-[13px]">
                 <Row label="Category">
-                  <Pill variant={data.category === 'Uncategorized' ? 'gray' : 'info'}>
-                    {data.category}
-                  </Pill>
+                  {data.category === 'Uncategorized' ? (
+                    <span className="text-faint">Uncategorised</span>
+                  ) : (
+                    data.category
+                  )}
                 </Row>
                 <Row label="Colour">{data.colour ?? '—'}</Row>
                 <Row label="Barcode">
@@ -176,16 +179,16 @@ function Drawer({
                 <Row label="Batch tracked">{data.requiresBatchTracking ? 'Yes' : 'No'}</Row>
                 <Row label="Unit">{data.unit}</Row>
                 <Row label="Reorder point">{data.reorderPoint ?? '—'}</Row>
-                <Row label="Expiry/Warranty">
+                <Row label="Expiry / warranty">
                   {data.expiryOrWarrantyDate
-                    ? new Date(data.expiryOrWarrantyDate).toLocaleDateString('en-IN')
+                    ? formatDate(data.expiryOrWarrantyDate)
                     : '—'}
                 </Row>
-                <Row label="Last Updated">
-                  {new Date(data.updatedAt).toLocaleString('en-IN')}
+                <Row label="Last updated">
+                  {formatDateTime(data.updatedAt)}
                 </Row>
                 <Row label="Status">
-                  <Pill variant={data.active ? 'success' : 'gray'} dot>
+                  <Pill variant={data.active ? 'success' : 'neutral'} dot>
                     {data.active ? 'Active' : 'Retired'}
                   </Pill>
                 </Row>
@@ -393,7 +396,7 @@ function EditForm({
           onClick={() => void toggleActive()}
           className={
             'text-[12px] font-medium hover:underline ' +
-            (product.active ? 'text-red-600' : 'text-emerald-700')
+            (product.active ? 'text-danger' : 'text-success')
           }
         >
           {product.active ? 'Retire product' : 'Reactivate product'}
@@ -403,7 +406,7 @@ function EditForm({
             Cancel
           </Button>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!ready || busy}
             onClick={() => void save()}
@@ -418,7 +421,7 @@ function EditForm({
 
 function SectionTitle({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <h3 className="text-faint mb-2 text-[11px] font-medium uppercase tracking-wide">
+    <h3 className="text-faint mb-2 text-[11px] font-medium ">
       {children}
     </h3>
   );
@@ -442,7 +445,7 @@ function Stat({
         className={
           'font-numeric tabular-nums ' +
           (emphasis ? 'text-[18px] font-semibold ' : 'text-[15px] ') +
-          (warn ? 'text-amber-700' : 'text-ink')
+          (warn ? 'text-warn' : 'text-ink')
         }
       >
         {value.toLocaleString('en-IN')}

@@ -187,7 +187,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
         </Field>
       </div>
       <div className="mt-3">
-        <Field label="Description" error={errors.description}>
+        <Field label="Description" error={errors.description} wide>
           <Input
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -219,7 +219,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
       <div className="mt-3 flex items-center gap-2">
         <Button
           size="sm"
-          variant="accent"
+          variant="primary"
           disabled={create.isPending || update.isPending || !form.displayName.trim()}
           onClick={() => (mode === 'add' ? onAdd() : onSaveEdit(id as string))}
         >
@@ -250,7 +250,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
     >
       <div className="overflow-hidden rounded-sm border border-line">
         <table className="w-full text-[12px]">
-          <thead className="bg-canvas text-left text-[10px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Category</th>
               <th className="px-3 py-2 font-medium">Documents</th>
@@ -282,7 +282,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
                   >
                     Edit
                   </button>
-                  <span className="px-1 text-faint">·</span>
+                  <span className="px-1 text-faint">,</span>
                   {c.isActive ? (
                     <button
                       type="button"

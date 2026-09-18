@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import { useMyInvoices, type VendorInvoiceSummary } from '@/vendor/lib/api/invoices';
+import { formatDate } from '@/lib/format';
 
 const VARIANT: Record<string, 'success' | 'warn' | 'info' | 'gray'> = {
   PAID: 'success',
@@ -19,7 +20,7 @@ const VARIANT: Record<string, 'success' | 'warn' | 'info' | 'gray'> = {
 };
 
 const label = (status: string): string => status.replace(/_/g, ' ');
-const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString('en-IN');
+const fmtDate = (iso: string): string => formatDate(iso);
 const inr = (v: string): string => Money.of(v || 0).toINR();
 
 export default function VendorInvoicesPage(): React.JSX.Element {
@@ -71,7 +72,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="My invoices"
         description="Invoices you have submitted and their live status"
@@ -87,7 +88,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                 <Download className="mr-1.5 h-3.5 w-3.5" /> Export
               </Button>
               <Link href="/vendor/invoices/submit">
-                <Button variant="accent" size="sm">
+                <Button variant="primary" size="sm">
                   Submit invoice
                 </Button>
               </Link>
@@ -121,14 +122,14 @@ export default function VendorInvoicesPage(): React.JSX.Element {
           ))}
         </select>
         <span className="ml-auto text-[12px] text-muted">
-          {rows.length} shown · {inr(total.toString())}
+          {rows.length} shown, {inr(total.toString())}
         </span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Invoice</th>
                 <th className="px-3 py-2.5 font-medium">Reference</th>

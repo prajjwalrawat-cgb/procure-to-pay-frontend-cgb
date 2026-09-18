@@ -66,7 +66,7 @@ export function KpiCard({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <span className="text-faint text-[11px] font-medium uppercase tracking-wide">
+        <span className="text-faint text-[11px] font-medium ">
           {label}
         </span>
         {help && (

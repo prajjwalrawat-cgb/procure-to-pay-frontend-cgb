@@ -1,12 +1,25 @@
 'use client';
 
-import { Button, DataState, PageHeader, Pill } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardFooter,
+  CardGrid,
+  CardHeader,
+  CardMeta,
+  CardTitle,
+  DataState,
+  PageHeader,
+  SubNav,
+} from '@/components/ui';
+import { BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { InviteVendorDialog } from './_components/invite-dialog';
 import { useVendorList, type VendorTab } from '@/lib/api/vendors';
-import { inr } from '@/lib/format';
+import { humanise, inr } from '@/lib/format';
 import { useHasPermission } from '@/lib/permissions';
 import { PERMISSIONS } from '@/lib/shared';
 
@@ -18,14 +31,13 @@ const TABS: { key: VendorTab; label: string }[] = [
   { key: 'all', label: 'All' },
 ];
 
-function gradeVariant(grade: string | null): 'success' | 'warn' | 'danger' | 'gray' {
-  if (!grade) return 'gray';
-  if (grade.startsWith('A')) return 'success';
-  if (grade === 'B') return 'warn';
-  if (grade === 'N/A') return 'gray';
-  return 'danger';
-}
-
+/**
+ * Vendors are a comparison view, so they are cards rather than a table: the
+ * question here is "which of these suppliers do I go to", not "what happened
+ * to record 4408". A card can carry the grade, the MSME status and the spend
+ * side by side at a size you can actually compare across a grid; the same
+ * facts in a 9-column table are a wall.
+ */
 export default function VendorsPage(): React.JSX.Element {
   const [tab, setTab] = useState<VendorTab>('active');
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -34,15 +46,15 @@ export default function VendorsPage(): React.JSX.Element {
   const canSeeQueue = useHasPermission(PERMISSIONS.VENDOR_ONBOARDING_READ);
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div>
       <PageHeader
         title="Vendors"
-        description="Vendor master — onboarding, compliance, scorecards and lifecycle."
+        description="Onboarding, compliance, scorecards and lifecycle."
         actions={
           <>
             {canSeeQueue && (
               <Link href="/vendors/onboarding">
-                <Button variant="default" size="sm">
+                <Button variant="secondary" size="sm">
                   Onboarding queue
                 </Button>
               </Link>
@@ -56,105 +68,110 @@ export default function VendorsPage(): React.JSX.Element {
         }
       />
 
-      <div className="border-line mb-4 flex gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            type="button"
-            className={`duration-hover shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ${
-              tab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-ink border-transparent'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-4"
+        items={TABS.map((t) => ({ key: t.key, label: t.label }))}
+        value={tab}
+        onChange={(k) => setTab(k as VendorTab)}
+      />
 
-      {isLoading || isError || !data || data.items.length === 0 ? (
-        // Error stays distinct from empty: a 403 rendering as "no vendors"
-        // reads as an empty tenant rather than missing access. DataState's
-        // error branch says which it is.
-        <div className="border-line bg-panel rounded-lg border">
-          <DataState
-            isLoading={isLoading}
-            error={isError ? error : undefined}
-            isEmpty={!data || data.items.length === 0}
-            onRetry={() => void refetch()}
-            empty={{
-              title: 'No vendors in this view',
-              detail: 'Invited and onboarded suppliers appear here.',
-              action: canInvite ? (
-                <Button variant="primary" size="sm" onClick={() => setInviteOpen(true)}>
-                  Invite vendor
-                </Button>
-              ) : undefined,
-            }}
-          >
-            {null}
-          </DataState>
-        </div>
-      ) : (
-        <div className="border-line bg-panel overflow-x-auto rounded-lg border">
-          <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-muted">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Code</th>
-                <th className="px-3 py-2 text-left font-medium">Name</th>
-                <th className="px-3 py-2 text-left font-medium">Category</th>
-                <th className="px-3 py-2 text-left font-medium">MSME</th>
-                <th className="px-3 py-2 text-left font-medium">Risk</th>
-                <th className="px-3 py-2 text-left font-medium">Score</th>
-                <th className="px-3 py-2 text-right font-medium">FYTD spend</th>
-                <th className="px-3 py-2 text-right font-medium">Active POs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((v) => (
-                <tr key={v.id} className="border-line hover:bg-canvas border-t">
-                  <td className="px-3 py-2">
-                    <Link
-                      href={`/vendors/${v.id}`}
-                      className="text-brand font-medium hover:underline"
-                    >
-                      {v.code}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2">{v.name}</td>
-                  <td className="text-muted px-3 py-2">{v.category ?? '—'}</td>
-                  <td className="px-3 py-2">
-                    {v.isMsme ? (
-                      <Pill variant="info">MSME</Pill>
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    {v.riskGrade ? (
-                      <Pill variant={gradeVariant(v.riskGrade)}>{v.riskGrade}</Pill>
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    <Pill variant={gradeVariant(v.scorecardGrade)}>
-                      {v.scorecardGrade ?? 'N/A'}
-                    </Pill>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {inr(v.fytdSpend)}
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">{v.activePoCount}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Error stays distinct from empty: a 403 rendering as "no vendors"
+          reads as an empty tenant rather than as missing access. */}
+      <DataState
+        isLoading={isLoading}
+        error={isError ? error : undefined}
+        isEmpty={!data || data.items.length === 0}
+        onRetry={() => void refetch()}
+        empty={{
+          title: 'No vendors in this view',
+          detail:
+            'Suppliers appear here once they are invited and have completed onboarding.',
+          action: canInvite ? (
+            <Button variant="primary" size="sm" onClick={() => setInviteOpen(true)}>
+              Invite vendor
+            </Button>
+          ) : undefined,
+        }}
+      >
+        <CardGrid>
+          {data?.items.map((v) => (
+            <Card key={v.id} interactive>
+              <CardHeader
+                badge={
+                  v.isMsme ? (
+                    <Badge variant="classification">MSME</Badge>
+                  ) : v.lifecycleStatus === 'ACTIVE' ? (
+                    <Badge variant="positive" icon={BadgeCheck}>
+                      Verified
+                    </Badge>
+                  ) : null
+                }
+              >
+                <CardTitle>{v.name}</CardTitle>
+                <CardMeta>
+                  <span className="font-numeric">{v.code}</span>
+                  {v.category ? (
+                    <span className="text-faint"> — {humanise(v.category)}</span>
+                  ) : null}
+                </CardMeta>
+              </CardHeader>
+
+              <div className="grid grid-cols-3 gap-3 px-4 pb-3">
+                <Metric label="FYTD spend" value={inr(v.fytdSpend, 0)} />
+                <Metric label="Active POs" value={String(v.activePoCount)} />
+                <Metric
+                  label="Scorecard"
+                  value={v.scorecardGrade}
+                  fallback="No history"
+                />
+              </div>
+
+              <CardFooter
+                action={
+                  <Link href={`/vendors/${v.id}`}>
+                    <Button variant="secondary" size="sm">
+                      View profile
+                    </Button>
+                  </Link>
+                }
+              >
+                {v.riskGrade
+                  ? `Risk grade ${v.riskGrade}`
+                  : 'Risk grade not yet assessed'}
+              </CardFooter>
+            </Card>
+          ))}
+        </CardGrid>
+      </DataState>
 
       <InviteVendorDialog open={inviteOpen} onClose={() => setInviteOpen(false)} />
+    </div>
+  );
+}
+
+/**
+ * One figure on a card. A metric with no data says why in words rather than
+ * rendering a dash or a dead "0%" — a scorecard that reads 0 is a claim the
+ * supplier performed badly, which is not what "we have not traded with them
+ * yet" means.
+ */
+function Metric({
+  label,
+  value,
+  fallback = '—',
+}: {
+  label: string;
+  value: string | null | undefined;
+  fallback?: string;
+}): React.JSX.Element {
+  return (
+    <div className="min-w-0">
+      <p className="text-faint text-[11px]">{label}</p>
+      {value ? (
+        <p className="font-numeric text-ink truncate text-[13px] font-medium">{value}</p>
+      ) : (
+        <p className="text-muted truncate text-[12px]">{fallback}</p>
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@
  *   <TableState …>     renders as a <tr>/<td colSpan> inside an existing table
  */
 
-import { AlertTriangle, Inbox, Lock, RotateCw, SearchX, WifiOff } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from '../lib/cn';
@@ -77,7 +77,6 @@ interface ErrorShape {
  * failed" need different words and different buttons.
  */
 function describeError(error: unknown): {
-  icon: React.ElementType;
   title: string;
   detail: string;
   retryable: boolean;
@@ -88,7 +87,6 @@ function describeError(error: unknown): {
 
   if (status === 401 || status === 403) {
     return {
-      icon: Lock,
       title: "You don't have access to this",
       detail:
         status === 401
@@ -103,7 +101,6 @@ function describeError(error: unknown): {
     // registered ahead of a sibling literal route, which swallows the literal
     // one. Blaming the user's link would send people looking in the wrong place.
     return {
-      icon: SearchX,
       title: 'Not available',
       detail:
         'The server could not find this. It may have been deleted, the link may be out of date, or this endpoint may not be available on your deployment.',
@@ -111,18 +108,16 @@ function describeError(error: unknown): {
     };
   }
   if (status === 422 || status === 400) {
-    return { icon: AlertTriangle, title: 'That request was rejected', detail, retryable: false };
+    return { title: 'That request was rejected', detail, retryable: false };
   }
   if (status === undefined) {
     return {
-      icon: WifiOff,
       title: "Couldn't reach the server",
       detail: 'Check your connection and try again.',
       retryable: true,
     };
   }
   return {
-    icon: AlertTriangle,
     title: 'Something went wrong loading this',
     detail,
     retryable: true,
@@ -132,14 +127,14 @@ function describeError(error: unknown): {
 // ── Presentational blocks ───────────────────────────────────────────────────
 
 function StateFrame({
-  icon: Icon,
   tone = 'neutral',
   title,
   detail,
   action,
   compact,
 }: {
-  icon: React.ElementType;
+  /** Accepted for call-site compatibility; empty states no longer draw one. */
+  icon?: React.ElementType;
   tone?: 'neutral' | 'danger';
   title: string;
   detail?: React.ReactNode;
@@ -150,25 +145,22 @@ function StateFrame({
     <div
       className={cn(
         'flex flex-col items-center justify-center text-center',
-        compact ? 'gap-1.5 px-4 py-8' : 'gap-2 px-6 py-14',
+        compact ? 'gap-1.5 px-4 py-8' : 'gap-2 px-6 py-12',
       )}
     >
-      <span
+      <p
         className={cn(
-          'flex items-center justify-center rounded-full',
-          compact ? 'h-8 w-8' : 'h-11 w-11',
-          tone === 'danger' ? 'bg-danger-wash text-danger' : 'bg-canvas text-faint',
+          'font-medium',
+          compact ? 'text-[13px]' : 'text-[14px]',
+          tone === 'danger' ? 'text-danger' : 'text-ink',
         )}
       >
-        <Icon className={compact ? 'h-4 w-4' : 'h-5 w-5'} aria-hidden />
-      </span>
-      <p className={cn('text-ink font-medium', compact ? 'text-[13px]' : 'text-[14px]')}>
         {title}
       </p>
       {detail && (
-        <p className="text-muted max-w-[46ch] text-[12px] leading-relaxed">{detail}</p>
+        <p className="text-muted max-w-[52ch] text-[12px] leading-relaxed">{detail}</p>
       )}
-      {action && <div className="mt-1.5">{action}</div>}
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }
@@ -185,12 +177,9 @@ export function EmptyState({
   title,
   detail,
   action,
-  icon = Inbox,
   compact,
 }: EmptyStateProps): React.JSX.Element {
-  return (
-    <StateFrame icon={icon} title={title} detail={detail} action={action} compact={compact} />
-  );
+  return <StateFrame title={title} detail={detail} action={action} compact={compact} />;
 }
 
 export function ErrorState({
@@ -202,18 +191,17 @@ export function ErrorState({
   onRetry?: () => void;
   compact?: boolean;
 }): React.JSX.Element {
-  const { icon, title, detail, retryable } = describeError(error);
+  const { title, detail, retryable } = describeError(error);
   return (
     <div role="alert">
       <StateFrame
-        icon={icon}
         tone="danger"
         title={title}
         detail={detail}
         compact={compact}
         action={
           retryable && onRetry ? (
-            <Button variant="default" size="sm" onClick={onRetry}>
+            <Button variant="secondary" size="sm" onClick={onRetry}>
               <RotateCw className="h-3.5 w-3.5" aria-hidden /> Try again
             </Button>
           ) : undefined

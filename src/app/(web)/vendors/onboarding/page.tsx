@@ -10,6 +10,7 @@ import {
   Input,
   PageHeader,
   Pill,
+  SubNav,
 } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -23,6 +24,7 @@ import {
 import { useHasPermission } from '@/lib/permissions';
 import { PERMISSIONS } from '@/lib/shared';
 import { useToastStore } from '@/store/toast-store';
+import { formatDate } from '@/lib/format';
 
 const TABS: { key: OnboardingTab; label: string }[] = [
   { key: 'my_review', label: 'Awaiting my review' },
@@ -121,29 +123,19 @@ export default function OnboardingQueuePage(): React.JSX.Element {
   const { data, isLoading, isError, error, refetch } = useOnboardingQueue(activeTab);
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div>
       <PageHeader
         title="Onboarding queue"
         breadcrumbs={[{ label: 'Vendors', href: '/vendors' }, { label: 'Onboarding' }]}
         description="Invited and self-registered vendors working through the onboarding wizard."
       />
 
-      <div className="border-line mb-4 flex gap-1 overflow-x-auto border-b">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            type="button"
-            className={`duration-hover shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ${
-              activeTab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-ink border-transparent'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-4"
+        items={tabs.map((t) => ({ key: t.key, label: t.label }))}
+        value={activeTab}
+        onChange={(k) => setTab(k as typeof activeTab)}
+      />
 
       {isLoading || isError || !data || data.items.length === 0 ? (
         <div className="border-line bg-panel rounded-lg border">
@@ -161,9 +153,9 @@ export default function OnboardingQueuePage(): React.JSX.Element {
           </DataState>
         </div>
       ) : (
-        <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+        <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-muted">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Vendor</th>
                 <th className="px-3 py-2 text-left font-medium">Category</th>
@@ -181,7 +173,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                   <td className="px-3 py-2">
                     <Link
                       href={`/vendors/onboarding/${o.id}`}
-                      className="text-brand font-medium hover:underline"
+                      className="text-accent font-medium hover:underline"
                     >
                       {o.vendorName}
                     </Link>
@@ -216,8 +208,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <div className="bg-canvas h-1.5 w-24 overflow-hidden rounded-full">
-                        <div
-                          className="bg-brand h-full"
+                        <div className="bg-accent h-full"
                           style={{ width: `${o.completionPct}%` }}
                         />
                       </div>
@@ -230,7 +221,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                   <td className="text-muted px-3 py-2 tabular-nums">{o.daysOpen}d</td>
                   <td className="px-3 py-2">
                     <Pill variant={slaVariant(o.slaBreachAt)} dot>
-                      {o.slaBreachAt ? new Date(o.slaBreachAt).toLocaleDateString() : '—'}
+                      {o.slaBreachAt ? formatDate(o.slaBreachAt) : '—'}
                     </Pill>
                   </td>
                   <td className="px-3 py-2 text-right">

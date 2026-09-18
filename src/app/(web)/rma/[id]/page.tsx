@@ -14,7 +14,7 @@ import {
   useRma,
   useUpdateRma,
 } from '@/lib/api/rma';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { formatDateTime, inr, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 export default function RmaDetailPage(): React.JSX.Element {
@@ -30,11 +30,11 @@ export default function RmaDetailPage(): React.JSX.Element {
   const [notes, setNotes] = useState('');
 
   if (isLoading || !data) {
-    return <div className="mx-auto max-w-4xl px-4 py-10 text-muted">Loading…</div>;
+    return <div className="px-4 py-10 text-muted">Loading…</div>;
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeader
         title={data.number}
         numeric
@@ -45,7 +45,7 @@ export default function RmaDetailPage(): React.JSX.Element {
         }
         description={
           <>
-            {data.vendor.name} · GRN{' '}
+            {data.vendor.name}, GRN{' '}
             <Link
               href={`/goods-receipt/${data.grn.id}`}
               className="text-accent-2 hover:underline"
@@ -72,7 +72,7 @@ export default function RmaDetailPage(): React.JSX.Element {
             {data.canIssue && (
               <Button
                 size="sm"
-                variant="accent"
+                variant="primary"
                 disabled={issue.isPending}
                 onClick={() =>
                   issue.mutate(undefined as void, {
@@ -145,11 +145,11 @@ export default function RmaDetailPage(): React.JSX.Element {
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2 space-y-4">
           <div className="rounded-lg border border-line bg-panel p-4">
-            <h2 className="mb-2 text-[11px] font-medium uppercase text-faint">
+            <h2 className="mb-2 text-[11px] font-medium text-faint">
               Return lines
             </h2>
             <table className="w-full text-[12px]">
-              <thead className="text-left text-[10px] uppercase text-faint">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1">Item</th>
                   <th className="py-1 text-right">Qty</th>
@@ -174,7 +174,7 @@ export default function RmaDetailPage(): React.JSX.Element {
 
           {data.canEdit && (
             <div className="rounded-lg border border-line bg-panel p-4">
-              <h2 className="mb-2 text-[11px] font-medium uppercase text-faint">
+              <h2 className="mb-2 text-[11px] font-medium text-faint">
                 Refine reason
               </h2>
               <textarea
@@ -206,7 +206,7 @@ export default function RmaDetailPage(): React.JSX.Element {
           )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <h2 className="mb-2 text-[11px] font-medium uppercase text-faint">
+            <h2 className="mb-2 text-[11px] font-medium text-faint">
               Activity
             </h2>
             <ul className="space-y-1 text-[12px]">
@@ -214,7 +214,7 @@ export default function RmaDetailPage(): React.JSX.Element {
                 <li key={a.id} className="flex justify-between">
                   <span className="text-text">{a.action}</span>
                   <span className="font-numeric text-faint">
-                    {new Date(a.at).toLocaleString('en-IN')}
+                    {formatDateTime(a.at)}
                   </span>
                 </li>
               ))}
@@ -224,7 +224,7 @@ export default function RmaDetailPage(): React.JSX.Element {
 
         <div className="space-y-4">
           <div className="rounded-lg border border-line bg-panel p-4 text-[12px]">
-            <h2 className="mb-2 text-[11px] font-medium uppercase text-faint">Summary</h2>
+            <h2 className="mb-2 text-[11px] font-medium text-faint">Summary</h2>
             <Row k="Reason" v={data.reasonCode} />
             <Row k="Freight" v={data.returnFreightBorneBy} />
             <Row k="Vehicle out" v={data.vehicleOutNo ?? '—'} />

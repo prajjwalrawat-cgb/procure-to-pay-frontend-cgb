@@ -1,6 +1,13 @@
 'use client';
 
-import { Button, PageHeader } from '@/components/ui';
+import {
+  Button,
+  Combobox,
+  DateInput,
+  PageHeader,
+  StepIndicator,
+  controlClass,
+} from '@/components/ui';
 import type {
   PaymentTermKind,
   PoCreateInput,
@@ -91,8 +98,9 @@ function lineTotal(l: DraftLine): number {
   return base * (1 - num(l.discountPct) / 100) * (1 + num(l.taxRate) / 100);
 }
 
-const inputCls =
-  'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-2.5 py-1.5 text-[13px] outline-none';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 export default function NewSpotBuyPage(): React.JSX.Element {
   const router = useRouter();
@@ -237,7 +245,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-4xl pb-8">
+    <div className="max-w-4xl pb-8">
       <Link
         href="/purchase-orders"
         className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
@@ -249,64 +257,40 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         description="Raised directly against a vendor quote — no requisition required. It still goes through the normal PO approval before it can be issued."
       />
 
-      <ol className="mb-5 flex flex-wrap items-center gap-2">
-        {STEPS.map((s, i) => (
-          <li key={s} className="flex items-center gap-2">
-            <span
-              className={
-                'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ' +
-                (i === step
-                  ? 'bg-ink text-white'
-                  : i < step
-                    ? 'bg-accent-wash text-accent-2'
-                    : 'bg-canvas text-faint')
-              }
-            >
-              {i + 1}
-            </span>
-            <span
-              className={
-                'text-[13px] ' + (i === step ? 'font-medium text-ink' : 'text-muted')
-              }
-            >
-              {s}
-            </span>
-            {i < STEPS.length - 1 && <span className="text-faint">·</span>}
-          </li>
-        ))}
-      </ol>
+      <StepIndicator steps={STEPS} current={step} className="mb-5" />
 
       <div className="rounded-lg border border-line bg-panel p-4">
         {step === 0 && (
           <div className="grid gap-3 md:grid-cols-2">
+            {/* Both of these are searchable rather than native dropdowns. A
+                tenant's vendor master runs to hundreds of rows and its cost
+                centres to dozens; a native <select> there means scrolling a
+                wall with no way to type, and no way to find a vendor by code. */}
             <Labelled label="Vendor" required>
-              <select
+              <Combobox
+                options={vendors.map((v: VendorRef) => ({
+                  value: v.id,
+                  label: v.name,
+                  detail: v.isMsme ? 'MSME' : undefined,
+                }))}
                 value={vendorId}
-                onChange={(e) => setVendorId(e.target.value)}
-                className={inputCls}
-              >
-                <option value="">Select a registered vendor…</option>
-                {vendors.map((v: VendorRef) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                    {v.isMsme ? ' (MSME)' : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={setVendorId}
+                placeholder="Search registered vendors…"
+                emptyText="No registered vendor matches that search"
+              />
             </Labelled>
             <Labelled label="Cost centre" required>
-              <select
+              <Combobox
+                options={costCenters.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                  detail: c.code,
+                }))}
                 value={costCenterId}
-                onChange={(e) => setCostCenterId(e.target.value)}
-                className={inputCls}
-              >
-                <option value="">Select…</option>
-                {costCenters.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} · {c.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setCostCenterId}
+                placeholder="Search cost centres…"
+                emptyText="No cost centre matches that search"
+              />
             </Labelled>
             {/* Only worth asking when the tenant holds more than one
                 registration; with one branch there is nothing to choose. */}
@@ -320,7 +304,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                   {plants.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
-                      {p.gstin ? ` · ${p.gstin}` : ''}
+                      {p.gstin ? ` — ${p.gstin}` : ''}
                       {p.isDefault ? ' (default)' : ''}
                     </option>
                   ))}
@@ -332,8 +316,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               </Labelled>
             )}
             <Labelled label="Expected delivery" required>
-              <input
-                type="date"
+              <DateInput
                 value={expectedDeliveryDate}
                 onChange={(e) => setExpectedDeliveryDate(e.target.value)}
                 className={inputCls}
@@ -381,7 +364,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             {lines.map((l, i) => (
               <div key={l.key} className="rounded-lg border border-line bg-canvas/40 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+                  <span className="text-[11px] font-semibold text-faint">
                     Line {i + 1}
                   </span>
                   {lines.length > 1 && (
@@ -515,7 +498,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                         {quote.name}
                       </div>
                       <div className="font-numeric text-[11px] text-faint">
-                        {fileSize(quote.size)} · {quote.type || 'unknown type'}
+                        {fileSize(quote.size)}, {quote.type || 'unknown type'}
                       </div>
                       <div className="mt-2 flex items-center gap-3 text-[12px]">
                         {quoteUrl && (
@@ -606,7 +589,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               label="Cost centre"
               value={
                 costCenters.find((c) => c.id === costCenterId)
-                  ? `${costCenters.find((c) => c.id === costCenterId)?.code} · ${costCenters.find((c) => c.id === costCenterId)?.name}`
+                  ? `${costCenters.find((c) => c.id === costCenterId)?.code}, ${costCenters.find((c) => c.id === costCenterId)?.name}`
                   : '—'
               }
             />
@@ -662,7 +645,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         </Button>
         {step < STEPS.length - 1 ? (
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!canAdvance}
             onClick={() => setStep((s) => s + 1)}
@@ -670,7 +653,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             Next
           </Button>
         ) : (
-          <Button variant="accent" size="sm" disabled={saving} onClick={onSubmit}>
+          <Button variant="primary" size="sm" disabled={saving} onClick={onSubmit}>
             {saving ? 'Creating…' : 'Create draft PO'}
           </Button>
         )}

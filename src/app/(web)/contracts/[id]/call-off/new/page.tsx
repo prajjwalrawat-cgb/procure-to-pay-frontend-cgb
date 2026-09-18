@@ -1,6 +1,9 @@
 'use client';
 
-import { PageHeader } from '@/components/ui';
+import {
+  PageHeader,
+  controlClass,
+} from '@/components/ui';
 
 import type { CallOffInput } from '@/lib/shared';
 import { ArrowLeft } from 'lucide-react';
@@ -57,13 +60,13 @@ export default function NewCallOffPage(): React.JSX.Element {
 
   if (!c)
     return (
-      <p className="mx-auto max-w-3xl py-10 text-center text-[13px] text-muted">
+      <p className="max-w-3xl py-10 text-center text-[13px] text-muted">
         Loading…
       </p>
     );
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <Link
         href={`/contracts/${id}`}
         className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
@@ -79,15 +82,15 @@ export default function NewCallOffPage(): React.JSX.Element {
         <label className="block">
           <span className="mb-1 block text-[12px] text-muted">Rate card row</span>
           <select
-            className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+            className={controlClass}
             value={rateCardId}
             onChange={(e) => setRateCardId(e.target.value)}
           >
             <option value="">Select…</option>
             {c.rateCards.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.routeOrigin ? `${r.routeOrigin}→${r.routeDest}` : r.itemDesc} · Yr
-                {r.rateYear} · ₹{r.unitRate}/{r.uom}
+                {r.routeOrigin ? `${r.routeOrigin}→${r.routeDest}` : r.itemDesc}, Yr
+                {r.rateYear}, ₹{r.unitRate}/{r.uom}
               </option>
             ))}
           </select>
@@ -106,7 +109,7 @@ export default function NewCallOffPage(): React.JSX.Element {
               Quantity ({card?.uom ?? 'unit'})
             </span>
             <input
-              className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+              className={controlClass}
               value={qty}
               onChange={(e) => setQty(e.target.value)}
             />
@@ -115,7 +118,7 @@ export default function NewCallOffPage(): React.JSX.Element {
             <span className="mb-1 block text-[12px] text-muted">Expected delivery</span>
             <input
               type="date"
-              className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+              className={controlClass}
               value={expected}
               onChange={(e) => setExpected(e.target.value)}
             />
@@ -125,7 +128,7 @@ export default function NewCallOffPage(): React.JSX.Element {
         <label className="block">
           <span className="mb-1 block text-[12px] text-muted">Delivery location</span>
           <input
-            className="w-full rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+            className={controlClass}
             value={line1}
             onChange={(e) => setLine1(e.target.value)}
           />

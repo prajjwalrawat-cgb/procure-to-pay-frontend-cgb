@@ -7,32 +7,51 @@ import * as React from 'react';
 import { cn } from '../lib/cn';
 
 /**
- * Button variants.
+ * Buttons.
  *
- * `commit` is the gold one, and it is the only gold control in the system. It
- * means "this action moves money or commits the company" — approve, award,
- * release a payment run, issue a PO. Naming it for the consequence rather than
- * the colour is deliberate: `variant="commit"` on a filter dropdown reads wrong
- * at the call site, where `variant="gold"` would not. Gold used decoratively
- * costs it its meaning everywhere else, so there is no gold escape hatch here.
+ * Two shapes carry the whole app:
  *
- * Focus is handled globally by the :focus-visible outline in styles.css, so
- * these classes no longer carry their own ring — one focus treatment, applied
- * consistently, that also survives dense tables and overflow containers.
+ *   primary   — filled accent. ONE per screen, or one per card. If a screen
+ *               has three "New X" / "Continue" actions, the most important is
+ *               primary and the rest are secondary. Two filled buttons side by
+ *               side means neither is the answer to "what do I do here".
+ *   secondary — transparent with a hairline border. The default for everything
+ *               else, including destructive-adjacent actions that still need a
+ *               confirm step behind them.
+ *
+ * `danger` is filled red and is only for the confirm step of a destructive
+ * action — never for the button that opens the dialog.
+ *
+ * The old `commit` (gold) and `accent` (green) variants are aliases of
+ * `primary` now. The system has one accent; a second filled colour for
+ * "money-moving" actions meant approve buttons and save buttons competed, and
+ * the distinction was carried by hue alone, which is not an accessible signal.
+ *
+ * Focus is handled globally by the :focus-visible outline in styles.css.
  */
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-[13px] font-medium transition-colors duration-hover disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
+        /** Filled accent. One per screen. */
+        primary: 'bg-accent text-white hover:bg-accent-2',
+        /** Hairline border on transparent — the workhorse. */
         default: 'border border-line bg-panel text-text hover:bg-canvas',
-        primary: 'bg-navy text-on-navy hover:bg-navy-2',
-        commit: 'bg-gold-ink text-white hover:bg-gold-ink/90 shadow-xs',
-        accent: 'bg-accent text-white hover:bg-accent-2',
+        secondary: 'border border-line bg-transparent text-text hover:bg-canvas',
+        /** No border, no fill — for toolbar and in-row actions. */
+        ghost: 'text-muted hover:bg-canvas hover:text-text',
+        /** Reads as a link; for "view all", "clear filters". */
+        link: 'text-accent hover:text-accent-2 underline-offset-2 hover:underline px-0',
+        /** Confirm step of a destructive action only. */
         danger: 'bg-danger text-white hover:bg-danger/90',
-        ghost: 'text-text hover:bg-canvas',
-        // For chrome — sits on the navy sidebar/topbar rather than on ice.
-        onNavy: 'text-on-navy-muted hover:bg-navy-3 hover:text-on-navy',
+
+        // ── Legacy aliases ──────────────────────────────────────────────
+        // Kept so un-migrated call sites keep compiling and now render as the
+        // single primary rather than gold / green / navy.
+        commit: 'bg-accent text-white hover:bg-accent-2',
+        accent: 'bg-accent text-white hover:bg-accent-2',
+        onNavy: 'text-muted hover:bg-canvas hover:text-text',
       },
       size: {
         default: 'h-9 px-3.5 py-2',

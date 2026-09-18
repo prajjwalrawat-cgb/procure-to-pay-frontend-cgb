@@ -101,7 +101,7 @@ export function BankReconciliationPanel({
       </div>
 
       <table className="w-full text-[13px]">
-        <thead className="text-muted border-line border-b text-left text-[12px]">
+        <thead className="border-line border-b text-left text-[12px] text-muted">
           <tr>
             <th className="py-1.5 font-medium">Invoice</th>
             <th className="py-1.5 font-medium">Vendor</th>

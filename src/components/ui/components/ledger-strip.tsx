@@ -32,6 +32,7 @@ import { cn } from '../lib/cn';
 import { Button } from './button';
 import { EmptyState } from './data-state';
 import { InfoTip } from './tooltip';
+import { formatDateTime } from '@/lib/format';
 
 export interface LedgerEvent {
   id: string;
@@ -54,12 +55,7 @@ function shortHash(hash: string): string {
 }
 
 function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso);
 }
 
 /** `INVOICE_APPROVED` → `Invoice approved` */
@@ -120,7 +116,7 @@ function VerdictLine({ verdict }: { verdict: LedgerVerdict }): React.JSX.Element
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
           Chain intact
           <span className="font-numeric text-muted font-normal">
-            · {verdict.eventsChecked.toLocaleString('en-IN')} checked
+            {`, ${verdict.eventsChecked.toLocaleString('en-IN')} checked`}
           </span>
         </span>
       );
@@ -131,7 +127,7 @@ function VerdictLine({ verdict }: { verdict: LedgerVerdict }): React.JSX.Element
           Chain broken
           {verdict.firstBreakAt && (
             <span className="font-numeric font-normal">
-              · first at {timeLabel(verdict.firstBreakAt)}
+            {`, first at ${timeLabel(verdict.firstBreakAt)}`}
             </span>
           )}
         </span>
@@ -187,7 +183,7 @@ export function LedgerStrip({
     >
       <header className="border-line flex flex-wrap items-center justify-between gap-2 border-b px-3.5 py-2.5">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="text-faint text-[11px] font-medium uppercase tracking-wide">
+          <h3 className="text-faint text-[11px] font-medium ">
             {title}
           </h3>
           <VerdictLine verdict={verdict} />
@@ -245,7 +241,7 @@ export function LedgerStrip({
                       <span className="flex flex-col gap-0.5">
                         <span className="font-semibold">{actionLabel(e.action)}</span>
                         <span>
-                          {e.actorName ?? e.actorType} · {timeLabel(e.timestamp)}
+                          {e.actorName ?? e.actorType}, {timeLabel(e.timestamp)}
                         </span>
                         <span className="font-numeric opacity-70">
                           {shortHash(e.hashCurrent)}
@@ -329,10 +325,10 @@ export function LedgerStrip({
                       <span className="text-ink font-medium">{actionLabel(e.action)}</span>
                       <span className="text-muted">
                         {' '}
-                        · {e.actorName ?? e.actorType}
+                      {`, ${e.actorName ?? e.actorType}`}
                       </span>
                       <span className="font-numeric text-faint block">
-                        {timeLabel(e.timestamp)} · {shortHash(e.hashCurrent)}
+                        {timeLabel(e.timestamp)}, {shortHash(e.hashCurrent)}
                       </span>
                     </span>
                   </li>

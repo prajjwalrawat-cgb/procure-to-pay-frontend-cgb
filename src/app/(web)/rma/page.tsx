@@ -1,12 +1,15 @@
 'use client';
 
-import { PageHeader, Pill } from '@/components/ui';
+import {
+  PageHeader,
+  Pill,
+  SubNav,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { useRmas, type RmaTab } from '@/lib/api/rma';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
 
 const TABS: { key: RmaTab; label: string }[] = [
   { key: 'draft', label: 'Draft' },
@@ -18,44 +21,33 @@ const TABS: { key: RmaTab; label: string }[] = [
 ];
 
 export default function RmaListPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const [tab, setTab] = useState<RmaTab>('all');
   const { data, isLoading } = useRmas(tab);
   const counts = data?.counts;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <div className="mb-4">
         <PageHeader
           title="Return authorisations"
-          description={<>Rejected-material returns{tenantSuffix(tenantName)}</>}
+          description="Rejected-material returns"
         />
       </div>
 
-      <div className="mb-3 flex items-center gap-1 border-b border-line">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={
-              'flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors duration-hover ' +
-              (tab === t.key
-                ? 'border-accent text-ink'
-                : 'border-transparent text-muted hover:text-text')
-            }
-          >
-            {t.label}
-            <span className="font-numeric text-[11px] text-faint">
-              {counts?.[t.key] ?? 0}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-3"
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: counts?.[t.key] ?? 0,
+        }))}
+        value={tab}
+        onChange={(k) => setTab(k as (typeof TABS)[number]['key'])}
+      />
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">RMA</th>
               <th className="px-3 py-2 font-medium">Vendor</th>

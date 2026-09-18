@@ -4,6 +4,7 @@ import {
   Button,
   Input,
   PageHeader,
+  controlClass,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -129,7 +130,7 @@ function RequisitionPicker({
                   <span className="text-text">{r.title}</span>
                 </span>
                 <span className="shrink-0 text-muted">
-                  {r.costCenter.code} · {inr(r.totalAmount)}
+                  {r.costCenter.code}, {inr(r.totalAmount)}
                 </span>
               </button>
             ))
@@ -209,13 +210,13 @@ export default function NewRfqPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[900px]">
+    <div className="max-w-[900px]">
       <PageHeader
         title="New RFQ"
         description="Define the lines, invite vendors and set the evaluation weights."
       />
 
-      <Section title="1 · Basics">
+      <Section title="1, Basics">
         <Field label="Title">
           <Input
             value={title}
@@ -229,7 +230,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="RFQ type">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass}
               value={rfqType}
               onChange={(e) => setRfqType(e.target.value as RfqType)}
             >
@@ -240,7 +241,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="INCOTERM">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass}
               value={incoterm}
               onChange={(e) => setIncoterm(e.target.value)}
             >
@@ -272,7 +273,7 @@ export default function NewRfqPage(): React.JSX.Element {
         </div>
       </Section>
 
-      <Section title="2 · Lines">
+      <Section title="2, Lines">
         {lines.map((l, i) => (
           <div key={i} className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             <Input
@@ -312,7 +313,7 @@ export default function NewRfqPage(): React.JSX.Element {
         </Button>
       </Section>
 
-      <Section title="3 · Evaluation criteria">
+      <Section title="3, Evaluation criteria">
         <div className="space-y-2">
           {criteria.map((c, i) => (
             <div key={c.key} className="flex items-center gap-2 text-[13px]">

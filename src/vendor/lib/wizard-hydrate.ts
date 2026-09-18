@@ -5,7 +5,7 @@
  * function that can be tested directly.
  */
 
-import type { ExtractedFieldMap } from '@/lib/shared';
+import { GST_IDENTITY_FIELDS, type ExtractedFieldMap } from '@/lib/shared';
 
 export interface WizardState {
   currentStep: number;
@@ -113,4 +113,31 @@ export function applyExtractedFields(
     if (field.verified || value === '' || !wasCorrected) next[key] = field.value;
   }
   return next;
+}
+
+const IDENTITY_KEYS = new Set<string>(GST_IDENTITY_FIELDS);
+
+/** A provenance map with the GST-certificate fields dropped. */
+export function withoutIdentityFields(map: ExtractedFieldMap): ExtractedFieldMap {
+  return Object.fromEntries(
+    Object.entries(map).filter(([key]) => !IDENTITY_KEYS.has(key)),
+  );
+}
+
+/**
+ * Fold in a GST certificate that replaced the identity on file
+ * (`supersedesIdentity`). Neither rule above applies: nothing typed or read
+ * before it is a correction worth keeping, because it described the other
+ * registration. Every identity field is cleared and filled from the new
+ * certificate alone — one it says nothing about is left blank for the vendor,
+ * not left holding the old entity's value.
+ */
+export function replaceIdentityFields(
+  current: Record<string, string>,
+  incoming: ExtractedFieldMap,
+): Record<string, string> {
+  const next = Object.fromEntries(
+    Object.entries(current).filter(([key]) => !IDENTITY_KEYS.has(key)),
+  );
+  return applyExtractedFields(next, {}, incoming);
 }

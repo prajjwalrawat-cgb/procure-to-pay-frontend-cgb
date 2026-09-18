@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, PageHeader, Pill, VerificationResult } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+  VerificationResult,
+} from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -19,7 +25,7 @@ import {
   // useRunMatch,
 } from '@/lib/api/invoices';
 import { exceptionLabel, impactLabel } from '@/lib/exception-display';
-import { inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
+import { formatDate, formatDateTime, inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
 import { COMPLIANCE_PROVIDER, useProviderLiveness } from '@/lib/integration-status';
 import { useToastStore } from '@/store/toast-store';
 
@@ -98,7 +104,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-20">
+    <div className="max-w-6xl pb-20">
       <Link
         href="/invoices"
         className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
@@ -115,7 +121,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               {statusLabel(data.status)}
             </Pill>
             {data.status === 'MATCH_EXCEPTION' && (
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-danger">
+              <span className="text-[11px] font-semibold text-danger">
                 Match exception
               </span>
             )}
@@ -126,7 +132,8 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             <EntityRef kind="vendor" id={data.vendor.id}>
               {data.vendor.name}
             </EntityRef>{' '}
-            · Ref <span className="font-numeric">{data.vendorInvoiceRef}</span> · Source{' '}
+            {' — '}Ref <span className="font-numeric">{data.vendorInvoiceRef}</span>,
+            source{' '}
             {data.source}
           </>
         }
@@ -170,7 +177,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         {data.relatedInvoices.length === 1
                           ? 'another invoice'
                           : `${data.relatedInvoices.length} other invoices`}{' '}
-                        · {remainingOn(l)} left
+                      {`, ${remainingOn(l)} left`}
                       </div>
                     )}
                   </div>
@@ -210,7 +217,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             <div className="mb-2 flex items-center justify-between">
               <h2 className="text-[14px] font-semibold text-ink">
                 Exceptions ({openExceptions.length} open
-                {overridden.length > 0 && ` · ${overridden.length} overridden`})
+                {overridden.length > 0 && `, ${overridden.length} overridden`})
               </h2>
               {/*
                 Hidden, not deleted. The match already re-runs on every event
@@ -333,7 +340,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         {exceptionLabel(e.type)}
                       </Pill>
                       {!e.resolved && (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-faint">
+                        <span className="text-[10px] font-semibold text-faint">
                           {e.severity}
                         </span>
                       )}
@@ -360,11 +367,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                             ? `${e.severity} exception overridden`
                             : 'Resolved'}
                           {e.resolutionAction
-                            ? ` · ${e.resolutionAction.replace(/_/g, ' ').toLowerCase()}`
+                            ? `, ${e.resolutionAction.replace(/_/g, ' ').toLowerCase()}`
                             : ''}
-                          {e.resolvedByName ? ` · by ${e.resolvedByName}` : ''}
+                          {e.resolvedByName ? `, by ${e.resolvedByName}` : ''}
                           {e.resolvedAt
-                            ? ` · ${new Date(e.resolvedAt).toLocaleDateString('en-IN')}`
+                            ? `, ${formatDate(e.resolvedAt)}`
                             : ''}
                         </p>
                         {e.resolutionNotes && (
@@ -449,23 +456,16 @@ export default function InvoiceDetailPage(): React.JSX.Element {
 
           {/* Activity + payments + comments */}
           <section>
-            <div className="mb-2 flex items-center gap-1 border-b border-line">
-              {(['activity', 'payments'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setActivityTab(t)}
-                  className={
-                    'border-b-2 px-3 py-1.5 text-[13px] font-medium capitalize ' +
-                    (activityTab === t
-                      ? 'border-accent text-ink'
-                      : 'border-transparent text-muted hover:text-text')
-                  }
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            <SubNav
+              className="mb-2"
+              aria-label="Invoice history"
+              items={[
+                { key: 'activity', label: 'Activity' },
+                { key: 'payments', label: 'Payments' },
+              ]}
+              value={activityTab}
+              onChange={(k) => setActivityTab(k as 'activity' | 'payments')}
+            />
             {activityTab === 'activity' ? (
               <ul className="mb-3 flex flex-col gap-1.5 border-l border-line pl-4">
                 {data.activity.map((a) => (
@@ -473,9 +473,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     <span className="font-medium text-text">
                       {a.action.replace(/_/g, ' ')}
                     </span>{' '}
-                    ·{' '}
+                    ,{' '}
                     <span className="font-numeric">
-                      {new Date(a.at).toLocaleString('en-IN')}
+                      {formatDateTime(a.at)}
                     </span>
                   </li>
                 ))}
@@ -498,7 +498,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                       <Row label="Net paid" value={inr(data.payment.net)} />
                       <Row
                         label="Paid on"
-                        value={new Date(data.payment.paidAt).toLocaleString('en-IN')}
+                        value={formatDateTime(data.payment.paidAt)}
                       />
                     </dl>
                   </div>
@@ -538,7 +538,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         {/* Right panel */}
         <aside className="flex flex-col gap-4">
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="text-[11px] uppercase tracking-wide text-faint">
+            <div className="text-[11px] text-faint">
               Amount payable
             </div>
             <div className="font-numeric mt-1 text-[22px] font-semibold tracking-display text-ink">
@@ -585,14 +585,14 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 </Pill>
               </div>
               <p className="mt-1 text-[11px] text-danger/80">
-                Due {new Date(data.msme.dueDate).toLocaleDateString('en-IN')}. Pay within
+                Due {formatDate(data.msme.dueDate)}. Pay within
                 the 45-day cap to avoid interest.
               </p>
             </div>
           )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+            <div className="mb-2 text-[11px] text-faint">
               Compliance
             </div>
             <dl className="flex flex-col gap-1.5 text-[12px]">
@@ -600,7 +600,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 label="GSTIN"
                 value={
                   <VerificationResult
-                    status={data.compliance.gstinStatus}
+                    status={complianceLabel(data.compliance.gstinStatus)}
                     variant={complianceVariant(data.compliance.gstinStatus)}
                     simulated={isSimulated(COMPLIANCE_PROVIDER.gstin)}
                     label="GSTIN status check"
@@ -611,7 +611,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 label="GSTR-2B"
                 value={
                   <VerificationResult
-                    status={data.compliance.gstr2bStatus}
+                    status={complianceLabel(data.compliance.gstr2bStatus)}
                     variant={complianceVariant(data.compliance.gstr2bStatus)}
                     simulated={isSimulated(COMPLIANCE_PROVIDER.gstr2b)}
                     label="GSTR-2B reconciliation"
@@ -643,7 +643,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               open the PO to find the competing claims. */}
           {data.relatedInvoices.length > 0 && (
             <div className="rounded-lg border border-warn/30 bg-panel p-4">
-              <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+              <div className="mb-2 text-[11px] text-faint">
                 Also invoiced against {data.po?.number ?? 'this PO'}
               </div>
               <div className="flex flex-col gap-2">
@@ -654,8 +654,8 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         {r.number}
                       </EntityRef>
                       <div className="truncate text-[11px] text-faint">
-                        {r.vendorInvoiceRef} ·{' '}
-                        {new Date(r.invoiceDate).toLocaleDateString('en-IN')}
+                        {r.vendorInvoiceRef} ,{' '}
+                        {formatDate(r.invoiceDate)}
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
@@ -673,7 +673,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+            <div className="mb-2 text-[11px] text-faint">
               Linked documents
             </div>
             <div className="flex flex-col gap-1.5 text-[12px]">
@@ -702,12 +702,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           </div>
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+            <div className="mb-2 text-[11px] text-faint">
               Vendor snapshot
             </div>
             <div className="text-[13px] font-medium text-ink">{data.vendor.name}</div>
             <dl className="mt-1 flex flex-col gap-1 text-[12px]">
-              <Row label="Risk score" value={`A · ${data.vendor.riskScore ?? '—'}`} />
+              <Row label="Risk score" value={`A, ${data.vendor.riskScore ?? '—'}`} />
               <Row label="FYTD spend" value={inrCompact(data.vendor.fytdSpend)} />
               <Row label="On-time" value={`${data.vendor.onTimePct ?? '—'}%`} />
             </dl>
@@ -748,7 +748,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     Request changes
                   </Button>
                   <Button
-                    variant="accent"
+                    variant="primary"
                     disabled={decide.isPending}
                     onClick={() => onDecide('APPROVE')}
                   >
@@ -768,7 +768,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             )
           ) : (
             <Button
-              variant="accent"
+              variant="primary"
               className="ml-auto"
               onClick={onRoute}
               disabled={route.isPending || openExceptions.length > 0 || !matched}
@@ -890,12 +890,45 @@ function receivedNothing(poLines: { qtyReceived: string }[]): boolean {
   return poLines.length > 0 && poLines.every((l) => Number(l.qtyReceived) <= 0);
 }
 
-function complianceVariant(status: string): 'success' | 'danger' | 'warn' | 'gray' {
+function complianceVariant(status: string): 'success' | 'danger' | 'warn' | 'neutral' {
   const s = status.toUpperCase();
   if (['ACTIVE', 'MATCHED', 'VALID', 'CLEAR', 'FOUND'].includes(s)) return 'success';
   if (['CANCELLED', 'SUSPENDED', 'INVALID', 'NOT_FOUND', 'MISMATCH'].includes(s)) {
     return 'danger';
   }
-  if (['PENDING', 'NOT_CHECKED', 'UNKNOWN', 'NOT_APPLICABLE'].includes(s)) return 'warn';
-  return 'gray';
+  // Not-yet-checked is not a warning. Nothing is wrong with the invoice; the
+  // check simply has not run, and colouring it amber sent reviewers hunting
+  // for a problem that did not exist.
+  return 'neutral';
+}
+
+/**
+ * Compliance verdicts in words.
+ *
+ * The GSP returns machine enums — `NOT_CHECKED`, `NOT_APPLICABLE`, `MISMATCH`
+ * — and they were rendered straight onto the reviewer's screen. A person
+ * approving a payment should not have to decode a constant name, and
+ * `NOT_CHECKED` in particular reads as a system defect rather than as "we have
+ * not asked the portal yet".
+ */
+const COMPLIANCE_LABELS: Record<string, string> = {
+  ACTIVE: 'Active',
+  MATCHED: 'Matched',
+  VALID: 'Valid',
+  CLEAR: 'Clear',
+  FOUND: 'Found',
+  CANCELLED: 'Cancelled',
+  SUSPENDED: 'Suspended',
+  INVALID: 'Invalid',
+  NOT_FOUND: 'Not found',
+  MISMATCH: 'Does not match',
+  PENDING: 'Check in progress',
+  NOT_CHECKED: 'Not checked yet',
+  UNKNOWN: 'No answer from the portal',
+  NOT_APPLICABLE: 'Not applicable',
+};
+
+function complianceLabel(status: string): string {
+  const s = status.toUpperCase();
+  return COMPLIANCE_LABELS[s] ?? status;
 }

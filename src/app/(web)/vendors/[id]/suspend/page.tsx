@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
   PageHeader,
+  controlClass,
 } from '@/components/ui';
 import { SUSPENSION_REASON_CODE, SUSPENSION_TYPE } from '@/lib/shared';
 import Link from 'next/link';
@@ -63,7 +64,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[640px]">
+    <div className="max-w-[640px]">
       <div className="mb-4">
         <Link
           href={`/vendors/${params.id}`}
@@ -108,7 +109,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
                   onChange={(e) =>
                     setSuspensionType(e.target.value as (typeof SUSPENSION_TYPE)[number])
                   }
-                  className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+                  className={controlClass}
                 >
                   {SUSPENSION_TYPE.filter((t) => t !== 'BLACKLIST').map((t) => (
                     <option key={t} value={t}>
@@ -128,7 +129,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
                       e.target.value as (typeof SUSPENSION_REASON_CODE)[number],
                     )
                   }
-                  className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+                  className={controlClass}
                 >
                   {SUSPENSION_REASON_CODE.map((r) => (
                     <option key={r} value={r}>
@@ -149,7 +150,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
                 value={cosignerId}
                 onChange={(e) => setCosignerId(e.target.value)}
                 placeholder="usr_… (a LEGAL_OFFICER)"
-                className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+                className={controlClass}
               />
               <p className="text-muted mt-1 text-[12px]">
                 Blacklisting requires the MD to act and a Legal Officer to co-sign.
@@ -165,7 +166,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
               value={reasonNotes}
               onChange={(e) => setReasonNotes(e.target.value)}
               rows={4}
-              className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+              className={controlClass}
             />
           </div>
 

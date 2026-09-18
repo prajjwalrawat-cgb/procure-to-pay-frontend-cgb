@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogTitle,
   Input,
+  controlClass,
 } from '@/components/ui';
 import { InviteVendorInputSchema } from '@/lib/shared';
 import Link from 'next/link';
@@ -159,7 +160,7 @@ export function InviteVendorDialog({
             {duplicate.onboardingId && (
               <Link
                 href={`/vendors/onboarding/${duplicate.onboardingId}`}
-                className="text-brand mt-2 inline-block text-[12px] font-medium hover:underline"
+                className="text-accent mt-2 inline-block text-[12px] font-medium hover:underline"
                 onClick={onClose}
               >
                 Open {duplicate.vendorName ?? 'the existing'} onboarding →
@@ -168,7 +169,7 @@ export function InviteVendorDialog({
             {!duplicate.onboardingId && duplicate.vendorId && (
               <Link
                 href={`/vendors/${duplicate.vendorId}`}
-                className="text-brand mt-2 inline-block text-[12px] font-medium hover:underline"
+                className="text-accent mt-2 inline-block text-[12px] font-medium hover:underline"
                 onClick={onClose}
               >
                 Open {duplicate.vendorName ?? 'the existing vendor'} →
@@ -206,7 +207,7 @@ export function InviteVendorDialog({
             <select
               value={categoryKey}
               onChange={(e) => setCategoryKey(e.target.value)}
-              className="bg-panel w-full rounded-md border border-line px-3 py-2 text-[13px] text-ink"
+              className={controlClass}
             >
               {(categories ?? []).map((c) => (
                 <option key={c.key} value={c.key}>

@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+} from '@/components/ui';
 import type { LedgerEntryView } from '@/lib/shared';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -21,6 +27,7 @@ import {
   TextInput,
 } from '../_components/form-controls';
 import { formatSignedQty, txnLabel, txnVariant } from '../_components/txn-display';
+import { formatDate } from '@/lib/format';
 
 // useSearchParams() bails the page out of static rendering, so the search-param
 // consumer must sit under a Suspense boundary (Next 14 requirement) — else
@@ -52,7 +59,7 @@ function AdjustmentsScreen(): React.JSX.Element {
   const tab = correctId ? 'adjust' : chosen;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeader
         title="Adjustments"
         description="Correct a wrong count or write off damaged stock — both post a new ledger entry"
@@ -68,35 +75,22 @@ function AdjustmentsScreen(): React.JSX.Element {
       />
 
       {!correctId && (
-        <div className="mb-3 flex items-center gap-1 border-b border-line">
-          {(
-            [
-              ['adjust', 'Stock adjustment'],
-              ['damage', 'Damage write-off'],
-            ] as const
-          ).map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setChosen(k)}
-              className={
-                'border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-                (tab === k
-                  ? 'border-accent text-ink'
-                  : 'border-transparent text-muted hover:text-ink')
-              }
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <SubNav
+          className="mb-3"
+          items={[
+            { key: 'adjust', label: 'Stock adjustment' },
+            { key: 'damage', label: 'Damage write-off' },
+          ]}
+          value={tab}
+          onChange={(k) => setChosen(k as 'adjust' | 'damage')}
+        />
       )}
 
       {correctId && isLoading && (
         <p className="mb-3 text-[13px] text-muted">Loading the entry to correct…</p>
       )}
       {correctId && isError && (
-        <p className="mb-3 text-[13px] text-red-600">
+        <p className="mb-3 text-[13px] text-danger">
           That ledger entry could not be loaded — post a plain adjustment instead.
         </p>
       )}
@@ -121,16 +115,16 @@ function CorrectionBanner({ entry }: { entry: LedgerEntryView }): React.JSX.Elem
   return (
     <div className="mb-4 rounded-lg border border-line bg-canvas p-3">
       <div className="mb-1.5 flex items-center gap-2">
-        <Pill variant="violet">Correcting an entry</Pill>
+        <Badge variant="classification">Correcting an entry</Badge>
         <Pill variant={txnVariant(entry.txnType)}>{txnLabel(entry.txnType)}</Pill>
       </div>
       <p className="text-[13px] text-text">
         {entry.productName}
-        {entry.colour ? ` · ${entry.colour}` : ''}{' '}
-        <span className="font-numeric text-faint">({entry.productCode})</span> ·{' '}
-        {entry.locationName} ·{' '}
+        {entry.colour ? `, ${entry.colour}` : ''}{' '}
+        <span className="font-numeric text-faint">({entry.productCode})</span>,{' '}
+        {entry.locationName} ,{' '}
         <span className="font-numeric">{formatSignedQty(entry.signedQty)}</span> on{' '}
-        {new Date(entry.txnDate).toLocaleDateString('en-IN')}
+        {formatDate(entry.txnDate)}
       </p>
       <p className="mt-1 text-[11px] text-faint">
         The quantity below is pre-filled to reverse it exactly. Change it if only part of
@@ -233,7 +227,7 @@ function AdjustmentForm({
       <StockPreview onHand={onHand} delta={ready ? delta : 0} negativeAllowed />
 
       {!wholeNumber && signedQty !== '' && (
-        <p className="mt-2 text-[12px] text-red-600">
+        <p className="mt-2 text-[12px] text-danger">
           Stock moves in whole units — enter a whole number.
         </p>
       )}
@@ -241,7 +235,7 @@ function AdjustmentForm({
       <div className="mt-4 flex items-center justify-between">
         <FormResult error={error} success={success} />
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           disabled={!ready || adjust.isPending}
           onClick={() => void submit()}
@@ -347,7 +341,7 @@ function DamageForm(): React.JSX.Element {
       <div className="mt-4 flex items-center justify-between">
         <FormResult error={error} success={success} />
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           disabled={!ready || exceedsStock || writeOff.isPending}
           onClick={() => void submit()}
@@ -402,20 +396,20 @@ function StockPreview({
           <span className="text-faint">→</span>
           <span
             className={
-              'font-numeric font-semibold ' + (after < 0 ? 'text-red-600' : 'text-ink')
+              'font-numeric font-semibold ' + (after < 0 ? 'text-danger' : 'text-ink')
             }
           >
             {after.toLocaleString('en-IN')}
           </span>
           <span
-            className={'text-[12px] ' + (delta > 0 ? 'text-emerald-700' : 'text-red-600')}
+            className={'text-[12px] ' + (delta > 0 ? 'text-success' : 'text-danger')}
           >
             ({formatSignedQty(delta)})
           </span>
         </>
       )}
       {after < 0 && (
-        <span className="text-[12px] text-amber-700">
+        <span className="text-[12px] text-warn">
           {negativeAllowed
             ? 'Goes negative — allowed here, the shortfall is what you are recording.'
             : 'More than is on hand — the write-off will be refused.'}

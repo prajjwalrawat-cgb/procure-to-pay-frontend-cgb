@@ -1,5 +1,6 @@
 'use client';
 
+import { SubNav } from '@/components/ui';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -17,6 +18,12 @@ const TABS = [
   { href: '/inventory/bulk-upload', label: 'Bulk upload' },
 ];
 
+/**
+ * Inventory is the one section deep enough to need its own row of
+ * destinations. It uses the same <SubNav> as every per-screen tab row, so the
+ * three navigation levels stay visually ranked: filled pill for the section,
+ * accent underline for the view, and nothing else competing.
+ */
 export default function InventoryLayout({
   children,
 }: {
@@ -24,28 +31,24 @@ export default function InventoryLayout({
 }): React.JSX.Element {
   const pathname = usePathname();
 
+  // Only "/inventory" needs an exact match; the rest own their subtree.
+  const active =
+    TABS.find((t) => t.href !== '/inventory' && pathname.startsWith(t.href))?.href ??
+    '/inventory';
+
   return (
     <div>
-      <nav className="border-line mb-5 flex flex-wrap items-center gap-1 border-b">
-        {TABS.map((t) => {
-          // Only "/inventory" needs an exact match; the rest are prefix routes.
-          const active = t.href === '/inventory' ? pathname === t.href : pathname.startsWith(t.href);
-          return (
-            <Link
-              key={t.href}
-              href={t.href}
-              className={
-                'border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-                (active
-                  ? 'border-accent text-ink'
-                  : 'text-muted hover:text-ink border-transparent')
-              }
-            >
-              {t.label}
-            </Link>
-          );
-        })}
-      </nav>
+      <SubNav
+        className="mb-5"
+        aria-label="Inventory views"
+        items={TABS.map((t) => ({ key: t.href, label: t.label, href: t.href }))}
+        value={active}
+        renderLink={(item, content) => (
+          <Link key={item.key} href={item.href ?? '#'}>
+            {content}
+          </Link>
+        )}
+      />
       {children}
     </div>
   );

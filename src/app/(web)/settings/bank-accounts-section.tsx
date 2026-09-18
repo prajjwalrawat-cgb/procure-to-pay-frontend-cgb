@@ -147,8 +147,8 @@ export function BankAccountsSection(): React.JSX.Element {
                 {!a.isActive && <Pill variant="warn">Retired</Pill>}
               </div>
               <div className="font-numeric truncate text-[11px] text-muted">
-                ····{a.accountNoLast4} · {a.ifsc} · {a.holderName}
-                {a.dailyLimit ? ` · limit ${a.dailyLimit}` : ''}
+                ••••{a.accountNoLast4}, {a.ifsc}, {a.holderName}
+                {a.dailyLimit ? `, limit ${a.dailyLimit}` : ''}
               </div>
             </div>
             {canManage && (
@@ -278,7 +278,7 @@ export function BankAccountsSection(): React.JSX.Element {
             </Field>
           </div>
           <div className="mt-3 flex items-center gap-2">
-            <Button size="sm" variant="accent" disabled={pending} onClick={onSave}>
+            <Button size="sm" variant="primary" disabled={pending} onClick={onSave}>
               {pending ? 'Saving…' : 'Save'}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>

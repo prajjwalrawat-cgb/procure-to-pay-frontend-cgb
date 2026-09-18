@@ -281,7 +281,7 @@ export function RuleBuilderModal({
             Cancel
           </Button>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!canSave || saving}
             onClick={() => onSave(draft)}

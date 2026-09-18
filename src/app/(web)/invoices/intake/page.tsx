@@ -15,11 +15,9 @@ import {
 import { useVendorList } from '@/lib/api/vendors';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
 import { useProviderLiveness } from '@/lib/integration-status';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 export default function InvoiceIntakePage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const inboundQ = useInboundEmails();
   const inbound = inboundQ.data;
   const review = useQuery({
@@ -37,10 +35,10 @@ export default function InvoiceIntakePage(): React.JSX.Element {
   const dead = (inbound?.items ?? []).filter((e) => e.status === 'DEAD_LETTER');
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="max-w-5xl">
       <PageHeader
         title="Invoice intake"
-        description={`Email → invoice, manual OCR review, and quarantined senders · AP queue${tenantSuffix(tenantName)}`}
+        description="Email → invoice, manual OCR review, and quarantined senders, AP queue"
       />
 
       {/* Every invoice in this queue was read by the OCR provider. When that

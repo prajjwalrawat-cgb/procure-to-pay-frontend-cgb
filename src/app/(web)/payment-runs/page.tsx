@@ -1,12 +1,17 @@
 'use client';
 
-import { Button, PageHeader, Pill, TableState } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+  TableState,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { usePaymentRuns, type PaymentRunTab } from '@/lib/api/payments';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
+import { formatDate, inr, statusLabel, statusVariant } from '@/lib/format';
 
 const TABS: { key: PaymentRunTab; label: string; countKey: keyof Counts }[] = [
   { key: 'all', label: 'All', countKey: 'all' },
@@ -26,16 +31,15 @@ type Counts = {
 };
 
 export default function PaymentRunsPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const [tab, setTab] = useState<PaymentRunTab>('all');
   const { data, isLoading, error, refetch } = usePaymentRuns(tab);
   const counts = data?.counts;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Payment runs"
-        description={`Compose, approve and submit bank files${tenantSuffix(tenantName)}`}
+        description="Compose, approve and submit bank files"
         actions={
           <Link href="/payment-runs/new">
             <Button variant="primary" size="sm">
@@ -45,30 +49,20 @@ export default function PaymentRunsPage(): React.JSX.Element {
         }
       />
 
-      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={
-              'duration-hover flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (tab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
-            <span className="font-numeric text-faint text-[11px]">
-              {counts?.[t.countKey] ?? 0}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-3"
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: counts?.[t.countKey] ?? 0,
+        }))}
+        value={tab}
+        onChange={(k) => setTab(k as (typeof TABS)[number]['key'])}
+      />
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Run</th>
               <th className="px-3 py-2 font-medium">Cycle date</th>
@@ -111,7 +105,7 @@ export default function PaymentRunsPage(): React.JSX.Element {
                   </Link>
                 </td>
                 <td className="font-numeric text-text px-3 py-2">
-                  {new Date(run.cycleDate).toLocaleDateString('en-IN')}
+                  {formatDate(run.cycleDate)}
                 </td>
                 <td className="text-text px-3 py-2">{run.bankName ?? '—'}</td>
                 <td className="font-numeric text-text px-3 py-2">{run.itemCount}</td>

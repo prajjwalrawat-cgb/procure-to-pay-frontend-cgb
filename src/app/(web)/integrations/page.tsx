@@ -1,6 +1,11 @@
 'use client';
 
-import { PageHeader, Pill, SandboxBanner, SandboxChip } from '@/components/ui';
+import {
+  PageHeader,
+  Pill,
+  SandboxBanner,
+  controlClass,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import type { IntegrationProvider } from '@/lib/shared';
@@ -13,7 +18,6 @@ import {
 } from '@/lib/api/integrations';
 import { inr } from '@/lib/format';
 import { useProviderLiveness } from '@/lib/integration-status';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 /** Every provider whose usage and liveness this page reports. */
@@ -36,7 +40,6 @@ const CREDENTIAL_PROVIDERS: IntegrationProvider[] = ['GSP'];
 const thisMonth = new Date().toISOString().slice(0, 7);
 
 export default function IntegrationsPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const push = useToastStore((s) => s.push);
   const { data: creds } = useCredentialStatus();
   const { data: usage } = useIntegrationUsage(thisMonth);
@@ -72,10 +75,10 @@ export default function IntegrationsPage(): React.JSX.Element {
   const anySimulated = PROVIDERS.some((p) => isSimulated(p));
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="Integrations"
-        description={`Provider credentials (encrypted at rest) & per-tenant usage${tenantSuffix(tenantName)}`}
+        description="Provider credentials (encrypted at rest) & per-tenant usage"
       />
 
       {anySimulated && (
@@ -96,8 +99,7 @@ export default function IntegrationsPage(): React.JSX.Element {
               const c = configured.get(p);
               const simulated = isSimulated(p);
               return (
-                <div
-                  key={p}
+                <div key={p}
                   className="flex flex-wrap items-center justify-between gap-1.5 text-[13px]"
                 >
                   <span className="font-numeric">{p}</span>
@@ -113,21 +115,15 @@ export default function IntegrationsPage(): React.JSX.Element {
                         while returning real extractions. Recorded behaviour
                         decides first; the credential only colours the wording. */}
                     {!simulated ? (
-                      <Pill variant="success" dot>
-                        live{c?.label ? ` · ${c.label}` : ''}
-                      </Pill>
+                      <Pill variant="success">Live</Pill>
                     ) : !c ? (
-                      <Pill variant="gray">using sandbox simulator</Pill>
+                      <Pill variant="neutral">Simulated — no credential set</Pill>
                     ) : (
-                      <Pill variant="outline">
-                        configured{c.label ? ` · ${c.label}` : ''}
-                      </Pill>
+                      <Pill variant="neutral">Credential set, still simulating</Pill>
                     )}
-                    <SandboxChip
-                      simulated={simulated}
-                      label={`${p} responses`}
-                      size="xs"
-                    />
+                    {c?.label ? (
+                      <span className="text-faint text-[11px]">{c.label}</span>
+                    ) : null}
                   </span>
                 </div>
               );
@@ -141,7 +137,7 @@ export default function IntegrationsPage(): React.JSX.Element {
             </p>
             <div className="grid grid-cols-2 gap-2">
               <select
-                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
+                className={controlClass}
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
               >
@@ -150,19 +146,19 @@ export default function IntegrationsPage(): React.JSX.Element {
                 ))}
               </select>
               <input
-                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
+                className={controlClass}
                 placeholder="Label (optional)"
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
               />
               <input
-                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
+                className={controlClass}
                 placeholder="Key (e.g. apiKey)"
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
               />
               <input
-                className="rounded-md border border-line px-2 py-1.5 text-[13px]"
+                className={controlClass}
                 placeholder="Secret value"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
@@ -188,7 +184,7 @@ export default function IntegrationsPage(): React.JSX.Element {
                 try {
                   const r = await runGstr2b.mutateAsync();
                   push(
-                    `GSTR-2B: ${r.matched} matched · ${r.mismatchAmount + r.mismatchDate} mismatch · ${r.notFound} not-found`,
+                    `GSTR-2B: ${r.matched} matched, ${r.mismatchAmount + r.mismatchDate} mismatch, ${r.notFound} not-found`,
                     'success',
                   );
                 } catch (e) {
@@ -206,7 +202,7 @@ export default function IntegrationsPage(): React.JSX.Element {
             </p>
           ) : (
             <table className="w-full text-[13px]">
-              <thead className="border-b border-line text-left text-[12px] text-muted">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1.5 font-medium">Operation</th>
                   <th className="py-1.5 text-right font-medium">Calls</th>
@@ -223,16 +219,16 @@ export default function IntegrationsPage(): React.JSX.Element {
                     <td className="py-1.5">
                       <span className="flex flex-wrap items-center gap-1.5">
                         {r.operation}
-                        {/* Was a faint grey "(sim)" that read as a footnote. */}
-                        <SandboxChip
-                          simulated={r.simulatedCalls > 0}
-                          label={
-                            r.simulatedCalls === r.calls
-                              ? `${r.operation} calls — all ${r.calls} simulated`
-                              : `${r.operation} calls — ${r.simulatedCalls} of ${r.calls} simulated`
-                          }
-                          size="xs"
-                        />
+                        {/* This is the console where "simulated" is the
+                            subject, so it is stated as a count rather than
+                            deferred to a tooltip. */}
+                        {r.simulatedCalls > 0 ? (
+                          <span className="text-muted text-[11px]">
+                            {r.simulatedCalls === r.calls
+                              ? 'all simulated'
+                              : `${r.simulatedCalls} of ${r.calls} simulated`}
+                          </span>
+                        ) : null}
                       </span>
                     </td>
                     <td className="font-numeric py-1.5 text-right">{r.calls}</td>

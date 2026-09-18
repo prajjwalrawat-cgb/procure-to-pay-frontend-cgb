@@ -1,61 +1,114 @@
-/* ProcureFlow base layer — "Midnight Executive".
+/* ProcureFlow base layer — "Clear Ledger".
    Tokens mirrored as CSS variables; derived from components/ui/tokens.ts,
-   which is the single source of truth. Keep the two in sync. */
+   which is the single source of truth. Keep the two in sync.
+
+   Both naming schemes are published: the brief's semantic names (--accent,
+   --text-muted, --state-success) for new work, and the --pf-* names the
+   existing screens already reference. They point at the same values. */
 :root {
-  /* Ice surfaces */
-  --pf-paper: #f4f7fb;
-  --pf-canvas: #e9eff7;
-  --pf-panel: #ffffff;
+  /* surfaces */
+  --page-bg: #f4f5f7;
+  --card-bg: #ffffff;
+  --line: #e3e5e9;
 
-  /* Navy chrome */
-  --pf-navy: #0a1424;
-  --pf-navy-2: #142338;
-  --pf-navy-3: #1c2f49;
-  --pf-on-navy: #e6edf7;
-  --pf-on-navy-muted: #9fb0c8;
+  /* accent — one colour, interactive/active elements only */
+  --accent: #1b4ce0;
+  --accent-2: #1740b8;
+  --accent-bg: #eaeffd;
 
-  /* Ink & text */
-  --pf-ink: #0a1424;
-  --pf-text: #1f2c40;
-  --pf-muted: #55647c;
-  --pf-faint: #5d6b80;
-  --pf-line: #d4deec;
+  /* text */
+  --text-primary: #1a1d21;
+  --text-muted: #6b7078;
+  --text-faint: #767c85; /* darkened from the brief's #8A8F98 to hold AA */
 
-  /* Gold — consequence only */
-  --pf-gold: #c89b2c;
-  --pf-gold-ink: #8a6a12;
-  --pf-gold-wash: #fbf4e2;
+  /* semantic state — status only, never decoration */
+  --state-success: #147a52;
+  --state-success-solid: #1e9e6b;
+  --state-success-bg: #e9f7ef;
+  --state-warning: #8a5e0e;
+  --state-warning-solid: #b07a12;
+  --state-warning-bg: #fbf2e2;
+  --state-error: #b23a31;
+  --state-error-solid: #c4453b;
+  --state-error-bg: #fbeae8;
 
-  /* Semantic */
-  --pf-accent: #0f7a52;
-  --pf-accent-2: #0b6141;
-  --pf-accent-wash: #e8f5ef;
-  --pf-danger: #c2183f;
-  --pf-warn: #9a5b02;
-  --pf-info: #1d5fa8;
-  --pf-violet: #6d3bc7;
+  /* typography */
+  --font-ui:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, sans-serif;
+  --font-size-meta: 12px;
+  --font-size-body: 13px;
+  --font-size-heading: 19px;
+
+  /* radius / spacing */
+  --radius: 8px;
+  --radius-control: 5px;
+  --radius-pill: 16px;
+  --space-unit: 4px;
+
+  /* ── --pf-* aliases (existing call sites) ──────────────────────────────── */
+  --pf-paper: var(--page-bg);
+  --pf-canvas: #edeff2;
+  --pf-panel: var(--card-bg);
+  --pf-line: var(--line);
+
+  --pf-ink: var(--text-primary);
+  --pf-text: var(--text-primary);
+  --pf-muted: var(--text-muted);
+  --pf-faint: var(--text-faint);
+
+  --pf-accent: var(--accent);
+  --pf-accent-2: var(--accent-2);
+  --pf-accent-wash: var(--accent-bg);
+
+  --pf-success: var(--state-success);
+  --pf-warn: var(--state-warning);
+  --pf-danger: var(--state-error);
+
+  /* Chrome is white now; the navy names resolve to the light treatment so
+     any un-migrated `bg-navy` surface still renders legibly. */
+  --pf-navy: #ffffff;
+  --pf-navy-2: #ffffff;
+  --pf-navy-3: #edeff2;
+  --pf-on-navy: var(--text-primary);
+  --pf-on-navy-muted: var(--text-muted);
+
+  /* Legacy hues, remapped to the single accent. */
+  --pf-gold: var(--accent);
+  --pf-gold-ink: var(--accent);
+  --pf-gold-wash: var(--accent-bg);
+  --pf-info: var(--accent);
+  --pf-violet: var(--accent);
 
   /* Focus ring — one definition, used by every interactive element. */
-  --pf-focus: #1d5fa8;
+  --pf-focus: var(--accent);
 }
 
 html {
-  font-size: 13.5px;
+  /*
+   * The root stays at the browser default. Setting it to the body text size —
+   * as this file did, at 13px — rescales every rem in Tailwind: `max-w-6xl`
+   * rendered 936px instead of 1152px, and every `gap-*`, `p-*` and `space-*`
+   * shrank to 81% with it. That is what squeezed two-column layouts until
+   * their content clipped.
+   *
+   * Body text size is set on <body> instead, where it belongs: it cascades to
+   * the text without touching the layout scale.
+   */
   line-height: 1.5;
   /*
    * The app shell is a full-height flex column that scrolls its own <main>, so
    * the document itself has nothing left to scroll. Without this it still found
-   * about 20px — enough to drag the whole chrome, sidebar and topbar included,
-   * up out of view while the reader thought they were scrolling the page.
+   * about 20px — enough to drag the whole chrome and nav up out of view while
+   * the reader thought they were scrolling the page.
    */
   overflow: hidden;
 }
 
 body {
-  background-color: var(--pf-paper);
-  color: var(--pf-text);
-  letter-spacing: -0.005em;
-  font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-body);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -63,24 +116,74 @@ h1,
 h2,
 h3,
 h4 {
-  letter-spacing: -0.02em;
-}
-
-/* IDs, amounts, hashes, timestamps always use the mono face + tabular figures
-   so columns of ₹ amounts align down the page. */
-.font-numeric {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* The display (serif) face. Deliberately gated: it is authoritative at module
-   headers and KPI values and dated at table sizes, so it is never used below
-   18px. Anything smaller stays on the sans face. */
+/* ── Numerals ──────────────────────────────────────────────────────────────
+   Every ₹ amount, quantity, date and document number carries this so columns
+   of figures align down the page. It is the UI face with tabular figures, not
+   a separate mono face: a monospace column beside an Inter column reads as two
+   different tables. `font-mono` is still available for hash chains in the
+   audit log, which is the one place character-level distinction matters. */
+.font-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Any table cell in the app gets tabular figures for free, so a numeric column
+   cannot silently misalign because someone forgot the class. */
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The heading treatment. Same family as the body — see tokens.ts. It is a
+   weight and tracking step, not a second typeface. */
 .font-display {
-  font-family: var(--font-display), ui-serif, Georgia, serif;
-  letter-spacing: -0.02em;
+  font-family: var(--font-ui);
   font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ── Native controls ───────────────────────────────────────────────────────
+   Un-migrated <select> and <input type="date"> elements pick up the system
+   look here rather than the browser default, so a screen that has not yet been
+   moved onto <Select> / <DateInput> still reads as part of the app. New work
+   should use the components — they also give a searchable combobox above ~10
+   options, which raw <select> cannot. */
+select,
+input[type='date'],
+input[type='datetime-local'],
+input[type='month'],
+input[type='time'] {
+  font: inherit;
+  color: var(--text-primary);
+  background-color: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 9px 10px;
+  line-height: 1.2;
+}
+
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7078' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+select:focus,
+input[type='date']:focus,
+input[type='datetime-local']:focus,
+input[type='month']:focus,
+input[type='time']:focus {
+  border-color: var(--accent);
+}
+
+select:disabled,
+input[type='date']:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ── Keyboard focus ────────────────────────────────────────────────────────
@@ -91,12 +194,6 @@ h4 {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
   border-radius: 3px;
-}
-
-/* On navy chrome the info-blue ring disappears into the ground; gold reads. */
-.on-navy :focus-visible,
-.pf-navy-surface :focus-visible {
-  outline-color: var(--pf-gold);
 }
 
 /* Skip link — first tab stop, visually hidden until focused. */
@@ -110,11 +207,22 @@ h4 {
   left: 0.5rem;
   top: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: var(--pf-panel);
-  color: var(--pf-ink);
-  border: 1px solid var(--pf-line);
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(10, 20, 36, 0.12);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: 0 4px 10px rgba(26, 29, 33, 0.12);
+}
+
+/* Horizontal nav rows scroll rather than wrap on narrow viewports; the bar is
+   a single line of tabs and a wrapped second line reads as a second nav level
+   that does not exist. */
+.pf-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pf-scroll-x::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────────────

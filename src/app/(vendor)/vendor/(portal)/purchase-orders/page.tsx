@@ -7,10 +7,11 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import { useVendorPos } from '@/vendor/lib/api/purchase-orders';
+import { formatDate } from '@/lib/format';
 
 const label = (status: string): string => status.replace(/_/g, ' ');
 const fmtDate = (iso: string | null): string =>
-  iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
+  iso ? formatDate(iso) : '—';
 const inr = (v: string): string => Money.of(v || 0).toINR();
 
 export default function VendorPurchaseOrdersPage(): React.JSX.Element {
@@ -29,7 +30,7 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
   }, [data, search]);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <div className="mb-4">
         <PageHeader
           title="Purchase orders"
@@ -51,10 +52,10 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
         <span className="ml-auto text-[12px] text-muted">{rows.length} shown</span>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="px-3 py-2.5 font-medium">PO</th>
                 <th className="px-3 py-2.5 font-medium">Description</th>
@@ -111,8 +112,7 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-16 overflow-hidden rounded-full border border-line bg-canvas">
-                        <div
-                          className="h-full bg-accent"
+                        <div className="h-full bg-accent"
                           style={{
                             width: `${Math.min(100, Math.max(0, po.fulfilmentPct))}%`,
                           }}

@@ -1,6 +1,11 @@
 'use client';
 
-import { Button, PageHeader } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  StepIndicator,
+  controlClass,
+} from '@/components/ui';
 import type { GrnCreateInput } from '@/lib/shared';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
@@ -8,11 +13,12 @@ import { Suspense, useMemo, useState } from 'react';
 import { usePurchaseOrder, usePurchaseOrders } from '@/lib/api/purchase-orders';
 import { useCreateReceipt } from '@/lib/api/receipts';
 import { useToastStore } from '@/store/toast-store';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
+import { formatDate } from '@/lib/format';
 
 const STEPS = ['Gate entry', 'Line receipt', 'Attachments', 'Review'];
-const inputCls =
-  'border-line bg-panel focus-visible:ring-accent w-full rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 interface LineDraft {
   poLineId: string;
@@ -37,7 +43,6 @@ export default function NewReceiptPage(): React.JSX.Element {
 }
 
 function NewReceiptForm(): React.JSX.Element {
-  const tenantName = useTenantName();
   const params = useSearchParams();
   const router = useRouter();
   const push = useToastStore((s) => s.push);
@@ -138,39 +143,13 @@ function NewReceiptForm(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeader
         title="New goods receipt"
-        description={<>Gate-to-post receipt{tenantSuffix(tenantName)}</>}
+        description="Gate-to-post receipt"
       />
 
-      {/* Stepper */}
-      <div className="mb-6 flex items-center gap-2">
-        {STEPS.map((label, i) => (
-          <div key={label} className="flex items-center gap-2">
-            <div
-              className={
-                'flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold ' +
-                (i === step
-                  ? 'bg-ink text-white'
-                  : i < step
-                    ? 'bg-accent-wash text-accent-2'
-                    : 'bg-canvas text-faint')
-              }
-            >
-              {i + 1}
-            </div>
-            <span
-              className={
-                'text-[12px] ' + (i === step ? 'font-medium text-ink' : 'text-faint')
-              }
-            >
-              {label}
-            </span>
-            {i < STEPS.length - 1 && <span className="mx-1 text-faint">·</span>}
-          </div>
-        ))}
-      </div>
+      <StepIndicator steps={STEPS} current={step} className="mb-6" />
 
       <div className="rounded-lg border border-line bg-panel p-5">
         {step === 0 && (
@@ -194,12 +173,10 @@ function NewReceiptForm(): React.JSX.Element {
             </Field>
             {poDetail.data?.vendor && (
               <p className="text-[12px] text-muted">
-                Vendor: <span className="text-text">{poDetail.data.vendor.name}</span> ·
+                Vendor: <span className="text-text">{poDetail.data.vendor.name}</span> ,
                 Expected{' '}
                 {poDetail.data.expectedDeliveryDate
-                  ? new Date(poDetail.data.expectedDeliveryDate).toLocaleDateString(
-                      'en-IN',
-                    )
+                  ? formatDate(poDetail.data.expectedDeliveryDate)
                   : '—'}
               </p>
             )}
@@ -298,7 +275,7 @@ function NewReceiptForm(): React.JSX.Element {
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-[13px] font-medium text-text">{l.itemDesc}</span>
                   <span className="font-numeric text-[11px] text-faint">
-                    ordered {l.qtyOrdered} · remaining {l.qtyRemaining} {l.uom}
+                    ordered {l.qtyOrdered}, remaining {l.qtyRemaining} {l.uom}
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -366,7 +343,7 @@ function NewReceiptForm(): React.JSX.Element {
                   <Row
                     key={l.poLineId}
                     k={l.itemDesc}
-                    v={`${l.qtyReceived} ${l.uom} · ${l.batchNumber || 'no batch'}`}
+                    v={`${l.qtyReceived} ${l.uom}, ${l.batchNumber || 'no batch'}`}
                   />
                 ))}
             </div>
@@ -394,7 +371,7 @@ function NewReceiptForm(): React.JSX.Element {
                 Save as draft
               </Button>
               <Button
-                variant="accent"
+                variant="primary"
                 size="sm"
                 disabled={create.isPending || !step2Valid}
                 onClick={() => onSave(true)}
@@ -427,7 +404,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-faint">
+      <span className="mb-1 block text-[11px] font-medium text-faint">
         {label}
       </span>
       {children}

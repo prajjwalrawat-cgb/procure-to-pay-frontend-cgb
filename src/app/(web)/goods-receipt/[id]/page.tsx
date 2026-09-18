@@ -20,7 +20,7 @@ import {
   useReverseReceipt,
   useSubmitReceipt,
 } from '@/lib/api/receipts';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { formatDateTime, inr, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 export default function ReceiptDetailPage(): React.JSX.Element {
@@ -32,7 +32,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
   const reverse = useReverseReceipt(id);
 
   if (isLoading || !data) {
-    return <div className="text-muted mx-auto max-w-5xl px-4 py-10">Loading…</div>;
+    return <div className="text-muted px-4 py-10">Loading…</div>;
   }
 
   const act = (fn: { mutate: (v: void, o: object) => void }, ok: string): void =>
@@ -42,7 +42,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
     });
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="max-w-6xl">
       <PageHeader
         title={data.number}
         numeric
@@ -52,13 +52,13 @@ export default function ReceiptDetailPage(): React.JSX.Element {
               {statusLabel(data.status)}
             </Pill>
             <Pill variant={statusVariant(data.qcStatus)}>
-              QC · {statusLabel(data.qcStatus)}
+              QC {statusLabel(data.qcStatus).toLowerCase()}
             </Pill>
           </>
         }
         description={
           <>
-            {data.vendor.name} · PO{' '}
+            {data.vendor.name}, PO{' '}
             <Link
               href={`/purchase-orders/${data.po.id}`}
               className="text-accent-2 hover:underline"
@@ -73,7 +73,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
             data.status === 'DRAFT' ? (
               <Button
                 size="sm"
-                variant="accent"
+                variant="primary"
                 disabled={submit.isPending}
                 onClick={() => act(submit, 'Sent for QC')}
               >
@@ -81,7 +81,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
               </Button>
             ) : (
               <Link href={`/goods-receipt/${id}/qc`}>
-                <Button size="sm" variant="accent">
+                <Button size="sm" variant="primary">
                   Start QC
                 </Button>
               </Link>
@@ -89,7 +89,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
           ) : null}
           {data.canCompleteQc && (
             <Link href={`/goods-receipt/${id}/qc`}>
-              <Button size="sm" variant="accent">
+              <Button size="sm" variant="primary">
                 Continue QC
               </Button>
             </Link>
@@ -139,7 +139,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
       {data.varianceFlags.length > 0 && (
         <div className="bg-warn-wash text-warn mb-4 rounded-sm px-3 py-2 text-[12px]">
           Flags: {data.varianceFlags.join(', ')}
-          {data.requiresPlantHeadSignoff && ' · plant-head sign-off required to post'}
+          {data.requiresPlantHeadSignoff && ', plant-head sign-off required to post'}
         </div>
       )}
 
@@ -168,7 +168,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                 card rather than widening the page. */}
             <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-[12px]">
-              <thead className="text-faint text-left text-[10px] uppercase">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1">Item</th>
                   <th className="py-1 text-right">Received</th>
@@ -212,7 +212,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                   <div key={s.id} className="border-line border-t py-2 first:border-0">
                     <div className="flex items-center justify-between">
                       <span className="text-text text-[12px]">
-                        {l.itemDesc} · sample {s.sampleSize}
+                        {l.itemDesc}, sample {s.sampleSize}
                       </span>
                       <Pill variant={statusVariant(s.result)}>
                         {statusLabel(s.result)}
@@ -254,7 +254,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                   <li key={a.id} className="flex justify-between gap-3">
                     <span className="text-text">{a.action}</span>
                     <span className="text-faint font-numeric shrink-0">
-                      {new Date(a.at).toLocaleString('en-IN')}
+                      {formatDateTime(a.at)}
                     </span>
                   </li>
                 ))}
@@ -344,7 +344,7 @@ function Card({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-4">
-      <h2 className="text-faint mb-2 text-[11px] font-medium uppercase tracking-wide">
+      <h2 className="text-faint mb-2 text-[11px] font-medium ">
         {title}
       </h2>
       {children}

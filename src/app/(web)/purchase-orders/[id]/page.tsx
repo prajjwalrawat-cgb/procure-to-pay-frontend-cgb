@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  ApprovalChain,
-  Button,
-  NotShipped,
-  PageHeader,
-  Pill,
-  StageStrip,
-} from '@/components/ui';
+import { ApprovalChain, Badge, Button, NotShipped, PageHeader, Pill, StageStrip } from '@/components/ui';
 import { ArrowLeft, Check, Download, Paperclip } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -31,7 +24,7 @@ import { CustomFieldList } from '@/components/custom-fields';
 import { usePlants } from '@/lib/api/refs';
 import { useCustomFieldValues } from '@/lib/api/settings';
 import { openAuthedAsset } from '@/lib/api-client';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { formatDate, formatDateTime, humanise, inr, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 export default function PurchaseOrderDetailPage(): React.JSX.Element {
@@ -136,7 +129,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-20">
+    <div className="pb-20">
       <Link
         href="/purchase-orders"
         className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
@@ -178,7 +171,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
             <Pill variant={progressVariant(data.fulfilment.billing)} dot>
               {billingLabel(data.fulfilment)}
             </Pill>
-            <Pill variant="outline">{data.poType}</Pill>
+            <Pill variant="neutral" dot={false}>{humanise(data.poType)}</Pill>
             {data.acknowledgedAt ? (
               <Pill variant="success" dot>
                 Acknowledged
@@ -194,16 +187,12 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           <>
             {data.vendor.name}
             {data.vendor.isMsme && (
-              <Pill variant="violet" className="ml-1.5">
-                MSME
-              </Pill>
-            )}{' '}
-            · Issued{' '}
-            {data.issuedAt ? new Date(data.issuedAt).toLocaleDateString('en-IN') : '—'} ·
-            Expected{' '}
+              <Badge variant="classification" className="ml-1.5">MSME</Badge>
+            )}
+            {data.issuedAt ? ` — issued ${formatDate(data.issuedAt)}` : ''}
             {data.expectedDeliveryDate
-              ? new Date(data.expectedDeliveryDate).toLocaleDateString('en-IN')
-              : '—'}
+              ? `, expected ${formatDate(data.expectedDeliveryDate)}`
+              : ''}
           </>
         }
       />
@@ -225,9 +214,9 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           {/* Line items */}
           <section>
             <h2 className="mb-2 text-[14px] font-semibold text-ink">Line items</h2>
-            <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+            <div className="overflow-x-auto">
               <table className="w-full text-[12px]">
-                <thead className="bg-canvas text-left text-[10px] uppercase tracking-wide text-faint">
+                <thead className="border-line border-b text-left text-[12px] text-muted">
                   <tr>
                     <th className="px-3 py-2 font-medium">Item</th>
                     <th className="px-3 py-2 text-right font-medium">Ordered</th>
@@ -379,7 +368,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                         <span className="font-medium text-text">
                           {i + 1}. {t.title}
                         </span>
-                        {!t.isFromLibrary && <Pill variant="violet">special</Pill>}
+                        {!t.isFromLibrary && <Badge variant="classification">Special term</Badge>}
                       </div>
                       <p className="pl-4 text-muted">{t.contentText}</p>
                     </li>
@@ -395,14 +384,13 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               <h2 className="mb-2 text-[14px] font-semibold text-ink">Vendor queries</h2>
               <div className="flex flex-col gap-2">
                 {queries.map((q) => (
-                  <div
-                    key={q.id}
+                  <div key={q.id}
                     className="rounded-lg border border-warn/30 bg-warn-wash px-3 py-2 text-[12px]"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-text">{q.authorName}</span>
                       <span className="font-numeric text-[10px] text-faint">
-                        {new Date(q.createdAt).toLocaleString('en-IN')}
+                        {formatDateTime(q.createdAt)}
                       </span>
                     </div>
                     <p className="mt-0.5 text-muted">{q.body}</p>
@@ -421,9 +409,9 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                   <span className="font-medium text-text">
                     {a.action.replace(/_/g, ' ')}
                   </span>{' '}
-                  ·{' '}
+                  ,{' '}
                   <span className="font-numeric">
-                    {new Date(a.at).toLocaleString('en-IN')}
+                    {formatDateTime(a.at)}
                   </span>
                 </li>
               ))}
@@ -460,7 +448,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
         {/* Right panel */}
         <aside className="flex flex-col gap-4">
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="text-[11px] uppercase tracking-wide text-faint">
+            <div className="text-[11px] text-faint">
               Order value
             </div>
             <div className="font-numeric mt-1 text-[22px] font-semibold tracking-display text-ink">
@@ -487,7 +475,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           />
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+            <div className="mb-2 text-[11px] text-faint">
               Vendor
             </div>
             <div className="text-[13px] font-medium text-ink">{data.vendor.name}</div>
@@ -504,7 +492,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {data.requisition && (
             <div className="rounded-lg border border-line bg-panel p-4">
-              <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+              <div className="mb-2 text-[11px] text-faint">
                 Source requisition
               </div>
               <Link
@@ -517,7 +505,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+            <div className="mb-2 text-[11px] text-faint">
               Terms & delivery
             </div>
             <dl className="flex flex-col gap-1 text-[12px]">
@@ -534,7 +522,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 label="Expected"
                 value={
                   data.expectedDeliveryDate
-                    ? new Date(data.expectedDeliveryDate).toLocaleDateString('en-IN')
+                    ? formatDate(data.expectedDeliveryDate)
                     : '—'
                 }
               />
@@ -555,7 +543,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {data.budgetCommitment && (
             <div className="rounded-lg border border-line bg-panel p-4">
-              <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+              <div className="mb-2 text-[11px] text-faint">
                 Budget commitment
               </div>
               <dl className="flex flex-col gap-1 text-[12px]">
@@ -598,7 +586,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                   Request changes
                 </Button>
                 <Button
-                  variant="commit"
+                  variant="primary"
                   disabled={decide.isPending}
                   onClick={() => onDecide('APPROVE')}
                 >
@@ -643,7 +631,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               )}
               {data.status === 'DRAFT' && (
                 <Button
-                  variant="accent"
+                  variant="primary"
                   size="sm"
                   disabled={submit.isPending}
                   onClick={onSubmit}
@@ -653,7 +641,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               )}
               {data.canIssue && (
                 <Button
-                  variant="commit"
+                  variant="primary"
                   size="sm"
                   disabled={issue.isPending}
                   onClick={onIssue}
@@ -723,7 +711,7 @@ function BillToPanel({
   const canSwitch = editable && plants.length > 1;
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+      <div className="mb-2 text-[11px] text-faint">
         Bill to (GST registration)
       </div>
       {canSwitch ? (
@@ -745,7 +733,7 @@ function BillToPanel({
           {plants.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
-              {p.gstin ? ` · ${p.gstin}` : ''}
+              {p.gstin ? `, ${p.gstin}` : ''}
             </option>
           ))}
         </select>
@@ -771,7 +759,7 @@ function CustomFieldPanel({ poId }: { poId: string }): React.JSX.Element | null 
   if (!data || Object.keys(data.values).length === 0) return null;
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="mb-2 text-[11px] uppercase tracking-wide text-faint">
+      <div className="mb-2 text-[11px] text-faint">
         Additional details
       </div>
       <CustomFieldList entity="PURCHASE_ORDER" values={data.values} />
@@ -786,7 +774,7 @@ function PoLineRow({ line: l }: { line: PoLineView }): React.JSX.Element {
       <td className="px-3 py-2">
         <div className="text-text">{l.itemDesc}</div>
         <div className="font-numeric text-[10px] text-faint">
-          {l.hsnCode ?? '—'} · {l.uom}
+          {l.hsnCode ?? '—'}, {l.uom}
         </div>
       </td>
       <td className="font-numeric px-3 py-2 text-right text-text">{l.qtyOrdered}</td>
@@ -800,8 +788,7 @@ function PoLineRow({ line: l }: { line: PoLineView }): React.JSX.Element {
       </td>
       <td className="px-3 py-2">
         <div className="h-1.5 w-20 overflow-hidden rounded-full bg-canvas">
-          <div
-            className={
+          <div className={
               'h-full rounded-full ' +
               (pct >= 100 ? 'bg-accent' : pct > 0 ? 'bg-info' : 'bg-faint')
             }
@@ -822,7 +809,7 @@ function DocCard({
 }): React.JSX.Element {
   return (
     <div className="rounded-lg border border-line bg-panel p-3">
-      <div className="mb-2 text-[10px] uppercase tracking-wide text-faint">{title}</div>
+      <div className="mb-2 text-[10px] text-faint">{title}</div>
       <div className="flex flex-col gap-1.5 text-[12px]">{children}</div>
     </div>
   );

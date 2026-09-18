@@ -2,25 +2,24 @@
 
 import { create } from 'zustand';
 
-/** UI-only state (Master Context §2 — Zustand for UI state, not server state). */
+/**
+ * UI-only state (Master Context §2 — Zustand for UI state, not server state).
+ *
+ * The rail-collapse and focus-mode flags went with the navy rail. The top nav
+ * is 88px of chrome that does not need hiding, and "focus mode" existed to
+ * reclaim the 240px the rail was taking from a table — a problem the new
+ * layout does not have.
+ */
 interface UiState {
-  sidebarCollapsed: boolean;
-  focusMode: boolean;
   trayOpen: boolean;
   commandOpen: boolean;
-  toggleSidebar: () => void;
-  toggleFocus: () => void;
   setTrayOpen: (open: boolean) => void;
   setCommandOpen: (open: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
-  sidebarCollapsed: false,
-  focusMode: false,
   trayOpen: false,
   commandOpen: false,
-  toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
-  toggleFocus: () => set((s) => ({ focusMode: !s.focusMode })),
   setTrayOpen: (trayOpen) => set({ trayOpen }),
   setCommandOpen: (commandOpen) => set({ commandOpen }),
 }));

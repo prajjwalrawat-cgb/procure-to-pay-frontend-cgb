@@ -9,7 +9,7 @@ import {
 
 export default function VendorHomePage(): React.JSX.Element {
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <div className="mb-6 flex items-center gap-3">
         <PageHeader title="Supplier dashboard" />
         <Pill variant="success" dot>

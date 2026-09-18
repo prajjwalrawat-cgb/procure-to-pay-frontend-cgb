@@ -19,6 +19,8 @@ import {
 } from '@/lib/api/approvals';
 import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
+import { formatDateTime } from '@/lib/format';
+import { roleLabel } from '@/lib/api/users';
 
 /** One tab per document type the approval engine routes, in procure→pay order. */
 const TABS: { key: string; label: string; docType: DocumentType }[] = [
@@ -48,7 +50,7 @@ export default function ApprovalsPage(): React.JSX.Element {
   const canEdit = useCanEditMatrix();
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <div className="mb-4">
         <PageHeader
           title="Approval matrix"
@@ -63,7 +65,7 @@ export default function ApprovalsPage(): React.JSX.Element {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-5 flex-wrap">
+        <TabsList className="mb-5">
           {TABS.map((t) => (
             <TabsTrigger key={t.key} value={t.key}>
               {t.label}
@@ -239,7 +241,7 @@ function RuleCard({
               {rule.isActive ? 'Active' : 'Draft'}
             </Pill>
             <span className="font-numeric text-[11px] text-faint">
-              v{rule.version} · priority {rule.priority}
+              v{rule.version}, priority {rule.priority}
             </span>
           </div>
         </div>
@@ -266,14 +268,14 @@ function RuleCard({
       </div>
 
       <div className="mb-3">
-        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-faint">
+        <div className="mb-1 text-[10px] font-semibold text-faint">
           When
         </div>
         <ConditionChips condition={rule.conditions} />
       </div>
 
       <div>
-        <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-faint">
+        <div className="mb-1.5 text-[10px] font-semibold text-faint">
           Then route to
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -287,9 +289,12 @@ function RuleCard({
               </span>
               <span className="font-medium text-text">{s.name}</span>
               <span className="text-muted">
-                {s.role} · {s.scope} · {s.sla_hours}h
-                {s.escalate_to ? ` · ↑${s.escalate_to.role}` : ''}
-                {s.parallel_group ? ` · ∥${s.parallel_group}` : ''}
+                {s.scope === 'tenant'
+                  ? 'Org-wide'
+                  : String(s.scope).charAt(0).toUpperCase() + String(s.scope).slice(1)}
+                , {s.sla_hours}h SLA
+                {s.escalate_to ? `, escalates to ${roleLabel(s.escalate_to.role)}` : ''}
+                {s.parallel_group ? `, parallel group ${s.parallel_group}` : ''}
               </span>
             </span>
           ))}
@@ -321,7 +326,7 @@ function ActivateConfirm({
             Cancel
           </Button>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             onClick={onConfirm}
             data-testid="confirm-activate"
@@ -363,8 +368,8 @@ function VersionHistory({
                 </Pill>
               </div>
               <div className="mt-1 text-[11px] text-muted">
-                {v.updatedByName ?? 'system'} ·{' '}
-                {new Date(v.createdAt).toLocaleString('en-IN')}
+                {v.updatedByName ?? 'system'} ,{' '}
+                {formatDateTime(v.createdAt)}
               </div>
               <div className="mt-2">
                 <ConditionChips condition={v.conditions} />

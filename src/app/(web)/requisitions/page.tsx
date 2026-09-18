@@ -1,11 +1,13 @@
 'use client';
 
 import {
+  Badge,
   Button,
   DataState,
   PageHeader,
   Pill,
   Skeleton,
+  SubNav,
   Table,
   TableBody,
   TableCell,
@@ -24,20 +26,29 @@ import {
   type RequisitionTab,
 } from '@/lib/api/requisitions';
 import { inr, statusLabel, statusVariant } from '@/lib/format';
-import { priorityVariant } from '@/lib/refs';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
+import { priorityLabel, priorityVariant } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
 
+/**
+ * The board columns.
+ *
+ * Only two dots carry colour: "Awaiting approval", because a request stalled
+ * on a person is the one column that needs someone to act, and "Received",
+ * because it is the finish line. The three in between are stages of normal
+ * progress — giving each its own hue (blue for sourcing, violet for PO issued)
+ * made the board look like five unrelated categories rather than one pipeline
+ * read left to right.
+ */
 const COLUMNS: {
   key: RequisitionKanbanColumn;
   label: string;
   dot: string;
 }[] = [
-  { key: 'DRAFT', label: 'Draft', dot: 'bg-faint' },
-  { key: 'AWAITING_APPROVAL', label: 'Awaiting approval', dot: 'bg-warn' },
-  { key: 'SOURCING', label: 'Sourcing', dot: 'bg-info' },
-  { key: 'PO_ISSUED', label: 'PO issued', dot: 'bg-violet' },
-  { key: 'RECEIVED', label: 'Received', dot: 'bg-accent' },
+  { key: 'DRAFT', label: 'Draft', dot: 'bg-faint-line' },
+  { key: 'AWAITING_APPROVAL', label: 'Awaiting approval', dot: 'bg-warn-solid' },
+  { key: 'SOURCING', label: 'Sourcing', dot: 'bg-faint-line' },
+  { key: 'PO_ISSUED', label: 'PO issued', dot: 'bg-faint-line' },
+  { key: 'RECEIVED', label: 'Received', dot: 'bg-success-solid' },
 ];
 
 const TABS: { key: RequisitionTab; label: string }[] = [
@@ -53,14 +64,13 @@ const ORDER_KEY = 'pf_pr_board_order';
 type BoardOrder = Partial<Record<RequisitionKanbanColumn, string[]>>;
 
 export default function RequisitionsPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const [tab, setTab] = useState<RequisitionTab>('active');
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div>
       <PageHeader
         title="Requisitions"
-        description={`Purchase requests${tenantSuffix(tenantName)}`}
+        description="Requests raised across the organisation, from draft to receipt."
         actions={
           <Link href="/requisitions/new">
             <Button variant="primary" size="sm">
@@ -70,23 +80,12 @@ export default function RequisitionsPage(): React.JSX.Element {
         }
       />
 
-      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={
-              'duration-hover shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (tab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-4"
+        items={TABS.map((t) => ({ key: t.key, label: t.label }))}
+        value={tab}
+        onChange={(k) => setTab(k as RequisitionTab)}
+      />
 
       {tab === 'active' ? <Board /> : <ListView tab={tab} />}
     </div>
@@ -150,7 +149,7 @@ function Board(): React.JSX.Element {
 
   if (isLoading || error) {
     return (
-      <div className="border-line bg-panel rounded-lg border">
+      <div>
         <DataState
           isLoading={isLoading}
           error={error}
@@ -182,13 +181,12 @@ function Board(): React.JSX.Element {
           <div key={col.key} className="flex flex-col">
             <div className="mb-2 flex items-center gap-2 px-1">
               <span className={`h-2 w-2 rounded-full ${col.dot}`} />
-              <span className="text-text text-[12px] font-semibold uppercase tracking-wide">
+              <span className="text-text text-[12px] font-semibold ">
                 {col.label}
               </span>
               <span className="font-numeric text-faint ml-auto text-[12px]">{count}</span>
             </div>
-            <div
-              className="bg-canvas/40 flex min-h-[120px] flex-col gap-2 rounded-lg p-1.5"
+            <div className="bg-canvas/40 flex min-h-[120px] flex-col gap-2 rounded-lg p-1.5"
               onDragOver={(e) => e.preventDefault()}
             >
               {cards.map((card) => (
@@ -231,34 +229,35 @@ function BoardCard({
         e.preventDefault();
         onDrop();
       }}
-      className="border-line bg-panel hover:border-accent/50 block cursor-grab rounded-lg border p-3 active:cursor-grabbing"
+      className="border-line bg-panel hover:border-accent/40 duration-hover block cursor-grab rounded-lg border p-3 transition-colors active:cursor-grabbing"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="font-numeric text-ink text-[12px] font-medium">
           {card.number}
         </span>
-        {/* Only exceptional priorities earn a badge on a dense board card. */}
-        {card.priority !== 'STANDARD' && (
-          <Pill variant={priorityVariant(card.priority)}>{card.priority}</Pill>
-        )}
+        {/* At most one badge per card. Priority outranks MSME here: an urgent
+            request needs a decision today, whereas MSME is a standing fact
+            about the vendor that the requisition detail also carries. */}
+        {card.priority !== 'STANDARD' ? (
+          <Badge variant={priorityVariant(card.priority)}>
+            {priorityLabel(card.priority)}
+          </Badge>
+        ) : card.hasMsmeVendor ? (
+          <Badge variant="classification">MSME</Badge>
+        ) : null}
       </div>
       <div className="text-text mt-1 line-clamp-2 text-[13px] font-medium">
         {card.title}
       </div>
-      <div className="text-muted mt-1 text-[11px]">
-        {card.costCenter.code} · {card.costCenter.name}
-      </div>
+      <div className="text-muted mt-1 truncate text-[11px]">{card.costCenter.name}</div>
       <div className="mt-2 flex items-center justify-between">
         <span className="font-numeric text-ink text-[13px] font-semibold">
           {inr(card.totalAmount)}
         </span>
-        <span className="font-numeric text-faint text-[11px]">{card.agingDays}d</span>
+        <span className="font-numeric text-faint text-[11px]">
+          {card.agingDays}d open
+        </span>
       </div>
-      {card.hasMsmeVendor && (
-        <Pill variant="violet" className="mt-2">
-          MSME vendor
-        </Pill>
-      )}
     </Link>
   );
 }
@@ -291,7 +290,7 @@ function ListView({ tab }: { tab: RequisitionTab }): React.JSX.Element {
   const rows = useMemo(() => data?.items ?? [], [data]);
 
   return (
-    <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <tr>
@@ -338,7 +337,7 @@ function ListView({ tab }: { tab: RequisitionTab }): React.JSX.Element {
               </TableCell>
               <TableCell className="text-text">{pr.title}</TableCell>
               <TableCell className="text-muted hidden text-[12px] md:table-cell">
-                {pr.costCenter.code} · {pr.costCenter.name}
+                {pr.costCenter.name}
               </TableCell>
               <TableCell>
                 <Pill variant={statusVariant(pr.status)} dot>
@@ -346,7 +345,13 @@ function ListView({ tab }: { tab: RequisitionTab }): React.JSX.Element {
                 </Pill>
               </TableCell>
               <TableCell className="hidden sm:table-cell">
-                <Pill variant={priorityVariant(pr.priority)}>{pr.priority}</Pill>
+                {pr.priority === 'STANDARD' ? (
+                  <span className="text-muted text-[12px]">Standard</span>
+                ) : (
+                  <Badge variant={priorityVariant(pr.priority)}>
+                    {priorityLabel(pr.priority)}
+                  </Badge>
+                )}
               </TableCell>
               <TableCell numeric className="text-text hidden sm:table-cell">
                 {pr.agingDays}d

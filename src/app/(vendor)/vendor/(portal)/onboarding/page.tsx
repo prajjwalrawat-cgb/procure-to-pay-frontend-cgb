@@ -36,15 +36,18 @@ import {
   applyExtractedFields,
   hydrateWizardForm,
   lookupIfsc,
+  replaceIdentityFields,
   useCategoryOptions,
   useOnboarding,
   useSaveStep,
   useSubmitOnboarding,
   useUploadOnboardingDocFile,
+  withoutIdentityFields,
   type ResumeResponse,
   type UploadedDocResult,
 } from '@/vendor/lib/onboarding';
 import { useToastStore } from '@/vendor/store/toast-store';
+import { formatDate } from '@/lib/format';
 
 /** Mirrors the API's MIME allow-list (upload-options.ts) so the picker only
  *  offers file types the server will accept. */
@@ -342,7 +345,7 @@ function onboardingStatus(data: ResumeResponse): {
     };
   }
   if (data.submittedAt) {
-    const on = new Date(data.submittedAt).toLocaleDateString('en-IN');
+    const on = formatDate(data.submittedAt);
     return {
       pill: 'Under review',
       title: `Submitted on ${on} — awaiting your buyer's review`,
@@ -648,6 +651,13 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     // The merge rule lives in wizard-hydrate so it can be tested directly —
     // "does a document overwrite what the vendor typed?" is the question this
     // whole flow turns on, and it has two answers depending on when they typed.
+    if (result.supersedesIdentity) {
+      // A certificate for a different registration than the one saved: the old
+      // values described another entity, so they are replaced, not merged.
+      setF((prev) => replaceIdentityFields(prev, result.fields));
+      setExtracted((prev) => ({ ...withoutIdentityFields(prev), ...result.fields }));
+      return;
+    }
     setF((prev) => applyExtractedFields(prev, extracted, result.fields));
     setExtracted((prev) => ({ ...prev, ...result.fields }));
   };
@@ -675,6 +685,14 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             return;
           }
           applyExtraction(result);
+          if (result.supersedesIdentity) {
+            toast(
+              'New GST certificate read — it replaced the GSTIN and PAN saved earlier. ' +
+                'Check step 1, then save steps 1 and 2 again.',
+              'info',
+            );
+            return;
+          }
           const filled = Object.keys(result.fields).length;
           // The fields these documents fill live on step 1, so where the vendor
           // is told to look depends on where they uploaded from.
@@ -705,7 +723,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       <div
         key={d}
         className={`border-border flex items-center gap-2 rounded-md border px-3 py-2 text-[13px] transition-colors ${
-          done ? 'border-brand/40 bg-brand/5' : ''
+          done ? 'border-accent/40 bg-accent-wash' : ''
         } ${busy ? 'opacity-60' : ''}`}
       >
         <label className={busy ? 'pointer-events-none' : 'cursor-pointer'}>
@@ -734,14 +752,14 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         {done && (
           <>
             <span className="max-w-[180px] truncate text-[12px] text-muted">
-              {done.filename} · {formatBytes(done.sizeBytes)}
+              {done.filename}, {formatBytes(done.sizeBytes)}
             </span>
             {done.url && (
               <a
                 href={done.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand text-[12px] font-medium hover:underline"
+                className="text-accent text-[12px] font-medium hover:underline"
               >
                 View
               </a>
@@ -793,7 +811,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[760px]">
+    <div className="max-w-[760px]">
       <div className="mb-4">
         <PageHeader
           title="Vendor onboarding"
@@ -808,7 +826,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         {editable && (
           <div className="mt-3 flex items-center gap-2">
             <div className="h-1.5 w-48 overflow-hidden rounded-full bg-canvas">
-              <div className="bg-brand h-full" style={{ width: `${completionPct}%` }} />
+              <div className="bg-accent h-full" style={{ width: `${completionPct}%` }} />
             </div>
             <span className="text-[12px] tabular-nums text-muted">
               {completionPct}% complete
@@ -1174,7 +1192,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   <button
                     type="button"
                     onClick={() => setShowOtherDocs((v) => !v)}
-                    className="text-brand text-[12px] font-medium hover:underline"
+                    className="text-accent text-[12px] font-medium hover:underline"
                   >
                     {showOtherDocs ? '− Hide other documents' : '+ Add other documents'}
                   </button>
@@ -1234,7 +1252,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 </Button>
                 {step === ONBOARDING_STEP_COUNT && (
                   <Button
-                    variant="accent"
+                    variant="primary"
                     onClick={() => void doSubmit()}
                     disabled={submit.isPending || saveStep.isPending}
                   >

@@ -5,6 +5,7 @@ import { Button, PageHeader, Pill } from '@/components/ui';
 import { Money } from '@/lib/shared';
 
 import { useScheduleRmaPickup, useVendorRmas } from '@/vendor/lib/api/receipts';
+import { formatDateTime } from '@/lib/format';
 
 function inr(v: string): string {
   return Money.of(v).toINR();
@@ -14,7 +15,7 @@ export default function VendorRmaPage(): React.JSX.Element {
   const { data, isLoading } = useVendorRmas();
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeader
         title="Return authorisations"
         description="Material returns requested against your deliveries"
@@ -59,11 +60,11 @@ function RmaCard({
             <Pill variant="gray">{rma.status}</Pill>
           </span>
           <p className="mt-1 text-[12px] text-muted">
-            {rma.reasonCode} · {inr(rma.totalReturnValue)}
+            {rma.reasonCode}, {inr(rma.totalReturnValue)}
           </p>
           {rma.pickupScheduledAt && (
             <p className="font-numeric text-[11px] text-faint">
-              Pickup {new Date(rma.pickupScheduledAt).toLocaleString('en-IN')}
+              Pickup {formatDateTime(rma.pickupScheduledAt)}
             </p>
           )}
         </div>
@@ -82,7 +83,7 @@ function RmaCard({
           {rma.status === 'ISSUED' && (
             <Button
               size="sm"
-              variant="accent"
+              variant="primary"
               disabled={schedule.isPending}
               onClick={() => {
                 const date = window.prompt('Pickup date (YYYY-MM-DD)?');

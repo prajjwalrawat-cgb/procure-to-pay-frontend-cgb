@@ -78,7 +78,7 @@ export default function FulfillPage(): React.JSX.Element {
     productId && locationId && Number(qty) > 0 && (!short || allowNegativeStock);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeader
         title="Order fulfilment"
         description="Stock-checked customer dispatch"
@@ -176,12 +176,12 @@ export default function FulfillPage(): React.JSX.Element {
         </div>
 
         {short && Number(qty) > 0 && (
-          <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-            <p className="text-[12px] text-amber-800">
+          <div className="mt-3 rounded-md border border-warn/40 bg-warn-bg px-3 py-2">
+            <p className="text-[12px] text-warn">
               Only {atLocation} on hand at this location — {Number(qty) - atLocation}{' '}
               short.
             </p>
-            <label className="mt-1.5 flex items-center gap-2 text-[12px] text-amber-900">
+            <label className="mt-1.5 flex items-center gap-2 text-[12px] text-warn">
               <input
                 type="checkbox"
                 checked={allowNegativeStock}
@@ -195,7 +195,7 @@ export default function FulfillPage(): React.JSX.Element {
         <div className="mt-4 flex items-center justify-between">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!ready || fulfill.isPending}
             onClick={() => void submit()}

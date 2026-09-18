@@ -39,15 +39,14 @@ export const useSessionStore = create<SessionState>((set) => ({
 }));
 
 /**
- * The signed-in organisation's name, for page subheadings. Empty while the
- * session is still bootstrapping, so callers render it as an optional suffix
- * rather than reserving space for a name that may not have arrived yet.
+ * The signed-in organisation's name. Empty while the session is still
+ * bootstrapping, so callers must render it as optional.
+ *
+ * This used to be appended to every page subheading as a dot-joined suffix via a
+ * `tenantSuffix` helper. It is shown once now, in the account menu: a
+ * single-tenant session does not need its own name repeated under ninety page
+ * titles, and the middle-dot join made the subheading read as a fragment.
  */
 export function useTenantName(): string {
   return useSessionStore((s) => s.user?.tenant?.name ?? '');
-}
-
-/** " · Acme Ltd" once the tenant is known, "" before that. */
-export function tenantSuffix(name: string): string {
-  return name ? ` · ${name}` : '';
 }

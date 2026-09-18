@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { exportUrl, useAuditLog, verifyChain, type AuditFilters } from '@/lib/api/audit';
 import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
+import { formatDateTime } from '@/lib/format';
 
 const ACTIONS = [
   'DOCUMENT_ROUTED',
@@ -67,7 +68,7 @@ export default function AuditPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Audit log"
         description="Tamper-evident, hash-chained. Last 30 days."
@@ -80,7 +81,7 @@ export default function AuditPage(): React.JSX.Element {
               <Button variant="ghost" size="sm" onClick={() => void download('pdf')}>
                 Export PDF
               </Button>
-              <Button variant="accent" size="sm" onClick={() => void runVerify()}>
+              <Button variant="primary" size="sm" onClick={() => void runVerify()}>
                 Verify chain
               </Button>
             </div>
@@ -115,9 +116,9 @@ export default function AuditPage(): React.JSX.Element {
 
       {isLoading && <div className="text-[13px] text-muted">Loading…</div>}
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="border-b border-line text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="p-2 text-left">Timestamp</th>
               <th className="p-2 text-left">Actor</th>
@@ -136,7 +137,7 @@ export default function AuditPage(): React.JSX.Element {
                 data-testid="audit-row"
               >
                 <td className="font-numeric p-2 text-muted">
-                  {new Date(r.timestamp).toLocaleString('en-IN')}
+                  {formatDateTime(r.timestamp)}
                 </td>
                 <td className="p-2">{r.actorName ?? r.actorType}</td>
                 <td className="p-2">
@@ -200,13 +201,11 @@ function AuditDrawer({
   onClose: () => void;
 }): React.JSX.Element {
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/30"
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/30"
       role="presentation"
       onClick={onClose}
     >
-      <div
-        className="h-full w-full max-w-lg overflow-y-auto border-l border-line bg-panel p-5"
+      <div className="h-full w-full max-w-lg overflow-y-auto border-l border-line bg-panel p-5"
         role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
@@ -217,9 +216,9 @@ function AuditDrawer({
           </Button>
         </div>
         <dl className="mb-4 flex flex-col gap-1 text-[12px]">
-          <Row k="Entity" v={`${row.entityType} · ${row.entityId}`} />
+          <Row k="Entity" v={`${row.entityType}, ${row.entityId}`} />
           <Row k="Actor" v={row.actorName ?? row.actorType} />
-          <Row k="When" v={new Date(row.timestamp).toLocaleString('en-IN')} />
+          <Row k="When" v={formatDateTime(row.timestamp)} />
           <Row k="Hash" v={row.hashCurrent} mono />
           <Row k="Prev hash" v={row.hashPrevious ?? '— (chain root)'} mono />
         </dl>
@@ -241,7 +240,7 @@ function JsonBlock({
 }): React.JSX.Element {
   return (
     <div>
-      <div className="mb-1 text-[10px] font-semibold uppercase text-faint">{title}</div>
+      <div className="mb-1 text-[10px] font-semibold text-faint">{title}</div>
       <pre className="font-numeric overflow-x-auto rounded-sm border border-line bg-canvas p-2 text-[11px]">
         {value ? JSON.stringify(value, null, 2) : '—'}
       </pre>
@@ -276,23 +275,21 @@ function VerifyModal({
   onClose: () => void;
 }): React.JSX.Element {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6"
       role="presentation"
       onClick={onClose}
     >
-      <div
-        className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg"
+      <div className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg"
         role="presentation"
         onClick={(e) => e.stopPropagation()}
       >
         {result.verified ? (
           <div className="rounded-lg bg-accent-wash p-4 text-[13px] font-medium text-accent-2">
-            Chain verified · {result.eventsChecked} events · no tampering detected
+            Chain verified across {result.eventsChecked} events — no tampering detected
           </div>
         ) : (
           <div className="rounded-lg bg-danger-wash p-4 text-[13px] font-medium text-danger">
-            Chain BROKEN · first break at{' '}
+            Chain broken — first break at{' '}
             <span className="font-numeric">{result.firstBreakAt}</span>. See the incident
             runbook (docs/adr/006-audit-hash-chain.md).
           </div>

@@ -1,6 +1,13 @@
 'use client';
 
-import { Button, Input, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  Input,
+  PageHeader,
+  Pill,
+  cn,
+  controlClass,
+} from '@/components/ui';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { QuoteLineInput, SpecCompliance } from '@/lib/shared';
@@ -166,7 +173,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
     submitQuote.mutate(undefined, {
       onSuccess: (r) => {
         setProof(r.short);
-        toast(`Quote submitted · ${r.short}`, 'success');
+        toast(`Quote submitted, ${r.short}`, 'success');
       },
       onError: (e) => toast(e.message, 'error'),
     });
@@ -184,7 +191,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[980px] pb-24">
+    <div className="max-w-[980px] pb-24">
       <div className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[12px] text-accent">{rfq.number}</span>
@@ -199,8 +206,8 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
           title={<>{rfq.title}</>}
           description={
             <>
-              {rfq.category} · INCOTERM {rfq.incotermDefault} · {rfq.paymentTermsDefault}{' '}
-              · quote in {rfq.currency ?? 'INR'}
+              {rfq.category}, INCOTERM {rfq.incotermDefault}, {rfq.paymentTermsDefault}{' '}
+            {`, quote in ${rfq.currency ?? 'INR'}`}
             </>
           }
         />
@@ -233,7 +240,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                   <span className="text-[13px] font-medium text-ink">{l.itemDesc}</span>
                   <span className="text-[12px] text-muted">
                     asked: {l.qtyRequired} {l.uom}
-                    {l.hsnCode ? ` · HSN ${l.hsnCode}` : ''} · tax{' '}
+                    {l.hsnCode ? `, HSN ${l.hsnCode}` : ''}, tax{' '}
                     {(Number(l.taxRate) * 100).toFixed(0)}%
                   </span>
                 </div>
@@ -259,7 +266,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                   <label className="block">
                     <span className="mb-1 block text-[12px] text-muted">Compliance</span>
                     <select
-                      className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+                      className={cn(controlClass, 'w-auto')}
                       value={l.specCompliance}
                       disabled={submitted}
                       onChange={(e) =>
@@ -321,14 +328,14 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
               >
                 <span className="truncate">{a.filename}</span>
                 <span className="shrink-0 text-[12px] text-muted">
-                  {a.docType.replace(/_/g, ' ').toLowerCase()} · {fileSize(a.sizeBytes)}
+                  {a.docType.replace(/_/g, ' ').toLowerCase()}, {fileSize(a.sizeBytes)}
                 </span>
               </div>
             ))}
             {!submitted && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <select
-                  className="h-9 rounded-md border border-line bg-panel px-2 text-[13px]"
+                  className={cn(controlClass, 'w-auto')}
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
                 >
@@ -386,7 +393,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
             <span className="ml-auto text-[13px] text-muted">
               Total {money(subtotal + taxTotal)}
             </span>
-            <Button variant="accent" onClick={saveLines} disabled={updateQuote.isPending}>
+            <Button variant="primary" onClick={saveLines} disabled={updateQuote.isPending}>
               {updateQuote.isPending ? 'Saving…' : 'Save draft'}
             </Button>
             <Button

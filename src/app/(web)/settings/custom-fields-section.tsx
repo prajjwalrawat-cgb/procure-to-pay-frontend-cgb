@@ -138,7 +138,7 @@ export function CustomFieldsSection(): React.JSX.Element {
       ) : (
         <div className="overflow-hidden rounded-sm border border-line">
           <table className="w-full text-[12px]">
-            <thead className="bg-canvas text-left text-[10px] uppercase tracking-wide text-faint">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Label</th>
                 <th className="px-3 py-2 font-medium">Type</th>
@@ -157,7 +157,7 @@ export function CustomFieldsSection(): React.JSX.Element {
                   <td className="px-3 py-2 text-muted">
                     {CUSTOM_FIELD_TYPE_LABELS[f.fieldType]}
                     {f.options.length > 0 && (
-                      <span className="text-faint"> · {f.options.length} choices</span>
+                      <span className="text-faint"> {f.options.length} choices</span>
                     )}
                   </td>
                   <td className="px-3 py-2 text-center">
@@ -233,7 +233,7 @@ export function CustomFieldsSection(): React.JSX.Element {
           </div>
           {CHOICE_FIELD_TYPES.includes(fieldType) && (
             <div className="mt-3">
-              <Field label="Choices" error={errors.options} hint="One per line.">
+              <Field label="Choices" error={errors.options} hint="One per line." wide>
                 <textarea
                   value={options}
                   onChange={(e) => setOptions(e.target.value)}
@@ -245,7 +245,7 @@ export function CustomFieldsSection(): React.JSX.Element {
             </div>
           )}
           <div className="mt-3">
-            <Field label="Help text" error={errors.helpText}>
+            <Field label="Help text" error={errors.helpText} wide>
               <Input
                 value={helpText}
                 onChange={(e) => setHelpText(e.target.value)}
@@ -274,7 +274,7 @@ export function CustomFieldsSection(): React.JSX.Element {
           <div className="mt-3 flex items-center gap-2">
             <Button
               size="sm"
-              variant="accent"
+              variant="primary"
               disabled={create.isPending || !label.trim()}
               onClick={onAdd}
             >

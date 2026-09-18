@@ -1,6 +1,11 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import type { GrnCompleteQcInput, GrnQcSampleInput } from '@/lib/shared';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -14,8 +19,9 @@ import {
 import { statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
-const inputCls =
-  'border-line bg-panel focus-visible:ring-accent w-full rounded-sm border px-2 py-1.5 text-[12px] outline-none focus-visible:ring-2';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 const REJECTION_REASONS = [
   'VISIBLE_DAMAGE',
@@ -41,7 +47,7 @@ export default function QcPage(): React.JSX.Element {
   >({});
 
   if (!data)
-    return <div className="text-muted mx-auto max-w-4xl px-4 py-10">Loading…</div>;
+    return <div className="text-muted max-w-4xl px-4 py-10">Loading…</div>;
 
   function recordFor(lineId: string, sampleSize: number): void {
     const m = measured[lineId] ?? {};
@@ -60,7 +66,7 @@ export default function QcPage(): React.JSX.Element {
       defectsFound: defectList,
     };
     recordSample.mutate(body, {
-      onSuccess: (r) => push(`Sample recorded · ${r.result}`, 'success'),
+      onSuccess: (r) => push(`Sample recorded, ${r.result}`, 'success'),
       onError: (e) => push((e as Error).message, 'error'),
     });
   }
@@ -94,19 +100,19 @@ export default function QcPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <PageHeader
         title={
           <>
-            QC inspection · <span className="font-numeric">{data.number}</span>
+            QC inspection, <span className="font-numeric">{data.number}</span>
           </>
         }
-        description={`${data.vendor.name} · packing ${data.gate.packingCondition}`}
+        description={`${data.vendor.name}, packing ${data.gate.packingCondition}`}
         actions={
           data.qcStatus === 'NOT_STARTED' ? (
             <Button
               size="sm"
-              variant="accent"
+              variant="primary"
               disabled={startQc.isPending}
               onClick={() =>
                 startQc.mutate(undefined as void, {
@@ -129,7 +135,7 @@ export default function QcPage(): React.JSX.Element {
               <span className="font-numeric text-faint text-[11px]">
                 received {l.qtyReceived} {l.uom}
                 {l.samplePlan &&
-                  ` · sample ${l.samplePlan.sampleSize} (Ac ${l.samplePlan.acceptNumber} / Re ${l.samplePlan.rejectNumber}, AQL ${l.samplePlan.aqlLevel})`}
+                  `, sample ${l.samplePlan.sampleSize} (Ac ${l.samplePlan.acceptNumber} / Re ${l.samplePlan.rejectNumber}, AQL ${l.samplePlan.aqlLevel})`}
               </span>
             </div>
 
@@ -253,7 +259,7 @@ export default function QcPage(): React.JSX.Element {
 
       <div className="mt-4 flex justify-end">
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           disabled={completeQc.isPending}
           onClick={complete}

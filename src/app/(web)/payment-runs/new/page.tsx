@@ -38,7 +38,7 @@ export default function NewPaymentRunPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-xl">
+    <div className="max-w-xl">
       <Link
         href="/payment-runs"
         className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
@@ -72,7 +72,7 @@ export default function NewPaymentRunPage(): React.JSX.Element {
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.bankName} · ····{a.accountNoLast4} · {a.formatKey}
+                {a.bankName} ••••{a.accountNoLast4}, {a.formatKey}
               </option>
             ))}
           </select>
@@ -85,7 +85,7 @@ export default function NewPaymentRunPage(): React.JSX.Element {
             </Button>
           </Link>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={create.isPending || accounts.length === 0}
             onClick={onCreate}

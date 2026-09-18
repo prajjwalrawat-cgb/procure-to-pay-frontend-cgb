@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { useVendor360 } from '@/lib/api/vendors';
-import { inr } from '@/lib/format';
+import { formatDate, humanise, inr, statusLabel } from '@/lib/format';
 
 function metricRow(label: string, value: number | null, suffix = ''): React.JSX.Element {
   return (
@@ -34,7 +34,7 @@ export default function Vendor360Page(): React.JSX.Element {
 
   if (isLoading || error || !data) {
     return (
-      <div className="mx-auto max-w-[1200px]">
+      <div className="max-w-[1200px]">
         <PageHeader title="Vendor" />
         <div className="border-line bg-panel rounded-lg border">
           <DataState
@@ -54,7 +54,7 @@ export default function Vendor360Page(): React.JSX.Element {
   const sc = data.scorecard;
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div className="max-w-[1200px]">
       <PageHeader
         title={data.name}
         breadcrumbs={[{ label: 'Vendors', href: '/vendors' }, { label: data.name }]}
@@ -70,12 +70,16 @@ export default function Vendor360Page(): React.JSX.Element {
                     : 'warn'
               }
             >
-              {data.lifecycleStatus.replace(/_/g, ' ')}
+              {statusLabel(data.lifecycleStatus)}
             </Pill>
             {data.isMsme && <Pill variant="info">MSME</Pill>}
           </>
         }
-        description={[data.legalEntityName, data.category].filter(Boolean).join(' · ') || undefined}
+        description={
+          [data.legalEntityName, data.category ? humanise(data.category) : null]
+            .filter(Boolean)
+            .join(', ') || undefined
+        }
         actions={
           data.lifecycleStatus === 'ACTIVE' ? (
             <Link href={`/vendors/${data.id}/suspend`}>
@@ -116,7 +120,7 @@ export default function Vendor360Page(): React.JSX.Element {
                 {sc.grade}
               </Pill>
               {sc.insufficientData && (
-                <span className="border-warn/35 bg-warn-wash text-warn rounded-xs border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                <span className="border-warn/35 bg-warn-wash text-warn rounded-xs border px-1.5 py-0.5 text-[10px] font-semibold ">
                   Provisional
                 </span>
               )}
@@ -124,7 +128,7 @@ export default function Vendor360Page(): React.JSX.Element {
             <p className="text-faint mb-2 text-[11px]">
               {sc.insufficientData
                 ? `Cold start — only ${sc.transactionCount} transaction${sc.transactionCount === 1 ? '' : 's'} on record. Treat this grade as indicative.`
-                : `Weighted across ${sc.transactionCount} transactions in ${sc.period}.`}
+                : `Weighted across ${sc.transactionCount} transactions in the ${scorecardPeriod(sc.period)}.`}
             </p>
 
             <MetricBar label="OTIF" value={sc.metrics.otifPct} suffix="%" scale />
@@ -209,7 +213,7 @@ export default function Vendor360Page(): React.JSX.Element {
             <div className="flex justify-between text-[13px]">
               <span className="text-muted">Activated</span>
               <span className="text-ink">
-                {data.activatedAt ? new Date(data.activatedAt).toLocaleDateString() : '—'}
+                {data.activatedAt ? formatDate(data.activatedAt) : '—'}
               </span>
             </div>
           </CardContent>
@@ -234,7 +238,7 @@ export default function Vendor360Page(): React.JSX.Element {
               <div className="border-line mt-2 border-t pt-2">
                 <div className="text-ink">{data.bank.bankName}</div>
                 <div className="text-muted">
-                  ••••{data.bank.accountNoLast4} · {data.bank.ifsc}
+                  ••••{data.bank.accountNoLast4}, {data.bank.ifsc}
                 </div>
                 <Pill variant={data.bank.verifiedAt ? 'success' : 'warn'}>
                   {data.bank.verifiedAt ? 'Penny-drop verified' : 'Unverified'}
@@ -263,9 +267,9 @@ export default function Vendor360Page(): React.JSX.Element {
                     — {s.reasonNotes}
                   </span>
                   <span className="text-muted">
-                    {new Date(s.imposedAt).toLocaleDateString()}
+                    {formatDate(s.imposedAt)}
                     {s.liftedAt
-                      ? ` · lifted ${new Date(s.liftedAt).toLocaleDateString()}`
+                      ? `, lifted ${formatDate(s.liftedAt)}`
                       : ''}
                   </span>
                 </li>
@@ -276,4 +280,16 @@ export default function Vendor360Page(): React.JSX.Element {
       )}
     </div>
   );
+}
+
+/**
+ * The scorecard window, in words. The API returns `ROLLING_90D` and it was
+ * printed verbatim under a headline figure — a constant name is not an answer
+ * to "over what period?".
+ */
+function scorecardPeriod(period: string): string {
+  const m = /^ROLLING_(\d+)D$/.exec(period);
+  if (m) return `last ${m[1]} days`;
+  if (period === 'FYTD') return 'financial year to date';
+  return humanise(period).toLowerCase();
 }

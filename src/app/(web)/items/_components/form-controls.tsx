@@ -7,8 +7,10 @@
  * instead of only in a toast.
  */
 
-const INPUT_CLASS =
-  'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-3 py-1.5 text-[13px] outline-none';
+import { controlClass } from '@/components/ui';
+
+// The shared control definition — see components/ui/components/input.tsx.
+const INPUT_CLASS = controlClass;
 const ERROR_CLASS = 'border-danger focus:border-danger';
 
 export function Field({

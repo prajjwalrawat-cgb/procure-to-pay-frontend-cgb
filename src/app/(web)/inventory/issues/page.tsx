@@ -15,6 +15,7 @@ import {
   TextArea,
   TextInput,
 } from '../_components/form-controls';
+import { formatDate } from '@/lib/format';
 
 /**
  * Internal issue — stock out to the photoshoot team, a sales person or another
@@ -25,10 +26,10 @@ import {
  */
 export default function IssuesPage(): React.JSX.Element {
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Internal issues"
-        description="Photoshoot · Sales · Other — issue, track balance, receive returns"
+        description="Issue stock to a team, track the outstanding balance, and receive returns."
         actions={
           <>
             <Link href="/inventory">
@@ -169,7 +170,7 @@ function IssueForm(): React.JSX.Element {
       <div className="mt-4 flex items-center justify-between">
         <FormResult error={error} success={success} />
         <Button
-          variant="accent"
+          variant="primary"
           size="sm"
           disabled={!ready || issue.isPending}
           onClick={() => void submit()}
@@ -188,13 +189,13 @@ function OpenIssuesBoard(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
+      <h2 className="mb-2 text-[11px] font-medium text-faint">
         Open issues ({rows.length})
       </h2>
-      {error && <p className="mb-2 text-[12px] text-red-600">{error}</p>}
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      {error && <p className="mb-2 text-[12px] text-danger">{error}</p>}
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Issued</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -256,7 +257,7 @@ function OpenIssueRow({
   return (
     <tr className="border-t border-line">
       <td className="font-numeric px-3 py-2 text-[12px] text-muted">
-        {new Date(row.txnDate).toLocaleDateString('en-IN')}
+        {formatDate(row.txnDate)}
         {overdue && (
           <Pill variant="danger" className="ml-1.5">
             Overdue
@@ -272,7 +273,7 @@ function OpenIssueRow({
       </td>
       <td className="px-3 py-2 text-[12px] text-text">{row.issuedToName ?? '—'}</td>
       <td className="font-numeric px-3 py-2 text-right text-muted">{row.qty}</td>
-      <td className="font-numeric px-3 py-2 text-right font-medium text-amber-700">
+      <td className="font-numeric px-3 py-2 text-right font-medium text-warn">
         {balance}
       </td>
       <td className="px-3 py-2">

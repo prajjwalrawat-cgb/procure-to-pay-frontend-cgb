@@ -3,9 +3,14 @@ import type { Config } from 'tailwindcss';
 import { colors, radius, shadow } from './tokens';
 
 /**
- * Shared Tailwind preset. Apps extend this so all colors, radii and shadows are
- * available as utilities and CSS variables. Fonts are wired per-app via
- * next/font so the self-hosted Geist + display faces keep their CSS variables.
+ * Shared Tailwind preset. Apps extend this so all colours, radii and shadows
+ * are available as utilities. Fonts are wired per-app via next/font so the
+ * self-hosted faces keep their CSS variables.
+ *
+ * The legacy colour names (gold, info, violet, navy) are still exported as
+ * utilities, but they now resolve to the accent or to white chrome — see
+ * tokens.ts. That is what lets ~90 screens adopt the redesign without a
+ * per-screen rewrite of every className.
  */
 const preset: Partial<Config> = {
   theme: {
@@ -14,8 +19,9 @@ const preset: Partial<Config> = {
         paper: colors.paper,
         canvas: colors.canvas,
         panel: colors.panel,
+        line: colors.line,
 
-        // Navy chrome scale.
+        // Chrome. White now — names kept for un-migrated call sites.
         navy: {
           DEFAULT: colors.navy,
           2: colors['navy-2'],
@@ -29,31 +35,44 @@ const preset: Partial<Config> = {
         ink: colors.ink,
         text: colors.text,
         muted: colors.muted,
-        faint: colors.faint,
-        line: colors.line,
-
-        // Gold is `commit` at the component layer; the raw scale stays here for
-        // seams, rails and borders that are not buttons.
-        gold: {
-          DEFAULT: colors.gold,
-          ink: colors['gold-ink'],
-          wash: colors['gold-wash'],
+        faint: {
+          DEFAULT: colors.faint,
+          line: colors['faint-line'],
         },
 
+        // The one accent. Interactive/active only.
         accent: {
           DEFAULT: colors.accent,
           2: colors['accent-2'],
           wash: colors['accent-wash'],
+          bg: colors['accent-wash'],
         },
-        danger: {
-          DEFAULT: colors.danger,
-          bg: colors['danger-bg'],
-          wash: colors['danger-wash'],
+
+        // Semantic state. Status only, never decoration.
+        success: {
+          DEFAULT: colors.success,
+          solid: colors['success-solid'],
+          bg: colors['success-bg'],
+          wash: colors['success-bg'],
         },
         warn: {
           DEFAULT: colors.warn,
+          solid: colors['warn-solid'],
           bg: colors['warn-bg'],
           wash: colors['warn-wash'],
+        },
+        danger: {
+          DEFAULT: colors.danger,
+          solid: colors['danger-solid'],
+          bg: colors['danger-bg'],
+          wash: colors['danger-wash'],
+        },
+
+        // ── Legacy aliases, all remapped to the accent ────────────────────
+        gold: {
+          DEFAULT: colors.gold,
+          ink: colors['gold-ink'],
+          wash: colors['gold-wash'],
         },
         info: {
           DEFAULT: colors.info,
@@ -72,6 +91,7 @@ const preset: Partial<Config> = {
         DEFAULT: radius.DEFAULT,
         lg: radius.lg,
         xl: radius.xl,
+        pill: radius.pill,
       },
       boxShadow: {
         xs: shadow.xs,
@@ -81,16 +101,20 @@ const preset: Partial<Config> = {
         xl: shadow.xl,
       },
       fontFamily: {
-        display: ['var(--font-display)', 'ui-serif', 'Georgia', 'serif'],
-        sans: ['var(--font-geist-sans)', 'ui-sans-serif', 'sans-serif'],
+        // `display` is the same family as `sans` — it is a size/weight
+        // treatment, not a second face. See tokens.ts → typography.
+        display: ['var(--font-ui)', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-ui)', '-apple-system', 'sans-serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        base: ['13.5px', { lineHeight: '1.5', letterSpacing: '-0.005em' }],
+        meta: ['12px', { lineHeight: '1.45' }],
+        base: ['13px', { lineHeight: '1.5' }],
+        heading: ['19px', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
       },
       letterSpacing: {
-        heading: '-0.02em',
-        display: '-0.02em',
+        heading: '-0.01em',
+        display: '-0.01em',
       },
       transitionDuration: {
         hover: '100ms',

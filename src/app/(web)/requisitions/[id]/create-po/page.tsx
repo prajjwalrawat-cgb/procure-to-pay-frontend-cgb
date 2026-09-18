@@ -1,6 +1,11 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -195,7 +200,7 @@ export default function CreatePoPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-8">
+    <div className="max-w-6xl pb-8">
       <Link
         href={`/requisitions/${id}`}
         className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
@@ -206,12 +211,12 @@ export default function CreatePoPage(): React.JSX.Element {
         title="Create purchase orders"
         description={
           <>
-            Split-award <span className="font-numeric">{data.number}</span> · {data.title}
+            Split-award <span className="font-numeric">{data.number}</span> {data.title}
           </>
         }
         actions={
           <>
-            <Button variant="accent" size="sm" disabled={saving} onClick={onSaveAll}>
+            <Button variant="primary" size="sm" disabled={saving} onClick={onSaveAll}>
               Save all as drafts
             </Button>
           </>
@@ -232,7 +237,7 @@ export default function CreatePoPage(): React.JSX.Element {
                 >
                   <div className="font-medium text-text">{l.itemDesc}</div>
                   <div className="font-numeric text-[10px] text-faint">
-                    {l.skuCode ?? 'Non-catalogued'} · {inr(l.unitPrice, 0)} / {l.uom}
+                    {l.skuCode ?? 'Non-catalogued'}, {inr(l.unitPrice, 0)} / {l.uom}
                   </div>
                   <div className="mt-1 flex items-center justify-between">
                     <span className="text-muted">
@@ -351,7 +356,7 @@ export default function CreatePoPage(): React.JSX.Element {
 
               {/* Line allocation */}
               <div className="mt-3">
-                <div className="mb-1 text-[10px] uppercase tracking-wide text-faint">
+                <div className="mb-1 text-[10px] text-faint">
                   Allocate lines
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -431,8 +436,9 @@ export default function CreatePoPage(): React.JSX.Element {
   );
 }
 
-const inputCls =
-  'border-line bg-panel focus-visible:ring-accent w-full rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 function Field({
   label,

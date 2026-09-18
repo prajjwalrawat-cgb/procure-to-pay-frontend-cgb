@@ -1,9 +1,9 @@
 /**
  * Chart tokens — the ProcureFlow instance of the data-viz parameter set.
  *
- * The previous analytics palette was emerald-anchored against the pre-refresh
- * tokens (#05835C accent, #E8E8E1 grid, #65655E axis text) and was never
- * validated for colour-vision separation. These values were.
+ * Re-anchored on the redesign's single accent: slot 1 is #1B4CE0, the grid and
+ * axis pick up the new `line` and `muted` values, and the sequential ramp runs
+ * through the accent rather than the retired navy.
  *
  * ── Validation (run, not eyeballed) ────────────────────────────────────────
  * Surface #FFFFFF (`panel`), light mode, categorical scope:
@@ -34,12 +34,20 @@
  * colour alone.
  */
 
-/** Categorical series, in fixed order. Never cycle; never generate a 7th. */
+/**
+ * Categorical series, in fixed order. Never cycle; never generate a 7th.
+ *
+ * The "one accent" rule governs UI chrome, not data encoding: a chart's whole
+ * job is to tell four series apart, and one hue cannot do it. Slot 1 is the
+ * app accent so a single-series chart matches the interface around it; the
+ * rest are spread wider than the brand palette because a set built only from
+ * blues cannot clear the colour-vision gate.
+ */
 export const CHART_SERIES = [
-  '#1F5FA8', // 1 azure
+  '#1B4CE0', // 1 accent blue — matches the UI accent
   '#C7622A', // 2 ochre
-  '#7C3FD4', // 3 violet
-  '#0F8A6A', // 4 teal
+  '#0F8A6A', // 3 teal
+  '#7C3FD4', // 4 violet
   '#A8850F', // 5 brass
   '#B4436C', // 6 rose
 ] as const;
@@ -52,10 +60,10 @@ export const CATEGORICAL_MAX_ALL_PAIRS = 4;
  * always paired with a text label — never colour alone.
  */
 export const CHART_STATUS = {
-  good: '#0F7A52',
-  warn: '#9A5B02',
-  serious: '#C2183F',
-  critical: '#8A0F2C',
+  good: '#147A52',
+  warn: '#8A5E0E',
+  serious: '#B23A31',
+  critical: '#7F2019',
 } as const;
 
 /**
@@ -63,12 +71,12 @@ export const CHART_STATUS = {
  * intensity). Never a rainbow.
  */
 export const CHART_SEQUENTIAL = [
-  '#DCE6F4',
-  '#B4C9E6',
-  '#7FA3D1',
-  '#4A7CBA',
-  '#1F5FA8',
-  '#123A6B',
+  '#EAEFFD',
+  '#C3D0F7',
+  '#8EA5EE',
+  '#4C74E6',
+  '#1B4CE0',
+  '#123297',
 ] as const;
 
 /** Chart chrome, pulled from the app tokens so charts age with the palette. */
@@ -76,18 +84,14 @@ export const CHART_CHROME = {
   /** Chart sits on `panel`. The validator was run against this surface. */
   surface: '#FFFFFF',
   /** `line` — recessive gridlines, horizontal only. */
-  grid: '#D4DEEC',
+  grid: '#E3E5E9',
   /** `muted` — axis tick labels. */
-  axis: '#55647C',
+  axis: '#6B7078',
   /** `text` — value labels that must stay readable. */
-  label: '#1F2C40',
+  label: '#1A1D21',
   /** A prior-period or benchmark series: neutral, never a categorical slot. */
-  comparison: '#94A3B8',
+  comparison: '#8A8F98',
 } as const;
 
-/**
- * Axis/tick typography. Charts use the sans face at all sizes — the display
- * serif is for page headers and KPI values only and reads as off-brand inside
- * a plot.
- */
+/** Axis/tick typography. Charts use the UI face at all sizes. */
 export const CHART_TICK = { fontSize: 11, fill: CHART_CHROME.axis } as const;

@@ -1,6 +1,10 @@
 'use client';
 
-import { PageHeader } from '@/components/ui';
+import {
+  PageHeader,
+  StepIndicator,
+  controlClass,
+} from '@/components/ui';
 
 import type { ClauseInput, ContractCreateInput, RateCardInput } from '@/lib/shared';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
@@ -132,7 +136,7 @@ export default function NewContractPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-4xl pb-10">
+    <div className="max-w-4xl pb-10">
       <Link
         href="/contracts"
         className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
@@ -140,25 +144,7 @@ export default function NewContractPage(): React.JSX.Element {
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
       <PageHeader title="New contract" />
-      <div className="mb-5 flex items-center gap-2">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <span
-              className={
-                'rounded-full px-2.5 py-1 text-[12px] font-medium ' +
-                (i === step
-                  ? 'bg-ink text-white'
-                  : i < step
-                    ? 'bg-accent-wash text-accent-2'
-                    : 'bg-canvas text-faint')
-              }
-            >
-              {i + 1}. {s}
-            </span>
-            {i < STEPS.length - 1 && <span className="text-faint">·</span>}
-          </div>
-        ))}
-      </div>
+      <StepIndicator steps={STEPS} current={step} className="mb-5" />
 
       <div className="space-y-3 rounded-lg border border-line bg-panel p-5">
         {step === 0 && (
@@ -460,8 +446,9 @@ export default function NewContractPage(): React.JSX.Element {
   );
 }
 
-const inputCls =
-  'w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-ink';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 function Field({
   label,

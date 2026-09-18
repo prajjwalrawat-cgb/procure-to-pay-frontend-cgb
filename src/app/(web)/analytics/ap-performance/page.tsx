@@ -34,7 +34,7 @@ export default function ApPerformancePage(): React.JSX.Element {
   const d = ap.data;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="max-w-6xl">
       <PageHeader
         title="AP performance"
         breadcrumbs={[
@@ -193,7 +193,7 @@ function Kpi({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px] uppercase">{label}</div>
+      <div className="text-faint text-[11px]">{label}</div>
       <div
         className={
           'font-numeric mt-1 text-[20px] font-semibold ' +

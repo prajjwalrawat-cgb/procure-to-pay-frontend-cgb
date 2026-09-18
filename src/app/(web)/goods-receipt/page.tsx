@@ -1,13 +1,19 @@
 'use client';
 
-import { Button, PageHeader, Pill, TableState } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+  TableState,
+} from '@/components/ui';
 import type { GrnListItem } from '@/lib/shared';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { usePendingReceiptPos, useReceipts, type GrnTab } from '@/lib/api/receipts';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
+import { formatDate, inr, statusLabel, statusVariant } from '@/lib/format';
 
 const TABS: { key: GrnTab; label: string }[] = [
   { key: 'pending_receipt', label: 'Pending receipt' },
@@ -18,17 +24,16 @@ const TABS: { key: GrnTab; label: string }[] = [
 ];
 
 export default function GoodsReceiptPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const [tab, setTab] = useState<GrnTab>('pending_receipt');
   const { data, isLoading } = useReceipts(tab);
   const pendingPos = usePendingReceiptPos();
   const counts = data?.counts;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Receipts"
-        description={`Goods receipt & QC${tenantSuffix(tenantName)}`}
+        description="Goods receipt & QC"
         actions={
           <Link href="/goods-receipt/new">
             <Button variant="primary" size="sm">
@@ -38,28 +43,19 @@ export default function GoodsReceiptPage(): React.JSX.Element {
         }
       />
 
-      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            className={
-              'duration-hover flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (tab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
-            <span className="font-numeric text-faint text-[11px]">
-              {t.key === 'pending_receipt'
-                ? (pendingPos.data?.totalEstimate ?? 0)
-                : (counts?.[t.key] ?? 0)}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-3"
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count:
+            t.key === 'pending_receipt'
+              ? (pendingPos.data?.totalEstimate ?? 0)
+              : (counts?.[t.key] ?? 0),
+        }))}
+        value={tab}
+        onChange={(k) => setTab(k as (typeof TABS)[number]['key'])}
+      />
 
       {tab === 'pending_receipt' ? (
         <PendingReceiptTable
@@ -90,9 +86,9 @@ function PendingReceiptTable({
   isLoading: boolean;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto">
       <table className="w-full text-[13px]">
-        <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+        <thead className="border-line border-b text-left text-[12px] text-muted">
           <tr>
             <th className="px-3 py-2 font-medium">PO</th>
             <th className="px-3 py-2 font-medium">Vendor</th>
@@ -124,7 +120,7 @@ function PendingReceiptTable({
               </td>
               <td className="font-numeric text-text px-3 py-2 text-[12px]">
                 {po.expectedDeliveryDate
-                  ? new Date(po.expectedDeliveryDate).toLocaleDateString('en-IN')
+                  ? formatDate(po.expectedDeliveryDate)
                   : '—'}
               </td>
               <td className="font-numeric text-ink px-3 py-2 text-right font-medium">
@@ -154,9 +150,9 @@ function ReceiptsTable({
   isLoading: boolean;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto">
       <table className="w-full text-[13px]">
-        <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+        <thead className="border-line border-b text-left text-[12px] text-muted">
           <tr>
             <th className="px-3 py-2 font-medium">GRN</th>
             <th className="px-3 py-2 font-medium">PO</th>
@@ -198,16 +194,14 @@ function ReceiptsTable({
               <td className="px-3 py-2">
                 <span className="text-text">{g.vendor.name}</span>
                 {g.vendor.isMsme && (
-                  <Pill variant="violet" className="ml-1.5">
-                    MSME
-                  </Pill>
+                  <Badge variant="classification" className="ml-1.5">MSME</Badge>
                 )}
               </td>
               <td className="px-3 py-2">
                 <Pill variant={statusVariant(g.qcStatus)}>{statusLabel(g.qcStatus)}</Pill>
               </td>
               <td className="font-numeric text-text px-3 py-2 text-[12px]">
-                {new Date(g.receivedAt).toLocaleDateString('en-IN')}
+                {formatDate(g.receivedAt)}
               </td>
               <td className="font-numeric text-text px-3 py-2 text-right">
                 {g.acceptedPct.toFixed(0)}%

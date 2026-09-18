@@ -94,7 +94,7 @@ export function ResolveModal({
             Cancel
           </Button>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             onClick={submit}
             disabled={resolve.isPending}

@@ -64,7 +64,7 @@ function HoverBody({ data }: { data: Record<string, unknown> }): React.JSX.Eleme
         <span className="text-muted flex items-center justify-between">
           <span>Risk score</span>
           <span className="font-numeric text-text">
-            A · {String(data.riskScore ?? '—')}
+            A, {String(data.riskScore ?? '—')}
           </span>
         </span>
         <span className="text-muted flex items-center justify-between">

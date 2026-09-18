@@ -1,6 +1,26 @@
 'use client';
 
-import { Button, Input, PageHeader } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardMeta,
+  CardTitle,
+  DataState,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  StatusText,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  cn,
+  controlClass,
+} from '@/components/ui';
 import { Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -17,6 +37,7 @@ import {
 } from '@/lib/api/users';
 import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
+import { formatDate } from '@/lib/format';
 
 function initials(name: string, email: string): string {
   const src = name?.trim() || email;
@@ -24,16 +45,8 @@ function initials(name: string, email: string): string {
   return (parts[0]?.[0] ?? '?').concat(parts[1]?.[0] ?? '').toUpperCase();
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 export default function TeamPage(): React.JSX.Element {
-  const { data: members, isLoading, error } = useTeam();
+  const { data: members, isLoading, error, refetch } = useTeam();
   const { data: pending } = usePendingInvites();
   const invite = useInviteMember();
   const remove = useRemoveMember();
@@ -97,74 +110,93 @@ export default function TeamPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Team"
         description="Manage who can access your workspace and what they can do."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Member list */}
-        <div className="overflow-hidden rounded-xl border border-line bg-panel">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-muted">
-                <th className="px-4 py-3 font-medium">Member</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3" />
+      {/*
+       * `minmax(0,1fr)`, not `1fr`. A grid track sized `1fr` refuses to shrink
+       * below its content's min-content width, so the member table pushed past
+       * its own column and the Remove action was clipped off the right edge.
+       * This is the fix for that class of bug everywhere, not a nudge.
+       */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          <Table>
+            <TableHeader>
+              <tr>
+                <TableHead>Member</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead className="text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
+            </TableHeader>
+            <TableBody>
+              {isLoading || error || !members?.length ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                    Loading team…
+                  <td colSpan={5} className="p-0">
+                    <DataState
+                      isLoading={isLoading}
+                      error={error}
+                      isEmpty={!members?.length}
+                      onRetry={() => void refetch()}
+                      empty={{
+                        title: 'No one else here yet',
+                        detail:
+                          'People you invite appear here once they have set a password.',
+                      }}
+                    >
+                      {null}
+                    </DataState>
                   </td>
                 </tr>
-              )}
-              {error && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-danger">
-                    Failed to load team.
-                  </td>
-                </tr>
-              )}
+              ) : null}
+
               {members?.map((m) => {
                 const isSelf = m.id === currentUser?.id;
                 return (
-                  <tr key={m.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[12px] font-semibold text-white">
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <span className="bg-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white">
                           {initials(m.name, m.email)}
                         </span>
-                        <div>
-                          <div className="font-medium text-ink">
+                        <div className="min-w-0">
+                          <div className="text-ink truncate font-medium">
                             {m.name || m.email}
-                            {isSelf && (
-                              <span className="ml-2 text-[10px] font-semibold uppercase text-muted">
-                                You
-                              </span>
-                            )}
+                            {isSelf && <span className="text-muted ml-1.5">(you)</span>}
                           </div>
-                          <div className="text-[12px] text-muted">{m.email}</div>
+                          <div className="text-muted truncate text-[12px]">{m.email}</div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+
+                    <TableCell>
                       {isSelf ? (
-                        // Don't let an admin change their own role inline.
-                        <span className="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink">
+                        // An admin cannot change their own role inline — losing
+                        // your own admin rights mid-session is not undoable from
+                        // inside the app.
+                        <span className="text-text">
                           {m.roles.map(roleLabel).join(', ') || '—'}
                         </span>
                       ) : (
-                        <select
+                        <Select
                           value={m.roles[0] ?? ''}
                           onChange={(e) => onRoleChange(m, e.target.value)}
                           disabled={updateRole.isPending}
-                          className="rounded-md border border-line bg-panel px-2 py-1 text-[12px] text-ink disabled:opacity-50"
+                          // `w-auto` sizes to content, but an `appearance-none`
+                          // select does not reserve room for the chevron we
+                          // draw ourselves — so the longest role names were
+                          // clipped under it. The min-width buys that room.
+                          className={cn(
+                            controlClass,
+                            'w-auto min-w-[11rem] py-1.5 text-[12px]',
+                          )}
                           aria-label={`Role for ${m.name || m.email}`}
                         >
                           {ASSIGNABLE_ROLES.map((r) => (
@@ -172,145 +204,154 @@ export default function TeamPage(): React.JSX.Element {
                               {r.label}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={
-                          m.isActive
-                            ? 'rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700'
-                            : 'rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700'
-                        }
-                      >
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusText variant={m.isActive ? 'success' : 'warn'}>
                         {m.isActive ? 'Active' : 'Invited'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-muted">
+                      </StatusText>
+                    </TableCell>
+
+                    <TableCell className="text-muted font-numeric">
                       {formatDate(m.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </TableCell>
+
+                    <TableCell className="text-right">
                       {!isSelf && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => onRemove(m)}
                           disabled={remove.isPending}
-                          className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-danger disabled:opacity-50"
+                          className="hover:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
                           Remove
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Invite panel */}
-        <div className="h-fit rounded-xl border border-line bg-panel p-5">
-          <h2 className="text-[15px] font-semibold text-ink">Invite teammate</h2>
-          <p className="mt-1 text-[12px] text-muted">
-            Sends an invitation email. They join the workspace after setting a password.
-          </p>
-          <form onSubmit={onInvite} className="mt-4 flex flex-col gap-3">
-            <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
-              Full name
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Invite teammate</CardTitle>
+            <CardMeta>
+              Sends an invitation email. They join the workspace after setting a password.
+            </CardMeta>
+          </CardHeader>
+          <form onSubmit={onInvite} className="flex flex-col gap-3 px-4 pb-4">
+            <Field label="Full name" htmlFor="invite-name" required>
               <Input
+                id="invite-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Jane Doe"
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
-              Email
+            </Field>
+            <Field label="Email" htmlFor="invite-email" required>
               <Input
+                id="invite-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="teammate@artboxsolutions.com"
+                placeholder="name@company.com"
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
-              Role
-              <select
+            </Field>
+            <Field
+              label="Role"
+              htmlFor="invite-role"
+              hint={ASSIGNABLE_ROLES.find((r) => r.value === role)?.description}
+            >
+              <Select
+                id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-md border border-line bg-panel px-3 py-2 text-[13px] text-ink"
               >
                 {ASSIGNABLE_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
                   </option>
                 ))}
-              </select>
-              <span className="text-[11px] text-muted">
-                {ASSIGNABLE_ROLES.find((r) => r.value === role)?.description}
-              </span>
-            </label>
+              </Select>
+            </Field>
             <Button
               type="submit"
-              variant="accent"
+              variant="primary"
               disabled={invite.isPending}
               className="mt-1 w-full"
             >
-              <Send className="mr-1.5 h-3.5 w-3.5" />
+              <Send className="h-3.5 w-3.5" aria-hidden />
               {invite.isPending ? 'Sending…' : 'Send invitation'}
             </Button>
           </form>
-        </div>
+        </Card>
       </div>
 
       {/* Pending invitations */}
-      <div className="mt-6 rounded-xl border border-line bg-panel p-5">
-        <h2 className="text-[15px] font-semibold text-ink">Pending invitations</h2>
-        <p className="mt-1 text-[12px] text-muted">
-          Invited users appear in the team above once they accept. Revoking an invitation
+      <section className="mt-8">
+        <h2 className="text-ink tracking-heading text-[15px] font-semibold">
+          Pending invitations
+        </h2>
+        <p className="text-muted mt-1 text-[12px]">
+          Invited people appear in the team above once they accept. Revoking an invitation
           immediately disables its link.
         </p>
+
         {pending && pending.length > 0 ? (
-          <table className="mt-4 w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-muted">
-                <th className="px-2 py-2 font-medium">Email</th>
-                <th className="px-2 py-2 font-medium">Role</th>
-                <th className="px-2 py-2 font-medium">Sent</th>
-                <th className="px-2 py-2" />
+          <Table className="mt-3">
+            <TableHeader>
+              <tr>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Sent</TableHead>
+                <TableHead className="text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </tr>
-            </thead>
-            <tbody>
+            </TableHeader>
+            <TableBody>
               {pending.map((p) => (
-                <tr key={p.id} className="border-b border-line last:border-0">
-                  <td className="px-2 py-2 text-ink">{p.email}</td>
-                  <td className="px-2 py-2 text-muted">
+                <TableRow key={p.id}>
+                  <TableCell className="text-ink">{p.email}</TableCell>
+                  <TableCell className="text-muted">
                     {p.roles.map(roleLabel).join(', ') || '—'}
-                  </td>
-                  <td className="px-2 py-2 tabular-nums text-muted">
+                  </TableCell>
+                  <TableCell className="text-muted font-numeric">
                     {formatDate(p.invitedAt)}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <button
-                      type="button"
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onRevoke(p.id, p.email)}
                       disabled={revoke.isPending}
-                      className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-danger disabled:opacity-50"
+                      className="hover:text-danger"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       Revoke
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         ) : (
-          <p className="mt-4 text-[13px] text-muted">No pending invitations.</p>
+          <p className="text-muted mt-3 text-[13px]">
+            No invitations are outstanding. Anyone you invite will be listed here until
+            they set a password.
+          </p>
         )}
-      </div>
+      </section>
     </div>
   );
 }

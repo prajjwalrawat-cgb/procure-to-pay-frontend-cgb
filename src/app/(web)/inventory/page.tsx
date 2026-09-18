@@ -1,10 +1,16 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  cn,
+  controlClass,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { useLocations, useProducts } from '@/lib/api/inventory';
+import { qty } from '@/lib/format';
 import { ProductDrawer } from './_components/product-drawer';
 import { ProductThumb } from './_components/product-thumb';
 
@@ -31,14 +37,13 @@ export default function InventoryPage(): React.JSX.Element {
   const lowCount = items.filter((i) => i.lowStock).length;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
         title="Stock overview"
         description={
-          <>
-            {data?.totalEstimate ?? 0} products{' '}
-            {lowCount > 0 && ` · ${lowCount} at or below reorder point`}
-          </>
+          lowCount > 0
+            ? `${data?.totalEstimate ?? 0} products, ${lowCount} at or below reorder point.`
+            : `${data?.totalEstimate ?? 0} products.`
         }
         actions={
           <>
@@ -77,18 +82,18 @@ export default function InventoryPage(): React.JSX.Element {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search name, code, colour or legacy SKU…"
-          className="min-w-[260px] flex-1 rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none placeholder:text-faint focus:border-accent"
+          className={cn(controlClass, 'min-w-[260px] max-w-md flex-1')}
         />
         <select
           value={locationId}
           onChange={(e) => setLocationId(e.target.value)}
-          className="rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none"
+          className={cn(controlClass, 'w-auto')}
         >
           <option value="">All locations</option>
           {(locations.data?.items ?? []).map((l) => (
             <option key={l.id} value={l.id}>
               {l.name}
-              {l.rackNo ? ` · ${l.rackNo}` : ''}
+              {l.rackNo ? `, ${l.rackNo}` : ''}
             </option>
           ))}
         </select>
@@ -102,9 +107,9 @@ export default function InventoryPage(): React.JSX.Element {
         </label>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="w-12 px-3 py-2 text-right font-medium">S. No.</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -173,15 +178,21 @@ export default function InventoryPage(): React.JSX.Element {
                       <div className="truncate font-medium text-ink">{p.name}</div>
                       <div className="font-numeric text-[11px] text-faint">
                         {p.code}
-                        {p.colour ? ` · ${p.colour}` : ''}
+                        {p.colour ? ` — ${p.colour}` : ''}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-2">
-                  <Pill variant={p.category === 'Uncategorized' ? 'gray' : 'info'}>
-                    {p.category}
-                  </Pill>
+                <td className="text-muted px-3 py-2 text-[12px]">
+                  {/* A category is a permanent fact about the product, so it
+                      reads as plain text. It was a coloured status dot, which
+                      put ten pieces of state colour in a column where nothing
+                      ever changes state. */}
+                  {p.category === 'Uncategorized' ? (
+                    <span className="text-faint">Uncategorised</span>
+                  ) : (
+                    p.category
+                  )}
                 </td>
                 <td className="px-3 py-2 text-[12px] text-muted">
                   {p.locations.length === 0
@@ -191,7 +202,7 @@ export default function InventoryPage(): React.JSX.Element {
                           (l) =>
                             `${l.locationName}${l.rackNo ? ` (${l.rackNo})` : ''} ${l.qty}`,
                         )
-                        .join(' · ')}
+                        .join(', ')}
                 </td>
                 <td className="font-numeric px-3 py-2 text-right text-muted">
                   {p.reorderPoint ?? '—'}
@@ -200,15 +211,13 @@ export default function InventoryPage(): React.JSX.Element {
                   <span
                     className={
                       'font-numeric font-medium ' +
-                      (p.lowStock ? 'text-amber-700' : 'text-ink')
+                      (p.lowStock ? 'text-warn' : 'text-ink')
                     }
                   >
-                    {p.currentStock.toLocaleString('en-IN')}
+                    {qty(p.currentStock)}
                   </span>
                   {p.lowStock && (
-                    <Pill variant="warn" className="ml-1.5">
-                      Low
-                    </Pill>
+                    <span className="text-warn ml-1.5 text-[12px]">Low</span>
                   )}
                 </td>
               </tr>

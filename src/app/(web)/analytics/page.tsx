@@ -7,6 +7,7 @@ import {
   CHART_TICK,
   PageHeader,
   Pill,
+  SubNav,
 } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -63,7 +64,7 @@ export default function AnalyticsPage(): React.JSX.Element {
   const breach = msme.data?.buckets.find((b) => b.bucket === 'BREACH_45_PLUS');
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div className="max-w-[1400px]">
       <PageHeader
         title="Analytics"
         description="Spend, savings, concentration and MSME exposure, computed from posted documents."
@@ -89,22 +90,17 @@ export default function AnalyticsPage(): React.JSX.Element {
         </span>
       </div>
 
-      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className={
-              'shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium ' +
-              (t.href === '/analytics'
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
+      <SubNav
+        className="mb-4"
+        aria-label="Analytics views"
+        items={TABS.map((t) => ({ key: t.href, label: t.label, href: t.href }))}
+        value="/analytics"
+        renderLink={(item, content) => (
+          <Link key={item.key} href={item.href ?? '#'}>
+            {content}
           </Link>
-        ))}
-      </div>
+        )}
+      />
 
       {/* KPI strip */}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -242,7 +238,7 @@ export default function AnalyticsPage(): React.JSX.Element {
               />
               <YAxis
                 type="category"
-                dataKey={(v: TopVendorRow) => (v.isMsme ? `${v.vendorName} · MSME` : v.vendorName)}
+                dataKey={(v: TopVendorRow) => (v.isMsme ? `${v.vendorName}, MSME` : v.vendorName)}
                 width={150}
                 tick={{ fontSize: 11, fill: CHART_CHROME.label }}
               />
@@ -271,7 +267,7 @@ export default function AnalyticsPage(): React.JSX.Element {
                 href="/analytics/msme"
                 className="border-line hover:bg-canvas rounded-md border p-3"
               >
-                <div className="text-faint text-[10px] uppercase">
+                <div className="text-faint text-[10px]">
                   {MSME_BUCKET[b.bucket].short}
                 </div>
                 <div className="text-faint text-[10px]">
@@ -287,7 +283,7 @@ export default function AnalyticsPage(): React.JSX.Element {
             ))}
           </div>
           <p className="text-faint mt-2 text-[11px]">
-            Live · click a bucket to see at-risk invoices.
+            Click a bucket to see the at-risk invoices behind it.
           </p>
         </Card>
       </div>
@@ -312,7 +308,7 @@ function Kpi({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px] uppercase">{label}</div>
+      <div className="text-faint text-[11px]">{label}</div>
       <div
         className={
           'font-numeric tracking-display mt-1 text-[20px] font-semibold ' +

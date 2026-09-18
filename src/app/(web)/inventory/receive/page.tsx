@@ -18,6 +18,7 @@ import {
   TextArea,
   TextInput,
 } from '../_components/form-controls';
+import { formatDate } from '@/lib/format';
 
 /**
  * Goods receipt (GRN) — the warehouse-floor receiving screen, plus the QC queue.
@@ -78,7 +79,7 @@ export default function ReceivePage(): React.JSX.Element {
     productId && locationId && Number(qty) > 0 && (nonPo ? nonPoReason : poId);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="Goods receipt"
         description="Receive against a PO, then run QC"
@@ -207,7 +208,7 @@ export default function ReceivePage(): React.JSX.Element {
         <div className="mt-4 flex items-center justify-between">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!ready || receive.isPending}
             onClick={() => void submit()}
@@ -232,13 +233,13 @@ function QcQueue(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
+      <h2 className="mb-2 text-[11px] font-medium text-faint">
         Awaiting QC ({rows.length})
       </h2>
-      {error && <p className="mb-2 text-[12px] text-red-600">{error}</p>}
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      {error && <p className="mb-2 text-[12px] text-danger">{error}</p>}
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Received</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -265,7 +266,7 @@ function QcQueue(): React.JSX.Element {
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-line">
                 <td className="font-numeric px-3 py-2 text-[12px] text-muted">
-                  {new Date(r.txnDate).toLocaleDateString('en-IN')}
+                  {formatDate(r.txnDate)}
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-ink">{r.productName}</div>
@@ -286,7 +287,7 @@ function QcQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="text-[12px] font-medium text-emerald-700 hover:underline"
+                    className="text-[12px] font-medium text-success hover:underline"
                   >
                     Pass
                   </button>
@@ -304,7 +305,7 @@ function QcQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="ml-3 text-[12px] font-medium text-amber-700 hover:underline"
+                    className="ml-3 text-[12px] font-medium text-warn hover:underline"
                   >
                     Reject → return
                   </button>
@@ -318,7 +319,7 @@ function QcQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="ml-3 text-[12px] font-medium text-red-600 hover:underline"
+                    className="ml-3 text-[12px] font-medium text-danger hover:underline"
                   >
                     Reject → write off
                   </button>

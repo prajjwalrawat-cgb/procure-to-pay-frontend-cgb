@@ -1,6 +1,12 @@
 'use client';
 
-import { Button, Input, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  Input,
+  PageHeader,
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -88,7 +94,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
   // DRAFT-only guard (backend enforces this too).
   if (data.status !== 'DRAFT') {
     return (
-      <div className="mx-auto max-w-2xl p-8 text-center">
+      <div className="max-w-2xl p-8 text-center">
         <p className="text-[15px] font-semibold text-ink">
           This requisition can’t be edited.
         </p>
@@ -183,7 +189,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-4xl pb-8">
+    <div className="max-w-4xl pb-8">
       <Link
         href={`/requisitions/${id}`}
         className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
@@ -198,26 +204,26 @@ export default function EditRequisitionPage(): React.JSX.Element {
         }
       />
       <Section title="Basics">
-        <Field label="Title · min 5 characters">
+        <Field label="Title, min 5 characters">
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cost centre">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass}
               value={costCenterId}
               onChange={(e) => setCostCenterId(e.target.value)}
             >
               {costCenters?.items.map((cc) => (
                 <option key={cc.id} value={cc.id}>
-                  {cc.code} · {cc.name}
+                  {cc.code}, {cc.name}
                 </option>
               ))}
             </select>
           </Field>
           <Field label="Plant">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass}
               value={plantId}
               onChange={(e) => setPlantId(e.target.value)}
             >
@@ -237,14 +243,14 @@ export default function EditRequisitionPage(): React.JSX.Element {
           <Field label="Needed by">
             <input
               type="date"
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass}
               value={neededBy}
               onChange={(e) => setNeededBy(e.target.value)}
             />
           </Field>
           <Field label="Priority">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass}
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
@@ -256,7 +262,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
             </select>
           </Field>
         </div>
-        <Field label="Business justification · min 20 characters">
+        <Field label="Business justification, min 20 characters">
           <textarea
             className="w-full rounded-md border border-line bg-panel p-2 text-[13px]"
             rows={2}
@@ -395,7 +401,7 @@ function Labelled({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-0.5 block text-[10px] uppercase text-faint">{label}</span>
+      <span className="mb-0.5 block text-[10px] text-faint">{label}</span>
       {children}
     </label>
   );

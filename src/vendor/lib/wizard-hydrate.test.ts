@@ -4,6 +4,8 @@ import {
   applyExtractedFields,
   fieldProvenance,
   hydrateWizardForm,
+  replaceIdentityFields,
+  withoutIdentityFields,
   type WizardState,
 } from './wizard-hydrate';
 
@@ -207,5 +209,64 @@ describe('applyExtractedFields', () => {
   it('leaves fields the document said nothing about alone', () => {
     const result = applyExtractedFields({ primaryContactName: 'R. Shah' }, {}, fromDoc);
     expect(result.primaryContactName).toBe('R. Shah');
+  });
+});
+
+/**
+ * A GST certificate for a different registration than the one on file — the
+ * vendor had first uploaded someone else's. The old values describe another
+ * business, so neither "keep the vendor's correction" nor "fill only gaps" holds.
+ */
+describe('replaceIdentityFields', () => {
+  const newCert = {
+    gstin: {
+      value: '07AFMFS3755D1ZK',
+      source: 'GSTN_API' as const,
+      verified: true,
+      confidence: 1,
+    },
+    businessPan: {
+      value: 'AFMFS3755D',
+      source: 'DERIVED' as const,
+      verified: true,
+      confidence: 1,
+    },
+    legalEntityName: {
+      value: 'ARJUN YADAV',
+      source: 'OCR' as const,
+      verified: false,
+      confidence: 1,
+    },
+  };
+  const before = {
+    gstin: '27AAPFU0939F1ZV',
+    businessPan: 'AAPFU0939F',
+    legalEntityName: 'Edited by the vendor',
+    tradeName: 'OTHER CO',
+    primaryContactName: 'R. Shah',
+  };
+
+  it('replaces every identity field, including one the vendor had edited', () => {
+    expect(replaceIdentityFields(before, newCert)).toMatchObject({
+      gstin: '07AFMFS3755D1ZK',
+      businessPan: 'AFMFS3755D',
+      legalEntityName: 'ARJUN YADAV',
+    });
+  });
+
+  it('clears an identity field the new certificate did not supply', () => {
+    expect(replaceIdentityFields(before, newCert).tradeName).toBeUndefined();
+  });
+
+  it('leaves the contact details alone', () => {
+    expect(replaceIdentityFields(before, newCert).primaryContactName).toBe('R. Shah');
+  });
+
+  it('drops the old provenance for the same fields, and only those', () => {
+    const map = {
+      businessPan: newCert.businessPan,
+      ifsc: { value: 'HDFC0001234', source: 'IFSC_API' as const, verified: true, confidence: 1 },
+    };
+    expect(Object.keys(withoutIdentityFields(map))).toEqual(['ifsc']);
   });
 });

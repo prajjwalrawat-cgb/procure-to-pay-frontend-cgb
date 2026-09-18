@@ -403,7 +403,7 @@ function ItemForm({
         {/* ── UoM conversions ── */}
         <div className="rounded-lg border border-line p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+            <span className="text-[11px] font-semibold text-faint">
               UoM conversions
             </span>
             {!readOnly && itemId === null && (
@@ -432,7 +432,7 @@ function ItemForm({
             <p className="text-[12px] text-muted">None.</p>
           )}
           {form.uomConversions.map((c) => (
-            <div key={c.key} className="mb-1.5 grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+            <div key={c.key} className="mb-1.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
               <TextInput
                 value={c.fromUom}
                 disabled={readOnly || itemId !== null}
@@ -481,7 +481,7 @@ function ItemForm({
         {/* ── Vendor pricing (read-only; maintained by sourcing/contracts) ── */}
         {detail && (
           <div className="rounded-lg border border-line p-3">
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">
+            <div className="mb-2 text-[11px] font-semibold text-faint">
               Vendor pricing
             </div>
             {detail.vendorPricing.length === 0 ? (
@@ -527,7 +527,7 @@ function ItemForm({
             <Button variant="default" size="sm" disabled={busy} onClick={onDone}>
               Cancel
             </Button>
-            <Button variant="accent" size="sm" disabled={busy} onClick={submit}>
+            <Button variant="primary" size="sm" disabled={busy} onClick={submit}>
               {busy ? 'Saving…' : itemId === null ? 'Create item' : 'Save changes'}
             </Button>
           </div>

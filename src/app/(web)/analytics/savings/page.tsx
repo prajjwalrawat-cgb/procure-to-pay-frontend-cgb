@@ -28,7 +28,7 @@ export default function SavingsPage(): React.JSX.Element {
   const [form, setForm] = useState({ baselineValue: '', awardedValue: '', notes: '' });
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Savings tracker"
         breadcrumbs={[{ label: 'Analytics', href: '/analytics' }, { label: 'Savings' }]}
@@ -37,18 +37,16 @@ export default function SavingsPage(): React.JSX.Element {
 
       <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-4">
         {(summary.data?.totals ?? []).map((t) => (
-          <div
-            key={t.initiativeType}
+          <div key={t.initiativeType}
             className="border-line bg-panel rounded-lg border p-3"
           >
-            <div className="text-faint flex items-center gap-1 text-[11px] uppercase">
+            <div className="text-faint flex items-center gap-1 text-[11px]">
               {SAVINGS_METHODOLOGY[t.initiativeType].shortLabel}
               <span title={SAVINGS_METHODOLOGY[t.initiativeType].methodology}>
                 <Info className="text-faint h-3 w-3" />
               </span>
             </div>
-            <div
-              className={
+            <div className={
                 'font-numeric mt-1 text-[20px] font-semibold ' +
                 (t.hard ? 'text-accent-2' : 'text-ink')
               }
@@ -56,7 +54,7 @@ export default function SavingsPage(): React.JSX.Element {
               {inrCompact(t.amount)}
             </div>
             <div className="text-faint text-[10px]">
-              {t.count} initiative(s){t.selfReported ? ' · self-reported' : ''}
+              {t.count} initiative(s){t.selfReported ? ', self-reported' : ''}
             </div>
           </div>
         ))}
@@ -65,7 +63,7 @@ export default function SavingsPage(): React.JSX.Element {
       <div className="border-line bg-panel mb-4 rounded-lg border p-4">
         <h3 className="text-ink mb-2 text-[14px] font-semibold">Initiatives</h3>
         <table className="w-full text-[13px]">
-          <thead className="text-faint border-line border-b text-[11px] uppercase">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="p-2 text-left">Type</th>
               <th className="p-2 text-left">Source</th>

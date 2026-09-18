@@ -39,7 +39,7 @@ export default function ReverseAuctionPage(): React.JSX.Element {
   }, [id, roundId]);
 
   return (
-    <div className="mx-auto max-w-[720px]">
+    <div>
       <PageHeader
         title="Reverse auction"
         breadcrumbs={[
@@ -72,9 +72,9 @@ export default function ReverseAuctionPage(): React.JSX.Element {
         </p>
       )}
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="text-muted border-line border-b text-left">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2">Rank</th>
               <th className="px-3 py-2">Vendor</th>

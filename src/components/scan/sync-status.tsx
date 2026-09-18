@@ -49,8 +49,8 @@ export function SyncStatus(): React.JSX.Element {
       </span>
       <span className="tabular-nums">
         {pending > 0 ? `${pending} pending` : 'all synced'}
-        {failed > 0 ? ` · ${failed} failed` : ''}
-        <span className="opacity-70"> · {ago(lastSyncedAt)}</span>
+        {failed > 0 ? `, ${failed} failed` : ''}
+        <span className="opacity-70"> {ago(lastSyncedAt)}</span>
       </span>
     </button>
   );

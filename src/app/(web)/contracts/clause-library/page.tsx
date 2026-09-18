@@ -1,7 +1,11 @@
 'use client';
 
 import type { ClauseLibraryInput } from '@/lib/shared';
-import { PageHeader, Pill } from '@/components/ui';
+import {
+  PageHeader,
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import { ArrowLeft, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -56,7 +60,7 @@ export default function ClauseLibraryPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <Link
         href="/contracts"
         className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
@@ -65,7 +69,7 @@ export default function ClauseLibraryPage(): React.JSX.Element {
       </Link>
       <PageHeader
         title="Clause library"
-        description="Standard clauses · governed by Legal & Tenant Admin"
+        description="Standard clauses, governed by Legal and Tenant Admin."
         actions={
           <>
             {canManage && (
@@ -84,7 +88,7 @@ export default function ClauseLibraryPage(): React.JSX.Element {
       {show && canManage && (
         <div className="mb-4 space-y-2 rounded-lg border border-line bg-panel p-4">
           <select
-            className="rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+            className={controlClass}
             value={clauseType}
             onChange={(e) => setClauseType(e.target.value)}
           >

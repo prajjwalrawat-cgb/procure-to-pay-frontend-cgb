@@ -15,7 +15,7 @@ const OP_LABELS: Record<ConditionOp, string> = {
 };
 
 function fieldLabel(field: string): string {
-  return field.replace(/_/g, ' ').replace(/\./g, ' · ');
+  return field.replace(/_/g, ' ').replace(/\./g, ', ');
 }
 
 function valueLabel(value: unknown): string {
@@ -49,7 +49,7 @@ function Group({
       {items.map((child, i) => (
         <span key={i} className="inline-flex items-center gap-1.5">
           {i > 0 && (
-            <span className="text-faint text-[10px] font-semibold uppercase">
+            <span className="text-faint text-[10px] font-semibold ">
               {joiner}
             </span>
           )}
@@ -71,7 +71,7 @@ export function ConditionChips({
   if (condition.none) {
     return (
       <span className="inline-flex items-center gap-1">
-        <span className="text-faint text-[10px] font-semibold uppercase">not</span>
+        <span className="text-faint text-[10px] font-semibold ">not</span>
         <Group items={condition.none} joiner="or" />
       </span>
     );

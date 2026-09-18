@@ -1,6 +1,6 @@
 'use client';
 
-import { PageHeader, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill } from '@/components/ui';
 import { ArrowLeft, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -47,7 +47,7 @@ export default function ContractDetailPage(): React.JSX.Element {
 
   if (isLoading || !c) {
     return (
-      <p className="mx-auto max-w-6xl py-10 text-center text-[13px] text-muted">
+      <p className="py-10 text-center text-[13px] text-muted">
         Loading…
       </p>
     );
@@ -65,7 +65,7 @@ export default function ContractDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="max-w-6xl pb-24">
       <Link
         href="/contracts"
         className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
@@ -82,7 +82,7 @@ export default function ContractDetailPage(): React.JSX.Element {
         }
         description={
           <span className="font-numeric">
-            {c.number} · {c.vendor.name} · {c.category}
+            {c.number}, {c.vendor.name}, {c.category}
           </span>
         }
         actions={
@@ -125,7 +125,7 @@ export default function ContractDetailPage(): React.JSX.Element {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-4">
           {/* Rate card */}
           <Section title="Rate card">
@@ -147,7 +147,7 @@ export default function ContractDetailPage(): React.JSX.Element {
               </div>
             )}
             <table className="w-full text-[13px]">
-              <thead className="border-b border-line text-left text-[12px] text-muted">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="py-1.5 font-medium">Item / Route</th>
                   <th className="py-1.5 font-medium">UOM</th>
@@ -185,15 +185,14 @@ export default function ContractDetailPage(): React.JSX.Element {
             <Section title="Volume commitment (take-or-pay)">
               <div className="flex items-center justify-between text-[13px]">
                 <span className="text-muted">
-                  {vt.period} · {vt.actualQty} / {vt.committedQty} {vt.commitmentUom}
+                  {vt.period}, {vt.actualQty} / {vt.committedQty} {vt.commitmentUom}
                 </span>
                 <Pill variant={statusVariant(vt.status)} dot>
                   {statusLabel(vt.status)}
                 </Pill>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-canvas">
-                <div
-                  className="h-full bg-accent"
+                <div className="h-full bg-accent"
                   style={{ width: `${Math.min(100, (vt.pctOfCommitment ?? 0) * 100)}%` }}
                 />
               </div>
@@ -229,7 +228,7 @@ export default function ContractDetailPage(): React.JSX.Element {
               <p className="text-[13px] text-muted">No call-offs yet.</p>
             ) : (
               <table className="w-full text-[13px]">
-                <thead className="border-b border-line text-left text-[12px] text-muted">
+                <thead className="border-line border-b text-left text-[12px] text-muted">
                   <tr>
                     <th className="py-1.5 font-medium">PO</th>
                     <th className="py-1.5 font-medium">Status</th>
@@ -268,12 +267,11 @@ export default function ContractDetailPage(): React.JSX.Element {
           {c.amendments.length > 0 && (
             <Section title="Amendment history">
               {c.amendments.map((a) => (
-                <div
-                  key={a.id}
+                <div key={a.id}
                   className="flex items-center justify-between border-b border-line py-1.5 text-[13px] last:border-0"
                 >
                   <span>
-                    #{a.amendmentNo} · {a.changeSummary}
+                    #{a.amendmentNo}, {a.changeSummary}
                   </span>
                   <Pill variant={statusVariant(a.status)}>{statusLabel(a.status)}</Pill>
                 </div>
@@ -323,8 +321,7 @@ export default function ContractDetailPage(): React.JSX.Element {
           {c.liveApprovalChain.length > 0 && (
             <Section title="Approval chain">
               {c.liveApprovalChain.map((s) => (
-                <div
-                  key={s.approvalId ?? s.stepNo}
+                <div key={s.approvalId ?? s.stepNo}
                   className="flex items-center justify-between py-1 text-[12px]"
                 >
                   <span className="text-text">{s.name ?? s.role}</span>
@@ -350,16 +347,16 @@ export default function ContractDetailPage(): React.JSX.Element {
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-panel/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-end gap-2 px-4 py-3">
           {c.canSubmit && (
-            <Btn
+            <Button
               onClick={() => act(() => submit.mutateAsync(), 'Submitted for approval')}
             >
               Submit for approval
-            </Btn>
+            </Button>
           )}
           {c.canDecide && c.myApprovalId && (
             <>
-              <Btn
-                variant="danger"
+              <Button
+                variant="secondary"
                 onClick={() =>
                   act(
                     () =>
@@ -372,9 +369,9 @@ export default function ContractDetailPage(): React.JSX.Element {
                 }
               >
                 Reject
-              </Btn>
-              <Btn
-                variant="accent"
+              </Button>
+              <Button
+                variant="primary"
                 onClick={() =>
                   act(
                     () =>
@@ -387,19 +384,19 @@ export default function ContractDetailPage(): React.JSX.Element {
                 }
               >
                 Approve
-              </Btn>
+              </Button>
             </>
           )}
           {c.canExecute && (
-            <Btn
-              variant="accent"
+            <Button
+              variant="primary"
               onClick={() => act(() => execute.mutateAsync(), 'Contract executed')}
             >
               Execute
-            </Btn>
+            </Button>
           )}
           {c.canRenew && (
-            <Btn
+            <Button
               onClick={() =>
                 act(async () => {
                   const r = await renew.mutateAsync({});
@@ -408,10 +405,10 @@ export default function ContractDetailPage(): React.JSX.Element {
               }
             >
               Renew
-            </Btn>
+            </Button>
           )}
           {c.canTerminate && (
-            <Btn
+            <Button
               variant="danger"
               onClick={() => {
                 const reason = window.prompt('Termination reason?');
@@ -427,7 +424,7 @@ export default function ContractDetailPage(): React.JSX.Element {
               }}
             >
               Terminate
-            </Btn>
+            </Button>
           )}
           {c.canCallOff && (
             <Link
@@ -475,28 +472,3 @@ function Row({
   );
 }
 
-function Btn({
-  children,
-  onClick,
-  variant = 'default',
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  variant?: 'default' | 'accent' | 'danger';
-}): React.JSX.Element {
-  const cls =
-    variant === 'accent'
-      ? 'bg-accent text-white'
-      : variant === 'danger'
-        ? 'bg-danger-wash text-danger'
-        : 'border border-line text-text hover:bg-canvas';
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-md px-4 py-1.5 text-[13px] font-medium ${cls}`}
-    >
-      {children}
-    </button>
-  );
-}

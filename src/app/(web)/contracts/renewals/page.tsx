@@ -27,7 +27,7 @@ export default function RenewalsPage(): React.JSX.Element {
   const push = useToastStore((s) => s.push);
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="max-w-5xl">
       <Link
         href="/contracts"
         className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
@@ -108,14 +108,14 @@ function RenewalRow({
           {entry.number}
         </Link>
         <span className="ml-2 text-ink">{entry.title}</span>
-        <span className="ml-2 text-muted">· {entry.vendorName}</span>
+        <span className="ml-2 text-muted"> {entry.vendorName}</span>
         <div className="text-[12px] text-muted">
-          {inr(entry.totalValueEstimate)} ·{' '}
+          {inr(entry.totalValueEstimate)} ,{' '}
           {entry.daysToExpiry >= 0 ? `${entry.daysToExpiry} days left` : 'expired'}
           {entry.alert?.acknowledgedAt && (
             <span className="text-accent-2">
               {' '}
-              · acknowledged ({entry.alert.actionTaken})
+            {`, acknowledged (${entry.alert.actionTaken})`}
             </span>
           )}
         </div>

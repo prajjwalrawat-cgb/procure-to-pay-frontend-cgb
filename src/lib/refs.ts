@@ -43,18 +43,26 @@ export const PAYMENT_TERM_OPTIONS: {
   { value: 'MILESTONE', label: 'Milestone', days: null },
 ];
 
-export function priorityVariant(priority: string): 'danger' | 'warn' | 'info' | 'gray' {
+/**
+ * Priority as a badge variant.
+ *
+ * Two colours, mapped onto the same negative/caution scale every other badge
+ * uses — there is no bespoke orange for "high". STANDARD is the default on
+ * nearly every requisition, so it reads neutral: badging it painted every row
+ * and left nothing for the priorities that actually need attention.
+ */
+export function priorityVariant(priority: string): 'negative' | 'caution' | 'neutral' {
   switch (priority) {
     case 'CRITICAL':
-      return 'danger';
+      return 'negative';
     case 'HIGH':
-      return 'warn';
-    // STANDARD is the default on nearly every requisition, so colouring it
-    // painted a loud badge onto every row and card and left nothing for the
-    // priorities that actually need attention. The default reads quiet.
-    case 'STANDARD':
-      return 'gray';
+      return 'caution';
     default:
-      return 'gray';
+      return 'neutral';
   }
+}
+
+/** `CRITICAL` → `Critical` */
+export function priorityLabel(priority: string): string {
+  return priority.charAt(0) + priority.slice(1).toLowerCase();
 }

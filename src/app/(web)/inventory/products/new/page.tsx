@@ -81,10 +81,10 @@ export default function NewProductPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <PageHeader
         title="New product"
-        description="Add one SKU by hand · use Bulk upload for a whole sheet"
+        description="Add one SKU by hand, use Bulk upload for a whole sheet"
         actions={
           <>
             <Link href="/inventory">
@@ -205,7 +205,7 @@ export default function NewProductPage(): React.JSX.Element {
         </div>
 
         <div className="mt-5 border-t border-line pt-4">
-          <h2 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-faint">
+          <h2 className="mb-3 text-[11px] font-medium text-faint">
             Opening stock (optional)
           </h2>
           <div className="grid grid-cols-2 gap-4">
@@ -222,7 +222,7 @@ export default function NewProductPage(): React.JSX.Element {
             </Field>
           </div>
           {(locations.data?.items ?? []).length === 0 && (
-            <p className="mt-2 text-[12px] text-amber-700">
+            <p className="mt-2 text-[12px] text-warn">
               No locations exist yet.{' '}
               <Link href="/inventory/locations" className="underline">
                 Create one first
@@ -239,7 +239,7 @@ export default function NewProductPage(): React.JSX.Element {
         <div className="mt-5 flex items-center justify-between">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!ready || create.isPending || adjust.isPending}
             onClick={() => void submit()}

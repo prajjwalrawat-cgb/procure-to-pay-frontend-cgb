@@ -64,12 +64,12 @@ export default function LocationsPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       <PageHeader
         title="Locations"
         description={
           <>
-            {items.length} location{items.length === 1 ? '' : 's'} · rooms, racks and bins
+            {items.length} location{items.length === 1 ? '' : 's'}, rooms, racks and bins
           </>
         }
         actions={
@@ -92,8 +92,8 @@ export default function LocationsPage(): React.JSX.Element {
       />
 
       {items.length === 0 && !isLoading && (
-        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-          <p className="text-[12px] text-amber-800">
+        <div className="mb-4 rounded-md border border-warn/40 bg-warn-bg px-3 py-2">
+          <p className="text-[12px] text-warn">
             No locations yet. Create at least one before receiving stock — every ledger
             movement records where the goods physically sit.
           </p>
@@ -122,7 +122,7 @@ export default function LocationsPage(): React.JSX.Element {
               {items.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name}
-                  {l.rackNo ? ` · ${l.rackNo}` : ''}
+                  {l.rackNo ? `, ${l.rackNo}` : ''}
                 </option>
               ))}
             </SelectInput>
@@ -160,7 +160,7 @@ export default function LocationsPage(): React.JSX.Element {
         <div className="mt-4 flex items-center justify-between">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!name.trim() || create.isPending}
             onClick={() => void submit()}
@@ -170,9 +170,9 @@ export default function LocationsPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Location</th>
               <th className="px-3 py-2 font-medium">Level</th>

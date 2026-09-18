@@ -67,14 +67,14 @@ export default function BoxesPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       <PageHeader
         title="Boxes"
         description={
           <>
             {isError
               ? 'Could not reach the server'
-              : `${items.length} box${items.length === 1 ? '' : 'es'} · scan one on the handset to see what is inside`}
+              : `${items.length} box${items.length === 1 ? '' : 'es'}, scan one on the handset to see what is inside`}
           </>
         }
         actions={
@@ -131,7 +131,7 @@ export default function BoxesPage(): React.JSX.Element {
         <div className="mt-4 flex items-center justify-between">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={creating}
             onClick={() => void submit()}
@@ -141,9 +141,9 @@ export default function BoxesPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Box</th>
               <th className="px-3 py-2 font-medium">Barcode</th>

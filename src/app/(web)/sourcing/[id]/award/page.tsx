@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Button,
-  DataState,
-  Input,
-  PageHeader,
-  Pill,
-  ScoreBreakdown,
-} from '@/components/ui';
+import { Badge, Button, DataState, Input, PageHeader, Pill, ScoreBreakdown } from '@/components/ui';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { Fragment, useMemo, useState } from 'react';
@@ -108,7 +101,7 @@ export default function AwardPage(): React.JSX.Element {
 
   if (isLoading || error || !matrix) {
     return (
-      <div className="mx-auto max-w-[900px]">
+      <div>
         <PageHeader title="Award recommendation" />
         <div className="border-line bg-panel rounded-lg border">
           <DataState
@@ -129,7 +122,7 @@ export default function AwardPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-[900px] pb-8">
+    <div className="max-w-[900px] pb-8">
       <PageHeader
         title="Award recommendation"
         description="Allocate quantity per line, then submit for approval. Awarding away from the lowest quote requires a written justification."
@@ -146,7 +139,7 @@ export default function AwardPage(): React.JSX.Element {
         <h2 className="text-ink mb-2 text-[14px] font-semibold">Quotes</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[420px] text-[13px]">
-            <thead className="text-faint border-line border-b text-left text-[11px] uppercase tracking-wide">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="py-1.5 font-medium">Vendor</th>
                 <th className="py-1.5 text-right font-medium">Landed (INR)</th>
@@ -160,7 +153,7 @@ export default function AwardPage(): React.JSX.Element {
                     <td className="py-1.5">
                       <span className="flex flex-wrap items-center gap-1.5">
                         <span className="text-text">{r.displayName}</span>
-                        {r.isMsme && <Pill variant="violet">MSME</Pill>}
+                        {r.isMsme && <Badge variant="classification">MSME</Badge>}
                         {r.rankLabel && (
                           <Pill variant={r.rank === 1 ? 'success' : 'gray'}>
                             {r.rankLabel}
@@ -227,9 +220,8 @@ export default function AwardPage(): React.JSX.Element {
         {rows.map((r, i) => {
           const line = matrix.lines.find((l) => l.id === r.rfqLineId);
           return (
-            <div
-              key={i}
-              className="border-line mb-2 grid grid-cols-1 gap-2 border-b pb-2 last:border-0 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_110px_120px_auto]"
+            <div key={i}
+              className="border-line mb-2 grid grid-cols-1 gap-2 border-b pb-2 last:border-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_110px_120px_auto]"
             >
               <label className="flex flex-col gap-1">
                 <span className="text-faint text-[11px]">Vendor</span>
@@ -241,7 +233,7 @@ export default function AwardPage(): React.JSX.Element {
                   {matrix.rows.map((q) => (
                     <option key={q.quoteId} value={q.quoteId}>
                       {q.displayName}
-                      {q.rankLabel ? ` · ${q.rankLabel}` : ''}
+                      {q.rankLabel ? `, ${q.rankLabel}` : ''}
                     </option>
                   ))}
                 </select>
@@ -316,9 +308,9 @@ export default function AwardPage(): React.JSX.Element {
           <span className="text-muted mb-1 block text-[12px]">
             Variance-from-L1 justification
             {awardsAwayFromL1 ? (
-              <span className="text-danger font-medium"> · required</span>
+              <span className="text-danger font-medium">, required</span>
             ) : (
-              <span className="text-faint"> · not required for an L1 award</span>
+              <span className="text-faint">, not required for an L1 award</span>
             )}
           </span>
           <textarea

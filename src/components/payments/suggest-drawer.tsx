@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Badge, Button, Pill } from '@/components/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { SuggestedInvoice } from '@/lib/shared';
@@ -144,7 +144,7 @@ export function SuggestDrawer({
                     <span className="font-numeric text-ink text-[13px] font-medium">
                       {r.number}
                     </span>
-                    {r.isMsme && <Pill variant="violet">MSME</Pill>}
+                    {r.isMsme && <Badge variant="classification">MSME</Badge>}
                     {!r.bankVerified && <Pill variant="danger">bank unverified</Pill>}
                   </div>
                   <div className="text-muted truncate text-[12px]">{r.vendorName}</div>
@@ -165,7 +165,7 @@ export function SuggestDrawer({
         <div className="border-line flex items-center justify-between border-t px-4 py-3">
           <span className="text-muted text-[12px]">{selected.size} selected</span>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={selected.size === 0 || addItem.isPending}
             onClick={() => void addSelected()}

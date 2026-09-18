@@ -1,6 +1,11 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  SubNav,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
@@ -92,10 +97,10 @@ export default function BulkUploadPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="Bulk upload"
-        description="Staged, validated import · CSV or XLSX"
+        description="Staged, validated import from a CSV or XLSX sheet."
         actions={
           <>
             <Link href="/inventory">
@@ -178,7 +183,7 @@ export default function BulkUploadPage(): React.JSX.Element {
         </div>
 
         {detected?.sheet && (
-          <p className="mt-2 text-[12px] text-emerald-700">
+          <p className="mt-2 text-[12px] text-success">
             Read worksheet &ldquo;{detected.sheet}&rdquo; using row {detected.headerRow}{' '}
             as the header.
           </p>
@@ -205,11 +210,11 @@ export default function BulkUploadPage(): React.JSX.Element {
           </p>
         </details>
 
-        {error && <p className="mt-3 text-[12px] text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-[12px] text-danger">{error}</p>}
 
         <div className="mt-3 flex justify-end">
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!file || upload.isPending}
             onClick={() => void submit()}
@@ -222,12 +227,12 @@ export default function BulkUploadPage(): React.JSX.Element {
       {batchId && <BatchProgress batchId={batchId} />}
 
       <section className="mt-6">
-        <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
+        <h2 className="mb-2 text-[11px] font-medium text-faint">
           Recent imports
         </h2>
-        <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+        <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">File</th>
                 <th className="px-3 py-2 font-medium">Type</th>
@@ -261,13 +266,13 @@ export default function BulkUploadPage(): React.JSX.Element {
                   <td className="font-numeric px-3 py-2 text-right text-text">
                     {b.totalRows}
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-emerald-700">
+                  <td className="font-numeric px-3 py-2 text-right text-success">
                     {b.successRows}
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-amber-700">
+                  <td className="font-numeric px-3 py-2 text-right text-warn">
                     {b.skippedRows}
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-red-600">
+                  <td className="font-numeric px-3 py-2 text-right text-danger">
                     {b.errorRows}
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -320,36 +325,27 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
         <span>
           {done} / {data.totalRows} processed
         </span>
-        <span className="text-emerald-700">{data.successRows} created/updated</span>
-        <span className="text-amber-700">{data.skippedRows} skipped</span>
-        <span className="text-red-600">{data.errorRows} errors</span>
+        <span className="text-success">{data.successRows} created/updated</span>
+        <span className="text-warn">{data.skippedRows} skipped</span>
+        <span className="text-danger">{data.errorRows} errors</span>
       </div>
 
       {data.errorMessage && (
-        <p className="mb-3 text-[12px] text-red-600">{data.errorMessage}</p>
+        <p className="mb-3 text-[12px] text-danger">{data.errorMessage}</p>
       )}
 
       {(data.skippedRows > 0 || data.errorRows > 0) && (
         <>
-          <div className="mb-2 flex items-center gap-1 border-b border-line">
-            {(['SKIPPED', 'ERROR'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={
-                  'border-b-2 px-3 py-1.5 text-[13px] font-medium transition-colors ' +
-                  (tab === t
-                    ? 'border-accent text-ink'
-                    : 'border-transparent text-muted hover:text-ink')
-                }
-              >
-                {t === 'SKIPPED' ? 'Quarantine' : 'Errors'}
-                <span className="font-numeric ml-1.5 text-[11px] text-faint">
-                  {t === 'SKIPPED' ? data.skippedRows : data.errorRows}
-                </span>
-              </button>
-            ))}
+          <div className="mb-2 flex items-center gap-3">
+            <SubNav
+              className="border-b-0"
+              items={[
+                { key: 'SKIPPED', label: 'Quarantine', count: data.skippedRows },
+                { key: 'ERROR', label: 'Errors', count: data.errorRows },
+              ]}
+              value={tab ?? 'SKIPPED'}
+              onChange={(k) => setTab(k as 'SKIPPED' | 'ERROR')}
+            />
             <div className="ml-auto flex items-center gap-2">
               <button
                 type="button"
@@ -380,7 +376,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
 
           <div className="max-h-80 overflow-y-auto">
             <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+              <thead className="sticky top-0 bg-panel z-10 border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="px-3 py-2 font-medium">Row</th>
                   <th className="px-3 py-2 font-medium">Product</th>

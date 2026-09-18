@@ -1,11 +1,13 @@
 'use client';
 
 import {
+  Badge,
   Button,
   Input,
   NotShipped,
   PageHeader,
   Pill,
+  SubNav,
   TableState,
 } from '@/components/ui';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -17,7 +19,6 @@ import { EntityRef } from '@/components/entity-ref';
 import { RowDetail } from '@/components/invoices/row-detail';
 import { useInvoiceCounts, useInvoices } from '@/lib/api/invoices';
 import { inr, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 
 const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
@@ -40,7 +41,6 @@ type CountShape = {
 };
 
 export default function InvoicesInboxPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const [tab, setTab] = useState<InvoiceTab>('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -68,10 +68,10 @@ export default function InvoicesInboxPage(): React.JSX.Element {
     });
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Invoices"
-        description={`Accounts payable inbox${tenantSuffix(tenantName)}`}
+        description="Accounts payable inbox"
         actions={
           <>
             {/* Both of these were live-looking buttons whose only behaviour was
@@ -91,29 +91,21 @@ export default function InvoicesInboxPage(): React.JSX.Element {
         }
       />
 
-      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => {
-              setTab(t.key);
-              setExpanded(null);
-            }}
-            className={
-              'duration-hover flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (tab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
-            <span className="font-numeric text-faint text-[11px]">
-              {counts?.[t.countKey] ?? 0}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-3"
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: counts?.[t.countKey] ?? 0,
+        }))}
+        value={tab}
+        onChange={(k) => {
+          setTab(k as (typeof TABS)[number]['key']);
+          // Collapse any open row detail: the expanded invoice belongs to the
+          // view you just left and would render against the wrong list.
+          setExpanded(null);
+        }}
+      />
 
       <div className="mb-3 flex items-center gap-2">
         <Input
@@ -148,9 +140,9 @@ export default function InvoicesInboxPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="w-8 px-3 py-2" />
               <th className="w-8 px-1 py-2" />
@@ -229,22 +221,22 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                         {inv.vendor.name}
                       </EntityRef>
                       {inv.vendor.isMsme && (
-                        <Pill variant="violet" className="ml-1.5">
-                          MSME
-                        </Pill>
+                        <Badge variant="classification" className="ml-1.5">MSME</Badge>
                       )}
                     </td>
                     <td className="font-numeric text-muted px-3 py-2 text-[12px]">
                       {inv.poNumber ?? '—'}
-                      {inv.grnNumber ? ` · ${inv.grnNumber}` : ''}
+                      {inv.grnNumber ? ` / ${inv.grnNumber}` : ''}
                     </td>
                     <td className="px-3 py-2">
                       <Pill variant={statusVariant(inv.status)} dot>
                         {statusLabel(inv.status)}
                       </Pill>
                       {inv.exceptionCount > 0 && (
-                        <span className="font-numeric text-danger ml-1.5 text-[11px]">
-                          {inv.exceptionCount} exc
+                        <span className="text-danger ml-1.5 text-[12px]">
+                          {inv.exceptionCount === 1
+                            ? '1 exception'
+                            : `${inv.exceptionCount} exceptions`}
                         </span>
                       )}
                     </td>

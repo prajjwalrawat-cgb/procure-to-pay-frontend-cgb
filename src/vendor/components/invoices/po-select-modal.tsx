@@ -65,7 +65,7 @@ export function PoSelectModal({
             </option>
             {options.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.number} · {p.lines.length} line{p.lines.length === 1 ? '' : 's'}
+                {p.number}, {p.lines.length} line{p.lines.length === 1 ? '' : 's'}
               </option>
             ))}
           </select>
@@ -82,7 +82,7 @@ export function PoSelectModal({
           <Button variant="ghost" size="sm" onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="accent" size="sm" disabled={!poId} onClick={proceed}>
+          <Button variant="primary" size="sm" disabled={!poId} onClick={proceed}>
             Continue
           </Button>
         </div>

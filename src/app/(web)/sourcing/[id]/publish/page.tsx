@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Input,
-  PageHeader,
-  Pill,
-} from '@/components/ui';
+import { Badge, Button, Input, PageHeader, Pill } from '@/components/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -87,7 +82,7 @@ function VendorPicker({
                   <span className="font-numeric text-faint">{v.code}</span>
                 </span>
                 <span className="text-muted shrink-0">
-                  {v.isMsme ? 'MSME · ' : ''}
+                  {v.isMsme ? 'MSME, ' : ''}
                   {v.category ?? '—'}
                 </span>
               </button>
@@ -167,7 +162,7 @@ export default function PublishPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[720px]">
+    <div className="max-w-[720px]">
       <PageHeader
         title={`Publish ${rfq?.number ?? ''}`.trim()}
         breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Publish' }]}
@@ -179,7 +174,7 @@ export default function PublishPage(): React.JSX.Element {
           <div key={i.id} className="flex items-center gap-2 py-1 text-[13px]">
             <Pill variant="gray">{i.source.toLowerCase()}</Pill>
             <span>{i.vendorName}</span>
-            {i.isMsme && <Pill variant="violet">MSME</Pill>}
+            {i.isMsme && <Badge variant="classification">MSME</Badge>}
             <button
               type="button"
               onClick={() => removeVendor(i.id, i.vendorName)}

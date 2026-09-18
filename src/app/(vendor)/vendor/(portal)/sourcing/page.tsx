@@ -4,12 +4,13 @@ import { Button, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 
 import { useAcknowledge, useDecline, useInvitedRfqs } from '@/vendor/lib/sourcing';
+import { formatDate } from '@/lib/format';
 
 export default function VendorSourcingPage(): React.JSX.Element {
   const { data, isLoading } = useInvitedRfqs();
 
   return (
-    <div className="mx-auto max-w-[1000px]">
+    <div className="max-w-[1000px]">
       <PageHeader
         title="RFQ invitations"
         description="Sealed bidding — your quote is private until the buyer's formal open ceremony."
@@ -58,16 +59,16 @@ function InvitationCard({
           </div>
           <h2 className="mt-1 text-[15px] font-semibold text-ink">{rfq.title}</h2>
           <p className="text-[12px] text-muted">
-            {rfq.category} · deadline{' '}
+            {rfq.category}, deadline{' '}
             {rfq.bidDeadline
-              ? new Date(rfq.bidDeadline).toLocaleDateString('en-IN')
+              ? formatDate(rfq.bidDeadline)
               : '—'}
           </p>
         </div>
         <div className="flex flex-col gap-2">
           {rfq.invitationStatus === 'INVITED' && (
             <>
-              <Button variant="accent" onClick={() => ack.mutate()}>
+              <Button variant="primary" onClick={() => ack.mutate()}>
                 Acknowledge
               </Button>
               <Button

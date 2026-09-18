@@ -51,7 +51,7 @@ const basisLabel = (l: LineDraft): string => {
   if (Number(l.qtyReceived) > 0) parts.push(`${l.qtyReceived} received`);
   if (Number(l.qtyInvoiced) > 0) parts.push(`${l.qtyInvoiced} already invoiced`);
   parts.push(`${l.qtyBillable} billable`);
-  return parts.join(' · ');
+  return parts.join(', ');
 };
 
 /** Warn, never block: over-billing is the buyer's call, not the portal's. */
@@ -212,7 +212,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
   // Step 2 — invoice form.
   return (
-    <div className="mx-auto max-w-4xl pb-24">
+    <div className="pb-24">
       <button
         type="button"
         onClick={backToList}
@@ -275,7 +275,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
         <Section title="Line items">
           <div className="overflow-hidden rounded-lg border border-line">
             <table className="w-full text-[13px]">
-              <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+              <thead className="border-line border-b text-left text-[12px] text-muted">
                 <tr>
                   <th className="px-3 py-2 font-medium">Description</th>
                   <th className="w-24 px-3 py-2 font-medium">Quantity</th>
@@ -405,8 +405,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
         </Section>
 
         {(error || notice) && (
-          <div
-            className={
+          <div className={
               'rounded-sm px-3 py-2 text-[12px] ' +
               (error ? 'bg-danger-wash text-danger' : 'bg-accent-wash text-accent-2')
             }
@@ -426,7 +425,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
             Save draft
           </Button>
           <Button
-            variant="accent"
+            variant="primary"
             disabled={!canSubmit || uploading || submit.isPending}
             onClick={() => void onSubmit()}
           >
@@ -470,7 +469,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wide text-faint">{label}</dt>
+      <dt className="text-[11px] text-faint">{label}</dt>
       <dd
         className={
           (mono ? 'font-numeric ' : '') +

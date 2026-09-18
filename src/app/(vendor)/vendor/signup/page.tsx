@@ -1,6 +1,10 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import {
+  Button,
+  Input,
+  controlClass,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -87,7 +91,7 @@ export default function VendorSignupPage(): React.JSX.Element {
         </p>
         <Link
           href="/vendor/login"
-          className="text-brand mt-4 inline-block text-[13px] hover:underline"
+          className="text-accent mt-4 inline-block text-[13px] hover:underline"
         >
           Go to sign in →
         </Link>
@@ -133,7 +137,7 @@ export default function VendorSignupPage(): React.JSX.Element {
           <select
             value={categoryKey}
             onChange={(e) => setCategoryKey(e.target.value)}
-            className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
+            className={controlClass}
           >
             {categories.map((c) => (
               <option key={c.key} value={c.key}>

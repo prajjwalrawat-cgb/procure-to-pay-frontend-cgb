@@ -128,10 +128,10 @@ export function BranchesSection(): React.JSX.Element {
                 {b.isDefault && <Pill variant="success">Default</Pill>}
               </div>
               <div className="font-numeric truncate text-[11px] text-muted">
-                {b.gstin ?? 'No GSTIN'} ·{' '}
+                {b.gstin ?? 'No GSTIN'} ,{' '}
                 {SELECTABLE_GST_STATES.find((s) => s.code === b.stateCode)?.name ??
                   b.stateCode}
-                {b.address ? ` · ${b.address}` : ''}
+                {b.address ? `, ${b.address}` : ''}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -210,7 +210,7 @@ export function BranchesSection(): React.JSX.Element {
             </Field>
           </div>
           <div className="mt-3">
-            <Field label="Address" error={errors.address}>
+            <Field label="Address" error={errors.address} wide>
               <textarea
                 value={form.address ?? ''}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -229,7 +229,7 @@ export function BranchesSection(): React.JSX.Element {
             <span className="text-muted">Use as the default registration</span>
           </label>
           <div className="mt-3 flex items-center gap-2">
-            <Button size="sm" variant="accent" disabled={pending} onClick={onSave}>
+            <Button size="sm" variant="primary" disabled={pending} onClick={onSave}>
               {pending ? 'Saving…' : 'Save'}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>

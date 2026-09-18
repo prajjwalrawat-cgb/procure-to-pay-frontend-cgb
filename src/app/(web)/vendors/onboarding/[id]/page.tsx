@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -39,6 +40,7 @@ import {
 import { useHasPermission } from '@/lib/permissions';
 import { PERMISSIONS } from '@/lib/shared';
 import { useToastStore } from '@/store/toast-store';
+import { formatDate, humanise, statusLabel } from '@/lib/format';
 
 const LIGHT_VARIANT: Record<'green' | 'amber' | 'red', 'success' | 'warn' | 'danger'> = {
   green: 'success',
@@ -89,7 +91,7 @@ const CHAIN_DOT: Record<OnboardingApprovalStep['decision'], string> = {
   PENDING: 'text-faint',
 };
 
-const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString();
+const fmtDate = (iso: string): string => formatDate(iso);
 
 /** The approval chain, so "who has it now" and "who already signed" are visible
  *  rather than inferred. Rendered under every non-actionable panel state. */
@@ -115,13 +117,13 @@ function ChainTrail({
           <li key={`${step.stepNo}-${step.name}`} className="text-[12px]">
             <span className={CHAIN_DOT[step.decision]}>●</span>{' '}
             <span className="text-ink">
-              {step.approverName ?? step.role.replace(/_/g, ' ')}
+              {step.approverName ?? humanise(step.role)}
             </span>{' '}
             <span className="text-muted">
               —{' '}
               {step.decision === 'PENDING'
                 ? (pendingLabel ?? (step.isCurrent ? 'with them now' : 'not yet reached'))
-                : step.decision.replace(/_/g, ' ').toLowerCase()}
+                : humanise(step.decision).toLowerCase()}
               {step.decidedAt && ` ${fmtDate(step.decidedAt)}`}
             </span>
             {step.comment && <p className="pl-4 italic text-muted">“{step.comment}”</p>}
@@ -180,7 +182,7 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
     return (
       <div className="space-y-2 text-[13px]">
         <Pill variant="warn" dot>
-          Returned for info{data.decisionAt && ` · ${fmtDate(data.decisionAt)}`}
+          Returned for info{data.decisionAt && `, ${fmtDate(data.decisionAt)}`}
         </Pill>
         <p className="text-muted">
           It is with the vendor now — they can change their answers and upload new
@@ -203,7 +205,7 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
       <div className="space-y-2 text-[13px]">
         <Pill variant={copy.variant} dot>
           {copy.label}
-          {data.decisionAt && ` · ${fmtDate(data.decisionAt)}`}
+          {data.decisionAt && `, ${fmtDate(data.decisionAt)}`}
         </Pill>
         <p className="text-muted">{copy.blurb}</p>
         <ChainTrail chain={chain} />
@@ -216,7 +218,7 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
     // the officer's next move is to chase a person, and this says which one.
     const current = chain.find((s) => s.isCurrent && s.decision === 'PENDING');
     const holder =
-      current && (current.approverName ?? current.role.replace(/_/g, ' ').toLowerCase());
+      current && (current.approverName ?? humanise(current.role).toLowerCase());
     return (
       <div className="space-y-2 text-[13px]">
         <p className="text-muted">
@@ -410,7 +412,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div className="max-w-[1200px]">
       <PageHeader
         title={data.vendorName}
         breadcrumbs={[
@@ -420,8 +422,8 @@ export default function OnboardingReviewPage(): React.JSX.Element {
         ]}
         meta={
           <>
-            {data.isMsme && <Pill variant="info">MSME</Pill>}
-            <Pill variant="gray">{data.lifecycleStatus.replace(/_/g, ' ')}</Pill>
+            {data.isMsme && <Badge variant="classification">MSME</Badge>}
+            <Pill variant="neutral">{statusLabel(data.lifecycleStatus)}</Pill>
             {canRename && (
               <button
                 type="button"
@@ -434,15 +436,15 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           </>
         }
         description={
-          // legalEntityName is nullable; joining unconditionally printed "null · ".
+          // legalEntityName is nullable; joining unconditionally printed "null, ".
           [
             data.legalEntityName,
-            data.category,
+            data.category ? humanise(data.category) : null,
             `${data.completionPct}% complete`,
             `open ${data.daysOpen}d`,
           ]
             .filter(Boolean)
-            .join(' · ')
+            .join(', ')
         }
       />
 
@@ -515,7 +517,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                 <div className="space-y-2 text-[13px]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-ink">
-                      {data.bank.bankName} · ••••{data.bank.accountNoLast4} ·{' '}
+                      {data.bank.bankName} ••••{data.bank.accountNoLast4},{' '}
                       {data.bank.ifsc}
                     </span>
                     <VerificationResult
@@ -545,14 +547,14 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     <span className="text-ink">{data.bank.holderName}</span>
                     {data.bank.pennyDropNameReturned && (
                       <>
-                        {' · '}bank returned:{' '}
+                        {', '}bank returned:{' '}
                         <span className="text-ink">
                           {data.bank.pennyDropNameReturned}
                         </span>
                       </>
                     )}
                     {data.bank.nameMatchScore !== null && (
-                      <> · match {Math.round(data.bank.nameMatchScore * 100)}%</>
+                      <>, match {Math.round(data.bank.nameMatchScore * 100)}%</>
                     )}
                   </p>
                   {data.bank.manualOverrideReason && (
@@ -620,14 +622,14 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     >
                       <div>
                         <span className="font-medium text-ink">
-                          {d.docType.replace(/_/g, ' ')}
+                          {humanise(d.docType)}
                         </span>
                         {d.url ? (
                           <a
                             href={d.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand ml-2 font-medium hover:underline"
+                            className="text-accent ml-2 font-medium hover:underline"
                           >
                             {d.filename}
                           </a>
@@ -643,7 +645,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             href={d.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand text-[12px] font-medium hover:underline"
+                            className="text-accent text-[12px] font-medium hover:underline"
                           >
                             View
                           </a>
@@ -654,8 +656,8 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             like any other simulated verdict. MANUALLY VERIFIED
                             was a human and keeps its colour either way. */}
                         <VerificationResult
-                          status={d.verificationStatus.replace(/_/g, ' ')}
-                          variant={DOC_VARIANT[d.verificationStatus] ?? 'gray'}
+                          status={humanise(d.verificationStatus)}
+                          variant={DOC_VARIANT[d.verificationStatus] ?? 'neutral'}
                           dot={false}
                           simulated={
                             d.verificationStatus === 'AUTO_VERIFIED' &&
@@ -723,7 +725,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                       className="flex flex-wrap items-center justify-between gap-2 text-[13px]"
                     >
                       <span className="text-ink">
-                        {s.screeningType.replace(/_/g, ' ')}
+                        {humanise(s.screeningType)}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
                         {/* A green CLEAR from a sandbox screener is the most
@@ -743,7 +745,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                           }
                           dot={false}
                           simulated={isSimulated(s.provider as IntegrationProvider)}
-                          label={`${s.screeningType.replace(/_/g, ' ').toLowerCase()} screening`}
+                          label={`${humanise(s.screeningType).toLowerCase()} screening`}
                         />
                         {s.status === 'FLAGGED' && canReviewScreening && (
                           <Button

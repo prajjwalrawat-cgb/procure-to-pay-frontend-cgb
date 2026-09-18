@@ -120,7 +120,7 @@ export default function ScanBoxPage(): React.JSX.Element {
                 <p className="font-mono text-[11px] text-muted">{box.data.barcode}</p>
               </div>
               <span className="text-[12px] tabular-nums text-muted">
-                {box.data.totalQty} pcs · {box.data.distinctProducts} SKU
+                {box.data.totalQty} pcs, {box.data.distinctProducts} SKU
               </span>
             </div>
 
@@ -151,8 +151,8 @@ export default function ScanBoxPage(): React.JSX.Element {
                     </div>
                     <p className="text-[12px] text-muted">
                       {line.productCode}
-                      {line.batchNumber ? ` · batch ${line.batchNumber}` : ''}
-                      {line.expiryDate ? ` · exp ${line.expiryDate.slice(0, 10)}` : ''}
+                      {line.batchNumber ? `, batch ${line.batchNumber}` : ''}
+                      {line.expiryDate ? `, exp ${line.expiryDate.slice(0, 10)}` : ''}
                     </p>
                     {line.expired ? (
                       <p className="text-[12px] text-danger">Expired — do not ship.</p>

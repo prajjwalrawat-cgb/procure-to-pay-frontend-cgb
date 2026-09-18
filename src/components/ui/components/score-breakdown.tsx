@@ -126,7 +126,7 @@ export function ScoreBreakdown({
       )}
 
       <table className="w-full text-[11px]">
-        <thead className="text-faint text-left">
+        <thead className="border-line border-b text-left text-[12px] text-muted">
           <tr>
             <th className="py-0.5 font-medium">Criterion</th>
             <th className="py-0.5 text-right font-medium">Weight</th>

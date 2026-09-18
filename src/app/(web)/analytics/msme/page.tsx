@@ -64,7 +64,7 @@ export default function MsmePage(): React.JSX.Element {
   const breaching = (breach?.invoiceCount ?? 0) > 0;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="MSME §15 compliance"
         breadcrumbs={[{ label: 'Analytics', href: '/analytics' }, { label: 'MSME §15' }]}
@@ -140,8 +140,7 @@ export default function MsmePage(): React.JSX.Element {
           }}
         >
           <>
-            <div
-              className="flex h-8 w-full overflow-hidden rounded-sm"
+            <div className="flex h-8 w-full overflow-hidden rounded-sm"
               role="img"
               aria-label={buckets
                 .map(
@@ -201,7 +200,7 @@ export default function MsmePage(): React.JSX.Element {
                       {inr(b.totalExposure)}
                     </span>
                     <span className="text-muted text-[11px]">
-                      {b.invoiceCount} invoice{b.invoiceCount === 1 ? '' : 's'} · avg{' '}
+                      {b.invoiceCount} invoice{b.invoiceCount === 1 ? '' : 's'}, avg{' '}
                       {b.avgDays} days
                     </span>
                   </button>
@@ -275,7 +274,7 @@ export default function MsmePage(): React.JSX.Element {
       </section>
 
       {/* Exposure detail — always rendered, defaulting to the breach bucket. */}
-      <section className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <section className="overflow-x-auto">
         <div className="border-line flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
           <h2 className="text-ink text-[14px] font-semibold">
             {BUCKET[bucket].label}
@@ -288,7 +287,7 @@ export default function MsmePage(): React.JSX.Element {
         </div>
 
         <table className="w-full min-w-[640px] text-[13px]">
-          <thead className="bg-canvas text-faint border-line border-b text-left text-[11px] uppercase tracking-wide">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Invoice</th>
               <th className="px-3 py-2 font-medium">Vendor</th>

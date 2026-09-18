@@ -1,6 +1,6 @@
 'use client';
 
-import { ApprovalChain, Button, PageHeader, Pill } from '@/components/ui';
+import { ApprovalChain, Badge, Button, PageHeader, Pill } from '@/components/ui';
 import { AlertTriangle, ArrowLeft, Download, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ import {
   useRemovePaymentItem,
   useSubmitForApproval,
 } from '@/lib/api/payments';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { formatDate, formatDateTime, inr, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 import { BankReconciliationPanel } from './_bank-reconciliation';
 
@@ -75,7 +75,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-6xl pb-24">
+    <div className="pb-24">
       <Link
         href="/payment-runs"
         className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
@@ -93,8 +93,8 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
         }
         description={
           <>
-            Cycle {new Date(data.cycleDate).toLocaleDateString('en-IN')} ·{' '}
-            {data.bankAccount?.bankName ?? '—'} · ····{data.bankAccount?.accountNoLast4}
+            Cycle {formatDate(data.cycleDate)} ,{' '}
+            {data.bankAccount?.bankName ?? '—'} ••••{data.bankAccount?.accountNoLast4}
           </>
         }
         actions={
@@ -105,7 +105,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
               </Button>
               <Button
                 size="sm"
-                variant="accent"
+                variant="primary"
                 disabled={submit.isPending || data.items.length === 0}
                 onClick={onSubmit}
               >
@@ -151,12 +151,12 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
               Submitted
             </Pill>
             <span className="text-accent-2 ml-2">
-              {data.submittedAt && new Date(data.submittedAt).toLocaleString('en-IN')} ·
-              Stub mode: no bank API called (enabled in Slice 10) · file hash{' '}
+              {data.submittedAt && formatDateTime(data.submittedAt)} ,
+              Stub mode: no bank API called (enabled in Slice 10), file hash{' '}
               <span className="font-numeric">{data.bankFileHash?.slice(0, 8)}…</span>
             </span>
           </div>
-          <Button size="sm" variant="accent" onClick={downloadFile}>
+          <Button size="sm" variant="primary" onClick={downloadFile}>
             <Download className="mr-1 h-3.5 w-3.5" /> Download .csv
           </Button>
         </div>
@@ -172,7 +172,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
             </h2>
           </div>
           <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+            <thead className="border-line border-b text-left text-[12px] text-muted">
               <tr>
                 <th className="w-8 px-3 py-2">#</th>
                 <th className="px-3 py-2 font-medium">Invoice</th>
@@ -208,9 +208,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                   <td className="px-3 py-2">
                     <span className="text-text">{it.vendorName}</span>
                     {it.isMsme && (
-                      <Pill variant="violet" className="ml-1.5">
-                        MSME
-                      </Pill>
+                      <Badge variant="classification" className="ml-1.5">MSME</Badge>
                     )}
                   </td>
                   <td className="font-numeric text-text px-3 py-2 text-right">
@@ -268,7 +266,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
 
         {/* Bank file preview */}
         <aside className="flex flex-col gap-4">
-          <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+          <div className="overflow-x-auto">
             <div className="border-line flex items-center justify-between border-b px-4 py-2.5">
               <h2 className="text-ink text-[13px] font-semibold">Bank file preview</h2>
               <span className="text-faint font-numeric text-[11px]">
@@ -278,7 +276,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
             {data.bankFilePreview ? (
               <div className="relative">
                 {data.bankFilePreview.watermarked && (
-                  <div className="text-faint/60 pointer-events-none absolute inset-0 flex items-center justify-center text-[13px] font-semibold uppercase tracking-widest">
+                  <div className="text-faint/60 pointer-events-none absolute inset-0 flex items-center justify-center text-[13px] font-semibold tracking-widest">
                     Preview
                   </div>
                 )}
@@ -287,7 +285,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                 </pre>
                 <div className="border-line text-faint flex items-center justify-between border-t px-4 py-2 text-[11px]">
                   <span>
-                    {data.bankFilePreview.rowCount} rows · hash{' '}
+                    {data.bankFilePreview.rowCount} rows, hash{' '}
                     <span className="font-numeric">
                       {data.bankFilePreview.checksum.slice(0, 8)}…
                     </span>
@@ -395,7 +393,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                   {/* Approving a payment run releases money to vendors — the
                       single most consequential action in the product. */}
                   <Button
-                    variant="commit"
+                    variant="primary"
                     disabled={decide.isPending}
                     onClick={() => onDecide('APPROVE')}
                   >
@@ -449,9 +447,8 @@ function Kpi({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px] uppercase tracking-wide">{label}</div>
-      <div
-        className={
+      <div className="text-faint text-[11px]">{label}</div>
+      <div className={
           'font-numeric tracking-display mt-1 text-[16px] font-semibold ' +
           (accent ? 'text-accent-2' : 'text-ink')
         }

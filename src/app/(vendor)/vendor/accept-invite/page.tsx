@@ -65,7 +65,7 @@ export default function AcceptInvitePage(): React.JSX.Element {
         </p>
         <Link
           href="/vendor/login"
-          className="text-brand mt-4 inline-block text-[13px] hover:underline"
+          className="text-accent mt-4 inline-block text-[13px] hover:underline"
         >
           Go to sign in →
         </Link>

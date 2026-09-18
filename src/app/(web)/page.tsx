@@ -10,7 +10,7 @@ import {
 /** Slice 0 home — the only live buyer screen. Everything else is a stub. */
 export default function HomePage(): React.JSX.Element {
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="max-w-4xl">
       <div className="mb-6">
         <PageHeader
           title="Welcome to ProcureFlow"
@@ -24,7 +24,7 @@ export default function HomePage(): React.JSX.Element {
             <CardTitle>Getting started</CardTitle>
           </CardHeader>
           <CardContent className="text-[13px] text-muted">
-            Use the sidebar to explore where each module will live. Press{' '}
+            Use the section tabs above to explore where each module will live. Press{' '}
             <kbd className="font-numeric text-[11px] text-text">⌘K</kbd> to open the
             command palette.
           </CardContent>

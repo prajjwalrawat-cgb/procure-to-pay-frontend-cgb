@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  Button,
-  DataState,
-  Input,
-  PageHeader,
-  Pill,
-  ScoreBreakdown,
-  TableState,
-} from '@/components/ui';
+import { Badge, Button, DataState, Input, PageHeader, Pill, ScoreBreakdown, TableState } from '@/components/ui';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -32,7 +24,7 @@ export default function EvaluatePage(): React.JSX.Element {
 
   if (isLoading || error || !matrix) {
     return (
-      <div className="mx-auto max-w-[1400px]">
+      <div>
         <PageHeader title="Evaluation" />
         <div className="border-line bg-panel rounded-lg border">
           <DataState
@@ -71,14 +63,16 @@ export default function EvaluatePage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div className="max-w-[1400px]">
       <PageHeader
         title="Evaluation"
         description="Weighted comparison across every qualified quote. Expand a row to see how its total was built."
         actions={
           <>
+            {/* Secondary: auto-scoring is a convenience on the way to the
+                decision, and Award is the decision. */}
             <Button
-              variant="accent"
+              variant="secondary"
               size="sm"
               onClick={() =>
                 autoScore.mutate(undefined, {
@@ -106,9 +100,9 @@ export default function EvaluatePage(): React.JSX.Element {
         </p>
       )}
 
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <div className="overflow-x-auto">
         <table className="w-full text-[13px]">
-          <thead className="text-muted border-line border-b text-left">
+          <thead className="border-line border-b text-left text-[12px] text-muted">
             <tr>
               <th className="px-3 py-2">Vendor</th>
               <th className="px-3 py-2">Scorecard</th>
@@ -141,12 +135,12 @@ export default function EvaluatePage(): React.JSX.Element {
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1">
                     {row.displayName}
-                    {row.isMsme && <Pill variant="violet">MSME</Pill>}
+                    {row.isMsme && <Badge variant="classification">MSME</Badge>}
                     {row.rankLabel && <Pill variant="success">{row.rankLabel}</Pill>}
                   </div>
                 </td>
                 <td className="text-muted px-3 py-2 text-[12px]">
-                  OTIF {row.historicalOtif ?? '—'} · Q {row.historicalQuality ?? '—'}
+                  OTIF {row.historicalOtif ?? '—'}, Q {row.historicalQuality ?? '—'}
                 </td>
                 <td className="px-3 py-2">
                   <Pill variant={row.specCompliance === 'FULL' ? 'success' : 'warn'}>
