@@ -27,6 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
   AWAITING_APPROVAL: 'Awaiting approval',
   APPROVED: 'Approved',
   SCHEDULED: 'Scheduled',
+  PARTIALLY_PAID: 'Partially paid',
   PAID: 'Paid',
   HELD: 'Held',
   REJECTED: 'Rejected',
@@ -94,6 +95,7 @@ export function statusVariant(status: string): PillVariant {
     case 'SUBMITTED_TO_BANK':
     case 'SUBMITTED_PENDING_BANK_CONFIRMATION':
     case 'PARTIALLY_RECEIVED':
+    case 'PARTIALLY_PAID':
     case 'ACKNOWLEDGED':
     case 'PICKED_UP':
       return 'info';

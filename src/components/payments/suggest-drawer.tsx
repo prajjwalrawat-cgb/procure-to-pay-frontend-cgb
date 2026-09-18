@@ -150,7 +150,17 @@ export function SuggestDrawer({
                   <div className="text-muted truncate text-[12px]">{r.vendorName}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-numeric text-ink text-[13px]">{inr(r.net)}</div>
+                  {/* A part-paid invoice joins the run for only what is left. */}
+                  {Number(r.paidAmount) > 0 ? (
+                    <>
+                      <div className="font-numeric text-[13px] text-ink">
+                        {inr(r.outstanding)}
+                      </div>
+                      <div className="text-[11px] text-info">left of {inr(r.gross)}</div>
+                    </>
+                  ) : (
+                    <div className="font-numeric text-ink text-[13px]">{inr(r.net)}</div>
+                  )}
                   {r.msmeDaysRemaining != null && (
                     <div className="text-faint font-numeric text-[11px]">
                       {r.msmeDaysRemaining}d left
