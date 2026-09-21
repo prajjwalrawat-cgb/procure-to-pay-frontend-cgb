@@ -8,6 +8,9 @@ interface Page<T> {
   nextCursor?: string | null;
 }
 
+/** A list envelope after fetchAllPages: every row, plus whether the cap was hit. */
+export type AllPages<R> = R & { truncated?: boolean };
+
 /** Hard stop, so a runaway tenant cannot pull an unbounded list into the tab. */
 const MAX_ROWS = 2000;
 const PAGE_SIZE = 200;

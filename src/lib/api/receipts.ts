@@ -16,7 +16,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
-import { fetchAllPages } from '@/lib/api/paginate';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type GrnTab = 'pending_receipt' | 'awaiting_qc' | 'posted_today' | 'held' | 'all';
 
@@ -27,7 +27,7 @@ export const grnKeys = {
   pendingPos: ['receipts', 'pending-pos'] as const,
 };
 
-export function useReceipts(tab: GrnTab): UseQueryResult<GrnListResponse> {
+export function useReceipts(tab: GrnTab): UseQueryResult<AllPages<GrnListResponse>> {
   return useQuery({
     queryKey: grnKeys.list(tab),
     queryFn: () => fetchAllPages<GrnListResponse>(`/grn?tab=${tab}`),

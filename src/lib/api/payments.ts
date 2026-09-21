@@ -21,7 +21,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
-import { fetchAllPages } from '@/lib/api/paginate';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type PaymentRunTab =
   'all' | 'draft' | 'awaiting' | 'submitted' | 'completed' | 'failed';
@@ -35,7 +35,7 @@ export const paymentKeys = {
 
 export function usePaymentRuns(
   tab: PaymentRunTab,
-): UseQueryResult<PaymentRunListResponse> {
+): UseQueryResult<AllPages<PaymentRunListResponse>> {
   return useQuery({
     queryKey: paymentKeys.list(tab),
     queryFn: () => fetchAllPages<PaymentRunListResponse>(`/payment-runs?tab=${tab}`),

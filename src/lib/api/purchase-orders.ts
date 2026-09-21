@@ -19,7 +19,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
-import { fetchAllPages } from '@/lib/api/paginate';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type PoTab = 'open' | 'partial' | 'awaiting_grn' | 'closed' | 'cancelled';
 
@@ -29,7 +29,7 @@ export const poKeys = {
   detail: (id: string) => ['purchase-orders', 'detail', id] as const,
 };
 
-export function usePurchaseOrders(tab: PoTab): UseQueryResult<PoListResponse> {
+export function usePurchaseOrders(tab: PoTab): UseQueryResult<AllPages<PoListResponse>> {
   return useQuery({
     queryKey: poKeys.list(tab),
     queryFn: () => fetchAllPages<PoListResponse>(`/purchase-orders?tab=${tab}`),
