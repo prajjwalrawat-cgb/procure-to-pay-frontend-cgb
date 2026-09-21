@@ -20,6 +20,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages } from '@/lib/api/paginate';
 
 export type RequisitionTab = 'active' | 'my_approval' | 'draft' | 'rejected' | 'closed';
 
@@ -45,7 +46,7 @@ export function useRequisitionList(
 ): UseQueryResult<RequisitionListResponse> {
   return useQuery({
     queryKey: requisitionKeys.list(tab),
-    queryFn: () => apiFetch<RequisitionListResponse>(`/requisitions?tab=${tab}&limit=50`),
+    queryFn: () => fetchAllPages<RequisitionListResponse>(`/requisitions?tab=${tab}`),
   });
 }
 

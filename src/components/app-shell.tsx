@@ -9,11 +9,12 @@ import {
   isTopNavMenu,
   type TopNavEntry,
   type TopNavItem,
+  useTableStackLabels,
 } from '@/components/ui';
 import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { NotificationsTray } from '@/components/notifications-tray';
 import { LIVE_ROUTES, PRIMARY_NAV } from '@/config/nav';
@@ -41,6 +42,9 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
   const { user, setSession, clear } = useSessionStore();
   const { data: approvalCounts } = useSidebarCounts();
   const { data: unread } = useUnreadCount();
+  // Labels `table.pf-stack` cells so they stack as cards on narrow screens.
+  const mainRef = useRef<HTMLElement>(null);
+  useTableStackLabels(mainRef);
 
   // Pending-approval counts ride on the nav items that own the queue. Those
   // items all sit inside dropdowns now, and each dropdown trigger sums its
@@ -203,6 +207,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
        * and every page title start on the same line. Pages fill it; forms cap
        * themselves narrower and centre within it. */}
       <main
+        ref={mainRef}
         id="main-content"
         className="flex-1 overflow-y-auto overscroll-contain py-4 sm:py-5 lg:py-6"
       >

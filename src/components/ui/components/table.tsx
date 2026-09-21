@@ -30,7 +30,7 @@ export const Table = React.forwardRef<
   <div className="w-full overflow-x-auto">
     <table
       ref={ref}
-      className={cn('w-full border-collapse text-body-sm', className)}
+      className={cn('pf-stack w-full border-collapse text-body-sm', className)}
       {...props}
     />
   </div>

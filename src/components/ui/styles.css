@@ -266,3 +266,79 @@ input[type='date']:disabled {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── Tables → stacked cards below tablet width ────────────────────────────
+   Opt in with `pf-stack` on the <table>. Each row becomes a card; each cell a
+   "label … value" line, labelled from its column header by
+   useTableStackLabels (data-table.tsx). Cells with an empty header — the
+   checkbox and expand columns — sit inline at the top of the card. Full-width
+   rows (loading, empty, expanded detail) span the card as blocks. */
+@media (max-width: 767px) {
+  table.pf-stack,
+  table.pf-stack > tbody {
+    display: block;
+    width: 100%;
+  }
+  table.pf-stack > thead {
+    display: none;
+  }
+  table.pf-stack > tbody > tr {
+    display: block;
+    position: relative;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--card-bg);
+  }
+  table.pf-stack > tbody > tr > td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0 !important;
+    border: 0;
+    text-align: right;
+    min-width: 0;
+  }
+  table.pf-stack > tbody > tr > td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: left;
+  }
+  /* Controls with no header: inline, top of the card. */
+  table.pf-stack > tbody > tr > td[data-label=''] {
+    display: inline-flex;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  table.pf-stack > tbody > tr > td[data-label='']::before {
+    content: none;
+  }
+  /* The first labelled cell is the record's identity: give it the top line. */
+  table.pf-stack > tbody > tr > td[data-first] {
+    display: block;
+    text-align: left;
+    font-weight: 500;
+    padding-bottom: 8px !important;
+  }
+  table.pf-stack > tbody > tr > td[data-first]::before {
+    content: none;
+  }
+  table.pf-stack > tbody > tr > td[colspan] {
+    display: block;
+    text-align: left;
+  }
+  table.pf-stack > tbody > tr > td[colspan]::before {
+    content: none;
+  }
+  /* Rows that exist only to hold a full-width child (skeleton, empty state,
+     expanded detail) should not draw a second card border. */
+  table.pf-stack > tbody > tr:has(> td[colspan]) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+}

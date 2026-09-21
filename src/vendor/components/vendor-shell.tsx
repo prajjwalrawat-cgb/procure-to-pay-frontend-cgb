@@ -6,10 +6,11 @@ import {
   TopNav,
   type CommandRoute,
   type TopNavItem,
+  useTableStackLabels,
 } from '@/components/ui';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
 import {
   VENDOR_LIVE_ROUTES,
@@ -88,6 +89,10 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
     <Link href={item.href}>{content}</Link>
   );
 
+  // Labels `table.pf-stack` cells so they stack as cards on narrow screens.
+  const mainRef = useRef<HTMLElement>(null);
+  useTableStackLabels(mainRef);
+
   return (
     <div className="bg-paper flex h-screen flex-col overflow-hidden">
       <a href="#vendor-main" className="pf-skip-link">
@@ -134,6 +139,7 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
        *
        * Forms and wizards still cap their own measure from this same edge. */}
       <main
+        ref={mainRef}
         id="vendor-main"
         className="flex-1 overflow-y-auto overscroll-contain py-4 sm:py-5 lg:py-6"
       >

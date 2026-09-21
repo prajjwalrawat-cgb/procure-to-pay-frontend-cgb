@@ -18,6 +18,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages } from '@/lib/api/paginate';
 
 export type VendorTab =
   'active' | 'onboarding' | 'suspended' | 'blacklisted' | 'archived' | 'all';
@@ -34,7 +35,7 @@ export const vendorKeys = {
 export function useVendorList(tab: VendorTab): UseQueryResult<VendorListResponse> {
   return useQuery({
     queryKey: vendorKeys.list(tab),
-    queryFn: () => apiFetch<VendorListResponse>(`/vendors?tab=${tab}&limit=100`),
+    queryFn: () => fetchAllPages<VendorListResponse>(`/vendors?tab=${tab}`),
   });
 }
 

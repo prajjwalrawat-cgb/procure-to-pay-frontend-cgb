@@ -19,6 +19,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages } from '@/lib/api/paginate';
 
 export const invoiceKeys = {
   all: ['invoices'] as const,
@@ -31,7 +32,7 @@ export const invoiceKeys = {
 export function useInvoices(tab: InvoiceTab): UseQueryResult<InvoiceListResponse> {
   return useQuery({
     queryKey: invoiceKeys.list(tab),
-    queryFn: () => apiFetch<InvoiceListResponse>(`/invoices?tab=${tab}&limit=50`),
+    queryFn: () => fetchAllPages<InvoiceListResponse>(`/invoices?tab=${tab}`),
   });
 }
 

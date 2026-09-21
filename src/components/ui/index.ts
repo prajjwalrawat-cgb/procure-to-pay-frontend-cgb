@@ -24,6 +24,7 @@ export * from './components/command-palette';
 
 // Shared patterns — loading/empty/error, page framing, honesty markers.
 export * from './components/data-state';
+export * from './components/data-table';
 export * from './components/page-header';
 export * from './components/step-indicator';
 export * from './components/sandbox-chip';
