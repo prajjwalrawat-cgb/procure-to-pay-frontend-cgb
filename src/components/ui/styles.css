@@ -327,6 +327,11 @@ input[type='date']:disabled {
   table.pf-stack > tbody > tr > td[data-first]::before {
     content: none;
   }
+  /* A cell with nothing in it (an action column with no action on this row)
+     would otherwise still take a line in the card. */
+  table.pf-stack > tbody > tr > td:empty {
+    display: none;
+  }
   table.pf-stack > tbody > tr > td[colspan] {
     display: block;
     text-align: left;

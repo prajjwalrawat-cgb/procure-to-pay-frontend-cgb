@@ -34,6 +34,8 @@ const badgeVariants = cva(
         positive: 'bg-success-bg text-success',
         /** Cautionary signal — expiring, incomplete. */
         caution: 'bg-warn-bg text-warn',
+        /** In flight — the badge form of the `info` status. */
+        info: 'bg-info-bg text-info',
         /** Negative signal — blacklisted, breached, blocked. */
         negative: 'bg-danger-bg text-danger',
         /** No colour at all — for a fact that carries no judgement. */
@@ -55,19 +57,15 @@ export interface BadgeProps
   icon?: React.ElementType;
 }
 
-export function Badge({
-  className,
-  variant,
-  icon: Icon,
-  children,
-  ...props
-}: BadgeProps): React.JSX.Element {
-  return (
-    <span className={cn(badgeVariants({ variant }), className)} {...props}>
+/** Forwards its ref so a Badge can be a tooltip trigger (`InfoTip asChild`). */
+export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
+  ({ className, variant, icon: Icon, children, ...props }, ref) => (
+    <span ref={ref} className={cn(badgeVariants({ variant }), className)} {...props}>
       {Icon ? <Icon className="h-3 w-3 shrink-0" aria-hidden /> : null}
       {children}
     </span>
-  );
-}
+  ),
+);
+Badge.displayName = 'Badge';
 
 export { badgeVariants };
