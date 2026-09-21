@@ -28,6 +28,7 @@ const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
   { key: 'scheduled', label: 'Scheduled', countKey: 'scheduled' },
   { key: 'paid', label: 'Paid', countKey: 'paid' },
   { key: 'msme', label: 'MSME risk', countKey: 'msme' },
+  { key: 'proforma', label: 'Awaiting tax invoice', countKey: 'proforma' },
 ];
 type CountShape = {
   all: number;
@@ -37,6 +38,7 @@ type CountShape = {
   scheduled: number;
   paid: number;
   msme: number;
+  proforma: number;
 };
 
 export default function InvoicesInboxPage(): React.JSX.Element {
@@ -242,6 +244,11 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                       <Pill variant={statusVariant(inv.status)} dot>
                         {statusLabel(inv.status)}
                       </Pill>
+                      {inv.documentKind === 'PROFORMA' && (
+                        <Pill variant="warn" className="ml-1.5">
+                          PI
+                        </Pill>
+                      )}
                       {inv.exceptionCount > 0 && (
                         <span className="font-numeric text-danger ml-1.5 text-[11px]">
                           {inv.exceptionCount} exc

@@ -160,8 +160,13 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                   <td className="font-numeric px-3 py-2.5 font-medium text-ink">
                     {inv.number}
                   </td>
-                  <td className="font-numeric px-3 py-2.5 text-muted">
-                    {inv.vendorInvoiceRef}
+                  <td className="px-3 py-2.5 text-muted">
+                    <span className="font-numeric">{inv.vendorInvoiceRef}</span>
+                    {inv.proformaRef && (
+                      <div className="text-[11px] text-faint">
+                        Replaces PI <span className="font-numeric">{inv.proformaRef}</span>
+                      </div>
+                    )}
                   </td>
                   <td className="font-numeric px-3 py-2.5 text-text">
                     {fmtDate(inv.invoiceDate)}
@@ -170,6 +175,19 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                     <Pill variant={VARIANT[inv.status] ?? 'gray'} dot>
                       {label(inv.status)}
                     </Pill>
+                    {inv.documentKind === 'PROFORMA' && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <Pill variant="warn">Proforma</Pill>
+                        {inv.status !== 'REJECTED' && (
+                          <Link
+                            href={`/vendor/invoices/${inv.id}/tax-invoice`}
+                            className="text-[12px] font-medium text-accent-2"
+                          >
+                            Upload tax invoice
+                          </Link>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="font-numeric px-3 py-2.5 text-right text-ink">
                     {inr(inv.grossAmount)}
