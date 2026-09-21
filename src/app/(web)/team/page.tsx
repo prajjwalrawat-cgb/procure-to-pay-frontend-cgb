@@ -163,7 +163,7 @@ export default function TeamPage(): React.JSX.Element {
                   <TableRow key={m.id}>
                     <TableCell>
                       <div className="flex items-center gap-2.5">
-                        <span className="bg-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold text-white">
+                        <span className="bg-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-caption font-semibold text-white">
                           {initials(m.name, m.email)}
                         </span>
                         <div className="min-w-0">
@@ -171,7 +171,7 @@ export default function TeamPage(): React.JSX.Element {
                             {m.name || m.email}
                             {isSelf && <span className="text-muted ml-1.5">(you)</span>}
                           </div>
-                          <div className="text-muted truncate text-[12px]">{m.email}</div>
+                          <div className="text-muted truncate text-caption">{m.email}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -195,7 +195,7 @@ export default function TeamPage(): React.JSX.Element {
                           // clipped under it. The min-width buys that room.
                           className={cn(
                             controlClass,
-                            'w-auto min-w-[11rem] py-1.5 text-[12px]',
+                            'w-auto min-w-[11rem] py-1.5 text-caption',
                           )}
                           aria-label={`Role for ${m.name || m.email}`}
                         >
@@ -299,10 +299,10 @@ export default function TeamPage(): React.JSX.Element {
 
       {/* Pending invitations */}
       <section className="mt-8">
-        <h2 className="text-ink tracking-heading text-[15px] font-semibold">
+        <h2 className="text-ink tracking-heading text-h3 font-semibold">
           Pending invitations
         </h2>
-        <p className="text-muted mt-1 text-[12px]">
+        <p className="text-muted mt-1 text-caption">
           Invited people appear in the team above once they accept. Revoking an invitation
           immediately disables its link.
         </p>
@@ -346,7 +346,7 @@ export default function TeamPage(): React.JSX.Element {
             </TableBody>
           </Table>
         ) : (
-          <p className="text-muted mt-3 text-[13px]">
+          <p className="text-muted mt-3 text-body-sm">
             No invitations are outstanding. Anyone you invite will be listed here until
             they set a password.
           </p>

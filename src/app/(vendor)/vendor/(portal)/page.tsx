@@ -20,7 +20,7 @@ export default function VendorHomePage(): React.JSX.Element {
         <CardHeader>
           <CardTitle>Welcome</CardTitle>
         </CardHeader>
-        <CardContent className="text-[13px] text-muted">
+        <CardContent className="text-body-sm text-muted">
           Your supplier workspace is ready. Invoice submission, PO tracking, and document
           management arrive in later slices.
         </CardContent>

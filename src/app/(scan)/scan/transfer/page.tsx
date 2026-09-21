@@ -92,7 +92,7 @@ export default function ScanTransferPage(): React.JSX.Element {
 
       {step === 'product' ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-          <h2 className="text-[14px] font-semibold">1. Scan the product</h2>
+          <h2 className="text-body font-semibold">1. Scan the product</h2>
           <BarcodeScanner
             label="product barcode"
             onScan={(v) => void onProductScan(v)}
@@ -117,7 +117,7 @@ export default function ScanTransferPage(): React.JSX.Element {
 
       {step === 'source' ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-          <h2 className="text-[14px] font-semibold">2. Scan the bin it is leaving</h2>
+          <h2 className="text-body font-semibold">2. Scan the bin it is leaving</h2>
           <BarcodeScanner
             label="source bin label"
             onScan={(v) => {
@@ -127,15 +127,15 @@ export default function ScanTransferPage(): React.JSX.Element {
             busy={Number(quantity) <= 0}
           />
           {Number(quantity) <= 0 ? (
-            <p className="text-[13px] text-muted">Enter a quantity first.</p>
+            <p className="text-body-sm text-muted">Enter a quantity first.</p>
           ) : null}
         </section>
       ) : null}
 
       {step === 'dest' ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-          <h2 className="text-[14px] font-semibold">3. Scan the bin it is going to</h2>
-          <p className="text-[12px] text-muted">Leaving: {sourceBin}</p>
+          <h2 className="text-body font-semibold">3. Scan the bin it is going to</h2>
+          <p className="text-caption text-muted">Leaving: {sourceBin}</p>
           <BarcodeScanner
             label="destination bin label"
             onScan={(v) => void onDestScan(v)}

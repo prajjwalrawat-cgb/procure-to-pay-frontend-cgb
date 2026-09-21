@@ -45,7 +45,7 @@ export default function RfqDetailPage(): React.JSX.Element {
   const stageIdx = STAGES.indexOf(rfq.status);
 
   return (
-    <div className="max-w-[1400px]">
+    <div>
       <PageHeader
         title={rfq.title}
         breadcrumbs={[
@@ -54,7 +54,7 @@ export default function RfqDetailPage(): React.JSX.Element {
         ]}
         meta={
           <>
-            <span className="font-numeric text-muted text-[12px]">{rfq.number}</span>
+            <span className="font-numeric text-muted text-caption">{rfq.number}</span>
             <Pill variant={statusVariant(rfq.status)} dot>
               {statusLabel(rfq.status)}
             </Pill>
@@ -112,8 +112,8 @@ export default function RfqDetailPage(): React.JSX.Element {
         <div className="space-y-4">
           {/* Lines */}
           <Section title="Lines">
-            <table className="w-full text-[13px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="py-1">#</th>
                   <th className="py-1">Item</th>
@@ -130,7 +130,7 @@ export default function RfqDetailPage(): React.JSX.Element {
                     <td className="py-1">{l.itemDesc}</td>
                     <td className="py-1 text-right tabular-nums">{l.qtyRequired}</td>
                     <td className="py-1">{l.uom}</td>
-                    <td className="py-1 font-mono text-[12px]">{l.hsnCode ?? '—'}</td>
+                    <td className="py-1 font-mono text-caption">{l.hsnCode ?? '—'}</td>
                     <td className="py-1 text-right tabular-nums">{l.qtyMinSplit}</td>
                   </tr>
                 ))}
@@ -140,21 +140,21 @@ export default function RfqDetailPage(): React.JSX.Element {
 
           {/* Quote count summary (masked pre-open) */}
           <Section title="Quotes">
-            <p className="text-[13px]">
-              <span className="text-ink text-[18px] font-semibold tabular-nums">
+            <p className="text-body-sm">
+              <span className="text-ink text-h2 font-semibold tabular-nums">
                 {rfq.submittedCount}
               </span>{' '}
               <span className="text-muted">of {rfq.invitedCount} vendors submitted</span>
             </p>
-            <p className="text-faint mt-1 text-[12px]">
+            <p className="text-faint mt-1 text-caption">
               Sealed — values &amp; vendor rankings are hidden until the open ceremony.
             </p>
           </Section>
 
           {/* Invitations */}
           <Section title="Invitations">
-            <table className="w-full text-[13px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="py-1">Vendor</th>
                   <th className="py-1">Source</th>
@@ -188,7 +188,7 @@ export default function RfqDetailPage(): React.JSX.Element {
           {/* Q&A */}
           <Section title={`Q&A (${rfq.questions.length})`}>
             {rfq.questions.length === 0 && (
-              <p className="text-muted text-[13px]">No questions yet.</p>
+              <p className="text-muted text-body-sm">No questions yet.</p>
             )}
             {rfq.questions.map((q) => (
               <div key={q.id} className="border-line border-t py-2 first:border-0">
@@ -196,11 +196,11 @@ export default function RfqDetailPage(): React.JSX.Element {
                   <Pill variant={q.isPublic ? 'info' : 'gray'}>
                     {q.isPublic ? 'public' : 'private'}
                   </Pill>
-                  <span className="text-muted text-[12px]">{q.vendorName}</span>
+                  <span className="text-muted text-caption">{q.vendorName}</span>
                 </div>
-                <p className="text-[13px]">{q.questionText}</p>
+                <p className="text-body-sm">{q.questionText}</p>
                 {q.answerText && (
-                  <p className="text-accent-2 mt-1 text-[13px]">↳ {q.answerText}</p>
+                  <p className="text-accent-2 mt-1 text-body-sm">↳ {q.answerText}</p>
                 )}
               </div>
             ))}
@@ -210,10 +210,10 @@ export default function RfqDetailPage(): React.JSX.Element {
         {/* Right panel */}
         <div className="space-y-4">
           <Section title="RFQ value">
-            <p className="text-ink text-[18px] font-semibold tabular-nums">
+            <p className="text-ink text-h2 font-semibold tabular-nums">
               {inr(rfq.estimatedValue)}
             </p>
-            <p className="text-muted text-[12px]">
+            <p className="text-muted text-caption">
               INCOTERM {rfq.incotermDefault}, {rfq.paymentTermsDefault}
             </p>
           </Section>
@@ -236,7 +236,7 @@ export default function RfqDetailPage(): React.JSX.Element {
             <Section title="Linked PR">
               <Link
                 href={`/requisitions/${rfq.requisitionId}`}
-                className="text-accent font-mono text-[12px]"
+                className="text-accent font-mono text-caption"
               >
                 {rfq.requisitionNumber}
               </Link>
@@ -269,7 +269,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <h2 className="text-muted mb-2 text-[12px] font-semibold ">
+      <h2 className="text-muted mb-2 text-caption font-semibold ">
         {title}
       </h2>
       {children}
@@ -279,7 +279,7 @@ function Section({
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="flex justify-between py-0.5 text-[13px]">
+    <div className="flex justify-between py-0.5 text-body-sm">
       <span className="text-muted">{label}</span>
       <span className="text-ink tabular-nums">{value}</span>
     </div>

@@ -90,29 +90,29 @@ export default function LedgerPage(): React.JSX.Element {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-1.5 text-[13px] text-muted">
+        <label className="flex items-center gap-1.5 text-body-sm text-muted">
           From
           <input
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="rounded-md border border-line bg-panel px-2 py-1 text-[13px] text-text outline-none"
+            className="rounded-md border border-line bg-panel px-2 py-1 text-body-sm text-text outline-none"
           />
         </label>
-        <label className="flex items-center gap-1.5 text-[13px] text-muted">
+        <label className="flex items-center gap-1.5 text-body-sm text-muted">
           To
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="rounded-md border border-line bg-panel px-2 py-1 text-[13px] text-text outline-none"
+            className="rounded-md border border-line bg-panel px-2 py-1 text-body-sm text-text outline-none"
           />
         </label>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full min-w-[900px] text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Date</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -152,12 +152,12 @@ export default function LedgerPage(): React.JSX.Element {
 function LedgerRow({ entry: e }: { entry: LedgerEntryView }): React.JSX.Element {
   return (
     <tr className="border-t border-line hover:bg-canvas/60">
-      <td className="font-numeric px-3 py-2 text-[12px] text-muted">
+      <td className="font-numeric px-3 py-2 text-caption text-muted">
         {formatDate(e.txnDate)}
       </td>
       <td className="px-3 py-2">
         <div className="text-ink">{e.productName}</div>
-        <div className="font-numeric text-[11px] text-faint">
+        <div className="font-numeric text-micro text-faint">
           {e.productCode}
           {e.colour ? `, ${e.colour}` : ''}
         </div>
@@ -170,15 +170,15 @@ function LedgerRow({ entry: e }: { entry: LedgerEntryView }): React.JSX.Element 
           </Badge>
         )}
       </td>
-      <td className="px-3 py-2 text-[12px] text-muted">{e.locationName}</td>
-      <td className="px-3 py-2 text-[12px] text-text">
+      <td className="px-3 py-2 text-caption text-muted">{e.locationName}</td>
+      <td className="px-3 py-2 text-caption text-text">
         {e.vendorName ??
           e.issuedToName ??
           e.customerName ??
           (e.purchaseOrderNumber ? `PO ${e.purchaseOrderNumber}` : null) ??
           '—'}
         {e.orderId && (
-          <span className="font-numeric ml-1 text-[11px] text-faint">#{e.orderId}</span>
+          <span className="font-numeric ml-1 text-micro text-faint">#{e.orderId}</span>
         )}
       </td>
       <td className="px-3 py-2 text-right">
@@ -221,7 +221,7 @@ function LedgerRow({ entry: e }: { entry: LedgerEntryView }): React.JSX.Element 
         {/* The entry itself can never be edited — this opens a compensating entry. */}
         <Link
           href={`/inventory/adjustments?correct=${e.id}`}
-          className="text-[12px] font-medium text-accent-2 hover:underline"
+          className="text-caption font-medium text-accent-2 hover:underline"
           title="Post an offsetting adjustment for this entry"
         >
           Correct

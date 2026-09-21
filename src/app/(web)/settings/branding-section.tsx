@@ -32,10 +32,10 @@ function ImageUpload({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={alt} className="max-h-14 max-w-36 object-contain" />
         ) : (
-          <span className="text-[11px] text-faint">{emptyLabel}</span>
+          <span className="text-micro text-faint">{emptyLabel}</span>
         )}
       </div>
-      <label className="cursor-pointer text-[12px] font-medium text-accent-2">
+      <label className="cursor-pointer text-caption font-medium text-accent-2">
         {isPending ? 'Uploading…' : actionLabel}
         <input
           type="file"
@@ -61,7 +61,7 @@ export function BrandingSection(): React.JSX.Element {
   const toast = useToastStore((s) => s.push);
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <div className="text-body-sm text-muted">Loading…</div>;
   }
 
   const onLogo = (file: File): void =>

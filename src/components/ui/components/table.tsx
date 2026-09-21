@@ -30,7 +30,7 @@ export const Table = React.forwardRef<
   <div className="w-full overflow-x-auto">
     <table
       ref={ref}
-      className={cn('w-full border-collapse text-[13px]', className)}
+      className={cn('w-full border-collapse text-body-sm', className)}
       {...props}
     />
   </div>
@@ -88,7 +88,7 @@ export const TableHead = React.forwardRef<
     ref={ref}
     scope="col"
     className={cn(
-      'px-3 py-2 text-[12px] font-medium',
+      'px-3 py-2.5 text-caption font-medium',
       numeric && 'text-right',
       className,
     )}
@@ -103,7 +103,7 @@ export const TableCell = React.forwardRef<
 >(({ className, numeric, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn('px-3 py-2.5', numeric && 'font-numeric text-right', className)}
+    className={cn('px-3 py-3.5', numeric && 'font-numeric text-right', className)}
     {...props}
   />
 ));

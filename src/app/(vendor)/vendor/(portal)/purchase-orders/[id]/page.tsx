@@ -97,20 +97,20 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="px-1 py-10 text-[13px] text-muted">Loading…</div>
+      <div className="px-1 py-10 text-body-sm text-muted">Loading…</div>
     );
   }
   if (!po) {
     return (
-      <div className="max-w-4xl">
+      <div>
         <BackLink />
-        <p className="mt-4 text-[13px] text-muted">Purchase order not found.</p>
+        <p className="mt-4 text-body-sm text-muted">Purchase order not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl pb-10">
+    <div className="pb-10">
       <BackLink />
 
       {/* Header */}
@@ -177,14 +177,14 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       />
 
       {po.acknowledgedAt && (
-        <div className="mb-5 rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
+        <div className="mb-5 rounded-sm bg-accent-wash px-3 py-2 text-caption text-accent-2">
           You acknowledged this purchase order on {fmtDateTime(po.acknowledgedAt)}.
         </div>
       )}
 
       {/* Delivery & terms */}
       <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-        <h2 className="mb-3 text-[14px] font-semibold text-ink">Delivery &amp; terms</h2>
+        <h2 className="mb-3 text-body font-semibold text-ink">Delivery &amp; terms</h2>
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
           <Field label="Delivery address" value={formatAddress(po.deliveryAddress)} />
           <Field label="Delivery terms" value={po.deliveryTerms ?? '—'} />
@@ -194,11 +194,11 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
       {/* Line items */}
       <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-        <h2 className="mb-3 text-[14px] font-semibold text-ink">Line items</h2>
+        <h2 className="mb-3 text-body font-semibold text-ink">Line items</h2>
         <div className="overflow-hidden rounded-lg border border-line">
           <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="px-3 py-2 font-medium">#</th>
                   <th className="px-3 py-2 font-medium">Description</th>
@@ -240,7 +240,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
         {/* Totals */}
         <div className="mt-3 flex justify-end">
-          <dl className="w-full max-w-xs space-y-1.5 text-[13px]">
+          <dl className="w-full max-w-xs space-y-1.5 text-body-sm">
             <div className="flex justify-between">
               <dt className="text-muted">Subtotal</dt>
               <dd className="font-numeric text-text">{inr(po.amounts.subtotal)}</dd>
@@ -266,16 +266,16 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
           should not have to open an attachment to find out what they are. */}
       {po.terms.length > 0 && (
         <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-          <h2 className="mb-3 text-[14px] font-semibold text-ink">
+          <h2 className="mb-3 text-body font-semibold text-ink">
             Terms &amp; conditions
           </h2>
-          <ol className="flex flex-col gap-2 text-[13px]">
+          <ol className="flex flex-col gap-2 text-body-sm">
             {po.terms.map((t, i) => (
               <li key={t.id}>
                 <span className="font-medium text-text">
                   {i + 1}. {t.title}
                 </span>
-                <p className="pl-4 text-[12px] text-muted">{t.contentText}</p>
+                <p className="pl-4 text-caption text-muted">{t.contentText}</p>
               </li>
             ))}
           </ol>
@@ -284,17 +284,17 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
       {/* Queries */}
       <section className="rounded-lg border border-line bg-panel p-4">
-        <h2 className="mb-3 text-[14px] font-semibold text-ink">Your queries</h2>
+        <h2 className="mb-3 text-body font-semibold text-ink">Your queries</h2>
         {po.queries.length === 0 ? (
-          <p className="text-[13px] text-muted">
+          <p className="text-body-sm text-muted">
             No queries raised on this purchase order.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {po.queries.map((q) => (
               <li key={q.id} className="rounded-sm border border-line bg-canvas/50 p-3">
-                <p className="whitespace-pre-wrap text-[13px] text-text">{q.body}</p>
-                <p className="mt-1.5 text-[11px] text-faint">
+                <p className="whitespace-pre-wrap text-body-sm text-text">{q.body}</p>
+                <p className="mt-1.5 text-micro text-faint">
                   {q.source}, {fmtDateTime(q.createdAt)}
                 </p>
               </li>
@@ -316,7 +316,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
             onChange={(e) => setQueryBody(e.target.value)}
             rows={5}
             placeholder="Type your message…"
-            className="mt-4 w-full resize-none rounded-sm border border-line bg-canvas px-3 py-2 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-4 w-full resize-none rounded-sm border border-line bg-canvas px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
           <div className="mt-4 flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setQueryOpen(false)}>
@@ -341,7 +341,7 @@ function BackLink(): React.JSX.Element {
   return (
     <Link
       href="/vendor/purchase-orders"
-      className="inline-flex items-center gap-1 text-[12px] text-muted"
+      className="inline-flex items-center gap-1 text-caption text-muted"
     >
       <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
     </Link>
@@ -351,8 +351,8 @@ function BackLink(): React.JSX.Element {
 function Field({ label: l, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div>
-      <dt className="text-[11px] text-faint">{l}</dt>
-      <dd className="mt-0.5 text-[13px] text-text">{value}</dd>
+      <dt className="text-micro text-faint">{l}</dt>
+      <dd className="mt-0.5 text-body-sm text-text">{value}</dd>
     </div>
   );
 }

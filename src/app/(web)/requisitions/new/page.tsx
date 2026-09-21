@@ -246,10 +246,10 @@ export default function NewRequisitionPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-4xl pb-8">
+    <div className="mx-auto w-full max-w-4xl pb-8">
       <Link
         href="/requisitions"
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisitions
       </Link>
@@ -512,7 +512,7 @@ function BudgetChip({
   if (!costCenterId) return null;
   if (error || !budget) {
     return (
-      <div className="rounded-sm bg-canvas px-3 py-2 text-[12px] text-muted">
+      <div className="rounded-sm bg-canvas px-3 py-2 text-caption text-muted">
         Budget data unavailable for this cost centre.
       </div>
     );
@@ -528,7 +528,7 @@ function BudgetChip({
         : 'bg-accent-wash text-accent-2';
   return (
     <div
-      className={`flex items-center justify-between rounded-sm px-3 py-2 text-[12px] ${tone}`}
+      className={`flex items-center justify-between rounded-sm px-3 py-2 text-caption ${tone}`}
     >
       <span className="font-medium">
         {inr(budget.remaining)} available of {inr(budget.allocated)} allocated
@@ -593,7 +593,7 @@ function StepLines({
         >
           <Plus className="h-3.5 w-3.5" /> Add non-catalogued item
         </Button>
-        <span className="font-numeric ml-auto text-[14px] font-semibold text-ink">
+        <span className="font-numeric ml-auto text-body font-semibold text-ink">
           PR total {inr(total.toFixed(2))}
         </span>
       </div>
@@ -618,7 +618,7 @@ function LineEditor({
   return (
     <div className="rounded-lg border border-line bg-canvas/40 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-faint">
+        <span className="text-micro font-semibold text-faint">
           Line {index + 1}
           {!isCatalogued && (
             <Pill variant="warn" className="ml-2">
@@ -663,7 +663,7 @@ function LineEditor({
         />
       ) : null}
       {isCatalogued && !line.itemId && (
-        <p className="mt-1 text-[11px] text-muted">
+        <p className="mt-1 text-micro text-muted">
           Choose a match from the list — typing a description on its own does not link an
           item.{' '}
           <button
@@ -749,7 +749,7 @@ function LineEditor({
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <label className="flex flex-1 items-center gap-2">
-          <span className="text-[11px] text-muted">Preferred vendor</span>
+          <span className="text-micro text-muted">Preferred vendor</span>
           <select
             value={line.preferredVendorId}
             onChange={(e) => update({ preferredVendorId: e.target.value })}
@@ -764,7 +764,7 @@ function LineEditor({
             ))}
           </select>
         </label>
-        <span className="font-numeric text-[13px] font-semibold text-ink">
+        <span className="font-numeric text-body-sm font-semibold text-ink">
           {inr(lineTotal(line).toFixed(2))}
         </span>
       </div>
@@ -808,7 +808,7 @@ function ItemPicker({
                 onPick(it);
                 setOpen(false);
               }}
-              className="flex w-full items-center justify-between px-3 py-2 text-left text-[12px] hover:bg-canvas"
+              className="flex w-full items-center justify-between px-3 py-2 text-left text-caption hover:bg-canvas"
             >
               <span>
                 <span className="font-numeric text-faint">{it.skuCode}</span>{' '}
@@ -895,7 +895,7 @@ function StepAttachments(props: {
         }
       >
         <UploadCloud className="h-8 w-8 text-faint" />
-        <div className="text-[13px] font-medium text-text">
+        <div className="text-body-sm font-medium text-text">
           Drop files to attach, or{' '}
           <button
             type="button"
@@ -905,7 +905,7 @@ function StepAttachments(props: {
             browse
           </button>
         </div>
-        <p className="text-[12px] text-muted">
+        <p className="text-caption text-muted">
           Quotations, vendor proforma invoices (PI), specs and drawings.
           <br />
           PDF, JPG, PNG or TIFF, up to 15 MB each.
@@ -924,7 +924,7 @@ function StepAttachments(props: {
       </div>
 
       {rejected.length > 0 && (
-        <ul className="flex flex-col gap-1 text-[12px] text-danger">
+        <ul className="flex flex-col gap-1 text-caption text-danger">
           {rejected.map((r) => (
             <li key={r}>{r}</li>
           ))}
@@ -940,8 +940,8 @@ function StepAttachments(props: {
             >
               <FileText className="h-4 w-4 shrink-0 text-faint" />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] text-text">{s.file.name}</div>
-                <div className="font-numeric text-[11px] text-muted">
+                <div className="truncate text-body-sm text-text">{s.file.name}</div>
+                <div className="font-numeric text-micro text-muted">
                   {fileSize(s.file.size)}
                 </div>
               </div>
@@ -957,7 +957,7 @@ function StepAttachments(props: {
                     ),
                   )
                 }
-                className="rounded-sm border border-line bg-panel px-2 py-1 text-[12px]"
+                className="rounded-sm border border-line bg-panel px-2 py-1 text-caption"
               >
                 {REQUISITION_ATTACHMENT_TYPE.map((t) => (
                   <option key={t} value={t}>
@@ -980,7 +980,7 @@ function StepAttachments(props: {
         </div>
       )}
 
-      <p className="text-[11px] text-faint">
+      <p className="text-micro text-faint">
         Files upload once the requisition is created. A proforma invoice attached here is
         price evidence for these lines — the vendor&apos;s tax invoice is entered later
         under Invoices.
@@ -1022,7 +1022,7 @@ function StepReview(props: {
       </div>
 
       <div>
-        <h3 className="mb-2 text-[13px] font-semibold text-ink">Budget check</h3>
+        <h3 className="mb-2 text-body-sm font-semibold text-ink">Budget check</h3>
         <BudgetChip
           costCenterId={props.costCenterId}
           total={props.total}
@@ -1051,9 +1051,9 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="flex items-center gap-2 text-[12px] font-medium text-muted">
+      <span className="flex items-center gap-2 text-caption font-medium text-muted">
         {label}
-        {hint && <span className="text-[11px] text-faint"> {hint}</span>}
+        {hint && <span className="text-micro text-faint"> {hint}</span>}
       </span>
       {children}
     </label>
@@ -1069,7 +1069,7 @@ function SmallField({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[10px] text-faint">{label}</span>
+      <span className="text-micro text-faint">{label}</span>
       {children}
     </label>
   );
@@ -1086,10 +1086,10 @@ function ReviewRow({
 }): React.JSX.Element {
   return (
     <div className="flex items-center justify-between rounded-sm border border-line bg-canvas/40 px-3 py-2">
-      <span className="text-[12px] text-muted">{label}</span>
+      <span className="text-caption text-muted">{label}</span>
       <span
         className={
-          'font-numeric text-[13px] ' + (strong ? 'font-semibold text-ink' : 'text-text')
+          'font-numeric text-body-sm ' + (strong ? 'font-semibold text-ink' : 'text-text')
         }
       >
         {value}

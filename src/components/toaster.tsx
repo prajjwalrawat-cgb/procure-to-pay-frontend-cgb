@@ -19,7 +19,7 @@ export function Toaster(): React.JSX.Element {
           type="button"
           onClick={() => dismiss(t.id)}
           className={cn(
-            'rounded-sm px-3.5 py-2.5 text-left text-[13px] font-medium text-white shadow-lg',
+            'rounded-sm px-3.5 py-2.5 text-left text-body-sm font-medium text-white shadow-lg',
             t.variant === 'success' && 'bg-accent',
             t.variant === 'error' && 'bg-danger',
             t.variant === 'info' && 'bg-ink',

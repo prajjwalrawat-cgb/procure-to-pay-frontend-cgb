@@ -1,4 +1,4 @@
-/* ProcureFlow base layer — "Clear Ledger".
+/* ProcureFlow base layer — warm off-white, emerald accent, Geist.
    Tokens mirrored as CSS variables; derived from components/ui/tokens.ts,
    which is the single source of truth. Keep the two in sync.
 
@@ -7,37 +7,42 @@
    existing screens already reference. They point at the same values. */
 :root {
   /* surfaces */
-  --page-bg: #f4f5f7;
+  --page-bg: #faf9f6;
   --card-bg: #ffffff;
-  --line: #e3e5e9;
+  --line: #e6e3dc;
 
   /* accent — one colour, interactive/active elements only */
-  --accent: #1b4ce0;
-  --accent-2: #1740b8;
-  --accent-bg: #eaeffd;
+  --accent: #047857;
+  --accent-2: #065f46;
+  --accent-bg: #e6f4ee;
 
   /* text */
-  --text-primary: #1a1d21;
-  --text-muted: #6b7078;
-  --text-faint: #767c85; /* darkened from the brief's #8A8F98 to hold AA */
+  --text-primary: #1c1b18;
+  --text-muted: #66625a;
+  --text-faint: #75716a;
 
   /* semantic state — status only, never decoration */
-  --state-success: #147a52;
-  --state-success-solid: #1e9e6b;
-  --state-success-bg: #e9f7ef;
-  --state-warning: #8a5e0e;
-  --state-warning-solid: #b07a12;
-  --state-warning-bg: #fbf2e2;
-  --state-error: #b23a31;
-  --state-error-solid: #c4453b;
-  --state-error-bg: #fbeae8;
+  --state-success: #15803d;
+  --state-success-solid: #22a55a;
+  --state-success-bg: #eaf6ee;
+  --state-warning: #8a5a0b;
+  --state-warning-solid: #c98a12;
+  --state-warning-bg: #fbf3e3;
+  --state-error: #b42318;
+  --state-error-solid: #d92d20;
+  --state-error-bg: #fdecea;
+  --state-info: #1d4ed8;
+  --state-info-solid: #3b82f6;
+  --state-info-bg: #ebf2fe;
 
   /* typography */
+  /* next/font puts --font-geist-sans on <html> (the same element as :root). */
   --font-ui:
-    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif, sans-serif;
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif,
+    sans-serif;
   --font-size-meta: 12px;
-  --font-size-body: 13px;
-  --font-size-heading: 19px;
+  --font-size-body: 14px;
+  --font-size-heading: 22px;
 
   /* radius / spacing */
   --radius: 8px;
@@ -47,7 +52,7 @@
 
   /* ── --pf-* aliases (existing call sites) ──────────────────────────────── */
   --pf-paper: var(--page-bg);
-  --pf-canvas: #edeff2;
+  --pf-canvas: #f2f0eb;
   --pf-panel: var(--card-bg);
   --pf-line: var(--line);
 
@@ -68,7 +73,7 @@
      any un-migrated `bg-navy` surface still renders legibly. */
   --pf-navy: #ffffff;
   --pf-navy-2: #ffffff;
-  --pf-navy-3: #edeff2;
+  --pf-navy-3: #f2f0eb;
   --pf-on-navy: var(--text-primary);
   --pf-on-navy-muted: var(--text-muted);
 
@@ -76,7 +81,7 @@
   --pf-gold: var(--accent);
   --pf-gold-ink: var(--accent);
   --pf-gold-wash: var(--accent-bg);
-  --pf-info: var(--accent);
+  --pf-info: var(--state-info);
   --pf-violet: var(--accent);
 
   /* Focus ring — one definition, used by every interactive element. */
@@ -122,7 +127,7 @@ h4 {
 /* ── Numerals ──────────────────────────────────────────────────────────────
    Every ₹ amount, quantity, date and document number carries this so columns
    of figures align down the page. It is the UI face with tabular figures, not
-   a separate mono face: a monospace column beside an Inter column reads as two
+   a separate mono face: a monospace column beside a proportional column reads as two
    different tables. `font-mono` is still available for hash chains in the
    audit log, which is the one place character-level distinction matters. */
 .font-numeric {
@@ -167,7 +172,7 @@ input[type='time'] {
 select {
   appearance: none;
   padding-right: 28px;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7078' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2366625A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 9px center;
 }
@@ -211,7 +216,30 @@ input[type='date']:disabled {
   color: var(--text-primary);
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  box-shadow: 0 4px 10px rgba(26, 29, 33, 0.12);
+  box-shadow: 0 4px 10px rgba(28, 27, 24, 0.12);
+}
+
+/* ── The content column ───────────────────────────────────────────────────
+   One centred column shared by the nav rows and <main>, so the brand, the
+   section tabs and every page title start on the same vertical line. Before
+   this the shell was left-aligned and most pages capped their own width, which
+   left detail pages and forms hugging the left edge with a void on the right.
+   Pages fill this column; only forms cap themselves narrower, centred. */
+.pf-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+@media (min-width: 640px) {
+  .pf-container {
+    padding-inline: 20px;
+  }
+}
+@media (min-width: 1024px) {
+  .pf-container {
+    padding-inline: 32px;
+  }
 }
 
 /* Horizontal nav rows scroll rather than wrap on narrow viewports; the bar is

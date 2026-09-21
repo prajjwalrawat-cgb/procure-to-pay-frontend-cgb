@@ -92,7 +92,7 @@ export default function SettingsPage(): React.JSX.Element {
 
   if (visible.length === 0) {
     return (
-      <div className="max-w-3xl">
+      <div className="mx-auto w-full max-w-3xl">
         <PageHeader
           title="Settings"
           description="You do not have access to any settings. Ask an administrator if you need it."
@@ -102,7 +102,7 @@ export default function SettingsPage(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-6xl pb-16">
+    <div className="pb-16">
       <PageHeader
         title="Settings"
         description="Manage organisation identity, GST registrations, branding, banking, vendor categories and document fields."
@@ -112,7 +112,7 @@ export default function SettingsPage(): React.JSX.Element {
         <nav className="flex flex-col gap-4">
           {groups.map((group) => (
             <div key={group}>
-              <div className="mb-1 px-2 text-[10px] font-medium text-faint">
+              <div className="mb-1 px-2 text-micro font-medium text-faint">
                 {group}
               </div>
               {visible
@@ -126,7 +126,7 @@ export default function SettingsPage(): React.JSX.Element {
                       type="button"
                       onClick={() => setActive(s.key)}
                       className={
-                        'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[13px] transition-colors ' +
+                        'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-body-sm transition-colors ' +
                         (on
                           ? 'bg-accent-wash font-medium text-accent-2'
                           : 'text-muted hover:bg-canvas hover:text-text')

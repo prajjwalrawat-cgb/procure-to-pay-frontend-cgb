@@ -142,8 +142,8 @@ export default function BoxesPage(): React.JSX.Element {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Box</th>
               <th className="px-3 py-2 font-medium">Barcode</th>
@@ -181,7 +181,7 @@ export default function BoxesPage(): React.JSX.Element {
             {items.map((b) => (
               <tr key={b.id} className="border-t border-line">
                 <td className="px-3 py-2 text-ink">{b.code}</td>
-                <td className="px-3 py-2 font-mono text-[12px] text-muted">
+                <td className="px-3 py-2 font-mono text-caption text-muted">
                   {b.barcode}
                 </td>
                 <td className="px-3 py-2 text-muted">

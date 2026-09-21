@@ -136,10 +136,10 @@ export default function NewContractPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-4xl pb-10">
+    <div className="mx-auto w-full max-w-4xl pb-10">
       <Link
         href="/contracts"
-        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
+        className="mb-3 inline-flex items-center gap-1 text-body-sm text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
@@ -306,7 +306,7 @@ export default function NewContractPage(): React.JSX.Element {
             <button
               type="button"
               onClick={addRateCard}
-              className="flex items-center gap-1 text-[13px] text-accent-2"
+              className="flex items-center gap-1 text-body-sm text-accent-2"
             >
               <Plus className="h-3.5 w-3.5" /> Add rate row
             </button>
@@ -315,14 +315,14 @@ export default function NewContractPage(): React.JSX.Element {
 
         {step === 2 && (
           <div className="space-y-2">
-            <p className="text-[12px] text-muted">
+            <p className="text-caption text-muted">
               Select clauses from the library. Payment terms, Delivery SLA and Termination
               are mandatory.
             </p>
             {library?.map((l) => (
               <label
                 key={l.id}
-                className="flex items-start gap-2 border-b border-line pb-2 text-[13px]"
+                className="flex items-start gap-2 border-b border-line pb-2 text-body-sm"
               >
                 <input
                   type="checkbox"
@@ -338,7 +338,7 @@ export default function NewContractPage(): React.JSX.Element {
                 />
                 <span>
                   <span className="font-medium text-ink">{l.title}</span>
-                  <span className="block text-[12px] text-muted">{l.contentText}</span>
+                  <span className="block text-caption text-muted">{l.contentText}</span>
                 </span>
               </label>
             ))}
@@ -347,7 +347,7 @@ export default function NewContractPage(): React.JSX.Element {
 
         {step === 3 && (
           <>
-            <p className="text-[12px] text-muted">
+            <p className="text-caption text-muted">
               Optional — indexed price escalation (e.g. diesel-linked).
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -401,7 +401,7 @@ export default function NewContractPage(): React.JSX.Element {
         )}
 
         {step === 4 && (
-          <div className="text-[13px]">
+          <div className="text-body-sm">
             <p className="mb-2 font-medium text-ink">Review</p>
             <Row label="Title" v={title} />
             <Row label="Type" v={contractType} />
@@ -419,7 +419,7 @@ export default function NewContractPage(): React.JSX.Element {
           type="button"
           disabled={step === 0}
           onClick={() => setStep((s) => s - 1)}
-          className="rounded-md border border-line px-4 py-1.5 text-[13px] text-text disabled:opacity-40"
+          className="rounded-md border border-line px-4 py-1.5 text-body-sm text-text disabled:opacity-40"
         >
           Back
         </button>
@@ -427,7 +427,7 @@ export default function NewContractPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setStep((s) => s + 1)}
-            className="rounded-md bg-ink px-4 py-1.5 text-[13px] font-medium text-white"
+            className="rounded-md bg-ink px-4 py-1.5 text-body-sm font-medium text-white"
           >
             Next
           </button>
@@ -436,7 +436,7 @@ export default function NewContractPage(): React.JSX.Element {
             type="button"
             onClick={submit}
             disabled={create.isPending}
-            className="rounded-md bg-accent px-4 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
+            className="rounded-md bg-accent px-4 py-1.5 text-body-sm font-medium text-white disabled:opacity-50"
           >
             Create draft
           </button>
@@ -459,7 +459,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <span className="mb-1 block text-caption text-muted">{label}</span>
       {children}
     </label>
   );

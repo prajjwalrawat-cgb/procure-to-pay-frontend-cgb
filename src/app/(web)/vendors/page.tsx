@@ -166,11 +166,11 @@ function Metric({
 }): React.JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="text-faint text-[11px]">{label}</p>
+      <p className="text-faint text-micro">{label}</p>
       {value ? (
-        <p className="font-numeric text-ink truncate text-[13px] font-medium">{value}</p>
+        <p className="font-numeric text-ink truncate text-body-sm font-medium">{value}</p>
       ) : (
-        <p className="text-muted truncate text-[12px]">{fallback}</p>
+        <p className="text-muted truncate text-caption">{fallback}</p>
       )}
     </div>
   );

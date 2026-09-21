@@ -30,7 +30,7 @@ import { cn } from '../lib/cn';
  * Focus is handled globally by the :focus-visible outline in styles.css.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-[13px] font-medium transition-colors duration-hover disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm text-body-sm font-medium transition-colors duration-hover disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -55,7 +55,7 @@ const buttonVariants = cva(
       },
       size: {
         default: 'h-9 px-3.5 py-2',
-        sm: 'h-8 px-2.5 text-[12px]',
+        sm: 'h-8 px-2.5 text-caption',
         icon: 'h-9 w-9 p-0',
       },
     },

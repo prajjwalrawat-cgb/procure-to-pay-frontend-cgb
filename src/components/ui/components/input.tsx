@@ -29,7 +29,7 @@ import { cn } from '../lib/cn';
  * all point here.
  */
 export const controlClass = [
-  'w-full rounded-sm border border-line bg-panel px-2.5 py-[9px] text-[13px] text-text',
+  'w-full rounded-sm border border-line bg-panel px-2.5 py-[9px] text-body-sm text-text',
   'placeholder:text-faint focus:border-accent focus:outline-none focus-visible:outline-none',
   'disabled:cursor-not-allowed disabled:opacity-55',
   'aria-[invalid=true]:border-danger',
@@ -126,15 +126,15 @@ export function Field({
 }): React.JSX.Element {
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-text text-[12px] font-medium">
+      <label htmlFor={htmlFor} className="text-text text-caption font-medium">
         {label}
         {required ? <span className="text-danger ml-0.5">*</span> : null}
       </label>
       {children}
       {error ? (
-        <p className="text-danger text-[12px]">{error}</p>
+        <p className="text-danger text-caption">{error}</p>
       ) : hint ? (
-        <p className="text-muted text-[12px]">{hint}</p>
+        <p className="text-muted text-caption">{hint}</p>
       ) : null}
     </div>
   );
@@ -278,7 +278,7 @@ export function Combobox({
       />
       <span
         aria-hidden
-        className="text-muted pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px]"
+        className="text-muted pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-micro"
       >
         ▾
       </span>
@@ -291,7 +291,7 @@ export function Combobox({
           className="border-line bg-panel absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-sm border py-1 shadow-md"
         >
           {filtered.length === 0 ? (
-            <li className="text-muted px-2.5 py-2 text-[12px]">{emptyText}</li>
+            <li className="text-muted px-2.5 py-2 text-caption">{emptyText}</li>
           ) : (
             filtered.map((o, i) => (
               <li
@@ -304,7 +304,7 @@ export function Combobox({
                 }}
                 onPointerEnter={() => setHighlight(i)}
                 className={cn(
-                  'cursor-pointer px-2.5 py-1.5 text-[13px]',
+                  'cursor-pointer px-2.5 py-1.5 text-body-sm',
                   i === highlight ? 'bg-accent-wash text-accent' : 'text-text',
                   o.disabled && 'cursor-not-allowed opacity-50',
                   o.value === value && i !== highlight && 'font-medium',
@@ -312,7 +312,7 @@ export function Combobox({
               >
                 {o.label}
                 {o.detail ? (
-                  <span className="text-muted ml-1.5 text-[11px]">{o.detail}</span>
+                  <span className="text-muted ml-1.5 text-micro">{o.detail}</span>
                 ) : null}
               </li>
             ))

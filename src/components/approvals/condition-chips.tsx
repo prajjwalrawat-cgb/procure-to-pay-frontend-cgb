@@ -29,7 +29,7 @@ function valueLabel(value: unknown): string {
 
 function Leaf({ c }: { c: Condition }): React.JSX.Element {
   return (
-    <span className="border-line bg-canvas font-numeric inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-[11px]">
+    <span className="border-line bg-canvas font-numeric inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-micro">
       <span className="text-text font-medium">{fieldLabel(c.field ?? '')}</span>
       <span className="text-muted">{c.op ? OP_LABELS[c.op] : ''}</span>
       <span className="text-ink">{valueLabel(c.value)}</span>
@@ -49,7 +49,7 @@ function Group({
       {items.map((child, i) => (
         <span key={i} className="inline-flex items-center gap-1.5">
           {i > 0 && (
-            <span className="text-faint text-[10px] font-semibold ">
+            <span className="text-faint text-micro font-semibold ">
               {joiner}
             </span>
           )}
@@ -71,11 +71,11 @@ export function ConditionChips({
   if (condition.none) {
     return (
       <span className="inline-flex items-center gap-1">
-        <span className="text-faint text-[10px] font-semibold ">not</span>
+        <span className="text-faint text-micro font-semibold ">not</span>
         <Group items={condition.none} joiner="or" />
       </span>
     );
   }
   if (condition.field) return <Leaf c={condition} />;
-  return <span className="text-muted text-[11px]">Applies to all documents</span>;
+  return <span className="text-muted text-micro">Applies to all documents</span>;
 }

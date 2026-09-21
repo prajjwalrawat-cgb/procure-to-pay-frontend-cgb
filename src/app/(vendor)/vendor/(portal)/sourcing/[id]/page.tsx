@@ -191,10 +191,10 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-[980px] pb-24">
+    <div className="pb-24">
       <div className="mb-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[12px] text-accent">{rfq.number}</span>
+          <span className="font-mono text-caption text-accent">{rfq.number}</span>
           <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
           {closing && (
             <Pill variant={closing.urgent ? 'danger' : 'success'} dot>
@@ -214,7 +214,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
       </div>
 
       {proof && (
-        <div className="mb-4 rounded-lg border border-accent bg-accent-wash p-4 text-[13px]">
+        <div className="mb-4 rounded-lg border border-accent bg-accent-wash p-4 text-body-sm">
           <strong>Quote submitted.</strong> Proof-of-submission hash:{' '}
           <span className="font-mono">{proof}</span>. Keep it — it proves what you sent
           and when, before any envelope was opened.
@@ -223,7 +223,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
 
       {!quoteId ? (
         <Section title="Your quote">
-          <p className="mb-3 text-[13px] text-muted">
+          <p className="mb-3 text-body-sm text-muted">
             Start a draft to price each line. Nothing reaches the buyer until you submit,
             and even then it stays sealed until the open ceremony.
           </p>
@@ -237,8 +237,8 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
             {lines.map((l, i) => (
               <div key={l.rfqLineId} className="mb-3 rounded-md border border-line p-3">
                 <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="text-[13px] font-medium text-ink">{l.itemDesc}</span>
-                  <span className="text-[12px] text-muted">
+                  <span className="text-body-sm font-medium text-ink">{l.itemDesc}</span>
+                  <span className="text-caption text-muted">
                     asked: {l.qtyRequired} {l.uom}
                     {l.hsnCode ? `, HSN ${l.hsnCode}` : ''}, tax{' '}
                     {(Number(l.taxRate) * 100).toFixed(0)}%
@@ -264,7 +264,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                     disabled={submitted}
                   />
                   <label className="block">
-                    <span className="mb-1 block text-[12px] text-muted">Compliance</span>
+                    <span className="mb-1 block text-caption text-muted">Compliance</span>
                     <select
                       className={cn(controlClass, 'w-auto')}
                       value={l.specCompliance}
@@ -286,7 +286,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                 </div>
                 <div className="mt-2 flex flex-wrap items-end justify-between gap-2">
                   <label className="block flex-1">
-                    <span className="mb-1 block text-[12px] text-muted">
+                    <span className="mb-1 block text-caption text-muted">
                       {COMPLIANCE_HINT[l.specCompliance]}
                     </span>
                     <Input
@@ -300,34 +300,34 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                       onChange={(e) => upd(setLines, i, 'deviationNotes', e.target.value)}
                     />
                   </label>
-                  <span className="font-numeric text-[13px] text-ink">
+                  <span className="font-numeric text-body-sm text-ink">
                     {money(lineTotal(l))}
                   </span>
                 </div>
               </div>
             ))}
 
-            <div className="mt-3 flex flex-col items-end gap-1 border-t border-line pt-3 text-[13px]">
+            <div className="mt-3 flex flex-col items-end gap-1 border-t border-line pt-3 text-body-sm">
               <span className="text-muted">Subtotal {money(subtotal)}</span>
               <span className="text-muted">Tax {money(taxTotal)}</span>
-              <span className="font-numeric text-[15px] font-semibold text-ink">
+              <span className="font-numeric text-h3 font-semibold text-ink">
                 Total {money(subtotal + taxTotal)}
               </span>
             </div>
           </Section>
 
           <Section title="Attachments">
-            <p className="mb-3 text-[13px] text-muted">
+            <p className="mb-3 text-body-sm text-muted">
               Attach your own quotation document, technical specs or certificates. PDF or
               image, up to 10 MB each.
             </p>
             {(quote?.attachments ?? []).map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between border-t border-line py-2 text-[13px] first:border-0"
+                className="flex items-center justify-between border-t border-line py-2 text-body-sm first:border-0"
               >
                 <span className="truncate">{a.filename}</span>
-                <span className="shrink-0 text-[12px] text-muted">
+                <span className="shrink-0 text-caption text-muted">
                   {a.docType.replace(/_/g, ' ').toLowerCase()}, {fileSize(a.sizeBytes)}
                 </span>
               </div>
@@ -353,10 +353,10 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                     onFile(e.target.files?.[0]);
                     e.target.value = '';
                   }}
-                  className="text-[12px]"
+                  className="text-caption"
                 />
                 {uploadFile.isPending && (
-                  <span className="text-[12px] text-muted">Uploading…</span>
+                  <span className="text-caption text-muted">Uploading…</span>
                 )}
               </div>
             )}
@@ -366,12 +366,12 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
 
       <Section title="Public Q&amp;A">
         {rfq.questions.length === 0 && (
-          <p className="text-[13px] text-muted">No public answers yet.</p>
+          <p className="text-body-sm text-muted">No public answers yet.</p>
         )}
         {rfq.questions.map((q) => (
           <div
             key={q.id}
-            className="border-t border-line py-2 text-[13px] first:border-0"
+            className="border-t border-line py-2 text-body-sm first:border-0"
           >
             <p>{q.questionText}</p>
             {q.answerText && <p className="text-accent-2">↳ {q.answerText}</p>}
@@ -382,7 +382,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
       {quoteId && !submitted && (
         <div className="fixed inset-x-0 bottom-0 border-t border-line bg-panel">
           <div className="mx-auto flex max-w-[980px] flex-wrap items-center gap-3 px-4 py-3">
-            <label className="flex items-center gap-2 text-[12px]">
+            <label className="flex items-center gap-2 text-caption">
               <span className="text-muted">Validity (days)</span>
               <Input
                 className="w-20"
@@ -390,7 +390,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                 onChange={(e) => setValidityDays(e.target.value)}
               />
             </label>
-            <span className="ml-auto text-[13px] text-muted">
+            <span className="ml-auto text-body-sm text-muted">
               Total {money(subtotal + taxTotal)}
             </span>
             <Button variant="primary" onClick={saveLines} disabled={updateQuote.isPending}>
@@ -420,7 +420,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
+      <h2 className="mb-3 text-body font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -439,7 +439,7 @@ function LabelledInput({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <span className="mb-1 block text-caption text-muted">{label}</span>
       <Input
         value={value}
         disabled={disabled}

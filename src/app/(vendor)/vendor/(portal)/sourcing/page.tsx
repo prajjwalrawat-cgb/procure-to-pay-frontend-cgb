@@ -10,7 +10,7 @@ export default function VendorSourcingPage(): React.JSX.Element {
   const { data, isLoading } = useInvitedRfqs();
 
   return (
-    <div className="max-w-[1000px]">
+    <div>
       <PageHeader
         title="RFQ invitations"
         description="Sealed bidding — your quote is private until the buyer's formal open ceremony."
@@ -18,7 +18,7 @@ export default function VendorSourcingPage(): React.JSX.Element {
 
       {isLoading && <p className="text-muted">Loading…</p>}
       {data?.items.length === 0 && (
-        <p className="text-[13px] text-muted">No invitations yet.</p>
+        <p className="text-body-sm text-muted">No invitations yet.</p>
       )}
 
       <div className="space-y-3">
@@ -53,12 +53,12 @@ function InvitationCard({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[12px] text-accent">{rfq.number}</span>
+            <span className="font-mono text-caption text-accent">{rfq.number}</span>
             <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
             <Pill variant="info">{rfq.invitationStatus.toLowerCase()}</Pill>
           </div>
-          <h2 className="mt-1 text-[15px] font-semibold text-ink">{rfq.title}</h2>
-          <p className="text-[12px] text-muted">
+          <h2 className="mt-1 text-h3 font-semibold text-ink">{rfq.title}</h2>
+          <p className="text-caption text-muted">
             {rfq.category}, deadline{' '}
             {rfq.bidDeadline
               ? formatDate(rfq.bidDeadline)

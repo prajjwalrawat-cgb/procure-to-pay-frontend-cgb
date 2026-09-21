@@ -143,10 +143,10 @@ function Drawer({
       <aside className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-line bg-panel shadow-xl">
         <header className="sticky top-0 z-10 flex items-start justify-between border-b border-line bg-panel px-5 py-4">
           <div className="min-w-0">
-            <h2 className="truncate text-[16px] font-semibold tracking-heading text-ink">
+            <h2 className="truncate text-h3 font-semibold tracking-heading text-ink">
               {target.mode === 'create' ? 'New item' : (data?.name ?? 'Loading…')}
             </h2>
-            <p className="font-numeric text-[12px] text-muted">
+            <p className="font-numeric text-caption text-muted">
               {target.mode === 'create'
                 ? 'Adds a SKU to the catalogue used by requisition lines'
                 : (data?.skuCode ?? '')}
@@ -157,7 +157,7 @@ function Drawer({
             <button
               type="button"
               onClick={onClose}
-              className="text-[13px] text-muted hover:text-ink"
+              className="text-body-sm text-muted hover:text-ink"
             >
               Close
             </button>
@@ -165,7 +165,7 @@ function Drawer({
         </header>
 
         {target.mode === 'edit' && isLoading && (
-          <p className="px-5 py-8 text-[13px] text-muted">Loading…</p>
+          <p className="px-5 py-8 text-body-sm text-muted">Loading…</p>
         )}
         {target.mode === 'create' && (
           <ItemForm
@@ -389,7 +389,7 @@ function ItemForm({
               placeholder="5100-CONSUMABLES"
             />
           </Field>
-          <label className="mt-6 flex items-center gap-2 text-[13px]">
+          <label className="mt-6 flex items-center gap-2 text-body-sm">
             <input
               type="checkbox"
               checked={form.isCapex}
@@ -403,7 +403,7 @@ function ItemForm({
         {/* ── UoM conversions ── */}
         <div className="rounded-lg border border-line p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-faint">
+            <span className="text-micro font-semibold text-faint">
               UoM conversions
             </span>
             {!readOnly && itemId === null && (
@@ -418,18 +418,18 @@ function ItemForm({
                     ],
                   }))
                 }
-                className="flex items-center gap-1 text-[12px] font-medium text-accent-2"
+                className="flex items-center gap-1 text-caption font-medium text-accent-2"
               >
                 <Plus className="h-3.5 w-3.5" /> Add
               </button>
             )}
           </div>
-          <p className="mb-2 text-[11px] text-faint">
+          <p className="mb-2 text-micro text-faint">
             Used when goods are received in a different unit from the PO. Without a
             conversion the GRN treats the two units as 1:1.
           </p>
           {form.uomConversions.length === 0 && (
-            <p className="text-[12px] text-muted">None.</p>
+            <p className="text-caption text-muted">None.</p>
           )}
           {form.uomConversions.map((c) => (
             <div key={c.key} className="mb-1.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
@@ -472,7 +472,7 @@ function ItemForm({
             </div>
           ))}
           {itemId !== null && form.uomConversions.length > 0 && (
-            <p className="mt-1 text-[11px] text-faint">
+            <p className="mt-1 text-micro text-faint">
               Conversions are set at creation time and cannot be edited here.
             </p>
           )}
@@ -481,16 +481,16 @@ function ItemForm({
         {/* ── Vendor pricing (read-only; maintained by sourcing/contracts) ── */}
         {detail && (
           <div className="rounded-lg border border-line p-3">
-            <div className="mb-2 text-[11px] font-semibold text-faint">
+            <div className="mb-2 text-micro font-semibold text-faint">
               Vendor pricing
             </div>
             {detail.vendorPricing.length === 0 ? (
-              <p className="text-[12px] text-muted">
+              <p className="text-caption text-muted">
                 No vendor prices yet — the requisition picker will show no preferred
                 vendor or last-paid price for this item.
               </p>
             ) : (
-              <table className="w-full text-[12px]">
+              <table className="w-full text-caption">
                 <tbody>
                   {detail.vendorPricing.map((p) => (
                     <tr key={p.id} className="border-t border-line first:border-t-0">

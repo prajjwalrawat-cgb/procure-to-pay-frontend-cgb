@@ -27,13 +27,13 @@ export default function ScanHomePage(): React.JSX.Element {
             href={task.href}
             className="block rounded-lg border border-line bg-white px-4 py-4 hover:border-accent"
           >
-            <span className="block text-[16px] font-semibold">{task.label}</span>
-            <span className="block text-[13px] text-muted">{task.hint}</span>
+            <span className="block text-h3 font-semibold">{task.label}</span>
+            <span className="block text-body-sm text-muted">{task.hint}</span>
           </Link>
         ))}
       </nav>
 
-      <p className="px-1 text-[12px] text-muted">
+      <p className="px-1 text-caption text-muted">
         Scans are saved on this device first, so nothing is lost if the signal drops.
       </p>
 
@@ -54,8 +54,8 @@ function OnAPhoneHint(): React.JSX.Element {
 
   return (
     <div className="hidden rounded-lg border border-line bg-white p-3 md:block">
-      <p className="text-[13px] font-medium">Using this on a phone</p>
-      <p className="mt-1 text-[12px] text-muted">
+      <p className="text-body-sm font-medium">Using this on a phone</p>
+      <p className="mt-1 text-caption text-muted">
         Open <span className="font-mono">{origin || '…'}/scan</span> on the handset and add it
         to the home screen. It then opens full-screen and keeps working without a signal.
       </p>

@@ -51,7 +51,7 @@ export function SkeletonRows({
       {Array.from({ length: rows }).map((_, r) => (
         <tr key={r} className="border-line border-t">
           {Array.from({ length: cols }).map((_, c) => (
-            <td key={c} className="px-3 py-2.5">
+            <td key={c} className="px-3 py-3.5">
               <Skeleton
                 className={cn('h-3.5', c === 0 ? 'w-24' : c === cols - 1 ? 'w-16' : 'w-32')}
               />
@@ -151,14 +151,14 @@ function StateFrame({
       <p
         className={cn(
           'font-medium',
-          compact ? 'text-[13px]' : 'text-[14px]',
+          compact ? 'text-body-sm' : 'text-body',
           tone === 'danger' ? 'text-danger' : 'text-ink',
         )}
       >
         {title}
       </p>
       {detail && (
-        <p className="text-muted max-w-[52ch] text-[12px] leading-relaxed">{detail}</p>
+        <p className="text-muted max-w-[52ch] text-caption leading-relaxed">{detail}</p>
       )}
       {action && <div className="mt-2">{action}</div>}
     </div>

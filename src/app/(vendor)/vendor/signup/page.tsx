@@ -83,15 +83,15 @@ export default function VendorSignupPage(): React.JSX.Element {
   if (done) {
     return (
       <div className="mx-auto mt-24 max-w-[440px] px-4 text-center">
-        <h1 className="text-ink text-[20px] font-semibold">Registration received</h1>
-        <p className="text-muted mt-2 text-[13px]">
+        <h1 className="text-ink text-h2 font-semibold">Registration received</h1>
+        <p className="text-muted mt-2 text-body-sm">
           We&apos;ve created your vendor account. A temporary password (
           <code>Slice0!Vendor</code>) has been set — sign in and complete your onboarding
           profile.
         </p>
         <Link
           href="/vendor/login"
-          className="text-accent mt-4 inline-block text-[13px] hover:underline"
+          className="text-accent mt-4 inline-block text-body-sm hover:underline"
         >
           Go to sign in →
         </Link>
@@ -101,14 +101,14 @@ export default function VendorSignupPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto mt-16 max-w-[440px] px-4">
-      <h1 className="text-ink text-[20px] font-semibold">Become a vendor</h1>
-      <p className="text-muted mt-1 text-[13px]">
+      <h1 className="text-ink text-h2 font-semibold">Become a vendor</h1>
+      <p className="text-muted mt-1 text-body-sm">
         Register your business to start supplying. You&apos;ll complete a short onboarding
         wizard after signing in.
       </p>
       <form onSubmit={submit} className="mt-6 space-y-3">
         <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">
+          <label className="text-muted mb-1 block text-caption font-medium">
             Legal entity name
           </label>
           <Input
@@ -118,7 +118,7 @@ export default function VendorSignupPage(): React.JSX.Element {
           />
         </div>
         <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">Email</label>
+          <label className="text-muted mb-1 block text-caption font-medium">Email</label>
           <Input
             type="email"
             value={email}
@@ -127,11 +127,11 @@ export default function VendorSignupPage(): React.JSX.Element {
           />
         </div>
         <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">Phone</label>
+          <label className="text-muted mb-1 block text-caption font-medium">Phone</label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
         </div>
         <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">
+          <label className="text-muted mb-1 block text-caption font-medium">
             Category
           </label>
           <select
@@ -146,14 +146,14 @@ export default function VendorSignupPage(): React.JSX.Element {
             ))}
           </select>
         </div>
-        {error && <p className="text-danger text-[12px]">{error}</p>}
+        {error && <p className="text-danger text-caption">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading} className="w-full">
           {loading ? 'Registering…' : 'Register'}
         </Button>
       </form>
       <Link
         href="/vendor/login"
-        className="text-muted mt-4 inline-block text-[12px] hover:underline"
+        className="text-muted mt-4 inline-block text-caption hover:underline"
       >
         Already registered? Sign in
       </Link>

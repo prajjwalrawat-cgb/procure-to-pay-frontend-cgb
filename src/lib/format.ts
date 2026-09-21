@@ -188,12 +188,13 @@ export function statusLabel(status: string): string {
  *   success — done, and done well: approved, paid, posted, passed QC
  *   warn    — stalled, needs a person: awaiting approval, pending QC, low confidence
  *   danger  — failed or rejected: match exception, reversed, failed payment
- *   neutral — in flight, on hold, or closed. No judgement.
+ *   info    — in flight: submitted, scheduled, being read, partly paid
+ *   neutral — drafts, closed, cancelled. No judgement.
  *
  * `<StatusText>` renders these as coloured text with a dot, never as a filled
  * pill — see components/ui/components/pill.tsx.
  */
-export type PillVariant = 'success' | 'danger' | 'warn' | 'neutral';
+export type PillVariant = 'success' | 'danger' | 'warn' | 'info' | 'neutral';
 
 export function statusVariant(status: string): PillVariant {
   switch (status) {
@@ -224,6 +225,17 @@ export function statusVariant(status: string): PillVariant {
     case 'HELD':
     case 'HOLD':
       return 'warn';
+    case 'OCR_PENDING':
+    case 'RECEIVED':
+    case 'SUBMITTED':
+    case 'SCHEDULED':
+    case 'SUBMITTED_TO_BANK':
+    case 'SUBMITTED_PENDING_BANK_CONFIRMATION':
+    case 'PARTIALLY_RECEIVED':
+    case 'PARTIALLY_PAID':
+    case 'ACKNOWLEDGED':
+    case 'PICKED_UP':
+      return 'info';
     case 'APPROVED':
     case 'PAID':
     case 'OCR_DONE':
@@ -236,8 +248,7 @@ export function statusVariant(status: string): PillVariant {
     case 'AWARDED':
       return 'success';
     default:
-      // In flight (OCR pending, submitted, partially received, acknowledged),
-      // waived, cancelled, and anything the server adds later.
+      // Drafts, waived, cancelled, and anything the server adds later.
       return 'neutral';
   }
 }

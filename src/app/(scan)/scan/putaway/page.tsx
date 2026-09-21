@@ -114,7 +114,7 @@ export default function ScanPutawayPage(): React.JSX.Element {
 
           {awaitingBin ? (
             <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-              <h2 className="text-[14px] font-semibold">Now scan the bin</h2>
+              <h2 className="text-body font-semibold">Now scan the bin</h2>
               <BarcodeScanner
                 label="bin label"
                 onScan={(v) => void onBinScan(v)}
@@ -122,7 +122,7 @@ export default function ScanPutawayPage(): React.JSX.Element {
               />
             </section>
           ) : (
-            <p className="px-1 text-[13px] text-muted">Enter a quantity to continue.</p>
+            <p className="px-1 text-body-sm text-muted">Enter a quantity to continue.</p>
           )}
         </>
       ) : null}

@@ -46,8 +46,8 @@ export default function RmaListPage(): React.JSX.Element {
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">RMA</th>
               <th className="px-3 py-2 font-medium">Vendor</th>
@@ -87,10 +87,10 @@ export default function RmaListPage(): React.JSX.Element {
                   </div>
                 </td>
                 <td className="px-3 py-2 text-text">{r.vendor.name}</td>
-                <td className="font-numeric px-3 py-2 text-[12px] text-text">
+                <td className="font-numeric px-3 py-2 text-caption text-text">
                   {r.grn.number}
                 </td>
-                <td className="px-3 py-2 text-[12px] text-muted">{r.reasonCode}</td>
+                <td className="px-3 py-2 text-caption text-muted">{r.reasonCode}</td>
                 <td className="font-numeric px-3 py-2 text-right font-medium text-ink">
                   {inr(r.totalReturnValue)}
                 </td>

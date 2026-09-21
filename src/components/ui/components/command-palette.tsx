@@ -45,7 +45,7 @@ export function CommandPalette({
         <Command>
           <CommandInput placeholder="Search routes and actions…" autoFocus />
           <CommandList className="max-h-80 overflow-y-auto p-1.5">
-            <CommandEmpty className="text-muted py-6 text-center text-[13px]">
+            <CommandEmpty className="text-muted py-6 text-center text-body-sm">
               No results.
             </CommandEmpty>
 
@@ -60,7 +60,7 @@ export function CommandPalette({
                   <Sparkles className="h-4 w-4" />
                   Ask ProcureFlow AI…
                 </span>
-                <span className="text-[10px]">Coming in Slice 8</span>
+                <span className="text-micro">Coming in Slice 8</span>
               </CommandItem>
             </CommandGroup>
 
@@ -75,7 +75,7 @@ export function CommandPalette({
                   }}
                 >
                   {route.label}
-                  <span className={cn('font-numeric text-faint ml-auto text-[11px]')}>
+                  <span className={cn('font-numeric text-faint ml-auto text-micro')}>
                     {route.href}
                   </span>
                 </CommandItem>

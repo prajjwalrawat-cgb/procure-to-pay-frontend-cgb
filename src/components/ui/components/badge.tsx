@@ -24,7 +24,7 @@ import { cn } from '../lib/cn';
  * the result was that colour told you nothing.
  */
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[11px] font-medium leading-[18px] whitespace-nowrap',
+  'inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-micro font-medium leading-[18px] whitespace-nowrap',
   {
     variants: {
       variant: {

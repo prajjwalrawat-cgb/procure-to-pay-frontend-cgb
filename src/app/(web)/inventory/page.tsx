@@ -97,7 +97,7 @@ export default function InventoryPage(): React.JSX.Element {
             </option>
           ))}
         </select>
-        <label className="flex items-center gap-1.5 text-[13px] text-muted">
+        <label className="flex items-center gap-1.5 text-body-sm text-muted">
           <input
             type="checkbox"
             checked={lowStock}
@@ -108,8 +108,8 @@ export default function InventoryPage(): React.JSX.Element {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="w-12 px-3 py-2 text-right font-medium">S. No.</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -168,7 +168,7 @@ export default function InventoryPage(): React.JSX.Element {
                 className="cursor-pointer border-t border-line hover:bg-canvas/60"
               >
                 {/* Position in the current view, so it renumbers with filters. */}
-                <td className="font-numeric px-3 py-2 text-right text-[12px] text-faint">
+                <td className="font-numeric px-3 py-2 text-right text-caption text-faint">
                   {i + 1}
                 </td>
                 <td className="px-3 py-2">
@@ -176,14 +176,14 @@ export default function InventoryPage(): React.JSX.Element {
                     <ProductThumb url={p.imageUrl} alt={p.name} />
                     <div className="min-w-0">
                       <div className="truncate font-medium text-ink">{p.name}</div>
-                      <div className="font-numeric text-[11px] text-faint">
+                      <div className="font-numeric text-micro text-faint">
                         {p.code}
                         {p.colour ? ` — ${p.colour}` : ''}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="text-muted px-3 py-2 text-[12px]">
+                <td className="text-muted px-3 py-2 text-caption">
                   {/* A category is a permanent fact about the product, so it
                       reads as plain text. It was a coloured status dot, which
                       put ten pieces of state colour in a column where nothing
@@ -194,7 +194,7 @@ export default function InventoryPage(): React.JSX.Element {
                     p.category
                   )}
                 </td>
-                <td className="px-3 py-2 text-[12px] text-muted">
+                <td className="px-3 py-2 text-caption text-muted">
                   {p.locations.length === 0
                     ? '—'
                     : p.locations
@@ -217,7 +217,7 @@ export default function InventoryPage(): React.JSX.Element {
                     {qty(p.currentStock)}
                   </span>
                   {p.lowStock && (
-                    <span className="text-warn ml-1.5 text-[12px]">Low</span>
+                    <span className="text-warn ml-1.5 text-caption">Low</span>
                   )}
                 </td>
               </tr>

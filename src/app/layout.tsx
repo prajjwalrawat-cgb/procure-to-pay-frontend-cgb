@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
-import { geistMono, interUi } from '@/lib/fonts';
+import { geistMono, geistUi } from '@/lib/fonts';
 
 import './globals.css';
 import { Providers } from './providers';
@@ -19,7 +19,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${interUi.variable} ${geistMono.variable}`}
+      className={`${geistUi.variable} ${geistMono.variable}`}
     >
       <body className="bg-paper text-text min-h-screen antialiased">
         <Providers>{children}</Providers>

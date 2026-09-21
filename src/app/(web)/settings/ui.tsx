@@ -19,8 +19,8 @@ export function Panel({
     <section className="mb-4 rounded-lg border border-line bg-panel p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-[14px] font-semibold text-ink">{title}</h2>
-          <p className="text-[12px] text-muted">{hint}</p>
+          <h2 className="text-body font-semibold text-ink">{title}</h2>
+          <p className="text-caption text-muted">{hint}</p>
         </div>
         {action}
       </div>
@@ -56,12 +56,12 @@ export function Field({
 }): React.JSX.Element {
   return (
     <label className={wide ? 'block' : 'block max-w-md'}>
-      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <span className="mb-1 block text-caption text-muted">{label}</span>
       {children}
       {hint && !error && (
-        <span className="mt-1 block text-[11px] text-faint">{hint}</span>
+        <span className="mt-1 block text-micro text-faint">{hint}</span>
       )}
-      {error && <span className="mt-1 block text-[11px] text-danger">{error}</span>}
+      {error && <span className="mt-1 block text-micro text-danger">{error}</span>}
     </label>
   );
 }

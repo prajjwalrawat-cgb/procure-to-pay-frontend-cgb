@@ -13,7 +13,7 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
   const { data, isLoading } = useInvoice(id);
 
   if (isLoading || !data) {
-    return <div className="p-4 text-[12px] text-muted">Loading detail…</div>;
+    return <div className="p-4 text-caption text-muted">Loading detail…</div>;
   }
 
   const open = data.exceptions.filter((e) => !e.resolved);
@@ -21,34 +21,34 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
   return (
     <div className="grid gap-3 bg-canvas p-4 md:grid-cols-3">
       <div className="rounded-lg border border-line bg-panel p-3">
-        <div className="mb-2 text-[11px] font-semibold text-faint">
+        <div className="mb-2 text-micro font-semibold text-faint">
           3-way match
         </div>
         <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-muted">Variance</span>
-          <span className="font-numeric text-[15px] font-semibold text-danger">
+          <span className="text-caption text-muted">Variance</span>
+          <span className="font-numeric text-h3 font-semibold text-danger">
             +{inr(data.matchSummary.varianceTotal)}
           </span>
         </div>
-        <div className="mt-1 flex items-center justify-between text-[12px] text-muted">
+        <div className="mt-1 flex items-center justify-between text-caption text-muted">
           <span>PO {inr(data.matchSummary.poSubtotal)}</span>
           <span>Inv {inr(data.matchSummary.invoiceSubtotal)}</span>
         </div>
         <Link
           href={`/invoices/${id}`}
-          className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-accent-2"
+          className="mt-3 inline-flex items-center gap-1 text-caption font-medium text-accent-2"
         >
           Open full detail <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
       <div className="rounded-lg border border-line bg-panel p-3">
-        <div className="mb-2 text-[11px] font-semibold text-faint">
+        <div className="mb-2 text-micro font-semibold text-faint">
           Exceptions ({open.length})
         </div>
         <ul className="flex flex-col gap-1.5">
           {open.map((e) => (
-            <li key={e.id} className="flex items-center justify-between text-[12px]">
+            <li key={e.id} className="flex items-center justify-between text-caption">
               <span className="text-text">{exceptionLabel(e.type)}</span>
               {impactLabel(e.impactWithTax) && (
                 <span className="font-numeric text-danger">
@@ -58,19 +58,19 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
             </li>
           ))}
           {open.length === 0 && (
-            <li className="text-[12px] text-muted">No open exceptions.</li>
+            <li className="text-caption text-muted">No open exceptions.</li>
           )}
         </ul>
         <Link
           href={`/invoices/${id}?exception=1`}
-          className="mt-3 inline-block text-[12px] font-medium text-accent-2"
+          className="mt-3 inline-block text-caption font-medium text-accent-2"
         >
           Resolve exceptions
         </Link>
       </div>
 
       <div className="rounded-lg border border-line bg-panel p-3">
-        <div className="mb-2 text-[11px] font-semibold text-faint">
+        <div className="mb-2 text-micro font-semibold text-faint">
           MSME clock
         </div>
         {data.msme ? (
@@ -79,7 +79,7 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
               <Pill variant={msmeVariant(data.msme.bucket)} dot>
                 {data.msme.bucket}
               </Pill>
-              <span className="font-numeric text-[13px] text-text">
+              <span className="font-numeric text-body-sm text-text">
                 {data.msme.daysRemaining} days left
               </span>
             </div>
@@ -93,7 +93,7 @@ export function RowDetail({ id }: { id: string }): React.JSX.Element {
             </div>
           </>
         ) : (
-          <div className="text-[12px] text-muted">Not an MSME vendor.</div>
+          <div className="text-caption text-muted">Not an MSME vendor.</div>
         )}
       </div>
     </div>

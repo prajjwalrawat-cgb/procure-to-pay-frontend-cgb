@@ -51,10 +51,10 @@ function Drawer({
       <aside className="border-line bg-panel fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l">
         <header className="border-line bg-panel sticky top-0 flex items-start justify-between border-b px-5 py-4">
           <div className="min-w-0">
-            <h2 className="tracking-heading text-ink truncate text-[16px] font-semibold">
+            <h2 className="tracking-heading text-ink truncate text-h3 font-semibold">
               {isLoading ? 'Loading…' : data?.name}
             </h2>
-            <p className="font-numeric text-muted text-[12px]">
+            <p className="font-numeric text-muted text-caption">
               {data?.code}
               {data?.colour ? ` — ${data.colour}` : ''}
             </p>
@@ -64,7 +64,7 @@ function Drawer({
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="text-accent-2 text-[13px] font-medium hover:underline"
+                className="text-accent-2 text-body-sm font-medium hover:underline"
               >
                 Edit
               </button>
@@ -72,7 +72,7 @@ function Drawer({
             <button
               type="button"
               onClick={onClose}
-              className="text-muted hover:text-ink text-[13px]"
+              className="text-muted hover:text-ink text-body-sm"
             >
               Close
             </button>
@@ -92,7 +92,7 @@ function Drawer({
                   href={data.imageUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-accent-2 text-[12px] hover:underline"
+                  className="text-accent-2 text-caption hover:underline"
                 >
                   Open product image ↗
                 </a>
@@ -116,11 +116,11 @@ function Drawer({
                 />
               </div>
               {data.lowStock && (
-                <p className="text-[11px] text-warn mt-1.5">
+                <p className="text-micro text-warn mt-1.5">
                   At or below the reorder point of {data.reorderPoint}.
                 </p>
               )}
-              <p className="text-faint mt-1.5 text-[11px]">
+              <p className="text-faint mt-1.5 text-micro">
                 Summed from the ledger, so they are not editable. Use{' '}
                 <a
                   href="/inventory/adjustments"
@@ -135,10 +135,10 @@ function Drawer({
             <section>
               <SectionTitle>Location &amp; Rack No.</SectionTitle>
               {data.locations.length === 0 ? (
-                <p className="text-muted text-[13px]">No stock on hand.</p>
+                <p className="text-muted text-body-sm">No stock on hand.</p>
               ) : (
-                <table className="w-full text-[13px]">
-                  <thead className="border-line border-b text-left text-[12px] text-muted">
+                <table className="w-full text-body-sm">
+                  <thead className="border-line border-b text-left text-caption text-muted">
                     <tr>
                       <th className="py-1 font-medium">Location</th>
                       <th className="py-1 font-medium">Rack No.</th>
@@ -162,7 +162,7 @@ function Drawer({
 
             <section>
               <SectionTitle>Product details</SectionTitle>
-              <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-[13px]">
+              <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-body-sm">
                 <Row label="Category">
                   {data.category === 'Uncategorized' ? (
                     <span className="text-faint">Uncategorised</span>
@@ -198,7 +198,7 @@ function Drawer({
             {/* Superseded by `code`, kept so the old sheet stays fully auditable. */}
             <section>
               <SectionTitle>Legacy references</SectionTitle>
-              <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-[13px]">
+              <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-body-sm">
                 <Row label="Product ID">
                   <span className="font-numeric text-muted">
                     {data.legacyProductId ?? '—'}
@@ -208,12 +208,12 @@ function Drawer({
                   <span className="font-numeric text-muted">{data.legacySku ?? '—'}</span>
                 </Row>
                 <Row label="Imported by">
-                  <span className="font-numeric text-muted text-[12px]">
+                  <span className="font-numeric text-muted text-caption">
                     {data.createdFromImportBatchId ?? 'Created manually'}
                   </span>
                 </Row>
                 <Row label="Linked item">
-                  <span className="font-numeric text-muted text-[12px]">
+                  <span className="font-numeric text-muted text-caption">
                     {data.itemId ?? 'Not linked to the item master'}
                   </span>
                 </Row>
@@ -222,7 +222,7 @@ function Drawer({
 
             <section>
               <SectionTitle>Remark</SectionTitle>
-              <p className="text-text whitespace-pre-wrap text-[13px]">
+              <p className="text-text whitespace-pre-wrap text-body-sm">
                 {data.remark || <span className="text-muted">No notes.</span>}
               </p>
             </section>
@@ -340,7 +340,7 @@ function EditForm({
           label="Batch tracked"
           hint="Receipts must carry a batch number and expiry; picking goes oldest-first."
         >
-          <label className="flex items-center gap-2 py-1 text-[13px]">
+          <label className="flex items-center gap-2 py-1 text-body-sm">
             <input
               type="checkbox"
               className="h-4 w-4"
@@ -382,7 +382,7 @@ function EditForm({
         </div>
       </div>
 
-      <p className="text-faint text-[11px]">
+      <p className="text-faint text-micro">
         Product code {product.code} is generated by the system and cannot be
         changed. Stock quantities are not editable here.
       </p>
@@ -395,7 +395,7 @@ function EditForm({
           disabled={busy}
           onClick={() => void toggleActive()}
           className={
-            'text-[12px] font-medium hover:underline ' +
+            'text-caption font-medium hover:underline ' +
             (product.active ? 'text-danger' : 'text-success')
           }
         >
@@ -421,7 +421,7 @@ function EditForm({
 
 function SectionTitle({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <h3 className="text-faint mb-2 text-[11px] font-medium ">
+    <h3 className="text-faint mb-2 text-micro font-medium ">
       {children}
     </h3>
   );
@@ -440,11 +440,11 @@ function Stat({
 }): React.JSX.Element {
   return (
     <div className="bg-panel px-3 py-2">
-      <div className="text-faint text-[11px]">{label}</div>
+      <div className="text-faint text-micro">{label}</div>
       <div
         className={
           'font-numeric tabular-nums ' +
-          (emphasis ? 'text-[18px] font-semibold ' : 'text-[15px] ') +
+          (emphasis ? 'text-h2 font-semibold ' : 'text-h3 ') +
           (warn ? 'text-warn' : 'text-ink')
         }
       >

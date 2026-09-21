@@ -157,9 +157,9 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
         brand={
           <Link href="/" className="flex items-center gap-2">
             <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-sm text-white">
-              <span className="text-[12px] font-bold">P</span>
+              <span className="text-caption font-bold">P</span>
             </span>
-            <span className="text-ink tracking-heading hidden text-[14px] font-semibold sm:inline">
+            <span className="text-ink tracking-heading hidden text-body font-semibold sm:inline">
               ProcureFlow
             </span>
           </Link>
@@ -182,7 +182,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
             >
               <Bell className="h-4 w-4" aria-hidden />
               {notificationCount > 0 && (
-                <span className="bg-accent absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white">
+                <span className="bg-accent absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-micro font-bold text-white">
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}
@@ -198,21 +198,15 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
 
       {/* overscroll-contain stops the chain: without it, hitting the bottom of
           the content carried on scrolling into whatever was behind it. */}
-      {/* One content container for the whole app.
-       *
-       * Left-aligned, not centred. Centring a 1400px column on a 1920px screen
-       * put a 260px gutter down the left of every page — and since most pages
-       * then capped themselves narrower still, the result was a wide margin on
-       * the left and a wider void on the right. The gutter is now just the
-       * padding, so content starts in the same place on every screen and the
-       * cap only stops rows growing absurdly long on an ultra-wide monitor.
-       *
-       * Forms and wizards still cap their own measure from this same edge. */}
+      {/* One content column for the whole app — `.pf-container` in styles.css.
+       * Centred, and shared with the nav rows so the brand, the section tabs
+       * and every page title start on the same line. Pages fill it; forms cap
+       * themselves narrower and centre within it. */}
       <main
         id="main-content"
-        className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 lg:px-8 lg:py-6"
+        className="flex-1 overflow-y-auto overscroll-contain py-4 sm:py-5 lg:py-6"
       >
-        <div className="w-full max-w-[1680px]">{children}</div>
+        <div className="pf-container">{children}</div>
       </main>
 
       <CommandPalette
@@ -287,20 +281,20 @@ function AccountMenu({
           className="border-line bg-panel absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-lg border shadow-lg"
         >
           <div className="border-line border-b px-3 py-2.5">
-            <p className="text-ink truncate text-[13px] font-medium">
+            <p className="text-ink truncate text-body-sm font-medium">
               {user?.name ?? 'Signed in'}
             </p>
             {user?.email ? (
-              <p className="text-muted truncate text-[12px]">{user.email}</p>
+              <p className="text-muted truncate text-caption">{user.email}</p>
             ) : null}
             {user?.tenant?.name ? (
-              <p className="text-faint mt-1 truncate text-[12px]">{user.tenant.name}</p>
+              <p className="text-faint mt-1 truncate text-caption">{user.tenant.name}</p>
             ) : null}
           </div>
           <button
             type="button"
             role="menuitem"
-            className="text-text hover:bg-canvas block w-full px-3 py-2 text-left text-[13px]"
+            className="text-text hover:bg-canvas block w-full px-3 py-2 text-left text-body-sm"
             onClick={() => {
               setOpen(false);
               void onLogout();

@@ -37,7 +37,7 @@ export function CustomFieldInputs({
 
   return (
     <section className="rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-[14px] font-semibold text-ink">Additional details</h2>
+      <h2 className="mb-3 text-body font-semibold text-ink">Additional details</h2>
       <div className="grid gap-3 md:grid-cols-2">
         {defs.map((def) => (
           <CustomFieldInput
@@ -65,7 +65,7 @@ function CustomFieldInput({
   onChange: (v: unknown) => void;
 }): React.JSX.Element {
   const inputCls =
-    'border-line bg-panel text-text focus-visible:ring-accent h-9 w-full rounded-sm border px-3 text-[13px] outline-none focus-visible:ring-2';
+    'border-line bg-panel text-text focus-visible:ring-accent h-9 w-full rounded-sm border px-3 text-body-sm outline-none focus-visible:ring-2';
 
   const control = (): React.JSX.Element => {
     switch (def.fieldType) {
@@ -75,7 +75,7 @@ function CustomFieldInput({
             value={String(value ?? '')}
             onChange={(e) => onChange(e.target.value)}
             rows={2}
-            className="w-full rounded-sm border border-line bg-panel px-3 py-2 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="w-full rounded-sm border border-line bg-panel px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
           />
         );
       case 'NUMBER':
@@ -98,7 +98,7 @@ function CustomFieldInput({
         );
       case 'CHECKBOX':
         return (
-          <label className="flex h-9 items-center gap-2 text-[13px]">
+          <label className="flex h-9 items-center gap-2 text-body-sm">
             <input
               type="checkbox"
               checked={Boolean(value)}
@@ -127,7 +127,7 @@ function CustomFieldInput({
         return (
           <div className="flex flex-wrap gap-2 py-1">
             {def.options.map((o) => (
-              <label key={o} className="flex items-center gap-1.5 text-[12px]">
+              <label key={o} className="flex items-center gap-1.5 text-caption">
                 <input
                   type="checkbox"
                   checked={selected.includes(o)}
@@ -158,15 +158,15 @@ function CustomFieldInput({
 
   return (
     <label className="block">
-      <span className="mb-1 block text-[12px] text-muted">
+      <span className="mb-1 block text-caption text-muted">
         {def.label}
         {def.isRequired && <span className="text-danger"> *</span>}
       </span>
       {control()}
       {def.helpText && def.fieldType !== 'CHECKBOX' && !error && (
-        <span className="mt-1 block text-[11px] text-faint">{def.helpText}</span>
+        <span className="mt-1 block text-micro text-faint">{def.helpText}</span>
       )}
-      {error && <span className="mt-1 block text-[11px] text-danger">{error}</span>}
+      {error && <span className="mt-1 block text-micro text-danger">{error}</span>}
     </label>
   );
 }
@@ -188,7 +188,7 @@ export function CustomFieldList({
   if (rows.length === 0) return null;
 
   return (
-    <dl className="flex flex-col gap-1 text-[12px]">
+    <dl className="flex flex-col gap-1 text-caption">
       {rows.map((d) => (
         <div key={d.id} className="flex items-center justify-between gap-3">
           <dt className="text-muted">{d.label}</dt>

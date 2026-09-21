@@ -40,7 +40,7 @@ export function BranchesSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <div className="text-body-sm text-muted">Loading…</div>;
   }
 
   const startNew = (): void => {
@@ -111,7 +111,7 @@ export function BranchesSection(): React.JSX.Element {
       }
     >
       {data.branches.length === 0 && editing === null && (
-        <p className="text-[12px] text-muted">
+        <p className="text-caption text-muted">
           No registrations yet. Add the branch that raises purchase orders.
         </p>
       )}
@@ -124,10 +124,10 @@ export function BranchesSection(): React.JSX.Element {
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-text">{b.name}</span>
+                <span className="text-body-sm font-medium text-text">{b.name}</span>
                 {b.isDefault && <Pill variant="success">Default</Pill>}
               </div>
-              <div className="font-numeric truncate text-[11px] text-muted">
+              <div className="font-numeric truncate text-micro text-muted">
                 {b.gstin ?? 'No GSTIN'} ,{' '}
                 {SELECTABLE_GST_STATES.find((s) => s.code === b.stateCode)?.name ??
                   b.stateCode}
@@ -138,7 +138,7 @@ export function BranchesSection(): React.JSX.Element {
               {!b.isDefault && (
                 <button
                   type="button"
-                  className="text-[12px] text-muted hover:text-text"
+                  className="text-caption text-muted hover:text-text"
                   disabled={setDefault.isPending}
                   onClick={() =>
                     setDefault.mutate(b.id, {
@@ -153,7 +153,7 @@ export function BranchesSection(): React.JSX.Element {
               )}
               <button
                 type="button"
-                className="text-[12px] font-medium text-accent-2"
+                className="text-caption font-medium text-accent-2"
                 onClick={() => startEdit(b)}
               >
                 Edit
@@ -165,7 +165,7 @@ export function BranchesSection(): React.JSX.Element {
 
       {editing !== null && (
         <div className="mt-2 rounded-sm border border-line bg-canvas p-3">
-          <div className="mb-2 text-[13px] font-medium text-ink">
+          <div className="mb-2 text-body-sm font-medium text-ink">
             {editing === 'new' ? 'New registration' : 'Edit registration'}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -220,7 +220,7 @@ export function BranchesSection(): React.JSX.Element {
               />
             </Field>
           </div>
-          <label className="mt-3 flex items-center gap-2 text-[12px]">
+          <label className="mt-3 flex items-center gap-2 text-caption">
             <input
               type="checkbox"
               checked={!!form.isDefault}

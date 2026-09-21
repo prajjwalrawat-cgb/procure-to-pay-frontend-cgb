@@ -45,7 +45,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
   const [decisionComment, setDecisionComment] = useState('');
 
   if (isLoading || !data) {
-    return <div className="text-muted p-6 text-[13px]">Loading requisition…</div>;
+    return <div className="text-muted p-6 text-body-sm">Loading requisition…</div>;
   }
 
   const onDecide = (decision: 'APPROVE' | 'REJECT' | 'REQUEST_CHANGES'): void => {
@@ -97,7 +97,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
     <div className="pb-20">
       <Link
         href="/requisitions"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="text-muted mb-3 inline-flex items-center gap-1 text-caption"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisitions
       </Link>
@@ -119,7 +119,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
         }
         description={
           <>
-            <span className="text-text text-[15px] font-medium">{data.title}</span>
+            <span className="text-text text-h3 font-medium">{data.title}</span>
             <br />
             {data.requester.name}
             {data.requester.deptName ? `, ${data.requester.deptName}` : ''}, Needed{' '}
@@ -145,10 +145,10 @@ export default function RequisitionDetailPage(): React.JSX.Element {
         <div className="flex flex-col gap-5">
           {/* Line items */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">Line items</h2>
+            <h2 className="text-ink mb-2 text-body font-semibold">Line items</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
-                <thead className="border-line border-b text-left text-[12px] text-muted">
+              <table className="w-full text-caption">
+                <thead className="border-line border-b text-left text-caption text-muted">
                   <tr>
                     <th className="px-3 py-2 font-medium">Item</th>
                     <th className="px-3 py-2 font-medium">HSN</th>
@@ -163,7 +163,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                     <tr key={l.id} className="border-line border-t">
                       <td className="px-3 py-2">
                         <div className="text-text">{l.itemDesc}</div>
-                        <div className="font-numeric text-faint text-[10px]">
+                        <div className="font-numeric text-faint text-micro">
                           {l.skuCode ?? 'Non-catalogued'}
                           {l.preferredVendor ? `, ${l.preferredVendor.name}` : ''}
                         </div>
@@ -192,7 +192,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
 
           {/* Approval chain */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval route</h2>
+            <h2 className="text-ink mb-2 text-body font-semibold">Approval route</h2>
             <div className="border-line bg-panel rounded-lg border p-4">
               <ApprovalChain steps={data.liveApprovalChain} />
             </div>
@@ -200,11 +200,11 @@ export default function RequisitionDetailPage(): React.JSX.Element {
 
           {/* PO conversions */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">
+            <h2 className="text-ink mb-2 text-body font-semibold">
               PO conversion history
             </h2>
             {data.poConversions.length === 0 ? (
-              <div className="text-muted text-[12px]">
+              <div className="text-muted text-caption">
                 No purchase orders raised from this requisition yet.
               </div>
             ) : (
@@ -213,7 +213,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                   <Link
                     key={po.id}
                     href={`/purchase-orders/${po.id}`}
-                    className="border-line bg-panel hover:border-accent/50 flex items-center justify-between rounded-lg border px-3 py-2 text-[12px]"
+                    className="border-line bg-panel hover:border-accent/50 flex items-center justify-between rounded-lg border px-3 py-2 text-caption"
                   >
                     <span>
                       <span className="font-numeric text-ink font-medium">
@@ -245,10 +245,10 @@ export default function RequisitionDetailPage(): React.JSX.Element {
 
           {/* Activity + comments */}
           <section>
-            <h2 className="text-ink mb-2 text-[14px] font-semibold">Activity</h2>
+            <h2 className="text-ink mb-2 text-body font-semibold">Activity</h2>
             <ul className="border-line mb-3 flex flex-col gap-1.5 border-l pl-4">
               {data.activity.map((a) => (
-                <li key={a.id} className="text-muted text-[12px]">
+                <li key={a.id} className="text-muted text-caption">
                   <span className="text-text font-medium">
                     {a.action.replace(/_/g, ' ')}
                   </span>{' '}
@@ -259,7 +259,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                 </li>
               ))}
               {data.activity.length === 0 && (
-                <li className="text-faint text-[12px]">No activity yet.</li>
+                <li className="text-faint text-caption">No activity yet.</li>
               )}
             </ul>
 
@@ -267,11 +267,11 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               <div className="mb-3 flex flex-col gap-2">
                 {data.comments.map((c) => (
                   <div key={c.id}
-                    className="border-line bg-panel rounded-lg border px-3 py-2 text-[12px]"
+                    className="border-line bg-panel rounded-lg border px-3 py-2 text-caption"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-text font-medium">{c.authorName}</span>
-                      <span className="font-numeric text-faint text-[10px]">
+                      <span className="font-numeric text-faint text-micro">
                         {formatDateTime(c.createdAt)}
                       </span>
                     </div>
@@ -286,7 +286,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Add a comment…"
-                className="border-line bg-panel focus-visible:ring-accent flex-1 rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2"
+                className="border-line bg-panel focus-visible:ring-accent flex-1 rounded-sm border px-3 py-2 text-body-sm outline-none focus-visible:ring-2"
               />
               <Button
                 size="sm"
@@ -310,11 +310,11 @@ export default function RequisitionDetailPage(): React.JSX.Element {
         {/* Right panel */}
         <aside className="flex flex-col gap-4">
           <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint text-[11px]">Total</div>
-            <div className="font-numeric tracking-display text-ink mt-1 text-[22px] font-semibold">
+            <div className="text-faint text-micro">Total</div>
+            <div className="font-numeric tracking-display text-ink mt-1 text-h1 font-semibold">
               {inr(data.amounts.total)}
             </div>
-            <dl className="mt-3 flex flex-col gap-1 text-[12px]">
+            <dl className="mt-3 flex flex-col gap-1 text-caption">
               <Row
                 label={`Taxable (${data.amounts.taxKind})`}
                 value={inr(data.amounts.subtotal)}
@@ -329,11 +329,11 @@ export default function RequisitionDetailPage(): React.JSX.Element {
           {data.budget && <BudgetBlock budget={data.budget} />}
 
           <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px]">
+            <div className="text-faint mb-2 text-micro">
               Requester
             </div>
-            <div className="text-ink text-[13px] font-medium">{data.requester.name}</div>
-            <dl className="mt-1 flex flex-col gap-1 text-[12px]">
+            <div className="text-ink text-body-sm font-medium">{data.requester.name}</div>
+            <dl className="mt-1 flex flex-col gap-1 text-caption">
               <Row label="Department" value={data.requester.deptName ?? '—'} />
               <Row
                 label="Cost centre"
@@ -345,10 +345,10 @@ export default function RequisitionDetailPage(): React.JSX.Element {
           </div>
 
           <div className="border-line bg-panel rounded-lg border p-4">
-            <div className="text-faint mb-2 text-[11px]">
+            <div className="text-faint mb-2 text-micro">
               Scheduling
             </div>
-            <dl className="flex flex-col gap-1 text-[12px]">
+            <dl className="flex flex-col gap-1 text-caption">
               <Row label="Priority" value={data.priority} />
               <Row
                 label="Needed by"
@@ -377,7 +377,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
                 onChange={(e) => setDecisionComment(e.target.value)}
                 placeholder="Add a decision comment…"
                 aria-label="Decision comment"
-                className="border-line bg-panel min-w-0 flex-1 basis-full rounded-sm border px-3 py-2 text-[13px] outline-none sm:basis-auto"
+                className="border-line bg-panel min-w-0 flex-1 basis-full rounded-sm border px-3 py-2 text-body-sm outline-none sm:basis-auto"
               />
               <div className="flex items-center gap-2">
                 <Button
@@ -410,7 +410,7 @@ export default function RequisitionDetailPage(): React.JSX.Element {
               {/* A draft with no permitted actions would otherwise render an
                   empty bar, leaving the user with no idea why. */}
               {data.status === 'DRAFT' && !data.canSubmit && !data.canEdit && (
-                <span className="text-faint text-[12px]">
+                <span className="text-faint text-caption">
                   You can view this draft but not submit it — ask a Procurement Head or
                   an admin.
                 </span>
@@ -541,10 +541,10 @@ function AttachmentsSection(props: {
 
   return (
     <section>
-      <h2 className="text-ink mb-2 text-[14px] font-semibold">Attachments</h2>
+      <h2 className="text-ink mb-2 text-body font-semibold">Attachments</h2>
 
       {props.attachments.length === 0 ? (
-        <div className="text-muted mb-3 text-[12px]">
+        <div className="text-muted mb-3 text-caption">
           No quotations, proforma invoices or specs attached yet.
         </div>
       ) : (
@@ -558,16 +558,16 @@ function AttachmentsSection(props: {
                     href={a.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-accent-2 block truncate text-[13px] underline underline-offset-2"
+                    className="text-accent-2 block truncate text-body-sm underline underline-offset-2"
                   >
                     {a.filename}
                   </a>
                 ) : (
-                  <span className="text-text block truncate text-[13px]">
+                  <span className="text-text block truncate text-body-sm">
                     {a.filename}
                   </span>
                 )}
-                <div className="text-muted text-[11px]">
+                <div className="text-muted text-micro">
                   {DOC_TYPE_LABEL[a.docType] ?? a.docType} ,{' '}
                   <span className="font-numeric">{fileSize(a.sizeBytes)}</span>,{' '}
                   {a.uploadedByName ?? 'Unknown'} ,{' '}
@@ -576,7 +576,7 @@ function AttachmentsSection(props: {
                   </span>
                 </div>
                 {a.addedAfterApproval && (
-                  <div className="text-warn mt-0.5 flex items-center gap-1 text-[11px] font-medium">
+                  <div className="text-warn mt-0.5 flex items-center gap-1 text-micro font-medium">
                     <AlertTriangle className="h-3 w-3 shrink-0" />
                     Added after approval — the approver did not see this document
                   </div>
@@ -604,7 +604,7 @@ function AttachmentsSection(props: {
       )}
 
       {props.canAttach && postApproval && (
-        <p className="text-warn mb-2 flex items-start gap-1 text-[11px]">
+        <p className="text-warn mb-2 flex items-start gap-1 text-micro">
           <AlertTriangle className="mt-px h-3 w-3 shrink-0" />
           This requisition is already approved. Anything you attach now will be marked
           as added after approval.
@@ -612,13 +612,13 @@ function AttachmentsSection(props: {
       )}
 
       {!props.canAttach && !DELETE_LOCKED_STATES.includes(props.status) && (
-        <p className="text-faint text-[11px]">
+        <p className="text-faint text-micro">
           Only the requester or an approver on this requisition can attach documents.
         </p>
       )}
 
       {!props.canAttach && postApproval && (
-        <p className="text-faint text-[11px]">
+        <p className="text-faint text-micro">
           This requisition is approved — only an approver on it can attach further
           documents. Send the file to your approver instead.
         </p>
@@ -630,7 +630,7 @@ function AttachmentsSection(props: {
             aria-label="Document type"
             value={docType}
             onChange={(e) => setDocType(e.target.value as RequisitionAttachmentType)}
-            className="border-line bg-panel rounded-sm border px-2 py-2 text-[12px]"
+            className="border-line bg-panel rounded-sm border px-2 py-2 text-caption"
           >
             {REQUISITION_ATTACHMENT_TYPE.map((t) => (
               <option key={t} value={t}>
@@ -672,8 +672,8 @@ function BudgetBlock({ budget }: { budget: BudgetCheckResult }): React.JSX.Eleme
     allocated > 0 ? Math.min(100, ((committed + consumed) / allocated) * 100) : 0;
   return (
     <div className="border-line bg-panel rounded-lg border p-4">
-      <div className="text-faint mb-2 text-[11px]">Budget</div>
-      <dl className="flex flex-col gap-1 text-[12px]">
+      <div className="text-faint mb-2 text-micro">Budget</div>
+      <dl className="flex flex-col gap-1 text-caption">
         <Row label="Allocated" value={inr(budget.allocated)} />
         <Row label="Committed" value={inr(budget.committed)} />
         <Row label="Consumed" value={inr(budget.consumed)} />
@@ -687,7 +687,7 @@ function BudgetBlock({ budget }: { budget: BudgetCheckResult }): React.JSX.Eleme
           style={{ width: `${usedPct}%` }}
         />
       </div>
-      <div className="text-faint mt-1 text-[10px]">{usedPct.toFixed(0)}% utilised</div>
+      <div className="text-faint mt-1 text-micro">{usedPct.toFixed(0)}% utilised</div>
     </div>
   );
 }

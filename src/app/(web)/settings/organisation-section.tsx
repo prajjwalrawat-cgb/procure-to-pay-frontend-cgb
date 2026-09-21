@@ -28,7 +28,7 @@ export function OrganisationSection(): React.JSX.Element {
   }, [data]);
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <div className="text-body-sm text-muted">Loading…</div>;
   }
 
   const onSave = (): void => {
@@ -90,7 +90,7 @@ export function OrganisationSection(): React.JSX.Element {
         <Button variant="primary" disabled={update.isPending} onClick={onSave}>
           {update.isPending ? 'Saving…' : 'Save changes'}
         </Button>
-        <span className="text-[12px] text-faint">
+        <span className="text-caption text-faint">
           Applies to documents generated from now on.
         </span>
       </div>

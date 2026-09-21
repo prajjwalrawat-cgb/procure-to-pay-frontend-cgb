@@ -98,9 +98,9 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
         brand={
           <Link href="/vendor" className="flex items-center gap-2">
             <span className="bg-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-white">
-              <span className="text-[12px] font-bold">P</span>
+              <span className="text-caption font-bold">P</span>
             </span>
-            <span className="text-ink tracking-heading hidden text-[14px] font-semibold sm:inline">
+            <span className="text-ink tracking-heading hidden text-body font-semibold sm:inline">
               Supplier
             </span>
           </Link>
@@ -113,7 +113,7 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
         searchPlaceholder="Search orders, invoices, RFQs…"
         right={
           <>
-            <span className="text-muted hidden text-[12px] sm:inline">
+            <span className="text-muted hidden text-caption sm:inline">
               {user?.name ?? 'Vendor'}
             </span>
             <Button variant="secondary" size="sm" onClick={() => void logout()}>
@@ -135,9 +135,9 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
        * Forms and wizards still cap their own measure from this same edge. */}
       <main
         id="vendor-main"
-        className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 lg:px-8 lg:py-6"
+        className="flex-1 overflow-y-auto overscroll-contain py-4 sm:py-5 lg:py-6"
       >
-        <div className="w-full max-w-[1680px]">{children}</div>
+        <div className="pf-container">{children}</div>
       </main>
 
       <CommandPalette

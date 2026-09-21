@@ -42,7 +42,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
     });
 
   return (
-    <div className="max-w-6xl">
+    <div>
       <PageHeader
         title={data.number}
         numeric
@@ -137,7 +137,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
       </div>
 
       {data.varianceFlags.length > 0 && (
-        <div className="bg-warn-wash text-warn mb-4 rounded-sm px-3 py-2 text-[12px]">
+        <div className="bg-warn-wash text-warn mb-4 rounded-sm px-3 py-2 text-caption">
           Flags: {data.varianceFlags.join(', ')}
           {data.requiresPlantHeadSignoff && ', plant-head sign-off required to post'}
         </div>
@@ -147,7 +147,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
         <div className="min-w-0 space-y-4 lg:col-span-2">
           {/* Gate details */}
           <Card title="Gate details">
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-caption sm:grid-cols-2">
               <Def k="Gate entry" v={data.gate.gateEntryRef} />
               <Def k="Vehicle" v={data.gate.vehicleNo} />
               <Def k="Driver" v={data.gate.driverName} />
@@ -167,8 +167,8 @@ export default function ReceiptDetailPage(): React.JSX.Element {
             {/* Six columns will not fit a phone; the table scrolls inside the
                 card rather than widening the page. */}
             <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-[12px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full min-w-[520px] text-caption">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="py-1">Item</th>
                   <th className="py-1 text-right">Received</th>
@@ -211,14 +211,14 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                 l.qcSamples.map((s) => (
                   <div key={s.id} className="border-line border-t py-2 first:border-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-text text-[12px]">
+                      <span className="text-text text-caption">
                         {l.itemDesc}, sample {s.sampleSize}
                       </span>
                       <Pill variant={statusVariant(s.result)}>
                         {statusLabel(s.result)}
                       </Pill>
                     </div>
-                    <div className="text-faint mt-1 flex flex-wrap gap-2 text-[11px]">
+                    <div className="text-faint mt-1 flex flex-wrap gap-2 text-micro">
                       {s.parameters.map((p) => (
                         <span
                           key={p.parameter}
@@ -249,7 +249,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                 detail="Receipt events will be listed here as they happen."
               />
             ) : (
-              <ul className="space-y-1 text-[12px]">
+              <ul className="space-y-1 text-caption">
                 {data.activity.map((a) => (
                   <li key={a.id} className="flex justify-between gap-3">
                     <span className="text-text">{a.action}</span>
@@ -265,7 +265,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
 
         <div className="space-y-4">
           <Card title="Purchase order">
-            <div className="text-[12px]">
+            <div className="text-caption">
               <Link
                 href={`/purchase-orders/${data.po.id}`}
                 className="font-numeric text-accent-2 hover:underline"
@@ -282,7 +282,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
             <Card title="Return authorisation">
               <Link
                 href={`/rma/${data.rma.id}`}
-                className="font-numeric text-accent-2 text-[12px] hover:underline"
+                className="font-numeric text-accent-2 text-caption hover:underline"
               >
                 {data.rma.number}
               </Link>
@@ -297,7 +297,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
           {data.invoiceLinks.length > 0 && (
             <Card title="Invoice matches">
               {data.invoiceLinks.map((i) => (
-                <div key={i.id} className="flex items-center justify-between text-[12px]">
+                <div key={i.id} className="flex items-center justify-between text-caption">
                   <Link
                     href={`/invoices/${i.id}`}
                     className="font-numeric text-accent-2 hover:underline"
@@ -312,7 +312,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
 
           <Card title="Stock impact">
             {data.lines.map((l) => (
-              <div key={l.id} className="text-[12px]">
+              <div key={l.id} className="text-caption">
                 <span className="text-text">{l.itemDesc}</span>
                 <p className="text-faint font-numeric">
                   {l.stockBefore ?? '—'} → {l.stockAfter ?? '—'}
@@ -322,7 +322,7 @@ export default function ReceiptDetailPage(): React.JSX.Element {
           </Card>
 
           <Card title="Total">
-            <p className="font-numeric text-ink text-[16px] font-semibold">
+            <p className="font-numeric text-ink text-h3 font-semibold">
               {inr(data.totals.value)}
             </p>
           </Card>
@@ -344,7 +344,7 @@ function Card({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-4">
-      <h2 className="text-faint mb-2 text-[11px] font-medium ">
+      <h2 className="text-faint mb-2 text-micro font-medium ">
         {title}
       </h2>
       {children}

@@ -91,7 +91,7 @@ export function MetricBar({
 
   return (
     <div className={cn('py-1', className)}>
-      <div className="flex items-baseline justify-between gap-3 text-[13px]">
+      <div className="flex items-baseline justify-between gap-3 text-body-sm">
         <span className="text-muted" title={typeof help === 'string' ? help : undefined}>
           {label}
         </span>
@@ -99,7 +99,7 @@ export function MetricBar({
           <span className="font-numeric text-ink">{`${value}${suffix}`}</span>
         ) : null}
       </div>
-      {!hasValue && <p className="text-faint mt-0.5 text-[12px]">{emptyReason}</p>}
+      {!hasValue && <p className="text-faint mt-0.5 text-caption">{emptyReason}</p>}
       {scale && hasValue && (
         <div
           className="bg-canvas border-line mt-1 h-1.5 w-full overflow-hidden rounded-full border"

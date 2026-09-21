@@ -40,20 +40,20 @@ export default function SavingsPage(): React.JSX.Element {
           <div key={t.initiativeType}
             className="border-line bg-panel rounded-lg border p-3"
           >
-            <div className="text-faint flex items-center gap-1 text-[11px]">
+            <div className="text-faint flex items-center gap-1 text-micro">
               {SAVINGS_METHODOLOGY[t.initiativeType].shortLabel}
               <span title={SAVINGS_METHODOLOGY[t.initiativeType].methodology}>
                 <Info className="text-faint h-3 w-3" />
               </span>
             </div>
             <div className={
-                'font-numeric mt-1 text-[20px] font-semibold ' +
+                'font-numeric mt-1 text-h2 font-semibold ' +
                 (t.hard ? 'text-accent-2' : 'text-ink')
               }
             >
               {inrCompact(t.amount)}
             </div>
-            <div className="text-faint text-[10px]">
+            <div className="text-faint text-micro">
               {t.count} initiative(s){t.selfReported ? ', self-reported' : ''}
             </div>
           </div>
@@ -61,9 +61,9 @@ export default function SavingsPage(): React.JSX.Element {
       </div>
 
       <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-        <h3 className="text-ink mb-2 text-[14px] font-semibold">Initiatives</h3>
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <h3 className="text-ink mb-2 text-body font-semibold">Initiatives</h3>
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="p-2 text-left">Type</th>
               <th className="p-2 text-left">Source</th>
@@ -117,8 +117,8 @@ export default function SavingsPage(): React.JSX.Element {
         {/* Buyer leaderboard — hidden entirely without permission */}
         {canSeeLeaderboard && (
           <div className="border-line bg-panel rounded-lg border p-4">
-            <h3 className="text-ink mb-2 text-[14px] font-semibold">Buyer leaderboard</h3>
-            <table className="w-full text-[13px]">
+            <h3 className="text-ink mb-2 text-body font-semibold">Buyer leaderboard</h3>
+            <table className="w-full text-body-sm">
               <tbody>
                 {(leaderboard.data?.rows ?? []).map((r) => (
                   <tr key={r.buyerId} className="border-line border-b last:border-0">
@@ -136,25 +136,25 @@ export default function SavingsPage(): React.JSX.Element {
 
         {/* Log avoided cost */}
         <div className="border-line bg-panel rounded-lg border p-4">
-          <h3 className="text-ink mb-2 text-[14px] font-semibold">Log avoided cost</h3>
-          <p className="text-faint mb-2 text-[11px]">
+          <h3 className="text-ink mb-2 text-body font-semibold">Log avoided cost</h3>
+          <p className="text-faint mb-2 text-micro">
             Self-reported; held for review before it counts.
           </p>
           <div className="flex flex-col gap-2">
             <input
-              className="border-line rounded-sm border px-2 py-1.5 text-[13px]"
+              className="border-line rounded-sm border px-2 py-1.5 text-body-sm"
               placeholder="Baseline value (₹)"
               value={form.baselineValue}
               onChange={(e) => setForm({ ...form, baselineValue: e.target.value })}
             />
             <input
-              className="border-line rounded-sm border px-2 py-1.5 text-[13px]"
+              className="border-line rounded-sm border px-2 py-1.5 text-body-sm"
               placeholder="Actual value (₹)"
               value={form.awardedValue}
               onChange={(e) => setForm({ ...form, awardedValue: e.target.value })}
             />
             <textarea
-              className="border-line rounded-sm border px-2 py-1.5 text-[13px]"
+              className="border-line rounded-sm border px-2 py-1.5 text-body-sm"
               placeholder="Justification (required, min 10 chars)"
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -167,7 +167,7 @@ export default function SavingsPage(): React.JSX.Element {
                 })
               }
               disabled={logAvoided.isPending || form.notes.length < 10}
-              className="bg-ink rounded-md px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-40"
+              className="bg-ink rounded-md px-3 py-1.5 text-body-sm font-medium text-white disabled:opacity-40"
             >
               Submit for review
             </button>

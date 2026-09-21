@@ -35,7 +35,7 @@ export default function InvoiceIntakePage(): React.JSX.Element {
   const dead = (inbound?.items ?? []).filter((e) => e.status === 'DEAD_LETTER');
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <PageHeader
         title="Invoice intake"
         description="Email → invoice, manual OCR review, and quarantined senders, AP queue"
@@ -100,7 +100,7 @@ export default function InvoiceIntakePage(): React.JSX.Element {
           empty={{ title: 'No dead-lettered emails' }}
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
+            <table className="w-full text-body-sm">
               <tbody>
                 {dead.map((e) => (
                   <tr key={e.id} className="border-line border-b last:border-0">
@@ -155,7 +155,7 @@ function ReviewRow({
 
   return (
     <div className="border-line border-b py-2 last:border-0">
-      <div className="flex items-center justify-between text-[13px]">
+      <div className="flex items-center justify-between text-body-sm">
         <div>
           <Link href={`/invoices/${inv.id}`} className="text-accent-2 font-numeric">
             {inv.number}
@@ -166,7 +166,7 @@ function ReviewRow({
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="border-line hover:bg-canvas rounded-md border px-3 py-1 text-[12px]"
+          className="border-line hover:bg-canvas rounded-md border px-3 py-1 text-caption"
         >
           {open ? 'Cancel' : 'Enter data'}
         </button>
@@ -200,7 +200,7 @@ function ReviewRow({
           <button
             type="button"
             onClick={submit}
-            className="bg-accent rounded-md px-3 py-1.5 text-[13px] font-medium text-white sm:col-span-2 lg:col-span-4"
+            className="bg-accent rounded-md px-3 py-1.5 text-body-sm font-medium text-white sm:col-span-2 lg:col-span-4"
           >
             Save & match
           </button>
@@ -221,7 +221,7 @@ function PendingRow({
   const [vendorId, setVendorId] = useState('');
 
   return (
-    <div className="border-line flex items-center justify-between border-b py-2 text-[13px] last:border-0">
+    <div className="border-line flex items-center justify-between border-b py-2 text-body-sm last:border-0">
       <div>
         <span className="font-numeric">{email.fromEmail}</span>
         <span className="text-muted ml-2">{email.subject ?? '—'}</span>
@@ -250,7 +250,7 @@ function PendingRow({
               push(e instanceof Error ? e.message : 'Failed', 'error');
             }
           }}
-          className="bg-ink rounded-md px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-40"
+          className="bg-ink rounded-md px-3 py-1.5 text-caption font-medium text-white disabled:opacity-40"
         >
           Attribute
         </button>
@@ -260,7 +260,7 @@ function PendingRow({
 }
 
 const i =
-  'rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-ink';
+  'rounded-md border border-line bg-panel px-2 py-1.5 text-body-sm outline-none focus:border-ink';
 
 function Section({
   title,
@@ -273,7 +273,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-2 text-[13px] font-semibold">
+      <h2 className="text-ink mb-2 text-body-sm font-semibold">
         {title} <span className="text-faint">({count})</span>
       </h2>
       {children}

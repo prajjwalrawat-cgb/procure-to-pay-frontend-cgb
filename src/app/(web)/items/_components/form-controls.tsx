@@ -28,15 +28,15 @@ export function Field({
 }): React.JSX.Element {
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-[12px] font-medium text-muted">
+      <span className="text-caption font-medium text-muted">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
       {children}
       {error ? (
-        <span className="text-[11px] text-danger">{error}</span>
+        <span className="text-micro text-danger">{error}</span>
       ) : hint ? (
-        <span className="text-[11px] text-faint">{hint}</span>
+        <span className="text-micro text-faint">{hint}</span>
       ) : null}
     </label>
   );

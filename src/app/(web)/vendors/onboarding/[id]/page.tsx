@@ -111,10 +111,10 @@ function ChainTrail({
   if (chain.length === 0) return null;
   return (
     <div className="mt-3 border-t border-line pt-3">
-      {caption && <p className="mb-1 text-[12px] text-muted">{caption}</p>}
+      {caption && <p className="mb-1 text-caption text-muted">{caption}</p>}
       <ul className="space-y-1">
         {chain.map((step) => (
-          <li key={`${step.stepNo}-${step.name}`} className="text-[12px]">
+          <li key={`${step.stepNo}-${step.name}`} className="text-caption">
             <span className={CHAIN_DOT[step.decision]}>●</span>{' '}
             <span className="text-ink">
               {step.approverName ?? humanise(step.role)}
@@ -147,8 +147,8 @@ function AskedFor({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-[12px] text-muted">{heading}</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] text-ink">
+      <p className="text-caption text-muted">{heading}</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-caption text-ink">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -180,7 +180,7 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
   // this panel used to do) reads as though a decision is still expected here.
   if (data.reviewDecision === 'RETURNED_FOR_INFO') {
     return (
-      <div className="space-y-2 text-[13px]">
+      <div className="space-y-2 text-body-sm">
         <Pill variant="warn" dot>
           Returned for info{data.decisionAt && `, ${fmtDate(data.decisionAt)}`}
         </Pill>
@@ -202,7 +202,7 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
   if (data.reviewDecision) {
     const copy = DECISION_COPY[data.reviewDecision];
     return (
-      <div className="space-y-2 text-[13px]">
+      <div className="space-y-2 text-body-sm">
         <Pill variant={copy.variant} dot>
           {copy.label}
           {data.decisionAt && `, ${fmtDate(data.decisionAt)}`}
@@ -220,7 +220,7 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
     const holder =
       current && (current.approverName ?? humanise(current.role).toLowerCase());
     return (
-      <div className="space-y-2 text-[13px]">
+      <div className="space-y-2 text-body-sm">
         <p className="text-muted">
           Submitted on {fmtDate(data.submittedAt)} —{' '}
           {holder
@@ -234,17 +234,17 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
 
   const outstanding = data.steps.filter((s) => !s.done);
   return (
-    <div className="space-y-2 text-[13px]">
+    <div className="space-y-2 text-body-sm">
       <p className="text-muted">
         The vendor has not submitted yet ({data.completionPct}% complete), so there is
         nothing to approve. They can still change everything below.
       </p>
       {outstanding.length > 0 && (
         <div>
-          <p className="text-[12px] text-muted">Still to complete:</p>
+          <p className="text-caption text-muted">Still to complete:</p>
           <ul className="mt-1 space-y-0.5">
             {outstanding.map((s) => (
-              <li key={s.step} className="text-[12px] text-ink">
+              <li key={s.step} className="text-caption text-ink">
                 {s.step}. {s.name}
               </li>
             ))}
@@ -314,13 +314,13 @@ function RenameVendorDialog({
         </DialogDescription>
         <div className="mt-4 space-y-3">
           <div>
-            <label className="mb-1 block text-[12px] font-medium text-muted">
+            <label className="mb-1 block text-caption font-medium text-muted">
               Display name
             </label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-[12px] font-medium text-muted">
+            <label className="mb-1 block text-caption font-medium text-muted">
               Legal entity name
             </label>
             <Input
@@ -379,7 +379,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   // straight off the provider registry.
   const pennyDropSimulated = isSimulated('PENNY_DROP');
 
-  if (isLoading || !data) return <p className="p-6 text-[13px] text-muted">Loading…</p>;
+  if (isLoading || !data) return <p className="p-6 text-body-sm text-muted">Loading…</p>;
 
   const act = (decision: 'APPROVE' | 'REJECT'): void => {
     if (!data.myApprovalId) return;
@@ -412,7 +412,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <PageHeader
         title={data.vendorName}
         breadcrumbs={[
@@ -428,7 +428,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               <button
                 type="button"
                 onClick={() => setRenaming(true)}
-                className="text-[12px] font-medium text-muted underline transition-colors duration-hover hover:text-ink"
+                className="text-caption font-medium text-muted underline transition-colors duration-hover hover:text-ink"
               >
                 Edit name
               </button>
@@ -492,7 +492,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             <CardContent>
               <ol className="space-y-1">
                 {data.steps.map((s) => (
-                  <li key={s.step} className="flex items-center gap-2 text-[13px]">
+                  <li key={s.step} className="flex items-center gap-2 text-body-sm">
                     <span className={s.done ? 'text-accent-2' : 'text-faint'}>
                       {s.done ? '●' : '○'}
                     </span>
@@ -512,9 +512,9 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {!data.bank ? (
-                <p className="text-[13px] text-muted">No bank account submitted yet.</p>
+                <p className="text-body-sm text-muted">No bank account submitted yet.</p>
               ) : (
-                <div className="space-y-2 text-[13px]">
+                <div className="space-y-2 text-body-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-ink">
                       {data.bank.bankName} ••••{data.bank.accountNoLast4},{' '}
@@ -558,13 +558,13 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     )}
                   </p>
                   {data.bank.manualOverrideReason && (
-                    <p className="text-[12px] text-muted">
+                    <p className="text-caption text-muted">
                       Accepted: {data.bank.manualOverrideReason}
                     </p>
                   )}
                   {!data.bank.isVerified && !data.bank.manualOverrideReason && (
                     <div className="space-y-2 rounded-md border border-warn/40 bg-warn-wash p-3">
-                      <p className="text-[12px]">
+                      <p className="text-caption">
                         The bank did not confirm this name holds this account. Check it
                         against the cancelled cheque before activation — this vendor
                         cannot be activated until you accept it or send it back.
@@ -612,13 +612,13 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {data.documents.length === 0 ? (
-                <p className="text-[13px] text-muted">No documents uploaded yet.</p>
+                <p className="text-body-sm text-muted">No documents uploaded yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.documents.map((d) => (
                     <li
                       key={d.id}
-                      className="flex items-center justify-between text-[13px]"
+                      className="flex items-center justify-between text-body-sm"
                     >
                       <div>
                         <span className="font-medium text-ink">
@@ -645,7 +645,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             href={d.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-accent text-[12px] font-medium hover:underline"
+                            className="text-accent text-caption font-medium hover:underline"
                           >
                             View
                           </a>
@@ -716,13 +716,13 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {data.screenings.length === 0 ? (
-                <p className="text-[13px] text-muted">No screenings run yet.</p>
+                <p className="text-body-sm text-muted">No screenings run yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.screenings.map((s) => (
                     <li
                       key={s.id}
-                      className="flex flex-wrap items-center justify-between gap-2 text-[13px]"
+                      className="flex flex-wrap items-center justify-between gap-2 text-body-sm"
                     >
                       <span className="text-ink">
                         {humanise(s.screeningType)}
@@ -779,7 +779,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                 <CardTitle>Beneficial owners</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-1 text-[13px]">
+                <ul className="space-y-1 text-body-sm">
                   {data.beneficialOwners.map((o) => (
                     <li key={o.id} className="flex justify-between">
                       <span className="text-ink">
@@ -822,7 +822,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Comment / reason (required to return or reject)…"
-                    className="mb-3 w-full rounded-md border border-line bg-panel px-3 py-2 text-[13px] text-ink"
+                    className="mb-3 w-full rounded-md border border-line bg-panel px-3 py-2 text-body-sm text-ink"
                     rows={4}
                   />
                   <div className="space-y-2">
@@ -855,7 +855,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               ) : (
                 <NotYourTurn data={data} />
               )}
-              <div className="mt-4 text-[12px] text-muted">
+              <div className="mt-4 text-caption text-muted">
                 SLA target: {data.slaTargetHours}h
               </div>
             </CardContent>

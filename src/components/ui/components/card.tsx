@@ -72,7 +72,7 @@ export const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn('tracking-heading text-ink truncate text-[14px] font-semibold', className)}
+    className={cn('text-ink truncate text-h3 font-semibold', className)}
     {...props}
   />
 ));
@@ -83,7 +83,7 @@ export const CardMeta = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn('text-muted text-[12px]', className)} {...props} />
+  <p ref={ref} className={cn('text-muted text-caption', className)} {...props} />
 ));
 CardMeta.displayName = 'CardMeta';
 
@@ -111,7 +111,7 @@ export const CardFooter = React.forwardRef<
     )}
     {...props}
   >
-    <div className="text-muted min-w-0 truncate text-[12px]">{children}</div>
+    <div className="text-muted min-w-0 truncate text-caption">{children}</div>
     {action ? <div className="shrink-0">{action}</div> : null}
   </div>
 ));

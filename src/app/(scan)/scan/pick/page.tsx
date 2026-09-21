@@ -107,8 +107,8 @@ export default function ScanPickPage(): React.JSX.Element {
         <>
           <section className="space-y-2 rounded-lg border border-line bg-white p-3">
             <div className="flex items-baseline justify-between">
-              <h2 className="text-[15px] font-semibold">{list.data.orderRef}</h2>
-              <span className="text-[12px] tabular-nums text-muted">
+              <h2 className="text-h3 font-semibold">{list.data.orderRef}</h2>
+              <span className="text-caption tabular-nums text-muted">
                 {list.data.totalPicked}/{list.data.totalRequired}
               </span>
             </div>
@@ -120,12 +120,12 @@ export default function ScanPickPage(): React.JSX.Element {
                   className="flex items-center justify-between gap-2 py-2"
                 >
                   <div className={line.complete ? 'opacity-50' : ''}>
-                    <p className="text-[14px] font-medium">{line.productName}</p>
-                    <p className="text-[12px] text-muted">{line.productCode}</p>
+                    <p className="text-body font-medium">{line.productName}</p>
+                    <p className="text-caption text-muted">{line.productCode}</p>
                   </div>
                   <span
                     className={
-                      'rounded px-2 py-1 text-[12px] tabular-nums ' +
+                      'rounded px-2 py-1 text-caption tabular-nums ' +
                       (line.complete ? 'bg-ok/15 text-ok' : 'bg-accent/10 text-accent')
                     }
                   >

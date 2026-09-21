@@ -58,9 +58,9 @@ function Field({
 }): React.JSX.Element {
   return (
     <div>
-      <label className="mb-1 block text-[12px] font-medium text-muted">{label}</label>
+      <label className="mb-1 block text-caption font-medium text-muted">{label}</label>
       {children}
-      {error && <p className="mt-1 text-[12px] text-danger">{error}</p>}
+      {error && <p className="mt-1 text-caption text-danger">{error}</p>}
     </div>
   );
 }
@@ -153,14 +153,14 @@ export function InviteVendorDialog({
         </DialogDescription>
         {duplicate && (
           <div className="border-warn/40 bg-warn/10 mt-4 rounded-md border p-3">
-            <p className="text-ink text-[13px] font-medium">
+            <p className="text-ink text-body-sm font-medium">
               This looks like an existing vendor
             </p>
-            <p className="text-muted mt-1 text-[12px]">{duplicate.message}</p>
+            <p className="text-muted mt-1 text-caption">{duplicate.message}</p>
             {duplicate.onboardingId && (
               <Link
                 href={`/vendors/onboarding/${duplicate.onboardingId}`}
-                className="text-accent mt-2 inline-block text-[12px] font-medium hover:underline"
+                className="text-accent mt-2 inline-block text-caption font-medium hover:underline"
                 onClick={onClose}
               >
                 Open {duplicate.vendorName ?? 'the existing'} onboarding →
@@ -169,7 +169,7 @@ export function InviteVendorDialog({
             {!duplicate.onboardingId && duplicate.vendorId && (
               <Link
                 href={`/vendors/${duplicate.vendorId}`}
-                className="text-accent mt-2 inline-block text-[12px] font-medium hover:underline"
+                className="text-accent mt-2 inline-block text-caption font-medium hover:underline"
                 onClick={onClose}
               >
                 Open {duplicate.vendorName ?? 'the existing vendor'} →

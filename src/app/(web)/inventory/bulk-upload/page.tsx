@@ -120,7 +120,7 @@ export default function BulkUploadPage(): React.JSX.Element {
               type="button"
               onClick={() => setImportType(t)}
               className={
-                'rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors ' +
+                'rounded-md border px-3 py-1.5 text-body-sm font-medium transition-colors ' +
                 (importType === t
                   ? 'border-accent bg-canvas text-ink'
                   : 'border-line text-muted hover:text-ink')
@@ -150,10 +150,10 @@ export default function BulkUploadPage(): React.JSX.Element {
             (dragging ? 'border-accent bg-canvas' : 'border-line')
           }
         >
-          <span className="text-[13px] text-text">
+          <span className="text-body-sm text-text">
             {file ? file.name : 'Drop a .csv or .xlsx file here, or click to choose'}
           </span>
-          <span className="mt-1 text-[11px] text-faint">
+          <span className="mt-1 text-micro text-faint">
             Rows are staged and validated in the background — nothing posts until it
             passes.
           </span>
@@ -167,30 +167,30 @@ export default function BulkUploadPage(): React.JSX.Element {
         />
 
         <div className="mt-3">
-          <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+          <label className="flex flex-col gap-1 text-caption font-medium text-muted">
             Worksheet (optional)
             <input
               value={sheetName}
               onChange={(e) => setSheetName(e.target.value)}
               placeholder="Leave blank to detect automatically"
-              className="rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none placeholder:text-faint focus:border-accent"
+              className="rounded-md border border-line bg-panel px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-faint focus:border-accent"
             />
           </label>
-          <p className="mt-1 text-[11px] text-faint">
+          <p className="mt-1 text-micro text-faint">
             A workbook usually has several sheets and a title above the real header row;
             both are detected from the columns. Name a sheet here to override.
           </p>
         </div>
 
         {detected?.sheet && (
-          <p className="mt-2 text-[12px] text-success">
+          <p className="mt-2 text-caption text-success">
             Read worksheet &ldquo;{detected.sheet}&rdquo; using row {detected.headerRow}{' '}
             as the header.
           </p>
         )}
 
         <details className="mt-3">
-          <summary className="cursor-pointer text-[12px] text-muted">
+          <summary className="cursor-pointer text-caption text-muted">
             Column mapping preview ({EXPECTED_COLUMNS[importType].length} recognised
             columns)
           </summary>
@@ -198,19 +198,19 @@ export default function BulkUploadPage(): React.JSX.Element {
             {EXPECTED_COLUMNS[importType].map((c) => (
               <span
                 key={c}
-                className="font-numeric rounded border border-line bg-canvas px-1.5 py-0.5 text-[11px] text-muted"
+                className="font-numeric rounded border border-line bg-canvas px-1.5 py-0.5 text-micro text-muted"
               >
                 {c}
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-faint">
+          <p className="mt-2 text-micro text-faint">
             * required. Header names are matched case- and punctuation-insensitively, and
             common legacy spellings are accepted.
           </p>
         </details>
 
-        {error && <p className="mt-3 text-[12px] text-danger">{error}</p>}
+        {error && <p className="mt-3 text-caption text-danger">{error}</p>}
 
         <div className="mt-3 flex justify-end">
           <Button
@@ -227,12 +227,12 @@ export default function BulkUploadPage(): React.JSX.Element {
       {batchId && <BatchProgress batchId={batchId} />}
 
       <section className="mt-6">
-        <h2 className="mb-2 text-[11px] font-medium text-faint">
+        <h2 className="mb-2 text-micro font-medium text-faint">
           Recent imports
         </h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">File</th>
                 <th className="px-3 py-2 font-medium">Type</th>
@@ -255,7 +255,7 @@ export default function BulkUploadPage(): React.JSX.Element {
               {(batches.data?.items ?? []).map((b) => (
                 <tr key={b.id} className="border-t border-line hover:bg-canvas/60">
                   <td className="px-3 py-2 text-ink">{b.fileName}</td>
-                  <td className="px-3 py-2 text-[12px] text-muted">
+                  <td className="px-3 py-2 text-caption text-muted">
                     {b.importType === 'PRODUCT_MASTER' ? 'Products' : 'Ledger'}
                   </td>
                   <td className="px-3 py-2">
@@ -279,7 +279,7 @@ export default function BulkUploadPage(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={() => setBatchId(b.id)}
-                      className="text-[12px] font-medium text-accent-2 hover:underline"
+                      className="text-caption font-medium text-accent-2 hover:underline"
                     >
                       View →
                     </button>
@@ -301,7 +301,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
   const resolve = useResolveImportRow(batchId);
   const reprocess = useReprocessImport(batchId);
 
-  if (!data) return <p className="text-[13px] text-muted">Loading batch…</p>;
+  if (!data) return <p className="text-body-sm text-muted">Loading batch…</p>;
 
   const done = data.totalRows - data.pendingRows;
   const pct = data.totalRows === 0 ? 100 : Math.round((done / data.totalRows) * 100);
@@ -310,8 +310,8 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
     <div className="rounded-lg border border-line bg-panel p-4">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-[15px] font-semibold text-ink">{data.fileName}</h2>
-          <p className="font-numeric text-[12px] text-muted">{data.id}</p>
+          <h2 className="text-h3 font-semibold text-ink">{data.fileName}</h2>
+          <p className="font-numeric text-caption text-muted">{data.id}</p>
         </div>
         <Pill variant={batchVariant(data.status)} dot>
           {batchLabel(data.status)}
@@ -321,7 +321,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
       <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-canvas">
         <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+      <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
         <span>
           {done} / {data.totalRows} processed
         </span>
@@ -331,7 +331,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
       </div>
 
       {data.errorMessage && (
-        <p className="mb-3 text-[12px] text-danger">{data.errorMessage}</p>
+        <p className="mb-3 text-caption text-danger">{data.errorMessage}</p>
       )}
 
       {(data.skippedRows > 0 || data.errorRows > 0) && (
@@ -352,7 +352,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
                 onClick={() =>
                   void openAuthedAsset(`/inventory/bulk-imports/${batchId}/errors.csv`)
                 }
-                className="text-[12px] font-medium text-accent-2 hover:underline"
+                className="text-caption font-medium text-accent-2 hover:underline"
               >
                 Download error CSV
               </button>
@@ -368,15 +368,15 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
           </div>
 
           {tab === 'SKIPPED' && (
-            <p className="mb-2 text-[11px] text-faint">
+            <p className="mb-2 text-micro text-faint">
               These rows named a product with no catalogue match. They are never
               auto-created — confirm each is a real SKU first.
             </p>
           )}
 
           <div className="max-h-80 overflow-y-auto">
-            <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-panel z-10 border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="sticky top-0 bg-panel z-10 border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="px-3 py-2 font-medium">Row</th>
                   <th className="px-3 py-2 font-medium">Product</th>
@@ -391,7 +391,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
                     <td className="px-3 py-2 text-ink">
                       {String(r.rawData.product_name ?? r.rawData.name ?? '—')}
                     </td>
-                    <td className="px-3 py-2 text-[12px] text-muted">
+                    <td className="px-3 py-2 text-caption text-muted">
                       {r.errorMessage ?? '—'}
                     </td>
                     {tab === 'SKIPPED' && (
@@ -402,7 +402,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
                           onClick={() =>
                             resolve.mutate({ rowId: r.id, action: 'CREATE_PRODUCT' })
                           }
-                          className="text-[12px] font-medium text-accent-2 hover:underline"
+                          className="text-caption font-medium text-accent-2 hover:underline"
                         >
                           Create SKU
                         </button>
@@ -412,7 +412,7 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
                           onClick={() =>
                             resolve.mutate({ rowId: r.id, action: 'DISCARD' })
                           }
-                          className="ml-3 text-[12px] text-muted hover:underline"
+                          className="ml-3 text-caption text-muted hover:underline"
                         >
                           Discard
                         </button>

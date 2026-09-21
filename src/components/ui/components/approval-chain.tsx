@@ -185,7 +185,7 @@ function StepRow({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className={cn(
-              'text-[13px] font-medium',
+              'text-body-sm font-medium',
               state === 'skipped' ? 'text-faint line-through' : 'text-ink',
             )}
           >
@@ -193,14 +193,14 @@ function StepRow({
           </span>
           <DecisionPill s={s} />
           {s.isEscalation && (
-            <span className="text-warn inline-flex items-center gap-0.5 text-[10px] font-semibold ">
+            <span className="text-warn inline-flex items-center gap-0.5 text-micro font-semibold ">
               <AlertTriangle className="h-3 w-3" aria-hidden /> Escalated
             </span>
           )}
           {sla && (
             <span
               className={cn(
-                'font-numeric text-[11px]',
+                'font-numeric text-micro',
                 sla.overdue ? 'text-danger font-semibold' : 'text-muted',
               )}
             >
@@ -209,25 +209,25 @@ function StepRow({
           )}
         </div>
 
-        <p className="text-muted mt-0.5 text-[11px]">
+        <p className="text-muted mt-0.5 text-micro">
           Step {s.stepNo}, {s.name}
           {s.approverName && `, ${roleLabel(s.role)}`}
           {s.delegatedFromName && `, delegated from ${s.delegatedFromName}`}
         </p>
 
         {s.decidedAt && (
-          <p className="font-numeric text-faint text-[11px]">{decidedLabel(s.decidedAt)}</p>
+          <p className="font-numeric text-faint text-micro">{decidedLabel(s.decidedAt)}</p>
         )}
         {s.comment && (
-          <p className="border-line text-text mt-1 border-l-2 pl-2 text-[11px] italic">
+          <p className="border-line text-text mt-1 border-l-2 pl-2 text-micro italic">
             “{s.comment}”
           </p>
         )}
         {s.skipped && s.skipReason && (
-          <p className="text-faint text-[11px]">{s.skipReason}</p>
+          <p className="text-faint text-micro">{s.skipReason}</p>
         )}
         {s.unresolved && (
-          <p className="text-danger mt-0.5 text-[11px]">
+          <p className="text-danger mt-0.5 text-micro">
             No approver resolved{s.unresolvedReason ? ` — ${s.unresolvedReason}` : ''}
           </p>
         )}
@@ -288,7 +288,7 @@ export function ApprovalChain({
 
   if (steps.length === 0) {
     return (
-      <p className="text-muted text-[12px]">No approval route applies to this document.</p>
+      <p className="text-muted text-caption">No approval route applies to this document.</p>
     );
   }
 
@@ -308,7 +308,7 @@ export function ApprovalChain({
                 />
               )}
               <div className="border-line bg-canvas/50 relative ml-1 rounded-lg border border-dashed py-1.5 pl-2 pr-2.5">
-                <p className="text-faint mb-0.5 pl-8 text-[10px] font-semibold ">
+                <p className="text-faint mb-0.5 pl-8 text-micro font-semibold ">
                   In parallel, all {seg.steps.length} must approve
                 </p>
                 {seg.steps.map((s) => (

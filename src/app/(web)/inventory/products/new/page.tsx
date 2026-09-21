@@ -81,7 +81,7 @@ export default function NewProductPage(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto w-full max-w-3xl">
       <PageHeader
         title="New product"
         description="Add one SKU by hand, use Bulk upload for a whole sheet"
@@ -156,7 +156,7 @@ export default function NewProductPage(): React.JSX.Element {
             label="Batch tracked"
             hint="Receipts must then carry a batch number and expiry; picking uses oldest-first."
           >
-            <label className="flex items-center gap-2 py-2 text-[13px]">
+            <label className="flex items-center gap-2 py-2 text-body-sm">
               <input
                 type="checkbox"
                 className="h-4 w-4"
@@ -205,7 +205,7 @@ export default function NewProductPage(): React.JSX.Element {
         </div>
 
         <div className="mt-5 border-t border-line pt-4">
-          <h2 className="mb-3 text-[11px] font-medium text-faint">
+          <h2 className="mb-3 text-micro font-medium text-faint">
             Opening stock (optional)
           </h2>
           <div className="grid grid-cols-2 gap-4">
@@ -222,7 +222,7 @@ export default function NewProductPage(): React.JSX.Element {
             </Field>
           </div>
           {(locations.data?.items ?? []).length === 0 && (
-            <p className="mt-2 text-[12px] text-warn">
+            <p className="mt-2 text-caption text-warn">
               No locations exist yet.{' '}
               <Link href="/inventory/locations" className="underline">
                 Create one first
@@ -230,7 +230,7 @@ export default function NewProductPage(): React.JSX.Element {
               if you want to record opening stock.
             </p>
           )}
-          <p className="mt-2 text-[11px] text-faint">
+          <p className="mt-2 text-micro text-faint">
             Recorded as an ADJUSTMENT ledger entry, so it stays visible in history and can
             never drift from the ledger.
           </p>

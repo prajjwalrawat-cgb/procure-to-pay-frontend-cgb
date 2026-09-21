@@ -126,19 +126,19 @@ export default function ContractsPage(): React.JSX.Element {
 
                 <div className="flex items-end justify-between gap-3 px-4 pb-3">
                   <div className="min-w-0">
-                    <p className="text-faint text-[11px]">Committed value</p>
-                    <p className="font-numeric text-ink text-[13px] font-medium">
+                    <p className="text-faint text-micro">Committed value</p>
+                    <p className="font-numeric text-ink text-body-sm font-medium">
                       {inr(c.totalValueEstimate, 0)}
                     </p>
                   </div>
                   <div className="min-w-0 text-right">
-                    <p className="text-faint text-[11px]">Valid to</p>
+                    <p className="text-faint text-micro">Valid to</p>
                     {expiringSoon ? (
-                      <StatusText variant="warn" className="text-[13px]">
+                      <StatusText variant="warn" className="text-body-sm">
                         {c.daysToExpiry}d left
                       </StatusText>
                     ) : (
-                      <p className="font-numeric text-ink text-[13px] font-medium">
+                      <p className="font-numeric text-ink text-body-sm font-medium">
                         {formatDate(c.validityEnd)}
                       </p>
                     )}

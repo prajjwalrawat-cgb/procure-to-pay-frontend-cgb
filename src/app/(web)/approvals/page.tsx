@@ -57,7 +57,7 @@ export default function ApprovalsPage(): React.JSX.Element {
           description="Rules are evaluated by priority; the first match routes the document. Editing a rule creates a new version — in-flight documents keep their snapshot."
         />
         {!canEdit && (
-          <p className="mt-1 text-[12px] text-faint">
+          <p className="mt-1 text-caption text-faint">
             Read-only — only an Admin or the Finance Head can add, edit or deactivate
             rules.
           </p>
@@ -139,7 +139,7 @@ function MatrixTab({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-[13px] text-muted">
+        <div className="text-body-sm text-muted">
           {data?.items.length ?? 0} active rule
           {(data?.items.length ?? 0) === 1 ? '' : 's'}
         </div>
@@ -150,7 +150,7 @@ function MatrixTab({
         )}
       </div>
 
-      {isLoading && <div className="text-[13px] text-muted">Loading rules…</div>}
+      {isLoading && <div className="text-body-sm text-muted">Loading rules…</div>}
 
       <div className="flex flex-col gap-3">
         {data?.items.map((rule) => (
@@ -175,7 +175,7 @@ function MatrixTab({
           />
         ))}
         {data && data.items.length === 0 && !isLoading && (
-          <div className="text-[13px] text-muted">
+          <div className="text-body-sm text-muted">
             No active rules — documents of this type cannot be submitted for approval
             until one exists.
             {canEdit ? ' Add one to start routing.' : ''}
@@ -236,11 +236,11 @@ function RuleCard({
       <div className="mb-3 flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[14px] font-semibold text-ink">{rule.name}</span>
+            <span className="text-body font-semibold text-ink">{rule.name}</span>
             <Pill variant={rule.isActive ? 'success' : 'gray'} dot>
               {rule.isActive ? 'Active' : 'Draft'}
             </Pill>
-            <span className="font-numeric text-[11px] text-faint">
+            <span className="font-numeric text-micro text-faint">
               v{rule.version}, priority {rule.priority}
             </span>
           </div>
@@ -268,23 +268,23 @@ function RuleCard({
       </div>
 
       <div className="mb-3">
-        <div className="mb-1 text-[10px] font-semibold text-faint">
+        <div className="mb-1 text-micro font-semibold text-faint">
           When
         </div>
         <ConditionChips condition={rule.conditions} />
       </div>
 
       <div>
-        <div className="mb-1.5 text-[10px] font-semibold text-faint">
+        <div className="mb-1.5 text-micro font-semibold text-faint">
           Then route to
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           {rule.steps.map((s: ApprovalStep) => (
             <span
               key={s.step_no}
-              className="flex items-center gap-2 rounded-sm border border-line bg-canvas px-2.5 py-1.5 text-[12px]"
+              className="flex items-center gap-2 rounded-sm border border-line bg-canvas px-2.5 py-1.5 text-caption"
             >
-              <span className="font-numeric flex h-5 w-5 items-center justify-center rounded-full bg-panel text-[10px]">
+              <span className="font-numeric flex h-5 w-5 items-center justify-center rounded-full bg-panel text-micro">
                 {s.step_no}
               </span>
               <span className="font-medium text-text">{s.name}</span>
@@ -316,8 +316,8 @@ function ActivateConfirm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
       <div className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg">
-        <h3 className="text-[15px] font-semibold text-ink">Activate “{rule.name}”?</h3>
-        <p className="mt-2 text-[13px] text-muted">
+        <h3 className="text-h3 font-semibold text-ink">Activate “{rule.name}”?</h3>
+        <p className="mt-2 text-body-sm text-muted">
           This will affect all future documents matching these conditions. In-flight
           documents keep their snapshot and are not re-routed.
         </p>
@@ -351,7 +351,7 @@ function VersionHistory({
     <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
       <div className="h-full w-full max-w-md overflow-y-auto border-l border-line bg-panel p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold text-ink">Version history</h3>
+          <h3 className="text-h3 font-semibold text-ink">Version history</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
           </Button>
@@ -360,14 +360,14 @@ function VersionHistory({
           {data?.map((v) => (
             <div key={v.id} className="rounded-lg border border-line p-3">
               <div className="flex items-center justify-between">
-                <span className="font-numeric text-[13px] font-semibold text-ink">
+                <span className="font-numeric text-body-sm font-semibold text-ink">
                   v{v.version}
                 </span>
                 <Pill variant={v.isActive ? 'success' : 'gray'} dot>
                   {v.isActive ? 'Active' : 'Draft'}
                 </Pill>
               </div>
-              <div className="mt-1 text-[11px] text-muted">
+              <div className="mt-1 text-micro text-muted">
                 {v.updatedByName ?? 'system'} ,{' '}
                 {formatDateTime(v.createdAt)}
               </div>

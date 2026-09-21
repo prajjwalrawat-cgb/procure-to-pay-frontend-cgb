@@ -21,12 +21,12 @@ import { cn } from '../lib/cn';
  * signal — the label is always present, and the dot gives the colour a
  * consistent anchor point down the column.
  *
- * Variants map onto the three semantic states plus neutral. `info` and
- * `violet` used to be two more decorative hues; they collapse to neutral,
- * because "in flight" and "on hold" are not good or bad, they are just where
- * the record currently is.
+ * Variants map onto the four semantic states plus neutral. `info` is the
+ * in-flight state (submitted, scheduled, being read, partly paid) and is the
+ * only blue in the product. `violet` and `gray` are legacy names that collapse
+ * to neutral.
  */
-const pillVariants = cva('inline-flex items-center gap-1.5 text-[12px] font-medium', {
+const pillVariants = cva('inline-flex items-center gap-1.5 text-caption font-medium', {
   variants: {
     variant: {
       success: 'text-success',
@@ -34,7 +34,8 @@ const pillVariants = cva('inline-flex items-center gap-1.5 text-[12px] font-medi
       warn: 'text-warn',
       /** Neutral / in-flight — no judgement attached. */
       neutral: 'text-muted',
-      info: 'text-muted',
+      /** In flight — moving, nothing for the reader to do yet. */
+      info: 'text-info',
       violet: 'text-muted',
       gray: 'text-muted',
       dark: 'text-faint',
@@ -49,7 +50,7 @@ const dotColor: Record<NonNullable<PillProps['variant']>, string> = {
   danger: 'bg-danger-solid',
   warn: 'bg-warn-solid',
   neutral: 'bg-faint-line',
-  info: 'bg-faint-line',
+  info: 'bg-info-solid',
   violet: 'bg-faint-line',
   gray: 'bg-faint-line',
   dark: 'bg-faint-line',

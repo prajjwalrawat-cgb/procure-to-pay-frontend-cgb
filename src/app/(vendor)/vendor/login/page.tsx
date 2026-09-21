@@ -79,34 +79,34 @@ export default function VendorLoginPage(): React.JSX.Element {
         <div className="relative flex h-full flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-white/15">
-              <span className="font-numeric text-[13px] font-bold">P</span>
+              <span className="font-numeric text-body-sm font-bold">P</span>
             </span>
-            <span className="tracking-heading text-[16px] font-semibold">
+            <span className="tracking-heading text-h3 font-semibold">
               ProcureFlow
             </span>
           </div>
           <div>
-            <h1 className="tracking-heading max-w-sm text-[28px] font-semibold leading-tight">
+            <h1 className="tracking-heading max-w-sm text-display font-semibold leading-tight">
               Supplier Portal
             </h1>
-            <p className="mt-3 max-w-sm text-[14px] text-white/80">
+            <p className="mt-3 max-w-sm text-body text-white/80">
               Submit invoices, track purchase orders, and manage your documents with your
               buyers.
             </p>
           </div>
-          <p className="text-[12px] text-white/60">Separate, secure supplier access.</p>
+          <p className="text-caption text-white/60">Separate, secure supplier access.</p>
         </div>
       </div>
 
       <div className="bg-canvas flex items-center justify-center px-4">
         <div className="border-line bg-panel w-full max-w-sm rounded-xl border p-8 shadow-lg">
-          <h2 className="tracking-heading text-ink text-[16px] font-semibold">
+          <h2 className="tracking-heading text-ink text-h3 font-semibold">
             Vendor sign in
           </h2>
-          <p className="text-muted mt-1 text-[13px]">Access your supplier account.</p>
+          <p className="text-muted mt-1 text-body-sm">Access your supplier account.</p>
 
           <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
-            <label className="text-text flex flex-col gap-1 text-[12px] font-medium">
+            <label className="text-text flex flex-col gap-1 text-caption font-medium">
               Email
               <Input
                 type="email"
@@ -117,7 +117,7 @@ export default function VendorLoginPage(): React.JSX.Element {
                 required
               />
             </label>
-            <label className="text-text flex flex-col gap-1 text-[12px] font-medium">
+            <label className="text-text flex flex-col gap-1 text-caption font-medium">
               Password
               <Input
                 type="password"
@@ -129,19 +129,19 @@ export default function VendorLoginPage(): React.JSX.Element {
             </label>
             <Link
               href="/vendor/forgot-password"
-              className="text-muted -mt-1 self-end text-[12px] hover:underline"
+              className="text-muted -mt-1 self-end text-caption hover:underline"
             >
               Forgot password?
             </Link>
 
             {expired && !error && (
-              <p className="bg-warn-wash text-warn rounded-sm px-2.5 py-2 text-[12px]">
+              <p className="bg-warn-wash text-warn rounded-sm px-2.5 py-2 text-caption">
                 Your session expired. Please sign in again.
               </p>
             )}
 
             {error && (
-              <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-[12px]">
+              <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-caption">
                 {error}
               </p>
             )}
@@ -156,7 +156,7 @@ export default function VendorLoginPage(): React.JSX.Element {
             </Button>
           </form>
 
-          <p className="text-muted mt-4 text-center text-[12px]">
+          <p className="text-muted mt-4 text-center text-caption">
             Are you a buyer?{' '}
             <Link href="/login" className="text-accent hover:underline">
               Buyer sign in

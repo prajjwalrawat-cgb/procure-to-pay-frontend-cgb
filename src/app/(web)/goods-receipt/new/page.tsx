@@ -36,7 +36,7 @@ interface LineDraft {
 // `next build` fails prerendering this route.
 export default function NewReceiptPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="p-6 text-[13px] text-muted">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-body-sm text-muted">Loading…</div>}>
       <NewReceiptForm />
     </Suspense>
   );
@@ -143,7 +143,7 @@ function NewReceiptForm(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto w-full max-w-4xl">
       <PageHeader
         title="New goods receipt"
         description="Gate-to-post receipt"
@@ -172,7 +172,7 @@ function NewReceiptForm(): React.JSX.Element {
               </select>
             </Field>
             {poDetail.data?.vendor && (
-              <p className="text-[12px] text-muted">
+              <p className="text-caption text-muted">
                 Vendor: <span className="text-text">{poDetail.data.vendor.name}</span> ,
                 Expected{' '}
                 {poDetail.data.expectedDeliveryDate
@@ -242,7 +242,7 @@ function NewReceiptForm(): React.JSX.Element {
               </select>
             </Field>
             {packingCondition !== 'OK' && (
-              <div className="rounded-sm bg-warn-wash px-3 py-2 text-[12px] text-warn">
+              <div className="rounded-sm bg-warn-wash px-3 py-2 text-caption text-warn">
                 QC will be mandatory even for tolerance-auto-accept items.
               </div>
             )}
@@ -273,8 +273,8 @@ function NewReceiptForm(): React.JSX.Element {
             {lines.map((l, i) => (
               <div key={l.poLineId} className="rounded-md border border-line p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[13px] font-medium text-text">{l.itemDesc}</span>
-                  <span className="font-numeric text-[11px] text-faint">
+                  <span className="text-body-sm font-medium text-text">{l.itemDesc}</span>
+                  <span className="font-numeric text-micro text-faint">
                     ordered {l.qtyOrdered}, remaining {l.qtyRemaining} {l.uom}
                   </span>
                 </div>
@@ -303,7 +303,7 @@ function NewReceiptForm(): React.JSX.Element {
                 </div>
                 <button
                   type="button"
-                  className="mt-2 text-[11px] text-accent-2 hover:underline"
+                  className="mt-2 text-micro text-accent-2 hover:underline"
                   onClick={() => setLine(i, { qtyReceived: l.qtyRemaining })}
                 >
                   Copy remaining from PO
@@ -311,25 +311,25 @@ function NewReceiptForm(): React.JSX.Element {
               </div>
             ))}
             {lines.length === 0 && (
-              <p className="text-[13px] text-muted">Select a PO in step 1 first.</p>
+              <p className="text-body-sm text-muted">Select a PO in step 1 first.</p>
             )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-3">
-            <p className="text-[13px] text-muted">
+            <p className="text-body-sm text-muted">
               Attach the delivery challan, invoice copy, COA and packing/damage photos
               after saving. Attachments upload to the receipt once created.
             </p>
-            <div className="rounded-sm bg-canvas px-3 py-6 text-center text-[12px] text-faint">
+            <div className="rounded-sm bg-canvas px-3 py-6 text-center text-caption text-faint">
               Attachment upload is available on the receipt detail page after saving.
             </div>
           </div>
         )}
 
         {step === 3 && (
-          <div className="space-y-3 text-[13px]">
+          <div className="space-y-3 text-body-sm">
             <Row k="Purchase order" v={poDetail.data?.number ?? poId} />
             <Row k="Vendor" v={poDetail.data?.vendor.name ?? '—'} />
             <Row k="Gate entry" v={gateEntryRef} />
@@ -404,7 +404,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1 block text-[11px] font-medium text-faint">
+      <span className="mb-1 block text-micro font-medium text-faint">
         {label}
       </span>
       {children}

@@ -47,7 +47,7 @@ export default function ContractDetailPage(): React.JSX.Element {
 
   if (isLoading || !c) {
     return (
-      <p className="py-10 text-center text-[13px] text-muted">
+      <p className="py-10 text-center text-body-sm text-muted">
         Loading…
       </p>
     );
@@ -65,10 +65,10 @@ export default function ContractDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-6xl pb-24">
+    <div className="pb-24">
       <Link
         href="/contracts"
-        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
+        className="mb-3 inline-flex items-center gap-1 text-body-sm text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
@@ -95,7 +95,7 @@ export default function ContractDetailPage(): React.JSX.Element {
                     push(e instanceof Error ? e.message : 'Could not open PDF', 'error'),
                   )
                 }
-                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-[13px] text-text hover:bg-canvas"
+                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-body-sm text-text hover:bg-canvas"
               >
                 <FileText className="h-3.5 w-3.5" /> PDF
               </button>
@@ -110,7 +110,7 @@ export default function ContractDetailPage(): React.JSX.Element {
           <div key={s.key} className="flex items-center gap-2">
             <span
               className={
-                'rounded-full px-2.5 py-1 text-[12px] font-medium ' +
+                'rounded-full px-2.5 py-1 text-caption font-medium ' +
                 (s.state === 'done'
                   ? 'bg-accent-wash text-accent-2'
                   : s.state === 'active'
@@ -137,7 +137,7 @@ export default function ContractDetailPage(): React.JSX.Element {
                     type="button"
                     onClick={() => setRateYear(y)}
                     className={
-                      'rounded px-2 py-1 text-[12px] ' +
+                      'rounded px-2 py-1 text-caption ' +
                       (rateYear === y ? 'bg-ink text-white' : 'bg-canvas text-muted')
                     }
                   >
@@ -146,8 +146,8 @@ export default function ContractDetailPage(): React.JSX.Element {
                 ))}
               </div>
             )}
-            <table className="w-full text-[13px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="py-1.5 font-medium">Item / Route</th>
                   <th className="py-1.5 font-medium">UOM</th>
@@ -183,7 +183,7 @@ export default function ContractDetailPage(): React.JSX.Element {
           {/* Volume tracking */}
           {vt && vt.committedQty && (
             <Section title="Volume commitment (take-or-pay)">
-              <div className="flex items-center justify-between text-[13px]">
+              <div className="flex items-center justify-between text-body-sm">
                 <span className="text-muted">
                   {vt.period}, {vt.actualQty} / {vt.committedQty} {vt.commitmentUom}
                 </span>
@@ -197,7 +197,7 @@ export default function ContractDetailPage(): React.JSX.Element {
                 />
               </div>
               {vt.projectedPctOfCommitment != null && (
-                <p className="mt-1 text-[12px] text-muted">
+                <p className="mt-1 text-caption text-muted">
                   Projected year-end: {Math.round(vt.projectedPctOfCommitment * 100)}% of
                   commitment
                 </p>
@@ -210,13 +210,13 @@ export default function ContractDetailPage(): React.JSX.Element {
             <div className="space-y-3">
               {c.clauses.map((cl) => (
                 <div key={cl.id}>
-                  <p className="text-[13px] font-medium text-ink">
+                  <p className="text-body-sm font-medium text-ink">
                     {cl.title}{' '}
-                    <span className="text-[11px] text-faint">
+                    <span className="text-micro text-faint">
                       ({CLAUSE_LABEL[cl.clauseType] ?? cl.clauseType})
                     </span>
                   </p>
-                  <p className="text-[12px] text-muted">{cl.contentText}</p>
+                  <p className="text-caption text-muted">{cl.contentText}</p>
                 </div>
               ))}
             </div>
@@ -225,10 +225,10 @@ export default function ContractDetailPage(): React.JSX.Element {
           {/* Call-offs */}
           <Section title={`Call-off history (${c.callOffs.length})`}>
             {c.callOffs.length === 0 ? (
-              <p className="text-[13px] text-muted">No call-offs yet.</p>
+              <p className="text-body-sm text-muted">No call-offs yet.</p>
             ) : (
-              <table className="w-full text-[13px]">
-                <thead className="border-line border-b text-left text-[12px] text-muted">
+              <table className="w-full text-body-sm">
+                <thead className="border-line border-b text-left text-caption text-muted">
                   <tr>
                     <th className="py-1.5 font-medium">PO</th>
                     <th className="py-1.5 font-medium">Status</th>
@@ -268,7 +268,7 @@ export default function ContractDetailPage(): React.JSX.Element {
             <Section title="Amendment history">
               {c.amendments.map((a) => (
                 <div key={a.id}
-                  className="flex items-center justify-between border-b border-line py-1.5 text-[13px] last:border-0"
+                  className="flex items-center justify-between border-b border-line py-1.5 text-body-sm last:border-0"
                 >
                   <span>
                     #{a.amendmentNo}, {a.changeSummary}
@@ -303,7 +303,7 @@ export default function ContractDetailPage(): React.JSX.Element {
             {c.supersededByContractId && (
               <Link
                 href={`/contracts/${c.supersededByContractId}`}
-                className="text-[12px] text-accent-2"
+                className="text-caption text-accent-2"
               >
                 → Superseded by newer contract
               </Link>
@@ -311,7 +311,7 @@ export default function ContractDetailPage(): React.JSX.Element {
             {c.supersedesContractId && (
               <Link
                 href={`/contracts/${c.supersedesContractId}`}
-                className="text-[12px] text-accent-2"
+                className="text-caption text-accent-2"
               >
                 ← Supersedes prior contract
               </Link>
@@ -322,7 +322,7 @@ export default function ContractDetailPage(): React.JSX.Element {
             <Section title="Approval chain">
               {c.liveApprovalChain.map((s) => (
                 <div key={s.approvalId ?? s.stepNo}
-                  className="flex items-center justify-between py-1 text-[12px]"
+                  className="flex items-center justify-between py-1 text-caption"
                 >
                   <span className="text-text">{s.name ?? s.role}</span>
                   <Pill
@@ -429,7 +429,7 @@ export default function ContractDetailPage(): React.JSX.Element {
           {c.canCallOff && (
             <Link
               href={`/contracts/${id}/call-off/new`}
-              className="rounded-md bg-ink px-4 py-1.5 text-[13px] font-medium text-white"
+              className="rounded-md bg-ink px-4 py-1.5 text-body-sm font-medium text-white"
             >
               New call-off
             </Link>
@@ -449,7 +449,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-2 text-[13px] font-semibold text-ink">{title}</h2>
+      <h2 className="mb-2 text-body-sm font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -465,7 +465,7 @@ function Row({
   mono?: boolean;
 }): React.JSX.Element {
   return (
-    <div className="flex items-center justify-between py-1 text-[13px]">
+    <div className="flex items-center justify-between py-1 text-body-sm">
       <span className="text-muted">{label}</span>
       <span className={mono ? 'font-numeric text-ink' : 'text-ink'}>{value}</span>
     </div>

@@ -64,11 +64,11 @@ export default function SuspendVendorPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-[640px]">
+    <div className="mx-auto w-full max-w-[640px]">
       <div className="mb-4">
         <Link
           href={`/vendors/${params.id}`}
-          className="text-muted hover:text-ink text-[12px]"
+          className="text-muted hover:text-ink text-caption"
         >
           ← Vendor
         </Link>
@@ -84,13 +84,13 @@ export default function SuspendVendorPage(): React.JSX.Element {
             <div className="flex gap-1">
               <button
                 onClick={() => setMode('suspend')}
-                className={`rounded-md px-3 py-1 text-[13px] ${mode === 'suspend' ? 'bg-ink text-white' : 'text-muted'}`}
+                className={`rounded-md px-3 py-1 text-body-sm ${mode === 'suspend' ? 'bg-ink text-white' : 'text-muted'}`}
               >
                 Suspend
               </button>
               <button
                 onClick={() => setMode('blacklist')}
-                className={`rounded-md px-3 py-1 text-[13px] ${mode === 'blacklist' ? 'bg-danger text-white' : 'text-muted'}`}
+                className={`rounded-md px-3 py-1 text-body-sm ${mode === 'blacklist' ? 'bg-danger text-white' : 'text-muted'}`}
               >
                 Blacklist
               </button>
@@ -101,7 +101,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
           {mode === 'suspend' && (
             <>
               <div>
-                <label className="text-muted mb-1 block text-[12px] font-medium">
+                <label className="text-muted mb-1 block text-caption font-medium">
                   Type
                 </label>
                 <select
@@ -119,7 +119,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
                 </select>
               </div>
               <div>
-                <label className="text-muted mb-1 block text-[12px] font-medium">
+                <label className="text-muted mb-1 block text-caption font-medium">
                   Reason code
                 </label>
                 <select
@@ -143,7 +143,7 @@ export default function SuspendVendorPage(): React.JSX.Element {
 
           {mode === 'blacklist' && (
             <div>
-              <label className="text-muted mb-1 block text-[12px] font-medium">
+              <label className="text-muted mb-1 block text-caption font-medium">
                 Legal Officer co-signer (user id)
               </label>
               <input
@@ -152,14 +152,14 @@ export default function SuspendVendorPage(): React.JSX.Element {
                 placeholder="usr_… (a LEGAL_OFFICER)"
                 className={controlClass}
               />
-              <p className="text-muted mt-1 text-[12px]">
+              <p className="text-muted mt-1 text-caption">
                 Blacklisting requires the MD to act and a Legal Officer to co-sign.
               </p>
             </div>
           )}
 
           <div>
-            <label className="text-muted mb-1 block text-[12px] font-medium">
+            <label className="text-muted mb-1 block text-caption font-medium">
               Reason / notes
             </label>
             <textarea

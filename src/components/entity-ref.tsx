@@ -47,7 +47,7 @@ export function EntityRef({
         {children}
       </span>
       {open && data && (
-        <span className="border-line bg-panel absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border p-3 text-[12px] shadow-lg">
+        <span className="border-line bg-panel absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border p-3 text-caption shadow-lg">
           <HoverBody data={data} />
         </span>
       )}

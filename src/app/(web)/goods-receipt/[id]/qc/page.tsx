@@ -100,7 +100,7 @@ export default function QcPage(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto w-full max-w-4xl">
       <PageHeader
         title={
           <>
@@ -131,8 +131,8 @@ export default function QcPage(): React.JSX.Element {
         {data.lines.map((l) => (
           <div key={l.id} className="border-line bg-panel rounded-lg border p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-text text-[13px] font-medium">{l.itemDesc}</span>
-              <span className="font-numeric text-faint text-[11px]">
+              <span className="text-text text-body-sm font-medium">{l.itemDesc}</span>
+              <span className="font-numeric text-faint text-micro">
                 received {l.qtyReceived} {l.uom}
                 {l.samplePlan &&
                   `, sample ${l.samplePlan.sampleSize} (Ac ${l.samplePlan.acceptNumber} / Re ${l.samplePlan.rejectNumber}, AQL ${l.samplePlan.aqlLevel})`}
@@ -144,7 +144,7 @@ export default function QcPage(): React.JSX.Element {
                 <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Object.entries(l.qcParameters).map(([param, spec]) => (
                     <label key={param} className="block">
-                      <span className="text-faint mb-1 block text-[11px]">
+                      <span className="text-faint mb-1 block text-micro">
                         {param}{' '}
                         {spec.min !== undefined ? `[${spec.min}–${spec.max}]` : ''}
                         {spec.unit ? ` ${spec.unit}` : ''}
@@ -168,7 +168,7 @@ export default function QcPage(): React.JSX.Element {
                   ))}
                 </div>
                 <label className="mb-3 block">
-                  <span className="text-faint mb-1 block text-[11px]">
+                  <span className="text-faint mb-1 block text-micro">
                     Defects found (comma-separated)
                   </span>
                   <input
@@ -198,7 +198,7 @@ export default function QcPage(): React.JSX.Element {
                 )}
               </>
             ) : (
-              <p className="text-faint text-[12px]">
+              <p className="text-faint text-caption">
                 No parametric QC required for this item.
               </p>
             )}
@@ -206,7 +206,7 @@ export default function QcPage(): React.JSX.Element {
             {/* Decision */}
             <div className="border-line mt-3 grid grid-cols-1 gap-3 border-t pt-3 sm:grid-cols-3">
               <label className="block">
-                <span className="text-faint mb-1 block text-[11px]">Qty accepted</span>
+                <span className="text-faint mb-1 block text-micro">Qty accepted</span>
                 <input
                   className={inputCls}
                   value={decisions[l.id]?.accepted ?? l.qtyReceived}
@@ -219,7 +219,7 @@ export default function QcPage(): React.JSX.Element {
                 />
               </label>
               <label className="block">
-                <span className="text-faint mb-1 block text-[11px]">Qty rejected</span>
+                <span className="text-faint mb-1 block text-micro">Qty rejected</span>
                 <input
                   className={inputCls}
                   value={decisions[l.id]?.rejected ?? '0'}
@@ -232,7 +232,7 @@ export default function QcPage(): React.JSX.Element {
                 />
               </label>
               <label className="block">
-                <span className="text-faint mb-1 block text-[11px]">
+                <span className="text-faint mb-1 block text-micro">
                   Rejection reason
                 </span>
                 <select
@@ -284,7 +284,7 @@ function PassHint({
   const n = Number(value);
   const pass = n >= min && n <= max;
   return (
-    <span className={'text-[10px] ' + (pass ? 'text-accent-2' : 'text-danger')}>
+    <span className={'text-micro ' + (pass ? 'text-accent-2' : 'text-danger')}>
       {pass ? 'PASS' : 'FAIL'}
     </span>
   );

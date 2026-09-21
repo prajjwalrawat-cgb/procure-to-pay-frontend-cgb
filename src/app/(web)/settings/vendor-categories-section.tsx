@@ -67,7 +67,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <div className="text-body-sm text-muted">Loading…</div>;
   }
 
   const active = data.filter((c) => c.isActive);
@@ -159,7 +159,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
 
   const editor = (mode: 'add' | 'edit', id?: string): React.JSX.Element => (
     <div className="mt-2 rounded-sm border border-line bg-canvas p-3">
-      <div className="mb-2 text-[13px] font-medium text-ink">
+      <div className="mb-2 text-body-sm font-medium text-ink">
         {mode === 'add' ? 'New vendor category' : 'Edit category'}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -196,8 +196,8 @@ export function VendorCategoriesSection(): React.JSX.Element {
         </Field>
       </div>
       <div className="mt-3">
-        <div className="mb-1 text-[12px] text-muted">Documents to ask for</div>
-        <p className="mb-2 text-[11px] text-faint">
+        <div className="mb-1 text-caption text-muted">Documents to ask for</div>
+        <p className="mb-2 text-micro text-faint">
           GST certificate, PAN card, cancelled cheque and audited financials are already
           collected from every vendor, whatever their category. Anything ticked here is
           additionally suggested to vendors in this category, and once it is on file
@@ -205,7 +205,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
         </p>
         <div className="grid gap-x-4 gap-y-1 sm:grid-cols-2 md:grid-cols-3">
           {CHOOSABLE_DOCUMENTS.map((doc) => (
-            <label key={doc} className="flex items-center gap-2 text-[12px]">
+            <label key={doc} className="flex items-center gap-2 text-caption">
               <input
                 type="checkbox"
                 checked={form.extraDocuments.includes(doc)}
@@ -249,8 +249,8 @@ export function VendorCategoriesSection(): React.JSX.Element {
       }
     >
       <div className="overflow-hidden rounded-sm border border-line">
-        <table className="w-full text-[12px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-caption">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Category</th>
               <th className="px-3 py-2 font-medium">Documents</th>
@@ -269,7 +269,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
                     {!c.isActive && <Pill variant="gray">Retired</Pill>}
                   </div>
                   {c.description && (
-                    <div className="text-[11px] text-faint">{c.description}</div>
+                    <div className="text-micro text-faint">{c.description}</div>
                   )}
                 </td>
                 <td className="px-3 py-2 text-muted">{c.requiredDocuments.length}</td>
@@ -277,7 +277,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
                 <td className="px-3 py-2 text-right">
                   <button
                     type="button"
-                    className="text-[11px] text-accent-2"
+                    className="text-micro text-accent-2"
                     onClick={() => startEdit(c)}
                   >
                     Edit
@@ -286,7 +286,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
                   {c.isActive ? (
                     <button
                       type="button"
-                      className="text-[11px] text-muted hover:text-danger"
+                      className="text-micro text-muted hover:text-danger"
                       onClick={() => setActive(c, false)}
                       disabled={active.length <= 1}
                       title={
@@ -300,7 +300,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
                   ) : (
                     <button
                       type="button"
-                      className="text-[11px] text-accent-2"
+                      className="text-micro text-accent-2"
                       onClick={() => setActive(c, true)}
                     >
                       Restore

@@ -27,10 +27,10 @@ export default function RenewalsPage(): React.JSX.Element {
   const push = useToastStore((s) => s.push);
 
   return (
-    <div className="max-w-5xl">
+    <div>
       <Link
         href="/contracts"
-        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
+        className="mb-3 inline-flex items-center gap-1 text-body-sm text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
@@ -40,7 +40,7 @@ export default function RenewalsPage(): React.JSX.Element {
       />
 
       {!data || data.entries.length === 0 ? (
-        <p className="py-16 text-center text-[13px] text-muted">
+        <p className="py-16 text-center text-body-sm text-muted">
           No contracts expiring within 90 days.
         </p>
       ) : (
@@ -54,7 +54,7 @@ export default function RenewalsPage(): React.JSX.Element {
                   <Pill variant={b.variant} dot>
                     {b.label}
                   </Pill>
-                  <span className="text-[12px] text-muted">{rows.length}</span>
+                  <span className="text-caption text-muted">{rows.length}</span>
                 </div>
                 <div className="divide-y divide-line rounded-lg border border-line">
                   {rows.map((e) => (
@@ -99,7 +99,7 @@ function RenewalRow({
   const renew = useRenewContract(entry.contractId);
   const push = useToastStore((s) => s.push);
   return (
-    <div className="flex items-center justify-between px-4 py-3 text-[13px]">
+    <div className="flex items-center justify-between px-4 py-3 text-body-sm">
       <div>
         <Link
           href={`/contracts/${entry.contractId}`}
@@ -109,7 +109,7 @@ function RenewalRow({
         </Link>
         <span className="ml-2 text-ink">{entry.title}</span>
         <span className="ml-2 text-muted"> {entry.vendorName}</span>
-        <div className="text-[12px] text-muted">
+        <div className="text-caption text-muted">
           {inr(entry.totalValueEstimate)} ,{' '}
           {entry.daysToExpiry >= 0 ? `${entry.daysToExpiry} days left` : 'expired'}
           {entry.alert?.acknowledgedAt && (
@@ -124,7 +124,7 @@ function RenewalRow({
         <button
           type="button"
           onClick={() => void onAck('UNDER_NEGOTIATION')}
-          className="rounded-md border border-line px-3 py-1.5 text-[12px] text-text hover:bg-canvas"
+          className="rounded-md border border-line px-3 py-1.5 text-caption text-text hover:bg-canvas"
         >
           Acknowledge
         </button>
@@ -139,7 +139,7 @@ function RenewalRow({
               push(e instanceof Error ? e.message : 'Renew failed', 'error');
             }
           }}
-          className="rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-white"
+          className="rounded-md bg-ink px-3 py-1.5 text-caption font-medium text-white"
         >
           Renew
         </button>

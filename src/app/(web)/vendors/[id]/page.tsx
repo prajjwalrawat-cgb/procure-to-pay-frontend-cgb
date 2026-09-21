@@ -19,7 +19,7 @@ import { formatDate, humanise, inr, statusLabel } from '@/lib/format';
 
 function metricRow(label: string, value: number | null, suffix = ''): React.JSX.Element {
   return (
-    <div className="flex justify-between text-[13px]">
+    <div className="flex justify-between text-body-sm">
       <span className="text-muted">{label}</span>
       <span className="text-ink tabular-nums">
         {value === null ? '—' : `${value}${suffix}`}
@@ -34,7 +34,7 @@ export default function Vendor360Page(): React.JSX.Element {
 
   if (isLoading || error || !data) {
     return (
-      <div className="max-w-[1200px]">
+      <div>
         <PageHeader title="Vendor" />
         <div className="border-line bg-panel rounded-lg border">
           <DataState
@@ -54,7 +54,7 @@ export default function Vendor360Page(): React.JSX.Element {
   const sc = data.scorecard;
 
   return (
-    <div className="max-w-[1200px]">
+    <div>
       <PageHeader
         title={data.name}
         breadcrumbs={[{ label: 'Vendors', href: '/vendors' }, { label: data.name }]}
@@ -99,7 +99,7 @@ export default function Vendor360Page(): React.JSX.Element {
           </CardHeader>
           <CardContent>
             <div className="mb-1 flex flex-wrap items-baseline gap-2">
-              <span className="font-numeric text-ink text-[28px] font-semibold">
+              <span className="font-numeric text-ink text-display font-semibold">
                 {sc.score === null ? 'N/A' : sc.score}
               </span>
               {/* A grade computed from under three transactions has not been
@@ -120,12 +120,12 @@ export default function Vendor360Page(): React.JSX.Element {
                 {sc.grade}
               </Pill>
               {sc.insufficientData && (
-                <span className="border-warn/35 bg-warn-wash text-warn rounded-xs border px-1.5 py-0.5 text-[10px] font-semibold ">
+                <span className="border-warn/35 bg-warn-wash text-warn rounded-xs border px-1.5 py-0.5 text-micro font-semibold ">
                   Provisional
                 </span>
               )}
             </div>
-            <p className="text-faint mb-2 text-[11px]">
+            <p className="text-faint mb-2 text-micro">
               {sc.insufficientData
                 ? `Cold start — only ${sc.transactionCount} transaction${sc.transactionCount === 1 ? '' : 's'} on record. Treat this grade as indicative.`
                 : `Weighted across ${sc.transactionCount} transactions in the ${scorecardPeriod(sc.period)}.`}
@@ -170,7 +170,7 @@ export default function Vendor360Page(): React.JSX.Element {
             />
             <div className="border-line mt-2 border-t pt-2">
               {metricRow('Transactions', sc.transactionCount)}
-              <div className="flex justify-between text-[13px]">
+              <div className="flex justify-between text-body-sm">
                 <span className="text-muted">FYTD spend</span>
                 <span className="text-ink tabular-nums">{inr(data.fytdSpend)}</span>
               </div>
@@ -184,7 +184,7 @@ export default function Vendor360Page(): React.JSX.Element {
             <CardTitle>Compliance & identity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between text-body-sm">
               <span className="text-muted">Risk grade</span>
               <Pill
                 variant={
@@ -198,19 +198,19 @@ export default function Vendor360Page(): React.JSX.Element {
                 {data.riskGrade ?? '—'} {data.riskScore ? `(${data.riskScore})` : ''}
               </Pill>
             </div>
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between text-body-sm">
               <span className="text-muted">GSTIN</span>
               <span className="text-ink">{data.gstin ?? '—'}</span>
             </div>
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between text-body-sm">
               <span className="text-muted">PAN</span>
               <span className="text-ink">{data.pan ?? '—'}</span>
             </div>
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between text-body-sm">
               <span className="text-muted">Entity type</span>
               <span className="text-ink">{data.legalEntityType ?? '—'}</span>
             </div>
-            <div className="flex justify-between text-[13px]">
+            <div className="flex justify-between text-body-sm">
               <span className="text-muted">Activated</span>
               <span className="text-ink">
                 {data.activatedAt ? formatDate(data.activatedAt) : '—'}
@@ -224,7 +224,7 @@ export default function Vendor360Page(): React.JSX.Element {
           <CardHeader>
             <CardTitle>Contact & bank</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-1 text-[13px]">
+          <CardContent className="space-y-1 text-body-sm">
             {data.primaryContact ? (
               <>
                 <div className="text-ink font-medium">{data.primaryContact.name}</div>
@@ -256,7 +256,7 @@ export default function Vendor360Page(): React.JSX.Element {
             <CardTitle>Lifecycle events</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-1 text-[13px]">
+            <ul className="space-y-1 text-body-sm">
               {data.suspensions.map((s) => (
                 <li key={s.id} className="flex items-center justify-between">
                   <span className="text-ink">

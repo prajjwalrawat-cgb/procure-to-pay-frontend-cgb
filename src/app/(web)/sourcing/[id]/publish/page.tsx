@@ -63,7 +63,7 @@ function VendorPicker({
       {open && (
         <div className="border-line bg-panel absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-md border shadow-lg">
           {matches.length === 0 ? (
-            <p className="text-muted px-3 py-2 text-[12px]">No active vendor matches.</p>
+            <p className="text-muted px-3 py-2 text-caption">No active vendor matches.</p>
           ) : (
             matches.map((v) => (
               <button
@@ -75,7 +75,7 @@ function VendorPicker({
                   setQuery('');
                   setOpen(false);
                 }}
-                className="hover:bg-canvas flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px]"
+                className="hover:bg-canvas flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-caption"
               >
                 <span className="truncate">
                   <span className="text-text">{v.name}</span>{' '}
@@ -162,7 +162,7 @@ export default function PublishPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-[720px]">
+    <div className="mx-auto w-full max-w-[720px]">
       <PageHeader
         title={`Publish ${rfq?.number ?? ''}`.trim()}
         breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Publish' }]}
@@ -171,7 +171,7 @@ export default function PublishPage(): React.JSX.Element {
 
       <Section title="Invitations">
         {rfq?.invitations.map((i) => (
-          <div key={i.id} className="flex items-center gap-2 py-1 text-[13px]">
+          <div key={i.id} className="flex items-center gap-2 py-1 text-body-sm">
             <Pill variant="gray">{i.source.toLowerCase()}</Pill>
             <span>{i.vendorName}</span>
             {i.isMsme && <Badge variant="classification">MSME</Badge>}
@@ -179,7 +179,7 @@ export default function PublishPage(): React.JSX.Element {
               type="button"
               onClick={() => removeVendor(i.id, i.vendorName)}
               disabled={remove.isPending}
-              className="text-muted hover:text-danger ml-auto text-[12px]"
+              className="text-muted hover:text-danger ml-auto text-caption"
             >
               Remove
             </button>
@@ -190,7 +190,7 @@ export default function PublishPage(): React.JSX.Element {
             invitedIds={new Set((rfq?.invitations ?? []).map((i) => i.vendorId))}
             onPick={addVendor}
           />
-          <label className="text-muted mt-2 flex items-center gap-2 text-[12px]">
+          <label className="text-muted mt-2 flex items-center gap-2 text-caption">
             <input
               type="checkbox"
               checked={preliminary}
@@ -201,7 +201,7 @@ export default function PublishPage(): React.JSX.Element {
           </label>
         </div>
         {(rfq?.invitations.length ?? 0) < 2 && (
-          <label className="text-muted mt-2 flex items-center gap-2 text-[12px]">
+          <label className="text-muted mt-2 flex items-center gap-2 text-caption">
             <input
               type="checkbox"
               checked={spotBuyException}
@@ -243,7 +243,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-3 text-[14px] font-semibold">{title}</h2>
+      <h2 className="text-ink mb-3 text-body font-semibold">{title}</h2>
       {children}
     </div>
   );
@@ -259,7 +259,7 @@ function TimeField({
   onChange: (v: string) => void;
 }): React.JSX.Element {
   return (
-    <label className="mb-2 flex items-center justify-between text-[13px]">
+    <label className="mb-2 flex items-center justify-between text-body-sm">
       <span className="text-muted">{label}</span>
       <input
         type="datetime-local"

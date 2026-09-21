@@ -44,11 +44,11 @@ export function BankReconciliationPanel({
     <section className="border-line bg-panel mb-4 rounded-lg border p-5">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-ink text-[14px] font-semibold">Bank reconciliation</h2>
+          <h2 className="text-ink text-body font-semibold">Bank reconciliation</h2>
           {/* A grey "sandbox simulator" pill read as ordinary metadata next to
               real UTRs. This is money movement — it gets the standard marker. */}
           <SandboxChip simulated={data.simulated} label="bank reconciliation" />
-          <span className="text-muted text-[12px]">attempt #{data.attemptNo}</span>
+          <span className="text-muted text-caption">attempt #{data.attemptNo}</span>
         </div>
         <div className="flex items-center gap-2">
           {data.canConfirm && (
@@ -65,7 +65,7 @@ export function BankReconciliationPanel({
                   push(e instanceof Error ? e.message : 'Confirm failed', 'error');
                 }
               }}
-              className="bg-ink rounded-md px-3 py-1.5 text-[12px] font-medium text-white"
+              className="bg-ink rounded-md px-3 py-1.5 text-caption font-medium text-white"
             >
               Poll bank confirmation
             </button>
@@ -81,7 +81,7 @@ export function BankReconciliationPanel({
                   push(e instanceof Error ? e.message : 'Retry failed', 'error');
                 }
               }}
-              className="border-line text-text hover:bg-canvas rounded-md border px-3 py-1.5 text-[12px]"
+              className="border-line text-text hover:bg-canvas rounded-md border px-3 py-1.5 text-caption"
             >
               Retry failed items
             </button>
@@ -89,7 +89,7 @@ export function BankReconciliationPanel({
         </div>
       </div>
 
-      <div className="text-muted mb-3 flex gap-4 text-[12px]">
+      <div className="text-muted mb-3 flex gap-4 text-caption">
         <span>{data.acceptedCount} accepted</span>
         <span>{data.failedCount} failed</span>
         {data.submittedAt && (
@@ -100,8 +100,8 @@ export function BankReconciliationPanel({
         )}
       </div>
 
-      <table className="w-full text-[13px]">
-        <thead className="border-line border-b text-left text-[12px] text-muted">
+      <table className="w-full text-body-sm">
+        <thead className="border-line border-b text-left text-caption text-muted">
           <tr>
             <th className="py-1.5 font-medium">Invoice</th>
             <th className="py-1.5 font-medium">Vendor</th>
@@ -121,12 +121,12 @@ export function BankReconciliationPanel({
                   {it.bankStatus}
                 </Pill>
                 {it.bankErrorMessage && (
-                  <span className="text-danger ml-1 text-[11px]">
+                  <span className="text-danger ml-1 text-micro">
                     {it.bankErrorMessage}
                   </span>
                 )}
               </td>
-              <td className="font-numeric text-muted py-1.5 text-[12px]">
+              <td className="font-numeric text-muted py-1.5 text-caption">
                 {it.bankUtr ?? '—'}
               </td>
             </tr>
@@ -136,11 +136,11 @@ export function BankReconciliationPanel({
 
       {data.records.length > 0 && (
         <div className="border-line mt-3 border-t pt-2">
-          <p className="text-muted mb-1 text-[12px]">Posted payment records</p>
+          <p className="text-muted mb-1 text-caption">Posted payment records</p>
           {data.records.map((r) => (
             <div
               key={r.invoiceId + r.utr}
-              className="flex items-center gap-2 py-0.5 text-[12px]"
+              className="flex items-center gap-2 py-0.5 text-caption"
             >
               <span className="font-numeric">{r.utr}</span>
               {r.isStub ? (

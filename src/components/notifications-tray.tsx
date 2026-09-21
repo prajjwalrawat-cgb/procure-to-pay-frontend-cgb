@@ -39,9 +39,9 @@ export function NotificationsTray(): React.JSX.Element | null {
       />
       <aside className="border-line bg-panel fixed right-4 top-16 z-50 max-h-[70vh] w-96 overflow-hidden rounded-lg border shadow-xl">
         <div className="border-line flex items-center justify-between border-b px-4 py-3">
-          <span className="text-ink text-[13px] font-semibold">Notifications</span>
+          <span className="text-ink text-body-sm font-semibold">Notifications</span>
           {unread > 0 && (
-            <span className="bg-accent-wash text-accent-2 rounded-full px-2 py-0.5 text-[11px] font-medium">
+            <span className="bg-accent-wash text-accent-2 rounded-full px-2 py-0.5 text-micro font-medium">
               {unread} unread
             </span>
           )}
@@ -49,13 +49,13 @@ export function NotificationsTray(): React.JSX.Element | null {
 
         <div className="max-h-[calc(70vh-48px)] overflow-y-auto">
           {isLoading && (
-            <div className="text-muted px-4 py-8 text-center text-[12px]">Loading…</div>
+            <div className="text-muted px-4 py-8 text-center text-caption">Loading…</div>
           )}
 
           {!isLoading && items.length === 0 && (
             <div className="text-muted flex flex-col items-center gap-2 py-10 text-center">
               <BellOff className="text-faint h-6 w-6" />
-              <p className="text-[12px]">You&apos;re all caught up.</p>
+              <p className="text-caption">You&apos;re all caught up.</p>
             </div>
           )}
 
@@ -72,13 +72,13 @@ export function NotificationsTray(): React.JSX.Element | null {
                 {!n.readAt && (
                   <span className="bg-accent h-1.5 w-1.5 shrink-0 rounded-full" />
                 )}
-                <span className="text-ink flex-1 text-[13px] font-medium">{n.title}</span>
-                <span className="text-faint shrink-0 text-[11px]">
+                <span className="text-ink flex-1 text-body-sm font-medium">{n.title}</span>
+                <span className="text-faint shrink-0 text-micro">
                   {timeAgo(n.createdAt)}
                 </span>
               </div>
-              {n.body && <span className="text-muted pl-3.5 text-[12px]">{n.body}</span>}
-              <span className="text-faint pl-3.5 text-[10px]">
+              {n.body && <span className="text-muted pl-3.5 text-caption">{n.body}</span>}
+              <span className="text-faint pl-3.5 text-micro">
                 {n.type.replace(/_/g, ' ').toLowerCase()}
               </span>
             </button>

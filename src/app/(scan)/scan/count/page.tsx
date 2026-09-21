@@ -92,7 +92,7 @@ export default function ScanCountPage(): React.JSX.Element {
     <div className="space-y-4">
       {!sessionId ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-          <h2 className="text-[14px] font-semibold">Scan the bin to count</h2>
+          <h2 className="text-body font-semibold">Scan the bin to count</h2>
           <BarcodeScanner
             label="bin label"
             onScan={(v) => void onBinScan(v)}
@@ -106,8 +106,8 @@ export default function ScanCountPage(): React.JSX.Element {
       {session.data ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-[15px] font-semibold">{session.data.locationName}</h2>
-            <span className="text-[12px] text-muted">
+            <h2 className="text-h3 font-semibold">{session.data.locationName}</h2>
+            <span className="text-caption text-muted">
               {status?.replace('_', ' ').toLowerCase()}
             </span>
           </div>
@@ -115,14 +115,14 @@ export default function ScanCountPage(): React.JSX.Element {
           {session.data.countedSoFar.length > 0 ? (
             <ul className="divide-y divide-line">
               {session.data.countedSoFar.map((row) => (
-                <li key={row.productId} className="flex justify-between py-2 text-[13px]">
+                <li key={row.productId} className="flex justify-between py-2 text-body-sm">
                   <span>{row.productName}</span>
                   <span className="tabular-nums">{row.countedQty}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-[13px] text-muted">Nothing counted yet.</p>
+            <p className="text-body-sm text-muted">Nothing counted yet.</p>
           )}
         </section>
       ) : null}
@@ -140,7 +140,7 @@ export default function ScanCountPage(): React.JSX.Element {
 
           <Button
             type="button"
-            className="w-full py-4 text-[16px]"
+            className="w-full py-4 text-h3"
             disabled={complete.isPending}
             onClick={() => void submitForReview()}
           >
@@ -151,10 +151,10 @@ export default function ScanCountPage(): React.JSX.Element {
 
       {status === 'PENDING_REVIEW' && session.data ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-          <h2 className="text-[14px] font-semibold">Variances awaiting approval</h2>
+          <h2 className="text-body font-semibold">Variances awaiting approval</h2>
           <ul className="divide-y divide-line">
             {session.data.variances.map((v) => (
-              <li key={v.productId} className="flex justify-between py-2 text-[13px]">
+              <li key={v.productId} className="flex justify-between py-2 text-body-sm">
                 <span>{v.productName}</span>
                 <span className="tabular-nums">
                   {v.countedQty} counted / {v.expectedQty} expected
@@ -170,7 +170,7 @@ export default function ScanCountPage(): React.JSX.Element {
               </li>
             ))}
           </ul>
-          <p className="text-[12px] text-muted">
+          <p className="text-caption text-muted">
             A supervisor approves these — nothing has moved in the ledger yet.
           </p>
         </section>

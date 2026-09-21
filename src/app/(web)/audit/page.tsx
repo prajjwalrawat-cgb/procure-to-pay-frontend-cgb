@@ -94,7 +94,7 @@ export default function AuditPage(): React.JSX.Element {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search actor or entity id…"
-          className="w-64 rounded-sm border border-line px-2.5 py-1.5 text-[13px] outline-none"
+          className="w-64 rounded-sm border border-line px-2.5 py-1.5 text-body-sm outline-none"
         />
         {ACTIONS.map((a) => (
           <Chip
@@ -114,11 +114,11 @@ export default function AuditPage(): React.JSX.Element {
         ))}
       </div>
 
-      {isLoading && <div className="text-[13px] text-muted">Loading…</div>}
+      {isLoading && <div className="text-body-sm text-muted">Loading…</div>}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="p-2 text-left">Timestamp</th>
               <th className="p-2 text-left">Actor</th>
@@ -184,7 +184,7 @@ function Chip({
     <button
       onClick={onClick}
       className={
-        'rounded-full border px-2.5 py-0.5 text-[11px] font-medium ' +
+        'rounded-full border px-2.5 py-0.5 text-micro font-medium ' +
         (on ? 'border-accent bg-accent-wash text-accent-2' : 'border-line text-muted')
       }
     >
@@ -210,12 +210,12 @@ function AuditDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold text-ink">{row.action}</h3>
+          <h3 className="text-h3 font-semibold text-ink">{row.action}</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
           </Button>
         </div>
-        <dl className="mb-4 flex flex-col gap-1 text-[12px]">
+        <dl className="mb-4 flex flex-col gap-1 text-caption">
           <Row k="Entity" v={`${row.entityType}, ${row.entityId}`} />
           <Row k="Actor" v={row.actorName ?? row.actorType} />
           <Row k="When" v={formatDateTime(row.timestamp)} />
@@ -240,8 +240,8 @@ function JsonBlock({
 }): React.JSX.Element {
   return (
     <div>
-      <div className="mb-1 text-[10px] font-semibold text-faint">{title}</div>
-      <pre className="font-numeric overflow-x-auto rounded-sm border border-line bg-canvas p-2 text-[11px]">
+      <div className="mb-1 text-micro font-semibold text-faint">{title}</div>
+      <pre className="font-numeric overflow-x-auto rounded-sm border border-line bg-canvas p-2 text-micro">
         {value ? JSON.stringify(value, null, 2) : '—'}
       </pre>
     </div>
@@ -284,11 +284,11 @@ function VerifyModal({
         onClick={(e) => e.stopPropagation()}
       >
         {result.verified ? (
-          <div className="rounded-lg bg-accent-wash p-4 text-[13px] font-medium text-accent-2">
+          <div className="rounded-lg bg-accent-wash p-4 text-body-sm font-medium text-accent-2">
             Chain verified across {result.eventsChecked} events — no tampering detected
           </div>
         ) : (
-          <div className="rounded-lg bg-danger-wash p-4 text-[13px] font-medium text-danger">
+          <div className="rounded-lg bg-danger-wash p-4 text-body-sm font-medium text-danger">
             Chain broken — first break at{' '}
             <span className="font-numeric">{result.firstBreakAt}</span>. See the incident
             runbook (docs/adr/006-audit-hash-chain.md).

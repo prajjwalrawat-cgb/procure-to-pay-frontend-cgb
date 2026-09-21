@@ -86,14 +86,14 @@ function CancelInviteDialog({
           the audit log.
         </DialogDescription>
         <div className="mt-4">
-          <label className="text-muted mb-1 block text-[12px] font-medium">Reason</label>
+          <label className="text-muted mb-1 block text-caption font-medium">Reason</label>
           <Input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Duplicate invite — vendor already onboarding under VN-XXXXXX"
             aria-invalid={!!error}
           />
-          {error && <p className="text-danger mt-1 text-[12px]">{error}</p>}
+          {error && <p className="text-danger mt-1 text-caption">{error}</p>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="default" onClick={onClose}>
@@ -154,8 +154,8 @@ export default function OnboardingQueuePage(): React.JSX.Element {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Vendor</th>
                 <th className="px-3 py-2 text-left font-medium">Category</th>
@@ -228,7 +228,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                     {o.canCancel && (
                       <button
                         onClick={() => setCancelling(o)}
-                        className="text-muted hover:text-danger text-[12px] font-medium"
+                        className="text-muted hover:text-danger text-caption font-medium"
                       >
                         Cancel invite
                       </button>

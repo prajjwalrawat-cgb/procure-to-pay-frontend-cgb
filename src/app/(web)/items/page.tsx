@@ -89,7 +89,7 @@ export default function ItemMasterPage(): React.JSX.Element {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search SKU, name or description…"
-          className="min-w-[260px] flex-1 rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none placeholder:text-faint focus:border-accent"
+          className="min-w-[260px] flex-1 rounded-md border border-line bg-panel px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-faint focus:border-accent"
         />
         <select
           value={category}
@@ -115,8 +115,8 @@ export default function ItemMasterPage(): React.JSX.Element {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">SKU</th>
               <th className="px-3 py-2 font-medium">Item</th>
@@ -157,13 +157,13 @@ export default function ItemMasterPage(): React.JSX.Element {
       </div>
 
       {truncated && (
-        <p className="mt-2 text-[11px] text-faint">
+        <p className="mt-2 text-micro text-faint">
           Showing the first {rows.length} of {data?.totalEstimate} SKUs — narrow the
           search to see the rest.
         </p>
       )}
 
-      <p className="mt-4 text-[12px] text-muted">
+      <p className="mt-4 text-caption text-muted">
         Requisition lines raised with the <strong>New product</strong> reason code are
         asking for a SKU that belongs here. Adding it lets the next requisition pick the
         item instead, which is what carries HSN, GST, UoM and inventory balances through
@@ -192,7 +192,7 @@ function ItemRow({
           {item.isCapex && <Badge variant="classification">Capex</Badge>}
         </div>
         {item.subcategory && (
-          <div className="text-[11px] text-faint">{item.subcategory}</div>
+          <div className="text-micro text-faint">{item.subcategory}</div>
         )}
       </td>
       <td className="px-3 py-2 text-muted">{item.category}</td>

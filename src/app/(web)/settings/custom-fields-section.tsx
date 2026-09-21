@@ -46,7 +46,7 @@ export function CustomFieldsSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <div className="text-body-sm text-muted">Loading…</div>;
   }
 
   const fields = data
@@ -132,13 +132,13 @@ export function CustomFieldsSection(): React.JSX.Element {
       </Field>
 
       {fields.length === 0 ? (
-        <p className="text-[12px] text-muted">
+        <p className="text-caption text-muted">
           No custom fields on {CUSTOM_FIELD_ENTITY_LABELS[entity].toLowerCase()}s yet.
         </p>
       ) : (
         <div className="overflow-hidden rounded-sm border border-line">
-          <table className="w-full text-[12px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-caption">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Label</th>
                 <th className="px-3 py-2 font-medium">Type</th>
@@ -152,7 +152,7 @@ export function CustomFieldsSection(): React.JSX.Element {
                 <tr key={f.id} className="border-t border-line">
                   <td className="px-3 py-2">
                     <div className="text-text">{f.label}</div>
-                    <div className="font-numeric text-[10px] text-faint">{f.key}</div>
+                    <div className="font-numeric text-micro text-faint">{f.key}</div>
                   </td>
                   <td className="px-3 py-2 text-muted">
                     {CUSTOM_FIELD_TYPE_LABELS[f.fieldType]}
@@ -178,7 +178,7 @@ export function CustomFieldsSection(): React.JSX.Element {
                     {f.isActive ? (
                       <button
                         type="button"
-                        className="text-[11px] text-muted hover:text-danger"
+                        className="text-micro text-muted hover:text-danger"
                         onClick={() => toggle(f, { isActive: false })}
                       >
                         Retire
@@ -188,7 +188,7 @@ export function CustomFieldsSection(): React.JSX.Element {
                         <Pill variant="gray">Retired</Pill>
                         <button
                           type="button"
-                          className="text-[11px] text-accent-2"
+                          className="text-micro text-accent-2"
                           onClick={() => toggle(f, { isActive: true })}
                         >
                           Restore
@@ -205,7 +205,7 @@ export function CustomFieldsSection(): React.JSX.Element {
 
       {adding && (
         <div className="mt-2 rounded-sm border border-line bg-canvas p-3">
-          <div className="mb-2 text-[13px] font-medium text-ink">
+          <div className="mb-2 text-body-sm font-medium text-ink">
             New field on {CUSTOM_FIELD_ENTITY_LABELS[entity].toLowerCase()}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -238,7 +238,7 @@ export function CustomFieldsSection(): React.JSX.Element {
                   value={options}
                   onChange={(e) => setOptions(e.target.value)}
                   rows={3}
-                  className="w-full rounded-sm border border-line bg-panel px-3 py-2 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="w-full rounded-sm border border-line bg-panel px-3 py-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   placeholder={'Capex\nOpex'}
                 />
               </Field>
@@ -253,7 +253,7 @@ export function CustomFieldsSection(): React.JSX.Element {
               />
             </Field>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-4 text-[12px]">
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-caption">
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"

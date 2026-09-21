@@ -113,7 +113,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
           aria-label="Filter by status"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="h-8 rounded-sm border border-line bg-panel px-2.5 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="h-8 rounded-sm border border-line bg-panel px-2.5 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <option value="all">All statuses</option>
           {statuses.map((s) => (
@@ -122,15 +122,15 @@ export default function VendorInvoicesPage(): React.JSX.Element {
             </option>
           ))}
         </select>
-        <span className="ml-auto text-[12px] text-muted">
+        <span className="ml-auto text-caption text-muted">
           {rows.length} shown, {inr(total.toString())}
         </span>
       </div>
 
       <div className="overflow-x-auto">
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Invoice</th>
                 <th className="px-3 py-2.5 font-medium">Reference</th>
@@ -164,7 +164,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                   <td className="px-3 py-2.5 text-muted">
                     <span className="font-numeric">{inv.vendorInvoiceRef}</span>
                     {inv.proformaRef && (
-                      <div className="text-[11px] text-faint">
+                      <div className="text-micro text-faint">
                         Replaces PI <span className="font-numeric">{inv.proformaRef}</span>
                       </div>
                     )}
@@ -182,7 +182,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                         {inv.status !== 'REJECTED' && (
                           <Link
                             href={`/vendor/invoices/${inv.id}/tax-invoice`}
-                            className="text-[12px] font-medium text-accent-2"
+                            className="text-caption font-medium text-accent-2"
                           >
                             Upload tax invoice
                           </Link>

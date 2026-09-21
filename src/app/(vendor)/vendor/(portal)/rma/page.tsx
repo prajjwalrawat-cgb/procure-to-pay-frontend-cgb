@@ -15,16 +15,16 @@ export default function VendorRmaPage(): React.JSX.Element {
   const { data, isLoading } = useVendorRmas();
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader
         title="Return authorisations"
         description="Material returns requested against your deliveries"
       />
 
       <div className="space-y-3">
-        {isLoading && <p className="text-[13px] text-muted">Loading…</p>}
+        {isLoading && <p className="text-body-sm text-muted">Loading…</p>}
         {!isLoading && (data?.items.length ?? 0) === 0 && (
-          <p className="text-[13px] text-muted">No active returns.</p>
+          <p className="text-body-sm text-muted">No active returns.</p>
         )}
         {data?.items.map((r) => (
           <RmaCard key={r.id} rma={r} />
@@ -53,17 +53,17 @@ function RmaCard({
     <div className="rounded-lg border border-line bg-panel p-4">
       <div className="flex items-center justify-between">
         <div>
-          <span className="font-numeric text-[14px] font-medium text-ink">
+          <span className="font-numeric text-body font-medium text-ink">
             {rma.number}
           </span>
           <span className="ml-2">
             <Pill variant="gray">{rma.status}</Pill>
           </span>
-          <p className="mt-1 text-[12px] text-muted">
+          <p className="mt-1 text-caption text-muted">
             {rma.reasonCode}, {inr(rma.totalReturnValue)}
           </p>
           {rma.pickupScheduledAt && (
-            <p className="font-numeric text-[11px] text-faint">
+            <p className="font-numeric text-micro text-faint">
               Pickup {formatDateTime(rma.pickupScheduledAt)}
             </p>
           )}

@@ -16,8 +16,8 @@ export default function VendorReceiptsPage(): React.JSX.Element {
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">GRN</th>
               <th className="px-3 py-2 font-medium">PO</th>
@@ -46,10 +46,10 @@ export default function VendorReceiptsPage(): React.JSX.Element {
                 <td className="font-numeric px-3 py-2 font-medium text-ink">
                   {g.number}
                 </td>
-                <td className="font-numeric px-3 py-2 text-[12px] text-text">
+                <td className="font-numeric px-3 py-2 text-caption text-text">
                   {g.poNumber}
                 </td>
-                <td className="font-numeric px-3 py-2 text-[12px] text-text">
+                <td className="font-numeric px-3 py-2 text-caption text-text">
                   {formatDate(g.receivedAt)}
                 </td>
                 <td className="px-3 py-2">

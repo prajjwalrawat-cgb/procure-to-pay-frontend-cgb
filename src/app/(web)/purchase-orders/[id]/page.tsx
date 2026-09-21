@@ -63,7 +63,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
   };
 
   if (isLoading || !data) {
-    return <div className="p-6 text-[13px] text-muted">Loading purchase order…</div>;
+    return <div className="p-6 text-body-sm text-muted">Loading purchase order…</div>;
   }
 
   const queries = data.comments.filter((c) => c.source === 'VENDOR' || c.isQuery);
@@ -132,13 +132,13 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
     <div className="pb-20">
       <Link
         href="/purchase-orders"
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
       </Link>
 
       {batch.length > 0 && (
-        <div className="mb-4 flex items-center gap-2 rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
+        <div className="mb-4 flex items-center gap-2 rounded-sm bg-accent-wash px-3 py-2 text-caption text-accent-2">
           <Check className="h-3.5 w-3.5" />
           Batch created ({batch.length} more):
           {batch.map((bid, i) => (
@@ -213,10 +213,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
         <div className="flex flex-col gap-5">
           {/* Line items */}
           <section>
-            <h2 className="mb-2 text-[14px] font-semibold text-ink">Line items</h2>
+            <h2 className="mb-2 text-body font-semibold text-ink">Line items</h2>
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
-                <thead className="border-line border-b text-left text-[12px] text-muted">
+              <table className="w-full text-caption">
+                <thead className="border-line border-b text-left text-caption text-muted">
                   <tr>
                     <th className="px-3 py-2 font-medium">Item</th>
                     <th className="px-3 py-2 text-right font-medium">Ordered</th>
@@ -238,7 +238,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {/* Approval chain */}
           <section>
-            <h2 className="mb-2 text-[14px] font-semibold text-ink">Approval route</h2>
+            <h2 className="mb-2 text-body font-semibold text-ink">Approval route</h2>
             <div className="rounded-lg border border-line bg-panel p-4">
               <ApprovalChain steps={data.liveApprovalChain} />
             </div>
@@ -305,8 +305,8 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           {/* Supporting documents — buyer-side only; never shown in the vendor portal */}
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-[14px] font-semibold text-ink">Supporting documents</h2>
-              <label className="flex cursor-pointer items-center gap-1 text-[12px] font-medium text-accent-2">
+              <h2 className="text-body font-semibold text-ink">Supporting documents</h2>
+              <label className="flex cursor-pointer items-center gap-1 text-caption font-medium text-accent-2">
                 <Paperclip className="h-3.5 w-3.5" />
                 {uploading ? 'Uploading…' : 'Attach'}
                 <input
@@ -321,7 +321,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 />
               </label>
             </div>
-            <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
+            <div className="rounded-lg border border-line bg-panel p-3 text-caption">
               {data.supportingDocuments.length === 0 ? (
                 <p className="text-muted">
                   {data.poType === 'SPOT_BUY'
@@ -352,10 +352,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {/* Terms & conditions — the same rows printed on the PDF and shown to the vendor */}
           <section>
-            <h2 className="mb-2 text-[14px] font-semibold text-ink">
+            <h2 className="mb-2 text-body font-semibold text-ink">
               Terms & conditions
             </h2>
-            <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
+            <div className="rounded-lg border border-line bg-panel p-3 text-caption">
               {data.terms.length === 0 ? (
                 <p className="text-muted">
                   None selected — the PDF prints the built-in standard wording.
@@ -381,15 +381,15 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           {/* Vendor queries */}
           {queries.length > 0 && (
             <section>
-              <h2 className="mb-2 text-[14px] font-semibold text-ink">Vendor queries</h2>
+              <h2 className="mb-2 text-body font-semibold text-ink">Vendor queries</h2>
               <div className="flex flex-col gap-2">
                 {queries.map((q) => (
                   <div key={q.id}
-                    className="rounded-lg border border-warn/30 bg-warn-wash px-3 py-2 text-[12px]"
+                    className="rounded-lg border border-warn/30 bg-warn-wash px-3 py-2 text-caption"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-text">{q.authorName}</span>
-                      <span className="font-numeric text-[10px] text-faint">
+                      <span className="font-numeric text-micro text-faint">
                         {formatDateTime(q.createdAt)}
                       </span>
                     </div>
@@ -402,10 +402,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {/* Activity + comments */}
           <section>
-            <h2 className="mb-2 text-[14px] font-semibold text-ink">Activity</h2>
+            <h2 className="mb-2 text-body font-semibold text-ink">Activity</h2>
             <ul className="mb-3 flex flex-col gap-1.5 border-l border-line pl-4">
               {data.activity.map((a) => (
-                <li key={a.id} className="text-[12px] text-muted">
+                <li key={a.id} className="text-caption text-muted">
                   <span className="font-medium text-text">
                     {a.action.replace(/_/g, ' ')}
                   </span>{' '}
@@ -416,7 +416,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 </li>
               ))}
               {data.activity.length === 0 && (
-                <li className="text-[12px] text-faint">No activity yet.</li>
+                <li className="text-caption text-faint">No activity yet.</li>
               )}
             </ul>
             <div className="flex gap-2">
@@ -424,7 +424,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Add a comment…"
-                className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-body-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
               />
               <Button
                 size="sm"
@@ -448,13 +448,13 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
         {/* Right panel */}
         <aside className="flex flex-col gap-4">
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="text-[11px] text-faint">
+            <div className="text-micro text-faint">
               Order value
             </div>
-            <div className="font-numeric mt-1 text-[22px] font-semibold tracking-display text-ink">
+            <div className="font-numeric mt-1 text-h1 font-semibold tracking-display text-ink">
               {inr(data.amounts.total)}
             </div>
-            <dl className="mt-3 flex flex-col gap-1 text-[12px]">
+            <dl className="mt-3 flex flex-col gap-1 text-caption">
               <Row
                 label={`Taxable (${data.amounts.taxKind})`}
                 value={inr(data.amounts.subtotal)}
@@ -475,11 +475,11 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           />
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] text-faint">
+            <div className="mb-2 text-micro text-faint">
               Vendor
             </div>
-            <div className="text-[13px] font-medium text-ink">{data.vendor.name}</div>
-            <dl className="mt-1 flex flex-col gap-1 text-[12px]">
+            <div className="text-body-sm font-medium text-ink">{data.vendor.name}</div>
+            <dl className="mt-1 flex flex-col gap-1 text-caption">
               <Row label="Code" value={data.vendor.code} />
               <Row label="GSTIN" value={data.vendor.gstin ?? '—'} />
               <Row label="MSME" value={data.vendor.isMsme ? 'Yes' : 'No'} />
@@ -492,12 +492,12 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {data.requisition && (
             <div className="rounded-lg border border-line bg-panel p-4">
-              <div className="mb-2 text-[11px] text-faint">
+              <div className="mb-2 text-micro text-faint">
                 Source requisition
               </div>
               <Link
                 href={`/requisitions/${data.requisition.id}`}
-                className="font-numeric text-[13px] font-medium text-accent-2"
+                className="font-numeric text-body-sm font-medium text-accent-2"
               >
                 {data.requisition.number} →
               </Link>
@@ -505,10 +505,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <div className="mb-2 text-[11px] text-faint">
+            <div className="mb-2 text-micro text-faint">
               Terms & delivery
             </div>
-            <dl className="flex flex-col gap-1 text-[12px]">
+            <dl className="flex flex-col gap-1 text-caption">
               <Row label="Incoterm" value={data.deliveryTerms ?? '—'} />
               <Row
                 label="Payment"
@@ -528,7 +528,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               />
             </dl>
             {data.deliveryAddress && (
-              <p className="mt-2 text-[11px] text-muted">
+              <p className="mt-2 text-micro text-muted">
                 {[
                   data.deliveryAddress.line1,
                   data.deliveryAddress.line2,
@@ -543,10 +543,10 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
 
           {data.budgetCommitment && (
             <div className="rounded-lg border border-line bg-panel p-4">
-              <div className="mb-2 text-[11px] text-faint">
+              <div className="mb-2 text-micro text-faint">
                 Budget commitment
               </div>
-              <dl className="flex flex-col gap-1 text-[12px]">
+              <dl className="flex flex-col gap-1 text-caption">
                 <Row label="Committed" value={inr(data.budgetCommitment.amount)} strong />
               </dl>
             </div>
@@ -566,7 +566,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
                 value={decisionComment}
                 onChange={(e) => setDecisionComment(e.target.value)}
                 placeholder="Add a decision comment…"
-                className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-[13px] outline-none"
+                className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-body-sm outline-none"
               />
               <div className="flex items-center gap-2">
                 <Button
@@ -711,7 +711,7 @@ function BillToPanel({
   const canSwitch = editable && plants.length > 1;
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="mb-2 text-[11px] text-faint">
+      <div className="mb-2 text-micro text-faint">
         Bill to (GST registration)
       </div>
       {canSwitch ? (
@@ -728,7 +728,7 @@ function BillToPanel({
               },
             )
           }
-          className="h-9 w-full rounded-sm border border-line bg-panel px-2 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="h-9 w-full rounded-sm border border-line bg-panel px-2 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           {plants.map((p) => (
             <option key={p.id} value={p.id}>
@@ -738,14 +738,14 @@ function BillToPanel({
           ))}
         </select>
       ) : (
-        <div className="text-[13px] font-medium text-ink">{billTo.name}</div>
+        <div className="text-body-sm font-medium text-ink">{billTo.name}</div>
       )}
-      <dl className="mt-2 flex flex-col gap-1 text-[12px]">
+      <dl className="mt-2 flex flex-col gap-1 text-caption">
         <Row label="GSTIN" value={billTo.gstin ?? '—'} />
         <Row label="State" value={billTo.stateCode} />
       </dl>
       {canSwitch && (
-        <p className="mt-2 text-[11px] text-faint">
+        <p className="mt-2 text-micro text-faint">
           Decides the GSTIN on the PO and CGST+SGST vs IGST. Locked once submitted.
         </p>
       )}
@@ -759,7 +759,7 @@ function CustomFieldPanel({ poId }: { poId: string }): React.JSX.Element | null 
   if (!data || Object.keys(data.values).length === 0) return null;
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="mb-2 text-[11px] text-faint">
+      <div className="mb-2 text-micro text-faint">
         Additional details
       </div>
       <CustomFieldList entity="PURCHASE_ORDER" values={data.values} />
@@ -773,7 +773,7 @@ function PoLineRow({ line: l }: { line: PoLineView }): React.JSX.Element {
     <tr className="border-t border-line">
       <td className="px-3 py-2">
         <div className="text-text">{l.itemDesc}</div>
-        <div className="font-numeric text-[10px] text-faint">
+        <div className="font-numeric text-micro text-faint">
           {l.hsnCode ?? '—'}, {l.uom}
         </div>
       </td>
@@ -809,8 +809,8 @@ function DocCard({
 }): React.JSX.Element {
   return (
     <div className="rounded-lg border border-line bg-panel p-3">
-      <div className="mb-2 text-[10px] text-faint">{title}</div>
-      <div className="flex flex-col gap-1.5 text-[12px]">{children}</div>
+      <div className="mb-2 text-micro text-faint">{title}</div>
+      <div className="flex flex-col gap-1.5 text-caption">{children}</div>
     </div>
   );
 }

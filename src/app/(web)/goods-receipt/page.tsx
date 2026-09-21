@@ -87,8 +87,8 @@ function PendingReceiptTable({
 }): React.JSX.Element {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
-        <thead className="border-line border-b text-left text-[12px] text-muted">
+      <table className="w-full text-body-sm">
+        <thead className="border-line border-b text-left text-caption text-muted">
           <tr>
             <th className="px-3 py-2 font-medium">PO</th>
             <th className="px-3 py-2 font-medium">Vendor</th>
@@ -118,7 +118,7 @@ function PendingReceiptTable({
                   {statusLabel(po.status)}
                 </Pill>
               </td>
-              <td className="font-numeric text-text px-3 py-2 text-[12px]">
+              <td className="font-numeric text-text px-3 py-2 text-caption">
                 {po.expectedDeliveryDate
                   ? formatDate(po.expectedDeliveryDate)
                   : '—'}
@@ -129,7 +129,7 @@ function PendingReceiptTable({
               <td className="px-3 py-2 text-right">
                 <Link
                   href={`/goods-receipt/new?po=${po.id}`}
-                  className="text-accent-2 text-[12px] font-medium hover:underline"
+                  className="text-accent-2 text-caption font-medium hover:underline"
                 >
                   Receive →
                 </Link>
@@ -151,8 +151,8 @@ function ReceiptsTable({
 }): React.JSX.Element {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[13px]">
-        <thead className="border-line border-b text-left text-[12px] text-muted">
+      <table className="w-full text-body-sm">
+        <thead className="border-line border-b text-left text-caption text-muted">
           <tr>
             <th className="px-3 py-2 font-medium">GRN</th>
             <th className="px-3 py-2 font-medium">PO</th>
@@ -188,7 +188,7 @@ function ReceiptsTable({
                   </Pill>
                 </div>
               </td>
-              <td className="font-numeric text-text px-3 py-2 text-[12px]">
+              <td className="font-numeric text-text px-3 py-2 text-caption">
                 {g.po.number}
               </td>
               <td className="px-3 py-2">
@@ -200,7 +200,7 @@ function ReceiptsTable({
               <td className="px-3 py-2">
                 <Pill variant={statusVariant(g.qcStatus)}>{statusLabel(g.qcStatus)}</Pill>
               </td>
-              <td className="font-numeric text-text px-3 py-2 text-[12px]">
+              <td className="font-numeric text-text px-3 py-2 text-caption">
                 {formatDate(g.receivedAt)}
               </td>
               <td className="font-numeric text-text px-3 py-2 text-right">

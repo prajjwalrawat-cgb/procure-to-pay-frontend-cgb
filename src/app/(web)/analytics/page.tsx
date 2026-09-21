@@ -64,7 +64,7 @@ export default function AnalyticsPage(): React.JSX.Element {
   const breach = msme.data?.buckets.find((b) => b.bucket === 'BREACH_45_PLUS');
 
   return (
-    <div className="max-w-[1400px]">
+    <div>
       <PageHeader
         title="Analytics"
         description="Spend, savings, concentration and MSME exposure, computed from posted documents."
@@ -73,7 +73,7 @@ export default function AnalyticsPage(): React.JSX.Element {
       {/* Filters sit in one row above the charts and apply to all of them. */}
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <PeriodPicker value={period} onChange={setPeriod} />
-        <label className="text-muted flex items-center gap-1.5 text-[12px]">
+        <label className="text-muted flex items-center gap-1.5 text-caption">
           <input
             type="checkbox"
             checked={compare}
@@ -252,7 +252,7 @@ export default function AnalyticsPage(): React.JSX.Element {
               />
             </BarChart>
           </ResponsiveContainer>
-          <p className="text-faint mt-1 text-[11px]">
+          <p className="text-faint mt-1 text-micro">
             MSME suppliers are marked in the label. One series, so the bars carry no
             separate identity colour.
           </p>
@@ -267,22 +267,22 @@ export default function AnalyticsPage(): React.JSX.Element {
                 href="/analytics/msme"
                 className="border-line hover:bg-canvas rounded-md border p-3"
               >
-                <div className="text-faint text-[10px]">
+                <div className="text-faint text-micro">
                   {MSME_BUCKET[b.bucket].short}
                 </div>
-                <div className="text-faint text-[10px]">
+                <div className="text-faint text-micro">
                   {MSME_BUCKET[b.bucket].days}
                 </div>
-                <div className="font-numeric text-ink mt-1 text-[18px] font-semibold">
+                <div className="font-numeric text-ink mt-1 text-h2 font-semibold">
                   {b.invoiceCount}
                 </div>
-                <div className="text-muted font-numeric text-[11px]">
+                <div className="text-muted font-numeric text-micro">
                   {inrCompact(b.totalExposure)}
                 </div>
               </Link>
             ))}
           </div>
-          <p className="text-faint mt-2 text-[11px]">
+          <p className="text-faint mt-2 text-micro">
             Click a bucket to see the at-risk invoices behind it.
           </p>
         </Card>
@@ -308,16 +308,16 @@ function Kpi({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px]">{label}</div>
+      <div className="text-faint text-micro">{label}</div>
       <div
         className={
-          'font-numeric tracking-display mt-1 text-[20px] font-semibold ' +
+          'font-numeric tracking-display mt-1 text-h2 font-semibold ' +
           (danger ? 'text-danger' : accent ? 'text-accent-2' : 'text-ink')
         }
       >
         {value}
       </div>
-      {hint && <div className="text-faint mt-0.5 text-[10px]">{hint}</div>}
+      {hint && <div className="text-faint mt-0.5 text-micro">{hint}</div>}
     </div>
   );
 }
@@ -336,7 +336,7 @@ function Card({
   return (
     <div className={'border-line bg-panel rounded-lg border p-4 ' + (className ?? '')}>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-ink text-[14px] font-semibold">{title}</h3>
+        <h3 className="text-ink text-body font-semibold">{title}</h3>
         <AsOfBadge refreshedAt={asOf} />
       </div>
       {children}
@@ -363,14 +363,14 @@ function ConcentrationDrawer({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-ink text-[15px] font-semibold">
+          <h3 className="text-ink text-h3 font-semibold">
             Top-10 vendor concentration
           </h3>
-          <button onClick={onClose} className="text-muted hover:text-ink text-[13px]">
+          <button onClick={onClose} className="text-muted hover:text-ink text-body-sm">
             Close
           </button>
         </div>
-        <table className="w-full text-[13px]">
+        <table className="w-full text-body-sm">
           <tbody>
             {vendors.map((v) => (
               <tr key={v.vendorId} className="border-line border-b last:border-0">

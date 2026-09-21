@@ -88,7 +88,7 @@ export default function CreatePoPage(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
 
   if (isLoading || !data) {
-    return <div className="p-6 text-[13px] text-muted">Loading requisition…</div>;
+    return <div className="p-6 text-body-sm text-muted">Loading requisition…</div>;
   }
 
   const prLines = data.lines;
@@ -200,10 +200,10 @@ export default function CreatePoPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-6xl pb-8">
+    <div className="pb-8">
       <Link
         href={`/requisitions/${id}`}
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to requisition
       </Link>
@@ -226,17 +226,17 @@ export default function CreatePoPage(): React.JSX.Element {
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
         {/* Left — PR lines with balance */}
         <aside>
-          <h2 className="mb-2 text-[14px] font-semibold text-ink">Requisition lines</h2>
+          <h2 className="mb-2 text-body font-semibold text-ink">Requisition lines</h2>
           <div className="flex flex-col gap-2">
             {prLines.map((l) => {
               const remaining = remainingFor(l);
               return (
                 <div
                   key={l.id}
-                  className="rounded-lg border border-line bg-panel p-3 text-[12px]"
+                  className="rounded-lg border border-line bg-panel p-3 text-caption"
                 >
                   <div className="font-medium text-text">{l.itemDesc}</div>
-                  <div className="font-numeric text-[10px] text-faint">
+                  <div className="font-numeric text-micro text-faint">
                     {l.skuCode ?? 'Non-catalogued'}, {inr(l.unitPrice, 0)} / {l.uom}
                   </div>
                   <div className="mt-1 flex items-center justify-between">
@@ -268,7 +268,7 @@ export default function CreatePoPage(): React.JSX.Element {
           {cards.map((card, ci) => (
             <div key={card.key} className="rounded-lg border border-line bg-panel p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-ink">
+                <span className="text-body-sm font-semibold text-ink">
                   PO draft {ci + 1}
                 </span>
                 {cards.length > 1 && (
@@ -356,12 +356,12 @@ export default function CreatePoPage(): React.JSX.Element {
 
               {/* Line allocation */}
               <div className="mt-3">
-                <div className="mb-1 text-[10px] text-faint">
+                <div className="mb-1 text-micro text-faint">
                   Allocate lines
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {prLines.map((l) => (
-                    <div key={l.id} className="flex items-center gap-2 text-[12px]">
+                    <div key={l.id} className="flex items-center gap-2 text-caption">
                       <span className="flex-1 truncate text-text">{l.itemDesc}</span>
                       <span className="font-numeric text-faint">
                         rem {remainingFor(l)}
@@ -371,7 +371,7 @@ export default function CreatePoPage(): React.JSX.Element {
                         onChange={(e) => setLineQty(card.key, l.id, e.target.value)}
                         inputMode="decimal"
                         placeholder="0"
-                        className="font-numeric w-20 rounded-sm border border-line bg-canvas px-2 py-1 text-right text-[12px] outline-none"
+                        className="font-numeric w-20 rounded-sm border border-line bg-canvas px-2 py-1 text-right text-caption outline-none"
                       />
                       <span className="w-10 text-faint">{l.uom}</span>
                     </div>
@@ -385,7 +385,7 @@ export default function CreatePoPage(): React.JSX.Element {
                 <button
                   type="button"
                   onClick={() => updateCard(card.key, { termsOpen: !card.termsOpen })}
-                  className="flex w-full items-center justify-between text-[12px] font-medium text-text"
+                  className="flex w-full items-center justify-between text-caption font-medium text-text"
                 >
                   <span className="flex items-center gap-1">
                     {card.termsOpen ? (
@@ -414,8 +414,8 @@ export default function CreatePoPage(): React.JSX.Element {
               </div>
 
               <div className="mt-3 flex items-center justify-between border-t border-line pt-2">
-                <span className="text-[12px] text-muted">PO total</span>
-                <span className="font-numeric text-[14px] font-semibold text-ink">
+                <span className="text-caption text-muted">PO total</span>
+                <span className="font-numeric text-body font-semibold text-ink">
                   {inr(cardTotal(card).toFixed(2))}
                 </span>
               </div>
@@ -449,7 +449,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[12px] font-medium text-muted">{label}</span>
+      <span className="text-caption font-medium text-muted">{label}</span>
       {children}
     </label>
   );

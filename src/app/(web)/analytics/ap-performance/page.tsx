@@ -34,7 +34,7 @@ export default function ApPerformancePage(): React.JSX.Element {
   const d = ap.data;
 
   return (
-    <div className="max-w-6xl">
+    <div>
       <PageHeader
         title="AP performance"
         breadcrumbs={[
@@ -193,16 +193,16 @@ function Kpi({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px]">{label}</div>
+      <div className="text-faint text-micro">{label}</div>
       <div
         className={
-          'font-numeric mt-1 text-[20px] font-semibold ' +
+          'font-numeric mt-1 text-h2 font-semibold ' +
           (accent ? 'text-accent-2' : 'text-ink')
         }
       >
         {value}
       </div>
-      {hint && <div className="text-faint mt-0.5 text-[10px]">{hint}</div>}
+      {hint && <div className="text-faint mt-0.5 text-micro">{hint}</div>}
     </div>
   );
 }
@@ -216,7 +216,7 @@ function Card({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-4">
-      <h3 className="text-ink mb-2 text-[14px] font-semibold">{title}</h3>
+      <h3 className="text-ink mb-2 text-body font-semibold">{title}</h3>
       {children}
     </div>
   );

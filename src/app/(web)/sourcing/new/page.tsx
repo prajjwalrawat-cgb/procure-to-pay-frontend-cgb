@@ -77,14 +77,14 @@ function RequisitionPicker({
   if (selected) {
     return (
       <div className="bg-panel flex items-center justify-between rounded-md border border-line px-3 py-2">
-        <span className="text-[13px]">
+        <span className="text-body-sm">
           <span className="font-numeric text-ink">{selected.number}</span>{' '}
           <span className="text-muted">{selected.title}</span>
         </span>
         <button
           type="button"
           onClick={() => onChange('')}
-          className="text-[12px] text-muted hover:text-danger"
+          className="text-caption text-muted hover:text-danger"
         >
           Clear
         </button>
@@ -109,7 +109,7 @@ function RequisitionPicker({
       {open && (
         <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-panel shadow-lg">
           {matches.length === 0 ? (
-            <p className="px-3 py-2 text-[12px] text-muted">
+            <p className="px-3 py-2 text-caption text-muted">
               No approved requisition matches. Leave this blank to raise a standalone RFQ.
             </p>
           ) : (
@@ -123,7 +123,7 @@ function RequisitionPicker({
                   setQuery('');
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] hover:bg-canvas"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-caption hover:bg-canvas"
               >
                 <span className="truncate">
                   <span className="font-numeric text-faint">{r.number}</span>{' '}
@@ -210,7 +210,7 @@ export default function NewRfqPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-[900px]">
+    <div className="mx-auto w-full max-w-[900px]">
       <PageHeader
         title="New RFQ"
         description="Define the lines, invite vendors and set the evaluation weights."
@@ -264,7 +264,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="Link PR (optional)">
             <RequisitionPicker value={requisitionId} onChange={setRequisitionId} />
-            <p className="mt-1 text-[12px] text-muted">
+            <p className="mt-1 text-caption text-muted">
               {requisitionId
                 ? 'The award will raise a PO against this requisition and draw down its quantities.'
                 : 'Leave blank only for a buy with no requisition behind it — the award then creates a standalone spot-buy PO.'}
@@ -316,7 +316,7 @@ export default function NewRfqPage(): React.JSX.Element {
       <Section title="3, Evaluation criteria">
         <div className="space-y-2">
           {criteria.map((c, i) => (
-            <div key={c.key} className="flex items-center gap-2 text-[13px]">
+            <div key={c.key} className="flex items-center gap-2 text-body-sm">
               <span className="w-40">{c.label}</span>
               <Input
                 className="w-20"
@@ -330,12 +330,12 @@ export default function NewRfqPage(): React.JSX.Element {
                 }
               />
               <span className="text-muted">%</span>
-              {c.auto && <span className="text-[11px] text-accent-2">auto-scored</span>}
+              {c.auto && <span className="text-micro text-accent-2">auto-scored</span>}
             </div>
           ))}
           <p
             className={
-              weightSum === 100 ? 'text-[12px] text-accent-2' : 'text-[12px] text-danger'
+              weightSum === 100 ? 'text-caption text-accent-2' : 'text-caption text-danger'
             }
           >
             Weights sum: {weightSum}% {weightSum === 100 ? '✓' : '(must equal 100)'}
@@ -377,7 +377,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
+      <h2 className="mb-3 text-body font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -392,7 +392,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="mb-3 block">
-      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <span className="mb-1 block text-caption text-muted">{label}</span>
       {children}
     </label>
   );

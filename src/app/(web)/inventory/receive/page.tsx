@@ -136,7 +136,7 @@ export default function ReceivePage(): React.JSX.Element {
           </Field>
 
           <div className="col-span-2">
-            <label className="flex items-center gap-2 text-[13px] text-muted">
+            <label className="flex items-center gap-2 text-body-sm text-muted">
               <input
                 type="checkbox"
                 checked={nonPo}
@@ -233,13 +233,13 @@ function QcQueue(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="mb-2 text-[11px] font-medium text-faint">
+      <h2 className="mb-2 text-micro font-medium text-faint">
         Awaiting QC ({rows.length})
       </h2>
-      {error && <p className="mb-2 text-[12px] text-danger">{error}</p>}
+      {error && <p className="mb-2 text-caption text-danger">{error}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Received</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -265,16 +265,16 @@ function QcQueue(): React.JSX.Element {
             )}
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-line">
-                <td className="font-numeric px-3 py-2 text-[12px] text-muted">
+                <td className="font-numeric px-3 py-2 text-caption text-muted">
                   {formatDate(r.txnDate)}
                 </td>
                 <td className="px-3 py-2">
                   <div className="text-ink">{r.productName}</div>
-                  <div className="font-numeric text-[11px] text-faint">
+                  <div className="font-numeric text-micro text-faint">
                     {r.productCode}
                   </div>
                 </td>
-                <td className="px-3 py-2 text-[12px] text-text">{r.vendorName ?? '—'}</td>
+                <td className="px-3 py-2 text-caption text-text">{r.vendorName ?? '—'}</td>
                 <td className="font-numeric px-3 py-2 text-right text-ink">{r.qty}</td>
                 <td className="px-3 py-2 text-right">
                   <button
@@ -287,7 +287,7 @@ function QcQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="text-[12px] font-medium text-success hover:underline"
+                    className="text-caption font-medium text-success hover:underline"
                   >
                     Pass
                   </button>
@@ -305,7 +305,7 @@ function QcQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="ml-3 text-[12px] font-medium text-warn hover:underline"
+                    className="ml-3 text-caption font-medium text-warn hover:underline"
                   >
                     Reject → return
                   </button>
@@ -319,7 +319,7 @@ function QcQueue(): React.JSX.Element {
                         { onError: (e) => setError(e.message) },
                       );
                     }}
-                    className="ml-3 text-[12px] font-medium text-danger hover:underline"
+                    className="ml-3 text-caption font-medium text-danger hover:underline"
                   >
                     Reject → write off
                   </button>
@@ -329,7 +329,7 @@ function QcQueue(): React.JSX.Element {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-[11px] text-faint">
+      <p className="mt-2 text-micro text-faint">
         Rejected quantity never posts to sellable stock — it routes to a vendor return or
         a write-off, both recorded as their own ledger entries.
       </p>

@@ -61,34 +61,34 @@ export default function AcceptInvitePage(): React.JSX.Element {
       <div className="border-line bg-panel w-full max-w-sm rounded-xl border p-8 shadow-lg">
         <div className="mb-6 flex items-center gap-2">
           <span className="bg-ink flex h-7 w-7 items-center justify-center rounded-sm text-white">
-            <span className="font-numeric text-[13px] font-bold">P</span>
+            <span className="font-numeric text-body-sm font-bold">P</span>
           </span>
-          <span className="tracking-heading text-ink text-[16px] font-semibold">
+          <span className="tracking-heading text-ink text-h3 font-semibold">
             ProcureFlow
           </span>
         </div>
 
         {done ? (
           <div>
-            <h2 className="text-ink text-[16px] font-semibold">Account activated</h2>
-            <p className="text-muted mt-2 text-[13px]">
+            <h2 className="text-ink text-h3 font-semibold">Account activated</h2>
+            <p className="text-muted mt-2 text-body-sm">
               Your password is set. Redirecting you to sign in…
             </p>
             <Link
               href="/login"
-              className="text-accent mt-4 inline-block text-[13px] hover:underline"
+              className="text-accent mt-4 inline-block text-body-sm hover:underline"
             >
               Go to sign in →
             </Link>
           </div>
         ) : (
           <>
-            <h2 className="text-ink text-[16px] font-semibold">Set your password</h2>
-            <p className="text-muted mt-1 text-[13px]">
+            <h2 className="text-ink text-h3 font-semibold">Set your password</h2>
+            <p className="text-muted mt-1 text-body-sm">
               Choose a password to activate your account.
             </p>
             <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
-              <label className="text-text flex flex-col gap-1 text-[12px] font-medium">
+              <label className="text-text flex flex-col gap-1 text-caption font-medium">
                 New password
                 <Input
                   type="password"
@@ -98,7 +98,7 @@ export default function AcceptInvitePage(): React.JSX.Element {
                   required
                 />
               </label>
-              <label className="text-text flex flex-col gap-1 text-[12px] font-medium">
+              <label className="text-text flex flex-col gap-1 text-caption font-medium">
                 Confirm password
                 <Input
                   type="password"
@@ -109,7 +109,7 @@ export default function AcceptInvitePage(): React.JSX.Element {
                 />
               </label>
               {error && (
-                <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-[12px]">
+                <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-caption">
                   {error}
                 </p>
               )}

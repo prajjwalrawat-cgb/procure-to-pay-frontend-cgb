@@ -122,7 +122,7 @@ export default function MsmePage(): React.JSX.Element {
           each with its own label — never colour alone. */}
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-ink text-[14px] font-semibold">
+          <h2 className="text-ink text-body font-semibold">
             MSME payable against the 45-day cap
           </h2>
           <AsOfBadge refreshedAt={dash.data?.asOfDate ?? null} />
@@ -191,15 +191,15 @@ export default function MsmePage(): React.JSX.Element {
                         className="h-2 w-2 shrink-0 rounded-sm"
                         style={{ backgroundColor: CHART_STATUS[meta.tone] }}
                       />
-                      <span className="text-text text-[12px] font-medium">
+                      <span className="text-text text-caption font-medium">
                         {meta.short}
                       </span>
-                      <span className="text-faint text-[11px]">{meta.days}</span>
+                      <span className="text-faint text-micro">{meta.days}</span>
                     </span>
-                    <span className="font-numeric text-ink mt-1 block text-[15px] font-semibold">
+                    <span className="font-numeric text-ink mt-1 block text-h3 font-semibold">
                       {inr(b.totalExposure)}
                     </span>
-                    <span className="text-muted text-[11px]">
+                    <span className="text-muted text-micro">
                       {b.invoiceCount} invoice{b.invoiceCount === 1 ? '' : 's'}, avg{' '}
                       {b.avgDays} days
                     </span>
@@ -209,7 +209,7 @@ export default function MsmePage(): React.JSX.Element {
             </div>
 
             {breaching && (
-              <p className="text-danger mt-3 flex items-start gap-1.5 text-[12px]">
+              <p className="text-danger mt-3 flex items-start gap-1.5 text-caption">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                 <span>
                   Interest is already accruing on the breached invoices. §16 liability is
@@ -224,7 +224,7 @@ export default function MsmePage(): React.JSX.Element {
       {/* Trend. Single series, so no legend — the title names it. */}
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-ink text-[14px] font-semibold">
+          <h2 className="text-ink text-body font-semibold">
             Interest exposure, last 12 months
           </h2>
           <AsOfBadge refreshedAt={trend.data?.refreshedAt ?? null} />
@@ -276,7 +276,7 @@ export default function MsmePage(): React.JSX.Element {
       {/* Exposure detail — always rendered, defaulting to the breach bucket. */}
       <section className="overflow-x-auto">
         <div className="border-line flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-ink text-[14px] font-semibold">
+          <h2 className="text-ink text-body font-semibold">
             {BUCKET[bucket].label}
             <span className="text-faint ml-1.5 font-normal">{BUCKET[bucket].days}</span>
           </h2>
@@ -286,8 +286,8 @@ export default function MsmePage(): React.JSX.Element {
           </Pill>
         </div>
 
-        <table className="w-full min-w-[640px] text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full min-w-[640px] text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Invoice</th>
               <th className="px-3 py-2 font-medium">Vendor</th>
@@ -331,7 +331,7 @@ export default function MsmePage(): React.JSX.Element {
         </table>
 
         {exposure.data && (exposure.data.rows.length > 0) && (
-          <p className="text-faint border-line border-t px-4 py-2.5 text-[11px]">
+          <p className="text-faint border-line border-t px-4 py-2.5 text-micro">
             Interest = net × RBI reference rate ({exposure.data.rbiReferenceRatePct}%) ×{' '}
             {exposure.data.interestMultiplier} × days late ÷ 365. An estimate for
             planning — not a posted liability.

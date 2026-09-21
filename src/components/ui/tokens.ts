@@ -5,7 +5,7 @@
  * variable layer (components/ui/styles.css) are both derived from it.
  *
  * ── The rule the palette enforces ──────────────────────────────────────────
- * ONE accent. `accent` (#1B4CE0) is the only non-semantic colour in the system
+ * ONE accent. `accent` (emerald, #047857) is the only non-semantic colour in the system
  * and it means "interactive or active" — the current nav pill, a primary
  * button, a focused input, a link. Everything else is either a neutral surface
  * or a semantic state.
@@ -36,63 +36,63 @@
  */
 
 export const colors = {
-  // ── Surfaces ─────────────────────────────────────────────────────────────
-  paper: '#F4F5F7', // page background
-  canvas: '#EDEFF2', // hover fill, inset wells, table zebra
+  // ── Surfaces — warm, not blue-grey ───────────────────────────────────────
+  paper: '#FAF9F6', // page background — warm off-white
+  canvas: '#F2F0EB', // hover fill, inset wells, table zebra
   panel: '#FFFFFF', // cards, chrome, any raised surface
-  line: '#E3E5E9', // every hairline in the app
+  line: '#E6E3DC', // every hairline in the app
 
   // ── Chrome (formerly the navy rail) ──────────────────────────────────────
-  // Chrome is white now: the nav is a hairline-bordered bar, not a dark frame.
+  // Chrome is white: the nav is a hairline-bordered bar, not a dark frame.
   // The names survive so existing `bg-navy` / `text-on-navy` call sites keep
-  // rendering correctly while they are migrated.
+  // rendering correctly.
   navy: '#FFFFFF',
   'navy-2': '#FFFFFF',
-  'navy-3': '#EDEFF2', // hover inside chrome
-  'on-navy': '#1A1D21',
-  'on-navy-muted': '#6B7078',
+  'navy-3': '#F2F0EB', // hover inside chrome
+  'on-navy': '#1C1B18',
+  'on-navy-muted': '#66625A',
 
-  // ── Text ─────────────────────────────────────────────────────────────────
-  ink: '#1A1D21', // headings and primary labels
-  text: '#1A1D21', // body copy
-  muted: '#6B7078', // secondary text — 4.87:1 on panel
-  faint: '#767C85', // tertiary micro-labels — 4.52:1 on panel
-  // ↑ brief specified #8A8F98; that is 3.15:1 and fails as text. Darkened one
-  //   step. `faint-line` below keeps the lighter value for non-text use.
-  'faint-line': '#8A8F98',
+  // ── Text — warm neutrals ─────────────────────────────────────────────────
+  ink: '#1C1B18', // headings and primary labels
+  text: '#1C1B18', // body copy
+  muted: '#66625A', // secondary text — 5.9:1 on panel
+  faint: '#75716A', // tertiary micro-labels — 4.8:1 on panel
+  'faint-line': '#A19D94', // non-text only: dots, dividers, placeholder bars
 
-  // ── Accent — interactive / active, and nothing else ──────────────────────
-  accent: '#1B4CE0',
-  'accent-2': '#1740B8', // hover / pressed
-  'accent-wash': '#EAEFFD', // badge + hover tint
+  // ── Accent — emerald; interactive / active, and nothing else ────────────
+  accent: '#047857', // 5.5:1 on panel — holds AA as link text
+  'accent-2': '#065F46', // hover / pressed
+  'accent-wash': '#E6F4EE', // selected row, badge + hover tint
 
-  // ── Semantic state — status only ─────────────────────────────────────────
-  success: '#147A52', // status text — 5.06:1 on panel
-  'success-solid': '#1E9E6B', // dots, bars, fills
-  'success-bg': '#E9F7EF',
+  // ── Semantic state — status only, never decoration ──────────────────────
+  success: '#15803D', // status text — 5.0:1 on panel
+  'success-solid': '#22A55A', // dots, bars, fills
+  'success-bg': '#EAF6EE',
 
-  warn: '#8A5E0E', // status text — 5.13:1 on panel
-  'warn-solid': '#B07A12',
-  'warn-bg': '#FBF2E2',
+  warn: '#8A5A0B', // status text — 5.6:1 on panel
+  'warn-solid': '#C98A12',
+  'warn-bg': '#FBF3E3',
 
-  danger: '#B23A31', // status text — 5.02:1 on panel
-  'danger-solid': '#C4453B',
-  'danger-bg': '#FBEAE8',
+  danger: '#B42318', // status text — 6.2:1 on panel
+  'danger-solid': '#D92D20',
+  'danger-bg': '#FDECEA',
+
+  // In flight: submitted, scheduled, being read, partly paid. The only blue in
+  // the product — it means "moving, nothing for you to do yet".
+  info: '#1D4ED8', // status text — 6.7:1 on panel
+  'info-solid': '#3B82F6',
+  'info-bg': '#EBF2FE',
+  'info-wash': '#EBF2FE',
 
   // ── Legacy aliases — remapped, not re-invented ───────────────────────────
-  // Kept so the ~90 screens still on the old class names inherit the new
-  // system. New work should use accent / success / warn / danger only.
-  gold: '#1B4CE0',
-  'gold-ink': '#1B4CE0',
-  'gold-wash': '#EAEFFD',
-  info: '#1B4CE0',
-  'info-bg': '#EAEFFD',
-  'info-wash': '#EAEFFD',
-  violet: '#1B4CE0',
-  'violet-bg': '#EAEFFD',
-  'violet-wash': '#EAEFFD',
-  'danger-wash': '#FBEAE8',
-  'warn-wash': '#FBF2E2',
+  gold: '#047857',
+  'gold-ink': '#047857',
+  'gold-wash': '#E6F4EE',
+  violet: '#047857',
+  'violet-bg': '#E6F4EE',
+  'violet-wash': '#E6F4EE',
+  'danger-wash': '#FDECEA',
+  'warn-wash': '#FBF3E3',
 } as const;
 
 /**
@@ -118,9 +118,9 @@ export const radius = {
 export const shadow = {
   xs: '0 0 0 0 rgba(0,0,0,0)',
   sm: '0 0 0 0 rgba(0,0,0,0)',
-  md: '0 4px 10px rgba(26, 29, 33, 0.06)',
-  lg: '0 10px 24px rgba(26, 29, 33, 0.10)',
-  xl: '0 20px 40px rgba(26, 29, 33, 0.12)',
+  md: '0 4px 10px rgba(28, 27, 24, 0.06)',
+  lg: '0 10px 24px rgba(28, 27, 24, 0.10)',
+  xl: '0 20px 40px rgba(28, 27, 24, 0.12)',
 } as const;
 
 export const motion = {
@@ -130,7 +130,7 @@ export const motion = {
 } as const;
 
 /**
- * One face. Inter carries the whole UI — headings, tables, and (with
+ * One face. Geist carries the whole UI — headings, tables, and (with
  * `font-variant-numeric: tabular-nums`) every ₹ amount, quantity and date.
  *
  * The previous system ran three faces including a display serif at page
@@ -143,22 +143,46 @@ export const motion = {
  * audit log, where character-level distinction is the point.
  */
 export const typography = {
-  fontUi: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  fontDisplay: "'Inter', -apple-system, sans-serif",
-  fontSans: "'Inter', -apple-system, sans-serif",
+  fontUi: "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontDisplay: "'Geist', -apple-system, sans-serif",
+  fontSans: "'Geist', -apple-system, sans-serif",
   fontMono: "'Geist Mono', ui-monospace, monospace",
   sizeMeta: '12px',
-  baseSize: '13px',
-  sizeHeading: '19px',
+  baseSize: '14px',
+  sizeHeading: '22px',
   lineHeight: '1.5',
   letterSpacingBody: '0',
-  letterSpacingHeading: '-0.01em',
-  letterSpacingDisplay: '-0.01em',
+  letterSpacingHeading: '-0.015em',
+  letterSpacingDisplay: '-0.02em',
   weights: [400, 500, 600, 700],
+} as const;
+
+/**
+ * The type scale. Every text size in the app is one of these — components use
+ * the Tailwind utilities (`text-body`, `text-h2`, …), never `text-body-sm`.
+ *
+ *   display  28  KPI figures, the one big number on a screen
+ *   h1       22  page titles
+ *   h2       18  section headings, card-level figures
+ *   h3       15  card titles, sub-section headings
+ *   body     14  default reading text
+ *   body-sm  13  dense table cells, form controls
+ *   caption  12  column headers, metadata, helper text
+ *   micro    11  badges, counts, timestamps
+ */
+export const typeScale = {
+  display: ['28px', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+  h1: ['22px', { lineHeight: '1.25', letterSpacing: '-0.015em' }],
+  h2: ['18px', { lineHeight: '1.35', letterSpacing: '-0.01em' }],
+  h3: ['15px', { lineHeight: '1.4', letterSpacing: '-0.005em' }],
+  body: ['14px', { lineHeight: '1.55' }],
+  'body-sm': ['13px', { lineHeight: '1.5' }],
+  caption: ['12px', { lineHeight: '1.45' }],
+  micro: ['11px', { lineHeight: '1.4' }],
 } as const;
 
 /** All spacing is a multiple of this. */
 export const spaceUnit = '4px';
 
-export const tokens = { colors, radius, shadow, motion, typography, spaceUnit } as const;
+export const tokens = { colors, radius, shadow, motion, typography, typeScale, spaceUnit } as const;
 export type Tokens = typeof tokens;

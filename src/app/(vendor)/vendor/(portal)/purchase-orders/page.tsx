@@ -49,13 +49,13 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
             className="h-8 w-72 pl-8"
           />
         </div>
-        <span className="ml-auto text-[12px] text-muted">{rows.length} shown</span>
+        <span className="ml-auto text-caption text-muted">{rows.length} shown</span>
       </div>
 
       <div className="overflow-x-auto">
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2.5 font-medium">PO</th>
                 <th className="px-3 py-2.5 font-medium">Description</th>
@@ -118,7 +118,7 @@ export default function VendorPurchaseOrdersPage(): React.JSX.Element {
                           }}
                         />
                       </div>
-                      <span className="font-numeric text-[12px] text-muted">
+                      <span className="font-numeric text-caption text-muted">
                         {po.fulfilmentPct}%
                       </span>
                     </div>

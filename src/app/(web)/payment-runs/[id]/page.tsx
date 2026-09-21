@@ -37,7 +37,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
   const [decisionComment, setDecisionComment] = useState('');
 
   if (isLoading || !data) {
-    return <div className="text-muted p-6 text-[13px]">Loading payment run…</div>;
+    return <div className="text-muted p-6 text-body-sm">Loading payment run…</div>;
   }
 
   const isDraft = data.status === 'DRAFT';
@@ -79,7 +79,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
     <div className="pb-24">
       <Link
         href="/payment-runs"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="text-muted mb-3 inline-flex items-center gap-1 text-caption"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to payment runs
       </Link>
@@ -130,7 +130,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
       {data.msmeAudit.atRisk.length > 0 && (
         <div className="border-danger/30 bg-danger-wash mb-4 flex items-start gap-2 rounded-lg border p-3">
           <AlertTriangle className="text-danger mt-0.5 h-4 w-4 shrink-0" />
-          <div className="text-[12px]">
+          <div className="text-caption">
             <span className="text-danger font-semibold">
               {data.msmeAudit.atRisk.length} MSME invoice
               {data.msmeAudit.atRisk.length === 1 ? '' : 's'} at day 40+ NOT in this run
@@ -147,7 +147,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
       {/* Submitted banner */}
       {isSubmitted && (
         <div className="border-accent/30 bg-accent-wash mb-4 flex items-center justify-between rounded-lg border p-3">
-          <div className="text-[12px]">
+          <div className="text-caption">
             <Pill variant="success" dot>
               Submitted
             </Pill>
@@ -167,13 +167,13 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
         {/* Batch table */}
         <section className="border-line bg-panel rounded-lg border">
           <div className="border-line flex items-center justify-between border-b px-4 py-2.5">
-            <h2 className="text-ink text-[13px] font-semibold">
+            <h2 className="text-ink text-body-sm font-semibold">
               Payment batch — {data.items.length} invoice
               {data.items.length === 1 ? '' : 's'}
             </h2>
           </div>
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="w-8 px-3 py-2">#</th>
                 <th className="px-3 py-2 font-medium">Invoice</th>
@@ -226,7 +226,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                       <button
                         type="button"
                         aria-label={`Remove ${it.invoiceNumber}`}
-                        className="text-muted hover:text-danger text-[12px]"
+                        className="text-muted hover:text-danger text-caption"
                         onClick={() =>
                           remove.mutate(it.invoiceId, {
                             onSuccess: () => toast('Removed', 'success'),
@@ -245,7 +245,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                 <tr className="border-line bg-canvas border-t">
                   <td
                     colSpan={3}
-                    className="text-muted px-3 py-2 text-[12px] font-medium"
+                    className="text-muted px-3 py-2 text-caption font-medium"
                   >
                     Total
                   </td>
@@ -269,22 +269,22 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
         <aside className="flex flex-col gap-4">
           <div className="overflow-x-auto">
             <div className="border-line flex items-center justify-between border-b px-4 py-2.5">
-              <h2 className="text-ink text-[13px] font-semibold">Bank file preview</h2>
-              <span className="text-faint font-numeric text-[11px]">
+              <h2 className="text-ink text-body-sm font-semibold">Bank file preview</h2>
+              <span className="text-faint font-numeric text-micro">
                 {data.bankAccount?.formatKey}
               </span>
             </div>
             {data.bankFilePreview ? (
               <div className="relative">
                 {data.bankFilePreview.watermarked && (
-                  <div className="text-faint/60 pointer-events-none absolute inset-0 flex items-center justify-center text-[13px] font-semibold tracking-widest">
+                  <div className="text-faint/60 pointer-events-none absolute inset-0 flex items-center justify-center text-body-sm font-semibold tracking-widest">
                     Preview
                   </div>
                 )}
-                <pre className="text-text max-h-72 overflow-auto whitespace-pre px-4 py-3 font-mono text-[11px] leading-relaxed">
+                <pre className="text-text max-h-72 overflow-auto whitespace-pre px-4 py-3 font-mono text-micro leading-relaxed">
                   {data.bankFilePreview.content}
                 </pre>
-                <div className="border-line text-faint flex items-center justify-between border-t px-4 py-2 text-[11px]">
+                <div className="border-line text-faint flex items-center justify-between border-t px-4 py-2 text-micro">
                   <span>
                     {data.bankFilePreview.rowCount} rows, hash{' '}
                     <span className="font-numeric">
@@ -302,7 +302,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                 </div>
               </div>
             ) : (
-              <div className="text-muted p-4 text-[12px]">
+              <div className="text-muted p-4 text-caption">
                 Add invoices to preview the bank file.
               </div>
             )}
@@ -317,7 +317,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
           steps — they bracket the route — so they stay outside the chain while
           the approvals themselves render through the shared component. */}
       <section className="mt-5">
-        <h2 className="text-ink mb-2 text-[14px] font-semibold">Approval route</h2>
+        <h2 className="text-ink mb-2 text-body font-semibold">Approval route</h2>
         <div className="border-line bg-panel rounded-lg border p-4">
           <ApprovalChain
             steps={[
@@ -340,7 +340,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
             ]}
           />
 
-          <dl className="border-line text-muted mt-3 flex flex-wrap gap-x-6 gap-y-1 border-t pt-3 text-[11px]">
+          <dl className="border-line text-muted mt-3 flex flex-wrap gap-x-6 gap-y-1 border-t pt-3 text-micro">
             <div className="flex gap-1.5">
               <dt>Composed by</dt>
               <dd className="text-text font-medium">{data.composedByName ?? '—'}</dd>
@@ -372,7 +372,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                   onChange={(e) => setDecisionComment(e.target.value)}
                   placeholder="Add a decision comment…"
                   aria-label="Decision comment"
-                  className="border-line bg-panel min-w-0 flex-1 basis-full rounded-sm border px-3 py-2 text-[13px] outline-none sm:basis-auto"
+                  className="border-line bg-panel min-w-0 flex-1 basis-full rounded-sm border px-3 py-2 text-body-sm outline-none sm:basis-auto"
                 />
                 <div className="flex items-center gap-2">
                   <Button
@@ -403,7 +403,7 @@ export default function PaymentRunDetailPage(): React.JSX.Element {
                 </div>
               </>
             ) : (
-              <div className="text-muted ml-auto text-[13px]">
+              <div className="text-muted ml-auto text-body-sm">
                 Waiting for{' '}
                 {data.liveApprovalChain.find((s) => s.isCurrent)?.approverName ??
                   'the current approver'}
@@ -485,9 +485,9 @@ function PayAmountCell({
             if (e.key === 'Enter' && valid) save(n.toFixed(2));
             if (e.key === 'Escape') setEditing(false);
           }}
-          className="font-numeric w-28 rounded-sm border border-line bg-panel px-2 py-1 text-right text-[13px] outline-none aria-[invalid=true]:border-danger"
+          className="font-numeric w-28 rounded-sm border border-line bg-panel px-2 py-1 text-right text-body-sm outline-none aria-[invalid=true]:border-danger"
         />
-        <div className="flex gap-1 text-[11px]">
+        <div className="flex gap-1 text-micro">
           <button
             type="button"
             className="text-muted hover:text-text"
@@ -516,7 +516,7 @@ function PayAmountCell({
             Cancel
           </button>
         </div>
-        <div className="text-[10px] text-faint">max {inr(item.outstanding)}</div>
+        <div className="text-micro text-faint">max {inr(item.outstanding)}</div>
       </div>
     );
   }
@@ -536,12 +536,12 @@ function PayAmountCell({
         <span className="font-numeric text-text">{inr(item.gross)}</span>
       )}
       {item.isPartial && (
-        <span className="text-[10px] text-info">
+        <span className="text-micro text-info">
           part-payment · {inr(outstanding - Number(item.gross))} left after
         </span>
       )}
       {paidBefore > 0 && (
-        <span className="text-[10px] text-faint">{inr(paidBefore)} paid earlier</span>
+        <span className="text-micro text-faint">{inr(paidBefore)} paid earlier</span>
       )}
     </div>
   );
@@ -565,9 +565,9 @@ function Kpi({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px]">{label}</div>
+      <div className="text-faint text-micro">{label}</div>
       <div className={
-          'font-numeric tracking-display mt-1 text-[16px] font-semibold ' +
+          'font-numeric tracking-display mt-1 text-h3 font-semibold ' +
           (accent ? 'text-accent-2' : 'text-ink')
         }
       >
@@ -593,9 +593,9 @@ function ChainStep({
         ? 'border-line bg-canvas opacity-50'
         : 'border-line bg-panel';
   return (
-    <span className={`flex flex-col rounded-sm border px-2.5 py-1.5 text-[12px] ${cls}`}>
+    <span className={`flex flex-col rounded-sm border px-2.5 py-1.5 text-caption ${cls}`}>
       <span className="text-text font-medium">{label}</span>
-      {sub && <span className="text-faint text-[10px]">{sub}</span>}
+      {sub && <span className="text-faint text-micro">{sub}</span>}
     </span>
   );
 }

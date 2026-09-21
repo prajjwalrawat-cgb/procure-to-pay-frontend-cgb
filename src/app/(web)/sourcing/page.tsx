@@ -145,8 +145,8 @@ export default function SourcingPage(): React.JSX.Element {
                     value={`${r.submittedCount} of ${r.invitedCount}`}
                   />
                   <div className="min-w-0">
-                    <p className="text-faint text-[11px]">Bid deadline</p>
-                    <StatusText variant={cd.variant} className="text-[13px]">
+                    <p className="text-faint text-micro">Bid deadline</p>
+                    <StatusText variant={cd.variant} className="text-body-sm">
                       {cd.label}
                     </StatusText>
                   </div>
@@ -176,8 +176,8 @@ export default function SourcingPage(): React.JSX.Element {
 function Figure({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div className="min-w-0">
-      <p className="text-faint text-[11px]">{label}</p>
-      <p className="font-numeric text-ink truncate text-[13px] font-medium">{value}</p>
+      <p className="text-faint text-micro">{label}</p>
+      <p className="font-numeric text-ink truncate text-body-sm font-medium">{value}</p>
     </div>
   );
 }

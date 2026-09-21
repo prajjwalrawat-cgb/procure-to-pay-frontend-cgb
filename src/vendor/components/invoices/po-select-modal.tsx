@@ -49,7 +49,7 @@ export function PoSelectModal({
         </DialogDescription>
 
         <div className="mt-4 flex flex-col gap-1.5">
-          <label htmlFor="po-select" className="text-[12px] font-medium text-text">
+          <label htmlFor="po-select" className="text-caption font-medium text-text">
             PO Number <span className="text-danger">*</span>
           </label>
           <select
@@ -58,7 +58,7 @@ export function PoSelectModal({
             value={poId}
             disabled={isLoading}
             onChange={(e) => setPoId(e.target.value)}
-            className="h-9 w-full rounded-sm border border-line bg-panel px-3 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+            className="h-9 w-full rounded-sm border border-line bg-panel px-3 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
           >
             <option value="" disabled>
               {isLoading ? 'Loading your active POs…' : 'Select a purchase order'}
@@ -70,7 +70,7 @@ export function PoSelectModal({
             ))}
           </select>
           {!isLoading && options.length === 0 && (
-            <p className="mt-1 text-[12px] text-muted">
+            <p className="mt-1 text-caption text-muted">
               You have no purchase orders left to invoice against. Orders you have already
               billed in full drop off this list — ask your buyer to amend one, or raise a
               new order, if more needs billing.

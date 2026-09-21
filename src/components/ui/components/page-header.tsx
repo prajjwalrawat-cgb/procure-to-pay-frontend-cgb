@@ -50,10 +50,10 @@ export function PageHeader({
   className,
 }: PageHeaderProps): React.JSX.Element {
   return (
-    <header className={cn('mb-4', className)}>
+    <header className={cn('mb-6', className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav aria-label="Breadcrumb" className="mb-1.5">
-          <ol className="text-muted flex flex-wrap items-center gap-1 text-[12px]">
+          <ol className="text-muted flex flex-wrap items-center gap-1 text-caption">
             {breadcrumbs.map((c, i) => (
               <li key={`${c.label}-${i}`} className="flex items-center gap-1">
                 {i > 0 && (
@@ -82,7 +82,7 @@ export function PageHeader({
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <h1
               className={cn(
-                'text-ink tracking-heading text-[19px] font-semibold leading-tight',
+                'text-ink text-h1 font-semibold',
                 numeric && 'font-numeric',
               )}
             >
@@ -91,7 +91,7 @@ export function PageHeader({
             {meta}
           </div>
           {description && (
-            <p className="text-muted mt-1 text-[13px] leading-relaxed">{description}</p>
+            <p className="text-muted mt-1 text-body">{description}</p>
           )}
         </div>
 

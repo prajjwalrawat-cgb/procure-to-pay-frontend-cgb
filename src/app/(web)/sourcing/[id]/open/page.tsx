@@ -40,7 +40,7 @@ export default function OpenCeremonyPage(): React.JSX.Element {
   const twoEnvelope = rfq?.rfqType === 'TWO_ENVELOPE';
 
   return (
-    <div className="max-w-[640px]">
+    <div className="mx-auto w-full max-w-[640px]">
       <PageHeader
         title={`Quote-open ceremony — ${rfq?.number ?? ''}`.trim()}
         breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Quote open' }]}
@@ -55,7 +55,7 @@ export default function OpenCeremonyPage(): React.JSX.Element {
 
       <div className="border-line bg-panel mb-4 rounded-lg border p-4">
         <label className="mb-1 block">
-          <span className="text-muted mb-1 block text-[12px]">
+          <span className="text-muted mb-1 block text-caption">
             Participant user IDs (space/comma separated)
           </span>
           <Input
@@ -64,7 +64,7 @@ export default function OpenCeremonyPage(): React.JSX.Element {
             placeholder="usr_harpreet usr_das"
           />
         </label>
-        <p className="text-faint text-[12px]">
+        <p className="text-faint text-caption">
           Each open is logged with participant IDs, a timestamp and a before/after hash.
         </p>
       </div>

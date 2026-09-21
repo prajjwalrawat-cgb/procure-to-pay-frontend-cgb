@@ -19,17 +19,17 @@ export default function VendorContractDetailPage(): React.JSX.Element {
 
   if (isLoading || !c) {
     return (
-      <p className="py-10 text-center text-[13px] text-muted">
+      <p className="py-10 text-center text-body-sm text-muted">
         Loading…
       </p>
     );
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <Link
         href="/vendor/contracts"
-        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-body-sm text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Contracts
       </Link>
@@ -47,7 +47,7 @@ export default function VendorContractDetailPage(): React.JSX.Element {
               <button
                 type="button"
                 onClick={() => void openAuthedAsset(`/vendor/contracts/${id}/pdf`)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-[13px] hover:bg-canvas"
+                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-body-sm hover:bg-canvas"
               >
                 <FileText className="h-3.5 w-3.5" /> PDF
               </button>
@@ -57,8 +57,8 @@ export default function VendorContractDetailPage(): React.JSX.Element {
       />
 
       <Section title="Rate card">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="py-1.5 font-medium">Item / Route</th>
               <th className="py-1.5 font-medium">UOM</th>
@@ -71,7 +71,7 @@ export default function VendorContractDetailPage(): React.JSX.Element {
                 <td className="py-1.5">
                   {r.routeOrigin ? `${r.routeOrigin} → ${r.routeDest ?? ''}` : r.itemDesc}
                   {r.rateYear > 1 && (
-                    <span className="ml-1 text-[11px] text-faint">
+                    <span className="ml-1 text-micro text-faint">
                       Yr{r.rateYear}
                     </span>
                   )}
@@ -86,12 +86,12 @@ export default function VendorContractDetailPage(): React.JSX.Element {
 
       <Section title={`Your fulfilment (${c.callOffs.length} call-offs)`}>
         {c.callOffs.length === 0 ? (
-          <p className="text-[13px] text-muted">
+          <p className="text-body-sm text-muted">
             No call-offs against this contract yet.
           </p>
         ) : (
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="py-1.5 font-medium">PO</th>
                 <th className="py-1.5 text-right font-medium">Qty</th>
@@ -117,8 +117,8 @@ export default function VendorContractDetailPage(): React.JSX.Element {
         <div className="space-y-3">
           {c.clauses.map((cl) => (
             <div key={cl.id}>
-              <p className="text-[13px] font-medium">{cl.title}</p>
-              <p className="text-[12px] text-muted">{cl.contentText}</p>
+              <p className="text-body-sm font-medium">{cl.title}</p>
+              <p className="text-caption text-muted">{cl.contentText}</p>
             </div>
           ))}
         </div>
@@ -136,7 +136,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-white p-4">
-      <h2 className="mb-2 text-[13px] font-semibold">{title}</h2>
+      <h2 className="mb-2 text-body-sm font-semibold">{title}</h2>
       {children}
     </div>
   );

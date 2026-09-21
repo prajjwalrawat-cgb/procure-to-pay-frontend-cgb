@@ -151,7 +151,7 @@ export function TopNav({
       item,
       <span
         className={cn(
-          'duration-hover flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[13px] font-medium transition-colors',
+          'duration-hover flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-body-sm font-medium transition-colors',
           active
             ? 'bg-accent rounded-pill text-white'
             : 'text-muted hover:text-text rounded-pill',
@@ -162,7 +162,7 @@ export function TopNav({
         {item.badge ? (
           <span
             className={cn(
-              'font-numeric rounded-pill px-1.5 text-[11px] font-semibold leading-[16px]',
+              'font-numeric rounded-pill px-1.5 text-micro font-semibold leading-[16px]',
               active ? 'bg-white/20 text-white' : 'bg-accent-wash text-accent',
             )}
           >
@@ -181,7 +181,7 @@ export function TopNav({
     // behind the page content.
     <header className="bg-panel border-line relative z-30 shrink-0 border-b">
       {/* Row 1 — identity, global search, account. */}
-      <div className="flex h-14 items-center gap-3 px-3 sm:px-5">
+      <div className="pf-container flex h-14 items-center gap-3">
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
@@ -197,11 +197,11 @@ export function TopNav({
           <button
             type="button"
             onClick={onOpenSearch}
-            className="border-line text-faint hover:border-accent/50 duration-hover mx-auto hidden h-9 w-full max-w-md items-center gap-2 rounded-sm border px-2.5 text-left text-[13px] transition-colors md:flex"
+            className="border-line text-faint hover:border-accent/50 duration-hover mx-auto hidden h-9 w-full max-w-md items-center gap-2 rounded-sm border px-2.5 text-left text-body-sm transition-colors md:flex"
           >
             <Search className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span className="truncate">{searchPlaceholder}</span>
-            <kbd className="font-numeric text-faint ml-auto shrink-0 text-[11px]">⌘K</kbd>
+            <kbd className="font-numeric text-faint ml-auto shrink-0 text-micro">⌘K</kbd>
           </button>
         ) : (
           <div className="mx-auto" />
@@ -228,7 +228,7 @@ export function TopNav({
           No `overflow-x: auto` here: it also clips on the y axis, which would
           cut every dropdown off at the row's edge. The row wraps instead — the
           grouped menus keep it short enough that it never needs to. */}
-      <div className="hidden items-center gap-1 px-3 pb-2 sm:px-5 lg:flex">
+      <div className="pf-container hidden items-center gap-1 pb-2 lg:flex">
         <nav aria-label="Sections" className="flex min-w-0 flex-wrap items-center gap-0.5">
           {primary.map((entry) =>
             isTopNavMenu(entry) ? (
@@ -254,7 +254,7 @@ export function TopNav({
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
               className={cn(
-                'rounded-pill duration-hover flex items-center gap-1 px-3 py-1.5 text-[13px] font-medium transition-colors',
+                'rounded-pill duration-hover flex items-center gap-1 px-3 py-1.5 text-body-sm font-medium transition-colors',
                 overflowActive ? 'bg-accent text-white' : 'text-muted hover:text-text',
               )}
             >
@@ -270,7 +270,7 @@ export function TopNav({
                 {overflow.map((group) => (
                   <div key={group.heading ?? 'group'} className="py-0.5">
                     {group.heading ? (
-                      <p className="text-faint px-2 py-1 text-[11px]">{group.heading}</p>
+                      <p className="text-faint px-2 py-1 text-micro">{group.heading}</p>
                     ) : null}
                     {group.items.map((item) => {
                       const active = isActiveHref(item.href, activeHref);
@@ -280,7 +280,7 @@ export function TopNav({
                             item,
                             <span
                               className={cn(
-                                'flex items-center justify-between rounded-sm px-2 py-1.5 text-[13px]',
+                                'flex items-center justify-between rounded-sm px-2 py-1.5 text-body-sm',
                                 active
                                   ? 'text-accent bg-accent-wash font-medium'
                                   : 'text-text hover:bg-canvas',
@@ -288,7 +288,7 @@ export function TopNav({
                             >
                               {item.label}
                               {item.badge ? (
-                                <span className="font-numeric text-accent text-[11px] font-semibold">
+                                <span className="font-numeric text-accent text-micro font-semibold">
                                   {item.badge}
                                 </span>
                               ) : null}
@@ -329,7 +329,7 @@ export function TopNav({
               {drawerGroups.map((group, gi) => (
                 <div key={gi} className="py-1">
                   {group.heading ? (
-                    <p className="text-faint px-2 py-1 text-[11px]">{group.heading}</p>
+                    <p className="text-faint px-2 py-1 text-micro">{group.heading}</p>
                   ) : null}
                   {group.items.map((item) => {
                     const active = isActiveHref(item.href, activeHref);
@@ -339,7 +339,7 @@ export function TopNav({
                           item,
                           <span
                             className={cn(
-                              'flex items-center justify-between rounded-sm px-2.5 py-2 text-[13px]',
+                              'flex items-center justify-between rounded-sm px-2.5 py-2 text-body-sm',
                               active
                                 ? 'bg-accent font-medium text-white'
                                 : 'text-text hover:bg-canvas',
@@ -349,7 +349,7 @@ export function TopNav({
                             {item.badge ? (
                               <span
                                 className={cn(
-                                  'font-numeric text-[11px] font-semibold',
+                                  'font-numeric text-micro font-semibold',
                                   active ? 'text-white' : 'text-accent',
                                 )}
                               >
@@ -445,7 +445,7 @@ function NavMenu({
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'rounded-pill duration-hover flex items-center gap-1 whitespace-nowrap px-3 py-1.5 text-[13px] font-medium transition-colors',
+          'rounded-pill duration-hover flex items-center gap-1 whitespace-nowrap px-3 py-1.5 text-body-sm font-medium transition-colors',
           active ? 'bg-accent text-white' : 'text-muted hover:text-text',
           open && !active && 'text-text',
         )}
@@ -454,7 +454,7 @@ function NavMenu({
         {badge > 0 ? (
           <span
             className={cn(
-              'font-numeric rounded-pill px-1.5 text-[11px] font-semibold leading-[16px]',
+              'font-numeric rounded-pill px-1.5 text-micro font-semibold leading-[16px]',
               active ? 'bg-white/20 text-white' : 'bg-accent-wash text-accent',
             )}
           >
@@ -483,7 +483,7 @@ function NavMenu({
                       role="menuitem"
                       aria-current={itemActive ? 'page' : undefined}
                       className={cn(
-                        'flex items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-1.5 text-[13px]',
+                        'flex items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-1.5 text-body-sm',
                         itemActive
                           ? 'text-accent bg-accent-wash font-medium'
                           : 'text-text hover:bg-canvas',
@@ -491,7 +491,7 @@ function NavMenu({
                     >
                       {item.label}
                       {item.badge ? (
-                        <span className="font-numeric text-accent text-[11px] font-semibold">
+                        <span className="font-numeric text-accent text-micro font-semibold">
                           {item.badge > 99 ? '99+' : item.badge}
                         </span>
                       ) : null}
@@ -547,7 +547,7 @@ export function SubNav({
   const inner = (item: SubNavItem, active: boolean): React.ReactNode => (
     <span
       className={cn(
-        'duration-hover flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors',
+        'duration-hover flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-body-sm font-medium transition-colors',
         active
           ? 'border-accent text-accent'
           : 'text-muted hover:text-text border-transparent',
@@ -555,7 +555,7 @@ export function SubNav({
     >
       {item.label}
       {typeof item.count === 'number' ? (
-        <span className={cn('font-numeric text-[11px]', active ? 'text-accent' : 'text-faint')}>
+        <span className={cn('font-numeric text-micro', active ? 'text-accent' : 'text-faint')}>
           {item.count}
         </span>
       ) : null}

@@ -181,10 +181,10 @@ function Board(): React.JSX.Element {
           <div key={col.key} className="flex flex-col">
             <div className="mb-2 flex items-center gap-2 px-1">
               <span className={`h-2 w-2 rounded-full ${col.dot}`} />
-              <span className="text-text text-[12px] font-semibold ">
+              <span className="text-text text-caption font-semibold ">
                 {col.label}
               </span>
-              <span className="font-numeric text-faint ml-auto text-[12px]">{count}</span>
+              <span className="font-numeric text-faint ml-auto text-caption">{count}</span>
             </div>
             <div className="bg-canvas/40 flex min-h-[120px] flex-col gap-2 rounded-lg p-1.5"
               onDragOver={(e) => e.preventDefault()}
@@ -198,7 +198,7 @@ function Board(): React.JSX.Element {
                 />
               ))}
               {cards.length === 0 && (
-                <div className="text-faint px-2 py-6 text-center text-[12px]">
+                <div className="text-faint px-2 py-6 text-center text-caption">
                   Nothing here
                 </div>
               )}
@@ -232,7 +232,7 @@ function BoardCard({
       className="border-line bg-panel hover:border-accent/40 duration-hover block cursor-grab rounded-lg border p-3 transition-colors active:cursor-grabbing"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-numeric text-ink text-[12px] font-medium">
+        <span className="font-numeric text-ink text-caption font-medium">
           {card.number}
         </span>
         {/* At most one badge per card. Priority outranks MSME here: an urgent
@@ -246,15 +246,15 @@ function BoardCard({
           <Badge variant="classification">MSME</Badge>
         ) : null}
       </div>
-      <div className="text-text mt-1 line-clamp-2 text-[13px] font-medium">
+      <div className="text-text mt-1 line-clamp-2 text-body-sm font-medium">
         {card.title}
       </div>
-      <div className="text-muted mt-1 truncate text-[11px]">{card.costCenter.name}</div>
+      <div className="text-muted mt-1 truncate text-micro">{card.costCenter.name}</div>
       <div className="mt-2 flex items-center justify-between">
-        <span className="font-numeric text-ink text-[13px] font-semibold">
+        <span className="font-numeric text-ink text-body-sm font-semibold">
           {inr(card.totalAmount)}
         </span>
-        <span className="font-numeric text-faint text-[11px]">
+        <span className="font-numeric text-faint text-micro">
           {card.agingDays}d open
         </span>
       </div>
@@ -336,7 +336,7 @@ function ListView({ tab }: { tab: RequisitionTab }): React.JSX.Element {
                 </Link>
               </TableCell>
               <TableCell className="text-text">{pr.title}</TableCell>
-              <TableCell className="text-muted hidden text-[12px] md:table-cell">
+              <TableCell className="text-muted hidden text-caption md:table-cell">
                 {pr.costCenter.name}
               </TableCell>
               <TableCell>
@@ -346,7 +346,7 @@ function ListView({ tab }: { tab: RequisitionTab }): React.JSX.Element {
               </TableCell>
               <TableCell className="hidden sm:table-cell">
                 {pr.priority === 'STANDARD' ? (
-                  <span className="text-muted text-[12px]">Standard</span>
+                  <span className="text-muted text-caption">Standard</span>
                 ) : (
                   <Badge variant={priorityVariant(pr.priority)}>
                     {priorityLabel(pr.priority)}

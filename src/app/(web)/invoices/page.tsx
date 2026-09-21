@@ -116,11 +116,11 @@ export default function InvoicesInboxPage(): React.JSX.Element {
           placeholder="Search invoice or supplier…"
           className="h-8 max-w-xs"
         />
-        <span className="text-muted text-[12px]">{rows.length} shown</span>
+        <span className="text-muted text-caption">{rows.length} shown</span>
       </div>
 
       {selected.size > 0 && (
-        <div className="bg-accent-wash mb-3 flex items-center gap-2 rounded-sm px-3 py-2 text-[13px]">
+        <div className="bg-accent-wash mb-3 flex items-center gap-2 rounded-sm px-3 py-2 text-body-sm">
           <span className="text-accent-2 font-medium">{selected.size} selected</span>
           {/* These reported success and did nothing. A user who selected five
               invoices, clicked Hold and saw "Held" would reasonably believe
@@ -143,8 +143,8 @@ export default function InvoicesInboxPage(): React.JSX.Element {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="w-8 px-3 py-2" />
               <th className="w-8 px-1 py-2" />
@@ -214,7 +214,7 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                       >
                         {inv.number}
                       </Link>
-                      <div className="font-numeric text-faint text-[11px]">
+                      <div className="font-numeric text-faint text-micro">
                         {inv.vendorInvoiceRef}
                       </div>
                     </td>
@@ -226,7 +226,7 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                         <Badge variant="classification" className="ml-1.5">MSME</Badge>
                       )}
                     </td>
-                    <td className="font-numeric text-muted px-3 py-2 text-[12px]">
+                    <td className="font-numeric text-muted px-3 py-2 text-caption">
                       {inv.poNumber ?? '—'}
                       {inv.grnNumber ? ` / ${inv.grnNumber}` : ''}
                     </td>
@@ -240,7 +240,7 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                         </Pill>
                       )}
                       {inv.exceptionCount > 0 && (
-                        <span className="text-danger ml-1.5 text-[12px]">
+                        <span className="text-danger ml-1.5 text-caption">
                           {inv.exceptionCount === 1
                             ? '1 exception'
                             : `${inv.exceptionCount} exceptions`}

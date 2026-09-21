@@ -97,7 +97,7 @@ export default function ScanBoxPage(): React.JSX.Element {
     <div className="space-y-4">
       {!barcode ? (
         <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-          <h2 className="text-[14px] font-semibold">Scan a box label</h2>
+          <h2 className="text-body font-semibold">Scan a box label</h2>
           <BarcodeScanner label="box label" onScan={setBarcode} />
         </section>
       ) : null}
@@ -116,28 +116,28 @@ export default function ScanBoxPage(): React.JSX.Element {
           <section className="space-y-2 rounded-lg border border-line bg-white p-3">
             <div className="flex items-baseline justify-between gap-2">
               <div>
-                <h2 className="text-[16px] font-semibold">{box.data.code}</h2>
-                <p className="font-mono text-[11px] text-muted">{box.data.barcode}</p>
+                <h2 className="text-h3 font-semibold">{box.data.code}</h2>
+                <p className="font-mono text-micro text-muted">{box.data.barcode}</p>
               </div>
-              <span className="text-[12px] tabular-nums text-muted">
+              <span className="text-caption tabular-nums text-muted">
                 {box.data.totalQty} pcs, {box.data.distinctProducts} SKU
               </span>
             </div>
 
-            <p className="text-[13px]">
+            <p className="text-body-sm">
               {box.data.location
                 ? pathLabel(box.data.location.path, box.data.location.name)
                 : 'Not placed on a shelf yet'}
             </p>
             {!box.data.active ? (
-              <p className="text-[12px] text-danger">This box is retired.</p>
+              <p className="text-caption text-danger">This box is retired.</p>
             ) : null}
           </section>
 
           <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-            <h3 className="text-[14px] font-semibold">Contents</h3>
+            <h3 className="text-body font-semibold">Contents</h3>
             {box.data.contents.length === 0 ? (
-              <p className="text-[13px] text-muted">Empty.</p>
+              <p className="text-body-sm text-muted">Empty.</p>
             ) : (
               <ul className="divide-y divide-line">
                 {box.data.contents.map((line: BoxContentLine, i) => (
@@ -146,16 +146,16 @@ export default function ScanBoxPage(): React.JSX.Element {
                     className="py-2"
                   >
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[14px] font-medium">{line.productName}</span>
-                      <span className="text-[14px] tabular-nums">{line.qty}</span>
+                      <span className="text-body font-medium">{line.productName}</span>
+                      <span className="text-body tabular-nums">{line.qty}</span>
                     </div>
-                    <p className="text-[12px] text-muted">
+                    <p className="text-caption text-muted">
                       {line.productCode}
                       {line.batchNumber ? `, batch ${line.batchNumber}` : ''}
                       {line.expiryDate ? `, exp ${line.expiryDate.slice(0, 10)}` : ''}
                     </p>
                     {line.expired ? (
-                      <p className="text-[12px] text-danger">Expired — do not ship.</p>
+                      <p className="text-caption text-danger">Expired — do not ship.</p>
                     ) : null}
                   </li>
                 ))}
@@ -189,7 +189,7 @@ export default function ScanBoxPage(): React.JSX.Element {
 
           {mode === 'pack' || mode === 'unpack' ? (
             <section className="space-y-3 rounded-lg border border-line bg-white p-3">
-              <h3 className="text-[14px] font-semibold">
+              <h3 className="text-body font-semibold">
                 {mode === 'pack' ? 'Add stock to this box' : 'Remove stock from this box'}
               </h3>
               <QtyField value={quantity} onChange={setQuantity} />
@@ -203,10 +203,10 @@ export default function ScanBoxPage(): React.JSX.Element {
 
           {mode === 'move' ? (
             <section className="space-y-2 rounded-lg border border-line bg-white p-3">
-              <h3 className="text-[14px] font-semibold">
+              <h3 className="text-body font-semibold">
                 Scan the section it is going to
               </h3>
-              <p className="text-[12px] text-muted">
+              <p className="text-caption text-muted">
                 Everything inside moves with the box.
               </p>
               <BarcodeScanner

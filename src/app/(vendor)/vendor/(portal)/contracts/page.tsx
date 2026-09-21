@@ -19,16 +19,16 @@ export default function VendorContractsPage(): React.JSX.Element {
       <PageHeader title="Contracts" description="Your active agreements" />
 
       {isLoading ? (
-        <p className="py-10 text-center text-[13px] text-muted">Loading…</p>
+        <p className="py-10 text-center text-body-sm text-muted">Loading…</p>
       ) : !data || data.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-center text-[13px] text-muted">
+        <div className="flex flex-col items-center gap-2 py-16 text-center text-body-sm text-muted">
           <ScrollText className="h-8 w-8 text-faint-line" />
           No active contracts.
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Contract</th>
                 <th className="px-3 py-2 font-medium">Title</th>

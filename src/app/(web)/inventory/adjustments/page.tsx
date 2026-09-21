@@ -34,7 +34,7 @@ import { formatDate } from '@/lib/format';
 // `next build` fails prerendering this route.
 export default function AdjustmentsPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="p-6 text-[13px] text-muted">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-body-sm text-muted">Loading…</div>}>
       <AdjustmentsScreen />
     </Suspense>
   );
@@ -59,7 +59,7 @@ function AdjustmentsScreen(): React.JSX.Element {
   const tab = correctId ? 'adjust' : chosen;
 
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto w-full max-w-4xl">
       <PageHeader
         title="Adjustments"
         description="Correct a wrong count or write off damaged stock — both post a new ledger entry"
@@ -87,10 +87,10 @@ function AdjustmentsScreen(): React.JSX.Element {
       )}
 
       {correctId && isLoading && (
-        <p className="mb-3 text-[13px] text-muted">Loading the entry to correct…</p>
+        <p className="mb-3 text-body-sm text-muted">Loading the entry to correct…</p>
       )}
       {correctId && isError && (
-        <p className="mb-3 text-[13px] text-danger">
+        <p className="mb-3 text-body-sm text-danger">
           That ledger entry could not be loaded — post a plain adjustment instead.
         </p>
       )}
@@ -103,7 +103,7 @@ function AdjustmentsScreen(): React.JSX.Element {
         <DamageForm />
       )}
 
-      <p className="mt-3 text-[11px] text-faint">
+      <p className="mt-3 text-micro text-faint">
         Nothing on this screen edits an existing entry. Stock figures are the sum of every
         ledger movement, so both the original and the correction stay in the audit trail.
       </p>
@@ -118,7 +118,7 @@ function CorrectionBanner({ entry }: { entry: LedgerEntryView }): React.JSX.Elem
         <Badge variant="classification">Correcting an entry</Badge>
         <Pill variant={txnVariant(entry.txnType)}>{txnLabel(entry.txnType)}</Pill>
       </div>
-      <p className="text-[13px] text-text">
+      <p className="text-body-sm text-text">
         {entry.productName}
         {entry.colour ? `, ${entry.colour}` : ''}{' '}
         <span className="font-numeric text-faint">({entry.productCode})</span>,{' '}
@@ -126,7 +126,7 @@ function CorrectionBanner({ entry }: { entry: LedgerEntryView }): React.JSX.Elem
         <span className="font-numeric">{formatSignedQty(entry.signedQty)}</span> on{' '}
         {formatDate(entry.txnDate)}
       </p>
-      <p className="mt-1 text-[11px] text-faint">
+      <p className="mt-1 text-micro text-faint">
         The quantity below is pre-filled to reverse it exactly. Change it if only part of
         the entry was wrong.
       </p>
@@ -227,7 +227,7 @@ function AdjustmentForm({
       <StockPreview onHand={onHand} delta={ready ? delta : 0} negativeAllowed />
 
       {!wholeNumber && signedQty !== '' && (
-        <p className="mt-2 text-[12px] text-danger">
+        <p className="mt-2 text-caption text-danger">
           Stock moves in whole units — enter a whole number.
         </p>
       )}
@@ -386,7 +386,7 @@ function StockPreview({
   if (onHand === null) return null;
   const after = onHand + delta;
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-canvas px-3 py-2 text-[13px]">
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-canvas px-3 py-2 text-body-sm">
       <span className="text-muted">At this location</span>
       <span className="font-numeric font-medium text-ink">
         {onHand.toLocaleString('en-IN')}
@@ -402,14 +402,14 @@ function StockPreview({
             {after.toLocaleString('en-IN')}
           </span>
           <span
-            className={'text-[12px] ' + (delta > 0 ? 'text-success' : 'text-danger')}
+            className={'text-caption ' + (delta > 0 ? 'text-success' : 'text-danger')}
           >
             ({formatSignedQty(delta)})
           </span>
         </>
       )}
       {after < 0 && (
-        <span className="text-[12px] text-warn">
+        <span className="text-caption text-warn">
           {negativeAllowed
             ? 'Goes negative — allowed here, the shortfall is what you are recording.'
             : 'More than is on hand — the write-off will be refused.'}

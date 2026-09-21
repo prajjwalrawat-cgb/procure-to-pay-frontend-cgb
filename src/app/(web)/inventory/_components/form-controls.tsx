@@ -20,12 +20,12 @@ export function Field({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-muted text-[12px] font-medium">
+      <span className="text-muted text-caption font-medium">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
       {children}
-      {hint && <span className="text-faint text-[11px]">{hint}</span>}
+      {hint && <span className="text-faint text-micro">{hint}</span>}
     </label>
   );
 }
@@ -111,7 +111,7 @@ function SelectedProduct({
 
   if (!productId) {
     return (
-      <p className="text-faint text-[11px]">
+      <p className="text-faint text-micro">
         No product selected — pick one from the list above.
       </p>
     );
@@ -121,11 +121,11 @@ function SelectedProduct({
     <div className="border-accent/40 bg-canvas flex items-center gap-2.5 rounded-md border px-2.5 py-2">
       <ProductThumb url={data?.imageUrl ?? null} alt={data?.name ?? ''} size={28} />
       <div className="min-w-0 flex-1">
-        <div className="text-ink truncate text-[13px] font-medium">
+        <div className="text-ink truncate text-body-sm font-medium">
           {isLoading ? 'Loading…' : data?.name}
           {data?.colour ? <span className="text-muted"> — {data.colour}</span> : null}
         </div>
-        <div className="font-numeric text-faint text-[11px]">
+        <div className="font-numeric text-faint text-micro">
           {data?.code}
           {data ? ` — ${qty(data.currentStock)} on hand` : ''}
         </div>
@@ -133,7 +133,7 @@ function SelectedProduct({
       <button
         type="button"
         onClick={onClear}
-        className="text-muted hover:text-ink shrink-0 text-[12px]"
+        className="text-muted hover:text-ink shrink-0 text-caption"
       >
         Clear
       </button>
@@ -172,7 +172,7 @@ export function FormResult({
   error: string | null;
   success: string | null;
 }): React.JSX.Element | null {
-  if (error) return <p className="text-danger text-[12px]">{error}</p>;
-  if (success) return <p className="text-success text-[12px]">{success}</p>;
+  if (error) return <p className="text-danger text-caption">{error}</p>;
+  if (success) return <p className="text-success text-caption">{success}</p>;
   return null;
 }

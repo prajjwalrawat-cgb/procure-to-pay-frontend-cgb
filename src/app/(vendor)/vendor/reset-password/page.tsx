@@ -61,34 +61,34 @@ export default function VendorResetPasswordPage(): React.JSX.Element {
       <div className="w-full max-w-sm rounded-xl border border-line bg-panel p-8 shadow-lg">
         <div className="mb-6 flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent text-white">
-            <span className="font-numeric text-[13px] font-bold">P</span>
+            <span className="font-numeric text-body-sm font-bold">P</span>
           </span>
-          <span className="text-[16px] font-semibold tracking-heading text-ink">
+          <span className="text-h3 font-semibold tracking-heading text-ink">
             Supplier Portal
           </span>
         </div>
 
         {done ? (
           <div>
-            <h2 className="text-[16px] font-semibold text-ink">Password changed</h2>
-            <p className="mt-2 text-[13px] text-muted">
+            <h2 className="text-h3 font-semibold text-ink">Password changed</h2>
+            <p className="mt-2 text-body-sm text-muted">
               You have been signed out everywhere else. Redirecting you to sign in…
             </p>
             <Link
               href="/vendor/login"
-              className="text-accent mt-4 inline-block text-[13px] hover:underline"
+              className="text-accent mt-4 inline-block text-body-sm hover:underline"
             >
               Go to sign in →
             </Link>
           </div>
         ) : (
           <>
-            <h2 className="text-[16px] font-semibold text-ink">Choose a new password</h2>
-            <p className="mt-1 text-[13px] text-muted">
+            <h2 className="text-h3 font-semibold text-ink">Choose a new password</h2>
+            <p className="mt-1 text-body-sm text-muted">
               This link works once and expires an hour after it was sent.
             </p>
             <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-3">
-              <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
                 New password
                 <Input
                   type="password"
@@ -98,7 +98,7 @@ export default function VendorResetPasswordPage(): React.JSX.Element {
                   required
                 />
               </label>
-              <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
                 Confirm password
                 <Input
                   type="password"
@@ -109,7 +109,7 @@ export default function VendorResetPasswordPage(): React.JSX.Element {
                 />
               </label>
               {error && (
-                <p className="rounded-sm bg-danger-wash px-2.5 py-2 text-[12px] text-danger">
+                <p className="rounded-sm bg-danger-wash px-2.5 py-2 text-caption text-danger">
                   {error}
                 </p>
               )}
@@ -124,7 +124,7 @@ export default function VendorResetPasswordPage(): React.JSX.Element {
             </form>
             <Link
               href="/vendor/forgot-password"
-              className="mt-4 inline-block text-[12px] text-muted hover:underline"
+              className="mt-4 inline-block text-caption text-muted hover:underline"
             >
               Request a new link
             </Link>

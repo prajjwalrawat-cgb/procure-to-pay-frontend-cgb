@@ -34,7 +34,7 @@ export default function RmaDetailPage(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div>
       <PageHeader
         title={data.number}
         numeric
@@ -145,11 +145,11 @@ export default function RmaDetailPage(): React.JSX.Element {
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2 space-y-4">
           <div className="rounded-lg border border-line bg-panel p-4">
-            <h2 className="mb-2 text-[11px] font-medium text-faint">
+            <h2 className="mb-2 text-micro font-medium text-faint">
               Return lines
             </h2>
-            <table className="w-full text-[12px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-caption">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="py-1">Item</th>
                   <th className="py-1 text-right">Qty</th>
@@ -174,11 +174,11 @@ export default function RmaDetailPage(): React.JSX.Element {
 
           {data.canEdit && (
             <div className="rounded-lg border border-line bg-panel p-4">
-              <h2 className="mb-2 text-[11px] font-medium text-faint">
+              <h2 className="mb-2 text-micro font-medium text-faint">
                 Refine reason
               </h2>
               <textarea
-                className="w-full rounded-sm border border-line bg-panel px-3 py-2 text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="w-full rounded-sm border border-line bg-panel px-3 py-2 text-body-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 rows={3}
                 placeholder={data.reasonNotes ?? 'Add return reason detail…'}
                 value={notes}
@@ -206,10 +206,10 @@ export default function RmaDetailPage(): React.JSX.Element {
           )}
 
           <div className="rounded-lg border border-line bg-panel p-4">
-            <h2 className="mb-2 text-[11px] font-medium text-faint">
+            <h2 className="mb-2 text-micro font-medium text-faint">
               Activity
             </h2>
-            <ul className="space-y-1 text-[12px]">
+            <ul className="space-y-1 text-caption">
               {data.activity.map((a) => (
                 <li key={a.id} className="flex justify-between">
                   <span className="text-text">{a.action}</span>
@@ -223,8 +223,8 @@ export default function RmaDetailPage(): React.JSX.Element {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border border-line bg-panel p-4 text-[12px]">
-            <h2 className="mb-2 text-[11px] font-medium text-faint">Summary</h2>
+          <div className="rounded-lg border border-line bg-panel p-4 text-caption">
+            <h2 className="mb-2 text-micro font-medium text-faint">Summary</h2>
             <Row k="Reason" v={data.reasonCode} />
             <Row k="Freight" v={data.returnFreightBorneBy} />
             <Row k="Vehicle out" v={data.vehicleOutNo ?? '—'} />

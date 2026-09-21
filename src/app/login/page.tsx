@@ -80,17 +80,17 @@ export default function LoginPage(): React.JSX.Element {
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <span className="bg-ink flex h-7 w-7 items-center justify-center rounded-sm text-white">
-              <span className="font-numeric text-[13px] font-bold">P</span>
+              <span className="font-numeric text-body-sm font-bold">P</span>
             </span>
-            <span className="tracking-heading text-ink text-[16px] font-semibold">
+            <span className="tracking-heading text-ink text-h3 font-semibold">
               ProcureFlow
             </span>
           </div>
-          <p className="text-muted mt-2 text-[13px]">Sign in to the buyer portal.</p>
+          <p className="text-muted mt-2 text-body-sm">Sign in to the buyer portal.</p>
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-3">
-          <label className="text-text flex flex-col gap-1 text-[12px] font-medium">
+          <label className="text-text flex flex-col gap-1 text-caption font-medium">
             Email
             <Input
               type="email"
@@ -101,7 +101,7 @@ export default function LoginPage(): React.JSX.Element {
               required
             />
           </label>
-          <label className="text-text flex flex-col gap-1 text-[12px] font-medium">
+          <label className="text-text flex flex-col gap-1 text-caption font-medium">
             Password
             <Input
               type="password"
@@ -113,19 +113,19 @@ export default function LoginPage(): React.JSX.Element {
           </label>
           <Link
             href="/forgot-password"
-            className="text-muted -mt-1 self-end text-[12px] hover:underline"
+            className="text-muted -mt-1 self-end text-caption hover:underline"
           >
             Forgot password?
           </Link>
 
           {expired && !error && (
-            <p className="bg-warn-wash text-warn rounded-sm px-2.5 py-2 text-[12px]">
+            <p className="bg-warn-wash text-warn rounded-sm px-2.5 py-2 text-caption">
               Your session expired. Please sign in again.
             </p>
           )}
 
           {error && (
-            <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-[12px]">
+            <p className="bg-danger-wash text-danger rounded-sm px-2.5 py-2 text-caption">
               {error}
             </p>
           )}
@@ -140,7 +140,7 @@ export default function LoginPage(): React.JSX.Element {
           </Button>
         </form>
 
-        <p className="text-muted mt-4 text-center text-[12px]">
+        <p className="text-muted mt-4 text-center text-caption">
           Are you a supplier?{' '}
           <Link href="/vendor/login" className="text-accent hover:underline">
             Vendor sign in

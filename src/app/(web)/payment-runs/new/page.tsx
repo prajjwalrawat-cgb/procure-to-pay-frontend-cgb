@@ -38,10 +38,10 @@ export default function NewPaymentRunPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-xl">
+    <div className="mx-auto w-full max-w-xl">
       <Link
         href="/payment-runs"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-[12px]"
+        className="text-muted mb-3 inline-flex items-center gap-1 text-caption"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to payment runs
       </Link>
@@ -52,23 +52,23 @@ export default function NewPaymentRunPage(): React.JSX.Element {
 
       <div className="border-line bg-panel flex flex-col gap-4 rounded-lg border p-5">
         <label className="flex flex-col gap-1">
-          <span className="text-muted text-[12px] font-medium">Cycle date</span>
+          <span className="text-muted text-caption font-medium">Cycle date</span>
           <input
             type="date"
             value={cycleDate}
             aria-label="Cycle date"
             onChange={(e) => setCycleDate(e.target.value)}
-            className="border-line bg-panel rounded-sm border px-3 py-2 text-[13px] outline-none"
+            className="border-line bg-panel rounded-sm border px-3 py-2 text-body-sm outline-none"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-muted text-[12px] font-medium">Bank account</span>
+          <span className="text-muted text-caption font-medium">Bank account</span>
           <select
             value={selectedBank}
             aria-label="Bank account"
             onChange={(e) => setBankAccountId(e.target.value)}
-            className="border-line bg-panel rounded-sm border px-3 py-2 text-[13px] outline-none"
+            className="border-line bg-panel rounded-sm border px-3 py-2 text-body-sm outline-none"
           >
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>

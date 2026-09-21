@@ -93,7 +93,7 @@ export default function LocationsPage(): React.JSX.Element {
 
       {items.length === 0 && !isLoading && (
         <div className="mb-4 rounded-md border border-warn/40 bg-warn-bg px-3 py-2">
-          <p className="text-[12px] text-warn">
+          <p className="text-caption text-warn">
             No locations yet. Create at least one before receiving stock — every ledger
             movement records where the goods physically sit.
           </p>
@@ -171,8 +171,8 @@ export default function LocationsPage(): React.JSX.Element {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Location</th>
               <th className="px-3 py-2 font-medium">Level</th>
@@ -272,7 +272,7 @@ function LocationRow({
             placeholder="BIN-A1"
           />
         </td>
-        <td colSpan={3} className="px-3 py-2 text-[11px] text-faint">
+        <td colSpan={3} className="px-3 py-2 text-micro text-faint">
           Label an existing shelf here — the barcode is what the scanner reads during
           putaway, transfer and cycle count.
         </td>
@@ -281,7 +281,7 @@ function LocationRow({
             type="button"
             disabled={!name.trim() || busy}
             onClick={save}
-            className="text-[12px] font-medium text-accent-2 hover:underline"
+            className="text-caption font-medium text-accent-2 hover:underline"
           >
             Save
           </button>
@@ -293,7 +293,7 @@ function LocationRow({
               setBarcode(l.barcode ?? '');
               setEditing(false);
             }}
-            className="ml-3 text-[12px] text-muted hover:underline"
+            className="ml-3 text-caption text-muted hover:underline"
           >
             Cancel
           </button>
@@ -312,9 +312,9 @@ function LocationRow({
           </Pill>
         )}
       </td>
-      <td className="px-3 py-2 text-[12px] text-muted">{KIND_LABEL[l.kind]}</td>
-      <td className="px-3 py-2 font-mono text-[12px] text-muted">{l.barcode ?? '—'}</td>
-      <td className="px-3 py-2 text-[12px] text-muted">{l.parentName ?? '—'}</td>
+      <td className="px-3 py-2 text-caption text-muted">{KIND_LABEL[l.kind]}</td>
+      <td className="px-3 py-2 font-mono text-caption text-muted">{l.barcode ?? '—'}</td>
+      <td className="px-3 py-2 text-caption text-muted">{l.parentName ?? '—'}</td>
       <td className="font-numeric px-3 py-2 text-right text-text">{l.productCount}</td>
       <td className="font-numeric px-3 py-2 text-right font-medium text-ink">
         {l.totalQty.toLocaleString('en-IN')}
@@ -323,7 +323,7 @@ function LocationRow({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-[12px] font-medium text-accent-2 hover:underline"
+          className="text-caption font-medium text-accent-2 hover:underline"
         >
           Rename
         </button>
@@ -340,7 +340,7 @@ function LocationRow({
               onError(null);
               deactivate.mutate(l.id, { onError: (e) => onError(e.message) });
             }}
-            className="ml-3 text-[12px] text-muted hover:underline disabled:opacity-40 disabled:hover:no-underline"
+            className="ml-3 text-caption text-muted hover:underline disabled:opacity-40 disabled:hover:no-underline"
           >
             Retire
           </button>

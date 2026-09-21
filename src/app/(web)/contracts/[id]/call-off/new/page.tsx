@@ -60,16 +60,16 @@ export default function NewCallOffPage(): React.JSX.Element {
 
   if (!c)
     return (
-      <p className="max-w-3xl py-10 text-center text-[13px] text-muted">
+      <p className="max-w-3xl py-10 text-center text-body-sm text-muted">
         Loading…
       </p>
     );
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto w-full max-w-3xl">
       <Link
         href={`/contracts/${id}`}
-        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
+        className="mb-3 inline-flex items-center gap-1 text-body-sm text-muted hover:text-text"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> {c.number}
       </Link>
@@ -80,7 +80,7 @@ export default function NewCallOffPage(): React.JSX.Element {
 
       <div className="space-y-3 rounded-lg border border-line bg-panel p-5">
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted">Rate card row</span>
+          <span className="mb-1 block text-caption text-muted">Rate card row</span>
           <select
             className={controlClass}
             value={rateCardId}
@@ -97,7 +97,7 @@ export default function NewCallOffPage(): React.JSX.Element {
         </label>
 
         {card && (
-          <p className="text-[12px] text-muted">
+          <p className="text-caption text-muted">
             Locked unit price:{' '}
             <span className="font-numeric text-ink">₹{card.unitRate}</span> per {card.uom}
           </p>
@@ -105,7 +105,7 @@ export default function NewCallOffPage(): React.JSX.Element {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="mb-1 block text-[12px] text-muted">
+            <span className="mb-1 block text-caption text-muted">
               Quantity ({card?.uom ?? 'unit'})
             </span>
             <input
@@ -115,7 +115,7 @@ export default function NewCallOffPage(): React.JSX.Element {
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-[12px] text-muted">Expected delivery</span>
+            <span className="mb-1 block text-caption text-muted">Expected delivery</span>
             <input
               type="date"
               className={controlClass}
@@ -126,7 +126,7 @@ export default function NewCallOffPage(): React.JSX.Element {
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-[12px] text-muted">Delivery location</span>
+          <span className="mb-1 block text-caption text-muted">Delivery location</span>
           <input
             className={controlClass}
             value={line1}
@@ -135,13 +135,13 @@ export default function NewCallOffPage(): React.JSX.Element {
         </label>
 
         {lineValue > 0 && (
-          <div className="rounded-md bg-canvas p-3 text-[13px]">
+          <div className="rounded-md bg-canvas p-3 text-body-sm">
             <div className="flex justify-between">
               <span className="text-muted">Call-off value (incl. tax)</span>
               <span className="font-numeric text-ink">{inr(lineValue)}</span>
             </div>
             {projected != null && (
-              <p className="mt-1 text-[12px] text-accent-2">
+              <p className="mt-1 text-caption text-accent-2">
                 This brings YTD to {Math.round(projected)}% of the annual commitment
                 {projected >= 90
                   ? ' — on track.'
@@ -157,7 +157,7 @@ export default function NewCallOffPage(): React.JSX.Element {
           type="button"
           onClick={submit}
           disabled={callOff.isPending}
-          className="w-full rounded-md bg-ink px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50"
+          className="w-full rounded-md bg-ink px-4 py-2 text-body-sm font-medium text-white disabled:opacity-50"
         >
           Create call-off PO
         </button>

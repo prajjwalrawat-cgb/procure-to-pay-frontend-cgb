@@ -94,17 +94,17 @@ export default function EditRequisitionPage(): React.JSX.Element {
   // DRAFT-only guard (backend enforces this too).
   if (data.status !== 'DRAFT') {
     return (
-      <div className="max-w-2xl p-8 text-center">
-        <p className="text-[15px] font-semibold text-ink">
+      <div className="mx-auto w-full max-w-2xl p-8 text-center">
+        <p className="text-h3 font-semibold text-ink">
           This requisition can’t be edited.
         </p>
-        <p className="mt-1 text-[13px] text-muted">
+        <p className="mt-1 text-body-sm text-muted">
           Only <b>Draft</b> requisitions are editable — {data.number} is{' '}
           <Pill variant="gray">{data.status}</Pill>.
         </p>
         <Link
           href={`/requisitions/${id}`}
-          className="mt-3 inline-block text-[13px] text-accent"
+          className="mt-3 inline-block text-body-sm text-accent"
         >
           ← Back to {data.number}
         </Link>
@@ -189,10 +189,10 @@ export default function EditRequisitionPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-4xl pb-8">
+    <div className="mx-auto w-full max-w-4xl pb-8">
       <Link
         href={`/requisitions/${id}`}
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
       >
         <ArrowLeft size={14} /> Back to {data.number}
       </Link>
@@ -264,7 +264,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
         </div>
         <Field label="Business justification, min 20 characters">
           <textarea
-            className="w-full rounded-md border border-line bg-panel p-2 text-[13px]"
+            className="w-full rounded-md border border-line bg-panel p-2 text-body-sm"
             rows={2}
             value={justification}
             onChange={(e) => setJustification(e.target.value)}
@@ -335,7 +335,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
                 />
               </Labelled>
             </div>
-            <div className="mt-1 text-right text-[12px] tabular-nums text-muted">
+            <div className="mt-1 text-right text-caption tabular-nums text-muted">
               Line total {inr(String(lineTotal(l)))}
             </div>
           </div>
@@ -344,7 +344,7 @@ export default function EditRequisitionPage(): React.JSX.Element {
           <Button variant="ghost" onClick={addLine}>
             <Plus size={14} /> Add line
           </Button>
-          <span className="text-[14px] font-semibold tabular-nums text-ink">
+          <span className="text-body font-semibold tabular-nums text-ink">
             PR total {inr(String(prTotal))}
           </span>
         </div>
@@ -371,7 +371,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
+      <h2 className="mb-3 text-body font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -386,7 +386,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="mb-3 block">
-      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <span className="mb-1 block text-caption text-muted">{label}</span>
       {children}
     </label>
   );
@@ -401,7 +401,7 @@ function Labelled({
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-0.5 block text-[10px] text-faint">{label}</span>
+      <span className="mb-0.5 block text-micro text-faint">{label}</span>
       {children}
     </label>
   );

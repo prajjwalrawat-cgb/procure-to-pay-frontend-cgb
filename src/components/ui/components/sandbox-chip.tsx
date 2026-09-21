@@ -64,7 +64,7 @@ export function SandboxChip({
       <span
         className={cn(
           'text-muted inline-flex shrink-0 items-center whitespace-nowrap',
-          size === 'xs' ? 'text-[11px]' : 'text-[12px]',
+          size === 'xs' ? 'text-micro' : 'text-caption',
           className,
         )}
       >
@@ -142,7 +142,7 @@ export function SandboxBanner({
     <div
       className={cn('border-line bg-canvas rounded-lg border px-3.5 py-2.5', className)}
     >
-      <p className="text-muted text-[12px] leading-relaxed">
+      <p className="text-muted text-caption leading-relaxed">
         {children ?? (
           <>
             <span className="text-text font-medium">

@@ -63,7 +63,7 @@ export default function EvaluatePage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-[1400px]">
+    <div>
       <PageHeader
         title="Evaluation"
         description="Weighted comparison across every qualified quote. Expand a row to see how its total was built."
@@ -94,15 +94,15 @@ export default function EvaluatePage(): React.JSX.Element {
       />
 
       {matrix.masked && (
-        <p className="text-warn mb-3 text-[13px]">
+        <p className="text-warn mb-3 text-body-sm">
           Commercial values are still sealed. Open the commercial envelope to reveal
           landed cost.
         </p>
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2">Vendor</th>
               <th className="px-3 py-2">Scorecard</th>
@@ -139,7 +139,7 @@ export default function EvaluatePage(): React.JSX.Element {
                     {row.rankLabel && <Pill variant="success">{row.rankLabel}</Pill>}
                   </div>
                 </td>
-                <td className="text-muted px-3 py-2 text-[12px]">
+                <td className="text-muted px-3 py-2 text-caption">
                   OTIF {row.historicalOtif ?? '—'}, Q {row.historicalQuality ?? '—'}
                 </td>
                 <td className="px-3 py-2">
@@ -203,7 +203,7 @@ export default function EvaluatePage(): React.JSX.Element {
                   <div className="flex flex-col gap-1">
                     <div className="flex gap-1">
                       <button
-                        className="text-accent-2 text-[11px]"
+                        className="text-accent-2 text-micro"
                         onClick={() =>
                           qualify.mutate({ quoteId: row.quoteId, decision: 'QUALIFIED' })
                         }
@@ -211,7 +211,7 @@ export default function EvaluatePage(): React.JSX.Element {
                         Qualify
                       </button>
                       <button
-                        className="text-danger text-[11px]"
+                        className="text-danger text-micro"
                         onClick={() =>
                           qualify.mutate({
                             quoteId: row.quoteId,
@@ -224,7 +224,7 @@ export default function EvaluatePage(): React.JSX.Element {
                       </button>
                     </div>
                     <button
-                      className="text-info text-[11px]"
+                      className="text-info text-micro"
                       onClick={() => saveManual(row.quoteId)}
                     >
                       Save scores
@@ -242,7 +242,7 @@ export default function EvaluatePage(): React.JSX.Element {
                         scores={row.scores}
                         total={row.weightedTotal}
                       />
-                      <p className="text-faint mt-2 text-[11px]">
+                      <p className="text-faint mt-2 text-micro">
                         Price is auto-scored as (lowest landed cost ÷ this landed
                         cost) × 100
                         {row.isMsme && ', plus the MSME purchase-preference boost'}.

@@ -21,7 +21,7 @@ interface AllocRow {
 const VARIANCE_MIN_CHARS = 500;
 
 const selectClass =
-  'border-line bg-panel text-text rounded-sm border px-2 py-1.5 text-[13px] outline-none';
+  'border-line bg-panel text-text rounded-sm border px-2 py-1.5 text-body-sm outline-none';
 
 /** Award recommendation: line-by-line allocation, L1-variance justification. */
 export default function AwardPage(): React.JSX.Element {
@@ -122,7 +122,7 @@ export default function AwardPage(): React.JSX.Element {
   }
 
   return (
-    <div className="max-w-[900px] pb-8">
+    <div className="mx-auto w-full max-w-[900px] pb-8">
       <PageHeader
         title="Award recommendation"
         description="Allocate quantity per line, then submit for approval. Awarding away from the lowest quote requires a written justification."
@@ -136,10 +136,10 @@ export default function AwardPage(): React.JSX.Element {
       {/* Quotes — the same weighted maths as the evaluation matrix, so the
           recommendation can be justified without navigating away. */}
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
-        <h2 className="text-ink mb-2 text-[14px] font-semibold">Quotes</h2>
+        <h2 className="text-ink mb-2 text-body font-semibold">Quotes</h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[420px] text-[13px]">
-            <thead className="border-line border-b text-left text-[12px] text-muted">
+          <table className="w-full min-w-[420px] text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="py-1.5 font-medium">Vendor</th>
                 <th className="py-1.5 text-right font-medium">Landed (INR)</th>
@@ -209,10 +209,10 @@ export default function AwardPage(): React.JSX.Element {
           since both are ULIDs nobody can type. They are now pickers over the
           quotes and lines this RFQ actually has. */}
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
-        <h2 className="text-ink mb-2 text-[14px] font-semibold">Allocation</h2>
+        <h2 className="text-ink mb-2 text-body font-semibold">Allocation</h2>
 
         {rows.length === 0 && (
-          <p className="text-muted mb-2 text-[12px]">
+          <p className="text-muted mb-2 text-caption">
             No allocations yet. Add one per RFQ line you are awarding.
           </p>
         )}
@@ -224,7 +224,7 @@ export default function AwardPage(): React.JSX.Element {
               className="border-line mb-2 grid grid-cols-1 gap-2 border-b pb-2 last:border-0 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_110px_120px_auto]"
             >
               <label className="flex flex-col gap-1">
-                <span className="text-faint text-[11px]">Vendor</span>
+                <span className="text-faint text-micro">Vendor</span>
                 <select
                   className={selectClass}
                   value={r.quoteId}
@@ -240,7 +240,7 @@ export default function AwardPage(): React.JSX.Element {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-faint text-[11px]">RFQ line</span>
+                <span className="text-faint text-micro">RFQ line</span>
                 <select
                   className={selectClass}
                   value={r.rfqLineId}
@@ -255,7 +255,7 @@ export default function AwardPage(): React.JSX.Element {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-faint text-[11px]">
+                <span className="text-faint text-micro">
                   Qty{line ? ` of ${line.qtyRequired} ${line.uom}` : ''}
                 </span>
                 <Input
@@ -266,7 +266,7 @@ export default function AwardPage(): React.JSX.Element {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-faint text-[11px]">Unit price</span>
+                <span className="text-faint text-micro">Unit price</span>
                 <Input
                   inputMode="decimal"
                   value={r.unitPrice}
@@ -295,9 +295,9 @@ export default function AwardPage(): React.JSX.Element {
 
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
         <label className="mb-3 block">
-          <span className="text-muted mb-1 block text-[12px]">Recommendation notes</span>
+          <span className="text-muted mb-1 block text-caption">Recommendation notes</span>
           <textarea
-            className="border-line bg-panel w-full rounded-sm border p-2 text-[13px]"
+            className="border-line bg-panel w-full rounded-sm border p-2 text-body-sm"
             rows={2}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -305,7 +305,7 @@ export default function AwardPage(): React.JSX.Element {
         </label>
 
         <label className="block">
-          <span className="text-muted mb-1 block text-[12px]">
+          <span className="text-muted mb-1 block text-caption">
             Variance-from-L1 justification
             {awardsAwayFromL1 ? (
               <span className="text-danger font-medium">, required</span>
@@ -314,7 +314,7 @@ export default function AwardPage(): React.JSX.Element {
             )}
           </span>
           <textarea
-            className="border-line bg-panel w-full rounded-sm border p-2 text-[13px]"
+            className="border-line bg-panel w-full rounded-sm border p-2 text-body-sm"
             rows={5}
             value={variance}
             onChange={(e) => setVariance(e.target.value)}
@@ -326,7 +326,7 @@ export default function AwardPage(): React.JSX.Element {
           <span
             id="variance-counter"
             className={
-              'font-numeric text-[11px] ' +
+              'font-numeric text-micro ' +
               (varianceShort ? 'text-danger font-medium' : 'text-faint')
             }
           >
@@ -348,7 +348,7 @@ export default function AwardPage(): React.JSX.Element {
       </div>
 
       {rows.length > 0 && !canSubmit && (
-        <p className="text-muted mt-2 text-right text-[11px]">
+        <p className="text-muted mt-2 text-right text-micro">
           {incomplete
             ? 'Every allocation needs a vendor, line, quantity and unit price.'
             : varianceShort

@@ -58,7 +58,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('tracking-heading text-ink text-[15px] font-semibold', className)}
+    className={cn('tracking-heading text-ink text-h3 font-semibold', className)}
     {...props}
   />
 ));
@@ -70,7 +70,7 @@ export const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-muted text-[13px]', className)}
+    className={cn('text-muted text-body-sm', className)}
     {...props}
   />
 ));

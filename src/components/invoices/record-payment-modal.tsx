@@ -25,7 +25,7 @@ const MODE_LABELS: Record<ManualPaymentMode, string> = {
 };
 
 const selectCls =
-  'flex h-9 w-full rounded-sm border border-line bg-panel px-3 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent';
+  'flex h-9 w-full rounded-sm border border-line bg-panel px-3 text-body-sm text-text outline-none focus-visible:ring-2 focus-visible:ring-accent';
 
 /**
  * Record a payment finance made outside the app — a direct transfer or a
@@ -181,7 +181,7 @@ export function RecordPaymentModal({
             />
           </Field>
 
-          <dl className="rounded-sm bg-canvas px-3 py-2 text-[12px]">
+          <dl className="rounded-sm bg-canvas px-3 py-2 text-caption">
             <div className="flex justify-between">
               <dt className="text-muted">Net transferred</dt>
               <dd className="font-numeric text-text">
@@ -195,7 +195,7 @@ export function RecordPaymentModal({
           </dl>
 
           {error && (
-            <div className="rounded-sm bg-danger-wash px-3 py-2 text-[12px] text-danger">
+            <div className="rounded-sm bg-danger-wash px-3 py-2 text-caption text-danger">
               {error}
             </div>
           )}
@@ -227,7 +227,7 @@ function Field({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
+    <label className="flex flex-col gap-1 text-caption font-medium text-text">
       {label}
       {children}
     </label>
@@ -245,7 +245,7 @@ function ShareButton({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-xs border border-line px-2 py-0.5 text-[11px] font-medium text-muted hover:bg-canvas hover:text-text"
+      className="rounded-xs border border-line px-2 py-0.5 text-micro font-medium text-muted hover:bg-canvas hover:text-text"
     >
       {label}
     </button>

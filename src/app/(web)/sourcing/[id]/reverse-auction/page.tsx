@@ -57,9 +57,9 @@ export default function ReverseAuctionPage(): React.JSX.Element {
       />
 
       <label className="mb-4 block">
-        <span className="text-muted mb-1 block text-[12px] font-medium">Round</span>
+        <span className="text-muted mb-1 block text-caption font-medium">Round</span>
         <input
-          className="border-line bg-panel h-9 w-full rounded-sm border px-2 text-[13px]"
+          className="border-line bg-panel h-9 w-full rounded-sm border px-2 text-body-sm"
           placeholder="Round ID (rar_…) to watch the live leaderboard"
           value={roundId}
           onChange={(e) => setRoundId(e.target.value)}
@@ -67,14 +67,14 @@ export default function ReverseAuctionPage(): React.JSX.Element {
       </label>
 
       {!connected && roundId && (
-        <p className="border-warn/30 bg-warn-wash text-warn mb-4 rounded-lg border px-3 py-2 text-[12px]">
+        <p className="border-warn/30 bg-warn-wash text-warn mb-4 rounded-lg border px-3 py-2 text-caption">
           Not connected to the live stream — the ladder below may be out of date.
         </p>
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2">Rank</th>
               <th className="px-3 py-2">Vendor</th>
@@ -103,7 +103,7 @@ export default function ReverseAuctionPage(): React.JSX.Element {
                 <td className="text-muted px-3 py-2 text-right tabular-nums">
                   {e.gapToL1 ? inr(e.gapToL1) : '—'}
                 </td>
-                <td className="text-muted px-3 py-2 text-[12px]">
+                <td className="text-muted px-3 py-2 text-caption">
                   {e.bidAt ? new Date(e.bidAt).toLocaleTimeString('en-IN') : '—'}
                 </td>
               </tr>

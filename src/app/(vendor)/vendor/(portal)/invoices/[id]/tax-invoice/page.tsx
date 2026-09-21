@@ -22,7 +22,7 @@ export default function VendorTaxInvoicePage(): React.JSX.Element {
   const back = (): void => router.push('/vendor/invoices');
 
   if (isLoading || !data) {
-    return <div className="p-6 text-[13px] text-muted">Loading invoice…</div>;
+    return <div className="p-6 text-body-sm text-muted">Loading invoice…</div>;
   }
 
   return (
@@ -30,7 +30,7 @@ export default function VendorTaxInvoicePage(): React.JSX.Element {
       <button
         type="button"
         onClick={back}
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to invoices
       </button>
@@ -39,7 +39,7 @@ export default function VendorTaxInvoicePage(): React.JSX.Element {
         description={`For proforma ${data.vendorInvoiceRef} (${data.number}). It replaces the proforma on the same invoice; any advance already paid stays counted.`}
       />
       {data.documentKind !== 'PROFORMA' ? (
-        <div className="rounded-lg border border-line bg-panel p-4 text-[13px] text-muted">
+        <div className="rounded-lg border border-line bg-panel p-4 text-body-sm text-muted">
           {data.proformaRef
             ? `The tax invoice for proforma ${data.proformaRef} has already been uploaded.`
             : 'This invoice is not a proforma, so there is nothing to replace.'}
@@ -65,7 +65,7 @@ export default function VendorTaxInvoicePage(): React.JSX.Element {
             }}
           />
           {error && (
-            <div className="mt-3 rounded-sm bg-danger-wash px-3 py-2 text-[12px] text-danger">
+            <div className="mt-3 rounded-sm bg-danger-wash px-3 py-2 text-caption text-danger">
               {error}
             </div>
           )}

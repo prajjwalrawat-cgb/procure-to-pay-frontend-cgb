@@ -59,13 +59,13 @@ export default function AcceptInvitePage(): React.JSX.Element {
   if (done) {
     return (
       <div className="mx-auto mt-24 max-w-[440px] px-4 text-center">
-        <h1 className="text-ink text-[20px] font-semibold">You&apos;re all set</h1>
-        <p className="text-muted mt-2 text-[13px]">
+        <h1 className="text-ink text-h2 font-semibold">You&apos;re all set</h1>
+        <p className="text-muted mt-2 text-body-sm">
           Your password has been set. Sign in to complete your onboarding profile.
         </p>
         <Link
           href="/vendor/login"
-          className="text-accent mt-4 inline-block text-[13px] hover:underline"
+          className="text-accent mt-4 inline-block text-body-sm hover:underline"
         >
           Go to sign in →
         </Link>
@@ -75,14 +75,14 @@ export default function AcceptInvitePage(): React.JSX.Element {
 
   return (
     <div className="mx-auto mt-16 max-w-[440px] px-4">
-      <h1 className="text-ink text-[20px] font-semibold">Accept your invitation</h1>
-      <p className="text-muted mt-1 text-[13px]">
+      <h1 className="text-ink text-h2 font-semibold">Accept your invitation</h1>
+      <p className="text-muted mt-1 text-body-sm">
         Set a password for your vendor account. You&apos;ll complete a short onboarding
         wizard after signing in.
       </p>
       <form onSubmit={submit} className="mt-6 space-y-3">
         <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">
+          <label className="text-muted mb-1 block text-caption font-medium">
             New password
           </label>
           <Input
@@ -94,7 +94,7 @@ export default function AcceptInvitePage(): React.JSX.Element {
           />
         </div>
         <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">
+          <label className="text-muted mb-1 block text-caption font-medium">
             Confirm password
           </label>
           <Input
@@ -105,14 +105,14 @@ export default function AcceptInvitePage(): React.JSX.Element {
             required
           />
         </div>
-        {error && <p className="text-danger text-[12px]">{error}</p>}
+        {error && <p className="text-danger text-caption">{error}</p>}
         <Button type="submit" variant="primary" disabled={loading} className="w-full">
           {loading ? 'Setting password…' : 'Set password & continue'}
         </Button>
       </form>
       <Link
         href="/vendor/login"
-        className="text-muted mt-4 inline-block text-[12px] hover:underline"
+        className="text-muted mt-4 inline-block text-caption hover:underline"
       >
         Already have access? Sign in
       </Link>

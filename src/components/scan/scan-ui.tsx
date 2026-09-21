@@ -22,9 +22,9 @@ export function QtyField({
 }): React.JSX.Element {
   return (
     <label className="block space-y-1">
-      <span className="text-[12px] text-muted">{label}</span>
+      <span className="text-caption text-muted">{label}</span>
       <input
-        className="w-full rounded-md border border-line px-3 py-3 text-[20px] tabular-nums outline-none focus:border-accent"
+        className="w-full rounded-md border border-line px-3 py-3 text-h2 tabular-nums outline-none focus:border-accent"
         inputMode="numeric"
         pattern="[0-9]*"
         value={value}
@@ -52,10 +52,10 @@ export function TextField({
 }): React.JSX.Element {
   return (
     <label className="block space-y-1">
-      <span className="text-[12px] text-muted">{label}</span>
+      <span className="text-caption text-muted">{label}</span>
       <input
         // 16px keeps iOS from zooming the viewport when the field takes focus.
-        className="w-full rounded-md border border-line px-3 py-3 text-[16px] outline-none focus:border-accent"
+        className="w-full rounded-md border border-line px-3 py-3 text-h3 outline-none focus:border-accent"
         type={type}
         value={value}
         placeholder={placeholder}
@@ -86,21 +86,21 @@ export function ProductCard({
     <section className="space-y-2 rounded-lg border border-line bg-white p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-[15px] font-semibold">{p.name}</h2>
-          <p className="text-[12px] text-muted">
+          <h2 className="text-h3 font-semibold">{p.name}</h2>
+          <p className="text-caption text-muted">
             {p.code}
             {p.colour ? `, ${p.colour}` : ''}, on hand {p.currentStock} {p.unit}
           </p>
         </div>
         {resolved.matchType === 'fuzzy_gtin' ? (
-          <span className="rounded bg-warn/15 px-2 py-1 text-[11px] font-medium text-warn">
+          <span className="rounded bg-warn/15 px-2 py-1 text-micro font-medium text-warn">
             Close match — check
           </span>
         ) : null}
       </div>
 
       {p.requiresBatchTracking ? (
-        <p className="rounded bg-accent/10 px-2 py-1 text-[12px] text-accent">
+        <p className="rounded bg-accent/10 px-2 py-1 text-caption text-accent">
           Batch-tracked — batch number and expiry are required.
         </p>
       ) : null}
@@ -125,7 +125,7 @@ export function ResultBanner({
         ? 'bg-warn/15 text-warn'
         : 'bg-danger/15 text-danger';
   return (
-    <p className={`rounded-md px-3 py-2 text-[13px] ${cls}`} role="status">
+    <p className={`rounded-md px-3 py-2 text-body-sm ${cls}`} role="status">
       {message}
     </p>
   );

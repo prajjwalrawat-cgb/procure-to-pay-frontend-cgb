@@ -61,8 +61,8 @@ export default function PaymentRunsPage(): React.JSX.Element {
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Run</th>
               <th className="px-3 py-2 font-medium">Cycle date</th>

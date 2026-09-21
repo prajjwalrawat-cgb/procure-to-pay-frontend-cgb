@@ -20,8 +20,8 @@ export function ComingInSlice({ number, name }: ComingInSliceProps): React.JSX.E
         <Construction className="h-6 w-6" />
       </div>
       <div>
-        <h2 className="tracking-heading text-ink text-[16px] font-semibold">{name}</h2>
-        <p className="text-muted mt-1 text-[13px]">
+        <h2 className="tracking-heading text-ink text-h3 font-semibold">{name}</h2>
+        <p className="text-muted mt-1 text-body-sm">
           Coming in <span className="font-numeric">Slice {number}</span>
         </p>
       </div>
@@ -68,7 +68,7 @@ export function NotShipped({
             disabled button; a second bounded shape next to a button reads as a
             second control, and at 9px in a border it was the loudest thing in
             a quiet toolbar. */}
-        <span className="text-faint text-[11px]">{label}</span>
+        <span className="text-faint text-micro">{label}</span>
       </span>
     </InfoTip>
   );

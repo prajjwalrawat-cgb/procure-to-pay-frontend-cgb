@@ -67,7 +67,7 @@ export function ResolveModal({
               type="button"
               onClick={() => setAction(a.key)}
               className={
-                'duration-hover rounded-sm border px-3 py-2 text-left text-[13px] font-medium transition-colors ' +
+                'duration-hover rounded-sm border px-3 py-2 text-left text-body-sm font-medium transition-colors ' +
                 (action === a.key
                   ? 'border-accent bg-accent-wash text-accent-2'
                   : 'border-line text-text hover:bg-canvas')
@@ -78,14 +78,14 @@ export function ResolveModal({
           ))}
         </div>
 
-        <label className="text-text mt-4 flex flex-col gap-1 text-[12px] font-medium">
+        <label className="text-text mt-4 flex flex-col gap-1 text-caption font-medium">
           Notes
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="Reason for this resolution…"
-            className="border-line bg-panel focus-visible:ring-accent rounded-sm border px-3 py-2 text-[13px] outline-none focus-visible:ring-2"
+            className="border-line bg-panel focus-visible:ring-accent rounded-sm border px-3 py-2 text-body-sm outline-none focus-visible:ring-2"
           />
         </label>
 

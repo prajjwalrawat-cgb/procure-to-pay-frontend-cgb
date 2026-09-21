@@ -23,9 +23,9 @@ export default function HomePage(): React.JSX.Element {
           <CardHeader>
             <CardTitle>Getting started</CardTitle>
           </CardHeader>
-          <CardContent className="text-[13px] text-muted">
+          <CardContent className="text-body-sm text-muted">
             Use the section tabs above to explore where each module will live. Press{' '}
-            <kbd className="font-numeric text-[11px] text-text">⌘K</kbd> to open the
+            <kbd className="font-numeric text-micro text-text">⌘K</kbd> to open the
             command palette.
           </CardContent>
         </Card>
@@ -39,7 +39,7 @@ export default function HomePage(): React.JSX.Element {
               </Pill>
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-[13px] text-muted">
+          <CardContent className="text-body-sm text-muted">
             Auth, tenancy, RLS, seed data, and the design system are in place. Invoices
             land in Slice 1.
           </CardContent>

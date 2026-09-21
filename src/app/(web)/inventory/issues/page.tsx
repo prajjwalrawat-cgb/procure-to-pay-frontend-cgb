@@ -189,13 +189,13 @@ function OpenIssuesBoard(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="mb-2 text-[11px] font-medium text-faint">
+      <h2 className="mb-2 text-micro font-medium text-faint">
         Open issues ({rows.length})
       </h2>
-      {error && <p className="mb-2 text-[12px] text-danger">{error}</p>}
+      {error && <p className="mb-2 text-caption text-danger">{error}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Issued</th>
               <th className="px-3 py-2 font-medium">Product</th>
@@ -256,7 +256,7 @@ function OpenIssueRow({
 
   return (
     <tr className="border-t border-line">
-      <td className="font-numeric px-3 py-2 text-[12px] text-muted">
+      <td className="font-numeric px-3 py-2 text-caption text-muted">
         {formatDate(row.txnDate)}
         {overdue && (
           <Pill variant="danger" className="ml-1.5">
@@ -266,12 +266,12 @@ function OpenIssueRow({
       </td>
       <td className="px-3 py-2">
         <div className="text-ink">{row.productName}</div>
-        <div className="font-numeric text-[11px] text-faint">{row.productCode}</div>
+        <div className="font-numeric text-micro text-faint">{row.productCode}</div>
       </td>
       <td className="px-3 py-2">
         <Pill variant="info">{row.issueDept ?? '—'}</Pill>
       </td>
-      <td className="px-3 py-2 text-[12px] text-text">{row.issuedToName ?? '—'}</td>
+      <td className="px-3 py-2 text-caption text-text">{row.issuedToName ?? '—'}</td>
       <td className="font-numeric px-3 py-2 text-right text-muted">{row.qty}</td>
       <td className="font-numeric px-3 py-2 text-right font-medium text-warn">
         {balance}
@@ -285,7 +285,7 @@ function OpenIssueRow({
             value={qty}
             onChange={(e) => setQty(e.target.value)}
             placeholder={String(balance)}
-            className="w-20 rounded-md border border-line bg-panel px-2 py-1 text-[12px] text-text outline-none"
+            className="w-20 rounded-md border border-line bg-panel px-2 py-1 text-caption text-text outline-none"
           />
           <button
             type="button"
@@ -297,7 +297,7 @@ function OpenIssueRow({
                 { onError: (e) => onError(e.message), onSuccess: () => setQty('') },
               );
             }}
-            className="text-[12px] font-medium text-accent-2 hover:underline"
+            className="text-caption font-medium text-accent-2 hover:underline"
           >
             Return
           </button>

@@ -93,14 +93,14 @@ export default function IntegrationsPage(): React.JSX.Element {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Credential vault */}
         <div className="rounded-lg border border-line bg-panel p-4">
-          <h2 className="mb-2 text-[13px] font-semibold text-ink">Credentials</h2>
+          <h2 className="mb-2 text-body-sm font-semibold text-ink">Credentials</h2>
           <div className="mb-3 space-y-1">
             {PROVIDERS.map((p) => {
               const c = configured.get(p);
               const simulated = isSimulated(p);
               return (
                 <div key={p}
-                  className="flex flex-wrap items-center justify-between gap-1.5 text-[13px]"
+                  className="flex flex-wrap items-center justify-between gap-1.5 text-body-sm"
                 >
                   <span className="font-numeric">{p}</span>
                   <span className="flex flex-wrap items-center gap-1.5">
@@ -122,7 +122,7 @@ export default function IntegrationsPage(): React.JSX.Element {
                       <Pill variant="neutral">Credential set, still simulating</Pill>
                     )}
                     {c?.label ? (
-                      <span className="text-faint text-[11px]">{c.label}</span>
+                      <span className="text-faint text-micro">{c.label}</span>
                     ) : null}
                   </span>
                 </div>
@@ -130,7 +130,7 @@ export default function IntegrationsPage(): React.JSX.Element {
             })}
           </div>
           <div className="space-y-2 border-t border-line pt-3">
-            <p className="text-[12px] text-muted">
+            <p className="text-caption text-muted">
               Set a credential (stored AES-256-GCM; never returned or logged). Only
               providers whose account belongs to this tenant appear here — OCR and inbound
               email are configured once for the whole deployment.
@@ -167,7 +167,7 @@ export default function IntegrationsPage(): React.JSX.Element {
             <button
               type="button"
               onClick={save}
-              className="rounded-md bg-ink px-3 py-1.5 text-[13px] font-medium text-white"
+              className="rounded-md bg-ink px-3 py-1.5 text-body-sm font-medium text-white"
             >
               Save credential
             </button>
@@ -177,7 +177,7 @@ export default function IntegrationsPage(): React.JSX.Element {
         {/* Usage + jobs */}
         <div className="rounded-lg border border-line bg-panel p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold text-ink">Usage — {thisMonth}</h2>
+            <h2 className="text-body-sm font-semibold text-ink">Usage — {thisMonth}</h2>
             <button
               type="button"
               onClick={async () => {
@@ -191,18 +191,18 @@ export default function IntegrationsPage(): React.JSX.Element {
                   push(e instanceof Error ? e.message : 'Failed', 'error');
                 }
               }}
-              className="rounded-md border border-line px-3 py-1.5 text-[12px] text-text hover:bg-canvas"
+              className="rounded-md border border-line px-3 py-1.5 text-caption text-text hover:bg-canvas"
             >
               Run GSTR-2B reconciliation
             </button>
           </div>
           {!usage || usage.rows.length === 0 ? (
-            <p className="py-6 text-center text-[13px] text-muted">
+            <p className="py-6 text-center text-body-sm text-muted">
               No integration calls yet.
             </p>
           ) : (
-            <table className="w-full text-[13px]">
-              <thead className="border-line border-b text-left text-[12px] text-muted">
+            <table className="w-full text-body-sm">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
                   <th className="py-1.5 font-medium">Operation</th>
                   <th className="py-1.5 text-right font-medium">Calls</th>
@@ -223,7 +223,7 @@ export default function IntegrationsPage(): React.JSX.Element {
                             subject, so it is stated as a count rather than
                             deferred to a tooltip. */}
                         {r.simulatedCalls > 0 ? (
-                          <span className="text-muted text-[11px]">
+                          <span className="text-muted text-micro">
                             {r.simulatedCalls === r.calls
                               ? 'all simulated'
                               : `${r.simulatedCalls} of ${r.calls} simulated`}
@@ -250,7 +250,7 @@ export default function IntegrationsPage(): React.JSX.Element {
         </div>
       </div>
 
-      <p className="mt-4 text-[12px] text-muted">
+      <p className="mt-4 text-caption text-muted">
         Invoice intake queues (email → invoice, manual OCR review) live under{' '}
         <Link href="/invoices/intake" className="text-accent-2">
           Invoices → Intake

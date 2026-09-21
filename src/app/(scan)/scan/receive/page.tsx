@@ -159,7 +159,7 @@ export default function ScanReceivePage(): React.JSX.Element {
 
             <Button
               type="button"
-              className="w-full py-4 text-[16px]"
+              className="w-full py-4 text-h3"
               disabled={!ready || receive.isPending}
               onClick={() => void submit()}
             >

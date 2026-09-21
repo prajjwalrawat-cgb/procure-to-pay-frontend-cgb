@@ -103,8 +103,8 @@ export default function InboxPage(): React.JSX.Element {
       />
 
       <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-line border-b text-left text-[12px] text-muted">
+        <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="w-8 p-2"></th>
               <th className="p-2 text-left">Document</th>
@@ -151,7 +151,7 @@ export default function InboxPage(): React.JSX.Element {
                   <Link href={item.href} className="text-ink font-medium hover:underline">
                     {documentTypeLabel(item.documentType)}
                   </Link>
-                  <div className="font-numeric text-faint truncate text-[11px]">
+                  <div className="font-numeric text-faint truncate text-micro">
                     {item.number}
                     {item.delegatedFromName ? ` — via ${item.delegatedFromName}` : ''}
                   </div>
@@ -167,7 +167,7 @@ export default function InboxPage(): React.JSX.Element {
                   </Pill>
                 </td>
                 <td className="p-2 text-right">
-                  <Link href={item.href} className="text-accent-2 text-[12px]">
+                  <Link href={item.href} className="text-accent-2 text-caption">
                     Open
                   </Link>
                 </td>
@@ -180,10 +180,10 @@ export default function InboxPage(): React.JSX.Element {
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
           <div className="bg-panel border-line w-full max-w-md rounded-xl border p-5 shadow-lg">
-            <h3 className="text-ink text-[15px] font-semibold">
+            <h3 className="text-ink text-h3 font-semibold">
               Approve {selected.size} document(s)?
             </h3>
-            <p className="text-muted mt-2 text-[13px]">
+            <p className="text-muted mt-2 text-body-sm">
               Each will advance to the next step or be marked approved.
             </p>
             <div className="mt-4 flex justify-end gap-2">

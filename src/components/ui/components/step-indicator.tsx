@@ -49,7 +49,7 @@ export function StepIndicator({
           <span className="flex shrink-0 items-center gap-2">
             <span
               className={cn(
-                'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold',
+                'flex h-5 w-5 items-center justify-center rounded-full text-micro font-semibold',
                 isCurrent
                   ? 'bg-accent text-white'
                   : done
@@ -61,7 +61,7 @@ export function StepIndicator({
             </span>
             <span
               className={cn(
-                'whitespace-nowrap text-[13px]',
+                'whitespace-nowrap text-body-sm',
                 isCurrent ? 'text-accent font-medium' : done ? 'text-text' : 'text-faint',
               )}
             >

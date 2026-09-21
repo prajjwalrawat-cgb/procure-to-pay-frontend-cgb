@@ -118,14 +118,14 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
                   </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-muted text-[12px]">{po.description}</TableCell>
-              <TableCell className="text-muted text-[12px]">
+              <TableCell className="text-muted text-caption">{po.description}</TableCell>
+              <TableCell className="text-muted text-caption">
                 {po.costCenter ? po.costCenter.code : '—'}
               </TableCell>
               <TableCell numeric>
                 <Fulfilment pct={po.fulfilmentPct} />
               </TableCell>
-              <TableCell numeric className="text-text text-[12px]">
+              <TableCell numeric className="text-text text-caption">
                 {formatDate(po.expectedDeliveryDate)}
               </TableCell>
               <TableCell numeric className="text-ink font-medium">

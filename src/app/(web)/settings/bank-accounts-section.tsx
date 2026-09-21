@@ -61,7 +61,7 @@ export function BankAccountsSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <div className="text-body-sm text-muted">Loading…</div>;
   }
 
   const startEdit = (a: BankAccountView): void => {
@@ -129,7 +129,7 @@ export function BankAccountsSection(): React.JSX.Element {
       }
     >
       {data.items.length === 0 && editing === null && (
-        <p className="text-[12px] text-muted">
+        <p className="text-caption text-muted">
           No bank accounts yet. A payment run needs one to debit.
         </p>
       )}
@@ -142,11 +142,11 @@ export function BankAccountsSection(): React.JSX.Element {
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-text">{a.bankName}</span>
+                <span className="text-body-sm font-medium text-text">{a.bankName}</span>
                 <Pill variant="gray">{FORMAT_LABELS[a.formatKey] ?? a.formatKey}</Pill>
                 {!a.isActive && <Pill variant="warn">Retired</Pill>}
               </div>
-              <div className="font-numeric truncate text-[11px] text-muted">
+              <div className="font-numeric truncate text-micro text-muted">
                 ••••{a.accountNoLast4}, {a.ifsc}, {a.holderName}
                 {a.dailyLimit ? `, limit ${a.dailyLimit}` : ''}
               </div>
@@ -155,7 +155,7 @@ export function BankAccountsSection(): React.JSX.Element {
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
-                  className="text-[12px] text-muted hover:text-text"
+                  className="text-caption text-muted hover:text-text"
                   disabled={setActive.isPending}
                   onClick={() =>
                     setActive.mutate(
@@ -176,7 +176,7 @@ export function BankAccountsSection(): React.JSX.Element {
                 </button>
                 <button
                   type="button"
-                  className="text-[12px] font-medium text-accent-2"
+                  className="text-caption font-medium text-accent-2"
                   onClick={() => startEdit(a)}
                 >
                   Edit
@@ -189,7 +189,7 @@ export function BankAccountsSection(): React.JSX.Element {
 
       {editing !== null && (
         <div className="mt-2 rounded-sm border border-line bg-canvas p-3">
-          <div className="mb-2 text-[13px] font-medium text-ink">
+          <div className="mb-2 text-body-sm font-medium text-ink">
             {editing === 'new' ? 'New bank account' : 'Edit bank account'}
           </div>
           <div className="grid gap-3 md:grid-cols-2">

@@ -1,13 +1,13 @@
 import type { Config } from 'tailwindcss';
 
-import { colors, radius, shadow } from './tokens';
+import { colors, radius, shadow, typeScale } from './tokens';
 
 /**
  * Shared Tailwind preset. Apps extend this so all colours, radii and shadows
  * are available as utilities. Fonts are wired per-app via next/font so the
  * self-hosted faces keep their CSS variables.
  *
- * The legacy colour names (gold, info, violet, navy) are still exported as
+ * The legacy colour names (gold, violet, navy) are still exported as
  * utilities, but they now resolve to the accent or to white chrome — see
  * tokens.ts. That is what lets ~90 screens adopt the redesign without a
  * per-screen rewrite of every className.
@@ -68,7 +68,7 @@ const preset: Partial<Config> = {
           wash: colors['danger-wash'],
         },
 
-        // ── Legacy aliases, all remapped to the accent ────────────────────
+        // ── Legacy aliases (gold, violet) remapped to the accent ──────────
         gold: {
           DEFAULT: colors.gold,
           ink: colors['gold-ink'],
@@ -76,6 +76,7 @@ const preset: Partial<Config> = {
         },
         info: {
           DEFAULT: colors.info,
+          solid: colors['info-solid'],
           bg: colors['info-bg'],
           wash: colors['info-wash'],
         },
@@ -108,13 +109,16 @@ const preset: Partial<Config> = {
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        meta: ['12px', { lineHeight: '1.45' }],
-        base: ['13px', { lineHeight: '1.5' }],
-        heading: ['19px', { lineHeight: '1.3', letterSpacing: '-0.01em' }],
+        // The type scale — see tokens.ts → typeScale.
+        ...(typeScale as unknown as Record<string, [string, Record<string, string>]>),
+        // Older names, kept as aliases onto the scale.
+        meta: typeScale.caption as unknown as [string, Record<string, string>],
+        base: typeScale.body as unknown as [string, Record<string, string>],
+        heading: typeScale.h1 as unknown as [string, Record<string, string>],
       },
       letterSpacing: {
-        heading: '-0.01em',
-        display: '-0.01em',
+        heading: '-0.015em',
+        display: '-0.02em',
       },
       transitionDuration: {
         hover: '100ms',

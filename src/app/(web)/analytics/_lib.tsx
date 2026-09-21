@@ -47,7 +47,7 @@ export function PeriodPicker({
           key={p.key}
           onClick={() => onChange(p.key)}
           className={
-            'rounded px-2.5 py-1 text-[12px] font-medium ' +
+            'rounded px-2.5 py-1 text-caption font-medium ' +
             (value === p.key
               ? 'bg-accent-wash text-accent-2'
               : 'text-muted hover:text-text')
@@ -83,7 +83,7 @@ export function AsOfBadge({
 }): React.JSX.Element {
   const label = useMemo(() => timeAgo(refreshedAt), [refreshedAt]);
   return (
-    <span className="text-faint inline-flex items-center gap-1 text-[11px]">
+    <span className="text-faint inline-flex items-center gap-1 text-micro">
       {refreshedAt ? `Updated ${label}` : 'Live'}
       {onRefresh && (
         <button

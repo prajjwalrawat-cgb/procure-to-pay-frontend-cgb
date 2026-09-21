@@ -245,10 +245,10 @@ export default function NewSpotBuyPage(): React.JSX.Element {
   };
 
   return (
-    <div className="max-w-4xl pb-8">
+    <div className="mx-auto w-full max-w-4xl pb-8">
       <Link
         href="/purchase-orders"
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
       </Link>
@@ -309,7 +309,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-faint">
+                <p className="mt-1 text-micro text-faint">
                   Decides the GSTIN on the PO and the place of supply — CGST+SGST vs IGST
                   — even when the goods ship elsewhere.
                 </p>
@@ -364,7 +364,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             {lines.map((l, i) => (
               <div key={l.key} className="rounded-lg border border-line bg-canvas/40 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-faint">
+                  <span className="text-micro font-semibold text-faint">
                     Line {i + 1}
                   </span>
                   {lines.length > 1 && (
@@ -434,7 +434,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                     />
                   </Small>
                 </div>
-                <div className="font-numeric mt-2 text-right text-[13px] font-semibold text-ink">
+                <div className="font-numeric mt-2 text-right text-body-sm font-semibold text-ink">
                   {inr(lineTotal(l).toFixed(2))}
                 </div>
               </div>
@@ -447,7 +447,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               >
                 <Plus className="h-3.5 w-3.5" /> Add line
               </Button>
-              <span className="font-numeric ml-auto text-[14px] font-semibold text-ink">
+              <span className="font-numeric ml-auto text-body font-semibold text-ink">
                 PO total {inr(total.toFixed(2))}
               </span>
             </div>
@@ -456,7 +456,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
         {step === 2 && (
           <div className="flex flex-col gap-3">
-            <p className="text-[13px] text-muted">
+            <p className="text-body-sm text-muted">
               Attach the vendor&rsquo;s written quote. With no requisition behind this
               order, it is the only evidence an approver has for the price — and it is
               never shown to the vendor portal.
@@ -464,10 +464,10 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             {!quote ? (
               <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-line py-10 text-center hover:bg-canvas">
                 <Paperclip className="h-6 w-6 text-faint" />
-                <span className="text-[13px] font-medium text-text">
+                <span className="text-body-sm font-medium text-text">
                   Choose the quote file
                 </span>
-                <span className="text-[11px] text-faint">PDF, image or spreadsheet</span>
+                <span className="text-micro text-faint">PDF, image or spreadsheet</span>
                 <input
                   type="file"
                   className="hidden"
@@ -494,13 +494,13 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-medium text-ink">
+                      <div className="truncate text-body-sm font-medium text-ink">
                         {quote.name}
                       </div>
-                      <div className="font-numeric text-[11px] text-faint">
+                      <div className="font-numeric text-micro text-faint">
                         {fileSize(quote.size)}, {quote.type || 'unknown type'}
                       </div>
-                      <div className="mt-2 flex items-center gap-3 text-[12px]">
+                      <div className="mt-2 flex items-center gap-3 text-caption">
                         {quoteUrl && (
                           <a
                             href={quoteUrl}
@@ -536,7 +536,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                       className="mt-3 h-80 w-full rounded-md border border-line"
                       aria-label={`Preview of ${quote.name}`}
                     >
-                      <p className="p-3 text-[12px] text-muted">
+                      <p className="p-3 text-caption text-muted">
                         This browser cannot preview PDFs inline — use{' '}
                         <a
                           href={quoteUrl}
@@ -580,7 +580,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         )}
 
         {step === 4 && (
-          <div className="flex flex-col gap-3 text-[13px]">
+          <div className="flex flex-col gap-3 text-body-sm">
             <Row
               label="Vendor"
               value={vendors.find((v) => v.id === vendorId)?.name ?? '—'}
@@ -625,7 +625,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               value={`${chosen.length} (${chosen.filter((t) => !t.isFromLibrary).length} special)`}
             />
             {!quote && (
-              <p className="text-[12px] text-warn">
+              <p className="text-caption text-warn">
                 No quote attached. The approver will have nothing to check this price
                 against — you can still add it on the PO afterwards.
               </p>
@@ -673,7 +673,7 @@ function Labelled({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[12px] font-medium text-muted">
+      <span className="text-caption font-medium text-muted">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
@@ -691,7 +691,7 @@ function Small({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-0.5">
-      <span className="text-[11px] text-faint">{label}</span>
+      <span className="text-micro text-faint">{label}</span>
       {children}
     </label>
   );
