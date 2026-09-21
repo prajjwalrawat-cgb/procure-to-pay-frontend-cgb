@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Input, PageHeader } from '@/components/ui';
-import { Money, type VendorPoOption } from '@/lib/shared';
+import { Money, type InvoiceDocumentKind, type VendorPoOption } from '@/lib/shared';
 import { percentToRate, rateToPercent } from '@/lib/rate';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -71,6 +71,8 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
   const [po, setPo] = useState<VendorPoOption | null>(null);
   const [lines, setLines] = useState<LineDraft[]>([]);
+  const [documentKind, setDocumentKind] = useState<InvoiceDocumentKind>('TAX_INVOICE');
+  const isProforma = documentKind === 'PROFORMA';
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(today());
   const [irn, setIrn] = useState('');
@@ -145,6 +147,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
     vendorInvoiceRef: invoiceNumber.trim(),
     invoiceDate: new Date(`${invoiceDate}T00:00:00.000Z`).toISOString(),
     s3Key,
+    documentKind,
     irn: irn || null,
     ewaybillNo: ewaybill || null,
     lines: lines.map((l) => ({
@@ -171,7 +174,11 @@ export default function SubmitInvoicePage(): React.JSX.Element {
   const onSubmit = async (): Promise<void> => {
     if (!po) return;
     if (!canSubmit) {
-      setError('Add an invoice number, date and tax invoice before submitting.');
+      setError(
+        isProforma
+          ? 'Add the PI number, date and the proforma document before submitting.'
+          : 'Add an invoice number, date and tax invoice before submitting.',
+      );
       return;
     }
     setError(null);
@@ -184,7 +191,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       s3Key = await uploadInvoiceFile(taxFiles[0]!);
     } catch (e) {
       setUploading(false);
-      setError((e as Error).message || 'Could not upload the tax invoice.');
+      setError((e as Error).message || 'Could not upload the document.');
       return;
     }
     setUploading(false);
@@ -239,15 +246,55 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
         {/* Section 2 — invoice details */}
         <Section title="Invoice details">
+          {/* A proforma collects an advance before supply. Its tax invoice is
+              uploaded onto the same invoice later, from My invoices. */}
+          <fieldset className="mb-4">
+            <legend className="mb-1.5 text-[12px] font-medium text-text">
+              What are you submitting?
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['TAX_INVOICE', 'Tax invoice'],
+                  ['PROFORMA', 'Proforma invoice (PI)'],
+                ] as const
+              ).map(([kind, text]) => (
+                <label
+                  key={kind}
+                  className={
+                    'flex cursor-pointer items-center gap-2 rounded-sm border px-3 py-1.5 text-[13px] ' +
+                    (documentKind === kind
+                      ? 'border-accent bg-accent-wash text-ink'
+                      : 'border-line text-text')
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="documentKind"
+                    value={kind}
+                    checked={documentKind === kind}
+                    onChange={() => setDocumentKind(kind)}
+                  />
+                  {text}
+                </label>
+              ))}
+            </div>
+            {/* {isProforma && (
+              <p className="mt-2 text-[12px] text-muted">
+                The buyer can pay an advance against the proforma. The balance is paid
+                once you upload the tax invoice for it from My invoices.
+              </p>
+            )} */}
+          </fieldset>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Labeled label="Invoice number" required>
+            <Labeled label={isProforma ? 'PI number' : 'Invoice number'} required>
               <Input
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 placeholder="e.g. PES/2026/0042"
               />
             </Labeled>
-            <Labeled label="Invoice date" required>
+            <Labeled label={isProforma ? 'PI date' : 'Invoice date'} required>
               <Input
                 type="date"
                 value={invoiceDate}
@@ -385,9 +432,14 @@ export default function SubmitInvoicePage(): React.JSX.Element {
           <div className="flex flex-col gap-4">
             <div>
               <p className="mb-1.5 text-[12px] font-medium text-text">
-                Tax invoice <span className="text-danger">*</span>
+                {isProforma ? 'Proforma invoice' : 'Tax invoice'}{' '}
+                <span className="text-danger">*</span>
               </p>
-              <FileDrop label="Tax invoice" files={taxFiles} onChange={setTaxFiles} />
+              <FileDrop
+                label={isProforma ? 'Proforma invoice' : 'Tax invoice'}
+                files={taxFiles}
+                onChange={setTaxFiles}
+              />
             </div>
             <div>
               <p className="mb-1.5 text-[12px] font-medium text-text">
@@ -433,7 +485,9 @@ export default function SubmitInvoicePage(): React.JSX.Element {
               ? 'Uploading…'
               : submit.isPending
                 ? 'Submitting…'
-                : 'Submit invoice'}
+                : isProforma
+                  ? 'Submit proforma'
+                  : 'Submit invoice'}
           </Button>
         </div>
       </div>

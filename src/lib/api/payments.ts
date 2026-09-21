@@ -152,6 +152,19 @@ export function useRemovePaymentItem(runId: string) {
   });
 }
 
+/** Pay part of an invoice in this run; the rest stays payable for a later one. */
+export function useSetPaymentItemAmount(runId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { invoiceId: string; amount: string }) =>
+      apiFetch(`/payment-runs/${runId}/items/${vars.invoiceId}/amount`, {
+        method: 'PUT',
+        body: JSON.stringify({ amount: vars.amount }),
+      }),
+    onSuccess: () => invalidateDetail(qc, runId),
+  });
+}
+
 export function useReorderItems(runId: string) {
   const qc = useQueryClient();
   return useMutation({

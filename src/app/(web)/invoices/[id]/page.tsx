@@ -2,6 +2,10 @@
 
 import {
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   PageHeader,
   Pill,
   SubNav,
@@ -11,22 +15,31 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import type { InvoiceExceptionView } from '@/lib/shared';
+import {
+  PERMISSIONS,
+  type InvoiceExceptionView,
+  type InvoicePaymentInfo,
+} from '@/lib/shared';
 
 import { DocumentLedger } from '@/components/document-ledger';
 import { EntityRef } from '@/components/entity-ref';
+import { RecordPaymentModal } from '@/components/invoices/record-payment-modal';
 import { ResolveModal } from '@/components/invoices/resolve-modal';
+import { TaxInvoiceForm } from '@/components/invoices/tax-invoice-form';
 import { useDecide } from '@/lib/api/inbox';
 import {
   useAddComment,
+  useAttachTaxInvoice,
   useInvoice,
   useResolveAndRoute,
   useRetryOcr,
+  useSetDocumentKind,
   // useRunMatch,
 } from '@/lib/api/invoices';
 import { exceptionLabel, impactLabel } from '@/lib/exception-display';
 import { formatDate, formatDateTime, inr, inrCompact, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
 import { COMPLIANCE_PROVIDER, useProviderLiveness } from '@/lib/integration-status';
+import { useHasPermission } from '@/lib/permissions';
 import { useToastStore } from '@/store/toast-store';
 
 export default function InvoiceDetailPage(): React.JSX.Element {
@@ -48,16 +61,27 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // No `simulated` flag rides on invoice compliance, so provenance is inferred
   // from whether live credentials exist for the provider behind each field.
   const { isSimulated } = useProviderLiveness();
+  const canPay = useHasPermission(PERMISSIONS.INVOICE_PAY);
+  const canResolve = useHasPermission(PERMISSIONS.INVOICE_RESOLVE_EXCEPTION);
+  const canIntake = useHasPermission(PERMISSIONS.INVOICE_INTAKE_MANAGE);
+  const [recording, setRecording] = useState(false);
+  const [attachingTax, setAttachingTax] = useState(false);
+  const setKind = useSetDocumentKind(id);
+  const attachTax = useAttachTaxInvoice(id);
 
   if (isLoading || !data) {
     return <div className="p-6 text-[13px] text-muted">Loading invoice…</div>;
   }
 
-  const openExceptions = data.exceptions.filter((e) => !e.resolved);
+  // Exceptions raised on a proforma since replaced by its tax invoice are kept
+  // for the record, but they describe a different document.
+  const currentExceptions = data.exceptions.filter((e) => !e.superseded);
+  const proformaExceptions = data.exceptions.filter((e) => e.superseded);
+  const openExceptions = currentExceptions.filter((e) => !e.resolved);
   // An exception someone waved through is not the same as one that never
   // fired. "0 open" reads identically for a clean match and for an overridden
   // HIGH GRN_MISSING, so overrides are counted and shown separately.
-  const overridden = data.exceptions.filter(
+  const overridden = currentExceptions.filter(
     (e) => e.resolved && (e.severity === 'HIGH' || e.severity === 'CRITICAL'),
   );
   // An empty exception list means "clean match" only once a match has run. While
@@ -68,11 +92,41 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // Mirrors the server guard: past these two, lines exist and may have been
   // corrected by hand, and re-extracting would overwrite that work.
   const retryable = data.status === 'OCR_PENDING' || data.status === 'OCR_FAILED';
+  // A payment made outside a run can be recorded against an approved invoice
+  // with something still owing — unless a run already holds it, in which case
+  // that run is committed to paying its amount.
+  const partlyPaid = Number(data.amountPaid) > 0;
+  // Approved means cleared: the status alone can say APPROVED while an
+  // exception is still open or an approver has yet to decide (mirrors the API).
+  const payable =
+    (data.status === 'APPROVED' || data.status === 'PARTIALLY_PAID') &&
+    Number(data.amountOutstanding) > 0 &&
+    openExceptions.length === 0 &&
+    !data.liveApprovalChain.some((s) => s.decision === 'PENDING') &&
+    !data.paymentBlockedReason;
+  const isProforma = data.documentKind === 'PROFORMA';
+  // Mirrors TAX_INVOICE_REFUSED on the server.
+  const taxInvoiceWait = TAX_INVOICE_WAIT[data.status];
+  // Routing belongs to the pre-approval pipeline. Past it the button only ever
+  // failed; it used to show on paid invoices too.
+  const routable = PRE_APPROVAL.includes(data.status);
+  const remainingTds = Math.max(
+    Number(data.amounts.tdsAmount) -
+      data.payments.reduce((sum, p) => sum + Number(p.tds), 0),
+    0,
+  ).toFixed(2);
 
   const onRoute = (): void => {
     route.mutate(undefined, {
-      onSuccess: () => {
-        toast('Routed for approval', 'success');
+      onSuccess: (res) => {
+        toast(
+          res.outcome === 'APPROVAL_CARRIED_OVER'
+            ? 'Tax invoice confirmed. The proforma approval still holds.'
+            : res.reasons.length > 0
+              ? `Sent back for approval: ${res.reasons[0]}`
+              : 'Routed for approval',
+          'success',
+        );
         router.push('/invoices');
       },
       // Surface the API's reason — "resolve the exceptions" and "the match has
@@ -120,6 +174,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             <Pill variant={statusVariant(data.status)} dot>
               {statusLabel(data.status)}
             </Pill>
+            {isProforma && <Pill variant="warn">Proforma</Pill>}
             {data.status === 'MATCH_EXCEPTION' && (
               <span className="text-[11px] font-semibold text-danger">
                 Match exception
@@ -135,6 +190,13 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             {' — '}Ref <span className="font-numeric">{data.vendorInvoiceRef}</span>,
             source{' '}
             {data.source}
+            {data.proformaRef && (
+              <>
+                {' '}
+                · Replaces proforma{' '}
+                <span className="font-numeric">{data.proformaRef}</span>
+              </>
+            )}
           </>
         }
       />
@@ -157,6 +219,42 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           </span>
         ))}
       </div>
+
+      {isProforma && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warn/30 bg-warn-wash px-4 py-3">
+          <div className="min-w-0 text-[12px] text-warn">
+            <div className="font-semibold">Proforma invoice (PI)</div>
+            <div className="mt-0.5">
+              {Number(data.amountPaid) > 0
+                ? `The advance of ${inr(data.amountPaid)} is paid. The balance of ${inr(
+                    data.amountOutstanding,
+                  )} is blocked until the tax invoice is uploaded here.`
+                : 'An advance can be paid against it. Anything after that waits for the tax invoice.'}
+              {taxInvoiceWait && ` ${taxInvoiceWait}`}
+            </div>
+          </div>
+          {(canIntake || canResolve) && (
+            <Button
+              variant="accent"
+              size="sm"
+              disabled={Boolean(taxInvoiceWait)}
+              onClick={() => setAttachingTax(true)}
+            >
+              Upload tax invoice
+            </Button>
+          )}
+        </div>
+      )}
+      {data.proformaRef && data.priorApproval && routable && (
+        <div className="mb-5 rounded-lg border border-info/30 bg-info-wash px-4 py-3 text-[12px] text-info">
+          The tax invoice replaced proforma{' '}
+          <span className="font-numeric">{data.proformaRef}</span>
+          {data.proformaGrossAmount && <> ({inr(data.proformaGrossAmount)})</>}, which
+          was already approved. Once its exceptions are cleared, confirming it keeps that
+          approval, unless the total went up, it is less than what has been paid, or it
+          comes from a different supplier. Then it goes back to the approver.
+        </div>
+      )}
 
       <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-5">
@@ -258,7 +356,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               </div>
             )}
             {openExceptions.length === 0 &&
-              (matched ? (
+              (!PRE_MATCH.includes(data.status) ? (
                 overridden.length > 0 ? (
                   // Not "all clear": a HIGH/CRITICAL was overridden by a human, not
                   // satisfied by the data. The approver is the one who has to weigh
@@ -269,11 +367,11 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     cleared by matching data. Review the override reason below before
                     approving.
                   </div>
-                ) : (
+                ) : matched ? (
                   <div className="rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
                     All exceptions resolved. Ready to route for approval.
                   </div>
-                )
+                ) : null
               ) : (
                 <div className="rounded-sm bg-info-wash px-3 py-2 text-[12px] text-info">
                   <div>
@@ -315,7 +413,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 </div>
               ))}
             <div className="flex flex-col gap-2">
-              {data.exceptions.map((e) => (
+              {currentExceptions.map((e) => (
                 <div
                   key={e.id}
                   data-testid={`exc-${e.type}`}
@@ -390,6 +488,27 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 </div>
               ))}
             </div>
+            {proformaExceptions.length > 0 && (
+              <details className="mt-3 text-[12px]">
+                <summary className="cursor-pointer text-muted">
+                  {proformaExceptions.length} raised on proforma {data.proformaRef} (no
+                  longer apply)
+                </summary>
+                <ul className="mt-2 flex flex-col gap-1.5 border-l border-line pl-4 text-muted">
+                  {proformaExceptions.map((e) => (
+                    <li key={e.id}>
+                      <span className="font-medium text-text">{exceptionLabel(e.type)}</span>
+                      {' · '}
+                      {e.resolved
+                        ? `overridden${e.resolvedByName ? ` by ${e.resolvedByName}` : ''}`
+                        : 'was open'}
+                      {' · '}
+                      {e.message}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </section>
 
           {/* Approval routing — live (Slice 2) */}
@@ -481,30 +600,13 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 ))}
               </ul>
             ) : (
-              <div className="mb-3">
-                {data.payment ? (
-                  <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
-                    <div className="flex items-center justify-between">
-                      <Link
-                        href={`/payment-runs/${data.payment.paymentRunId}`}
-                        className="font-numeric font-medium text-accent-2"
-                      >
-                        {data.payment.paymentRunNumber}
-                      </Link>
-                      {data.payment.isStub && <Pill variant="warn">Stub UTR</Pill>}
-                    </div>
-                    <dl className="mt-2 flex flex-col gap-1">
-                      <Row label="UTR" value={data.payment.utr} />
-                      <Row label="Net paid" value={inr(data.payment.net)} />
-                      <Row
-                        label="Paid on"
-                        value={formatDateTime(data.payment.paidAt)}
-                      />
-                    </dl>
-                  </div>
+              <div className="mb-3 flex flex-col gap-2">
+                {data.payments.length > 0 ? (
+                  data.payments.map((p) => <PaymentCard key={p.id} payment={p} />)
                 ) : (
                   <div className="text-[12px] text-muted">
-                    Not yet paid. Payments appear here once a run is submitted.
+                    Not yet paid. Payments appear here once a run is confirmed by the
+                    bank, or when a payment made outside a run is recorded.
                   </div>
                 )}
               </div>
@@ -553,7 +655,42 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               <Row label="TDS 194Q" value={`- ${inr(data.amounts.tdsAmount)}`} />
               <div className="my-1 border-t border-line" />
               <Row label="Net payable" value={inr(data.amounts.netPayable)} strong />
+              {partlyPaid && (
+                <>
+                  <Row label="Paid so far" value={`- ${inr(data.amountPaid)}`} />
+                  <Row label="Outstanding" value={inr(data.amountOutstanding)} strong />
+                </>
+              )}
             </dl>
+            {data.paymentBlockedReason && (
+              <p className="mt-3 rounded-sm bg-warn-wash px-2.5 py-2 text-[11px] text-warn">
+                {data.paymentBlockedReason}
+              </p>
+            )}
+            {data.activePaymentRun ? (
+              <p className="mt-3 text-[11px] text-muted">
+                In payment run{' '}
+                <Link
+                  href={`/payment-runs/${data.activePaymentRun.id}`}
+                  className="font-numeric text-accent-2"
+                >
+                  {data.activePaymentRun.number}
+                </Link>
+                . Change what it pays there.
+              </p>
+            ) : (
+              payable &&
+              canPay && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => setRecording(true)}
+                >
+                  Record payment
+                </Button>
+              )
+            )}
           </div>
 
           {data.payment && (
@@ -565,12 +702,21 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               <div className="font-numeric mt-1 text-[13px] text-ink">
                 {data.payment.utr}
               </div>
-              <Link
-                href={`/payment-runs/${data.payment.paymentRunId}`}
-                className="mt-1 inline-block text-[11px] text-accent-2"
-              >
-                {data.payment.paymentRunNumber} →
-              </Link>
+              {data.payment.paymentRunId ? (
+                <Link
+                  href={`/payment-runs/${data.payment.paymentRunId}`}
+                  className="mt-1 inline-block text-[11px] text-accent-2"
+                >
+                  {data.payment.paymentRunNumber} →
+                </Link>
+              ) : (
+                <div className="mt-1 text-[11px] text-accent-2">Recorded manually</div>
+              )}
+              {data.payments.length > 1 && (
+                <div className="mt-1 text-[11px] text-muted">
+                  {data.payments.length} payments — see the Payments tab
+                </div>
+              )}
             </div>
           )}
 
@@ -595,6 +741,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             <div className="mb-2 text-[11px] text-faint">
               Compliance
             </div>
+            {isProforma && (
+              <p className="mb-2 text-[11px] text-muted">
+                A proforma is not a GST document, so it is not reconciled against
+                GSTR-2B. The tax invoice will be.
+              </p>
+            )}
             <dl className="flex flex-col gap-1.5 text-[12px]">
               <Row
                 label="GSTIN"
@@ -695,10 +847,33 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                   rel="noreferrer"
                   className="text-accent-2"
                 >
-                  Attachment (PDF)
+                  {attachmentLabel(a.docType, isProforma)}
                 </a>
               ))}
             </div>
+            {/* Only until a tax invoice has replaced a PI: after that the
+                record holds a real tax invoice and the answer is settled. */}
+            {canResolve && !data.proformaRef && data.status !== 'REJECTED' && (
+              <button
+                type="button"
+                disabled={setKind.isPending}
+                onClick={() =>
+                  setKind.mutate(isProforma ? 'TAX_INVOICE' : 'PROFORMA', {
+                    onSuccess: () =>
+                      toast(
+                        isProforma ? 'Marked as a tax invoice' : 'Marked as a proforma',
+                        'success',
+                      ),
+                    onError: (e) => toast((e as Error).message, 'error'),
+                  })
+                }
+                className="mt-3 text-[11px] text-muted underline decoration-dotted hover:text-text"
+              >
+                {isProforma
+                  ? 'This is actually a tax invoice'
+                  : 'The attachment is a proforma (PI)'}
+              </button>
+            )}
           </div>
 
           <div className="rounded-lg border border-line bg-panel p-4">
@@ -766,7 +941,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                   'the current approver'}
               </div>
             )
-          ) : (
+          ) : routable ? (
             <Button
               variant="primary"
               className="ml-auto"
@@ -776,9 +951,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 matched ? undefined : 'The 3-way match has not run on this invoice yet'
               }
             >
-              Resolve &amp; route for approval
+              {data.priorApproval ? 'Confirm tax invoice' : 'Resolve & route for approval'}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -787,6 +962,86 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         exception={resolving}
         onClose={() => setResolving(null)}
       />
+      <Dialog open={attachingTax} onOpenChange={(o) => !o && setAttachingTax(false)}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogTitle>Upload tax invoice</DialogTitle>
+          <DialogDescription>
+            Replaces proforma {data.vendorInvoiceRef} on {data.number}. The proforma stays
+            attached, payments already made stay recorded, and the tax invoice goes
+            through OCR and the 3-way match again.
+          </DialogDescription>
+          <div className="mt-4">
+            {attachingTax && (
+              <TaxInvoiceForm
+                proformaRef={data.vendorInvoiceRef}
+                proformaTotal={data.amounts.grossAmount}
+                seedLines={data.lines}
+                pending={attachTax.isPending}
+                onCancel={() => setAttachingTax(false)}
+                onSubmit={(file, body) =>
+                  attachTax.mutate(
+                    { file, body },
+                    {
+                      onSuccess: () => {
+                        setAttachingTax(false);
+                        toast('Tax invoice uploaded. Reading it now.', 'success');
+                      },
+                      onError: (e) =>
+                        toast(
+                          (e as Error).message || 'Could not upload the tax invoice',
+                          'error',
+                        ),
+                    },
+                  )
+                }
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Mounted only while open, so it starts from the current balance. */}
+      {recording && (
+        <RecordPaymentModal
+          open
+          invoiceId={id}
+          invoiceNumber={data.number}
+          grossAmount={data.amounts.grossAmount}
+          outstanding={data.amountOutstanding}
+          remainingTds={remainingTds}
+          onClose={() => setRecording(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function PaymentCard({ payment: p }: { payment: InvoicePaymentInfo }): React.JSX.Element {
+  return (
+    <div className="rounded-lg border border-line bg-panel p-3 text-[12px]">
+      <div className="flex items-center justify-between">
+        {p.paymentRunId ? (
+          <Link
+            href={`/payment-runs/${p.paymentRunId}`}
+            className="font-numeric font-medium text-accent-2"
+          >
+            {p.paymentRunNumber}
+          </Link>
+        ) : (
+          <span className="font-medium text-text">
+            Recorded manually{p.mode ? ` · ${p.mode}` : ''}
+          </span>
+        )}
+        {p.isStub && <Pill variant="warn">Stub UTR</Pill>}
+      </div>
+      <dl className="mt-2 flex flex-col gap-1">
+        <Row label={p.mode === 'CHEQUE' ? 'Cheque no.' : 'UTR'} value={p.utr} />
+        <Row label="Settled" value={inr(p.gross)} />
+        {Number(p.tds) > 0 && <Row label="TDS withheld" value={inr(p.tds)} />}
+        <Row label="Net paid" value={inr(p.net)} />
+        <Row label="Paid on" value={new Date(p.paidAt).toLocaleDateString('en-IN')} />
+        {p.recordedByName && <Row label="Recorded by" value={p.recordedByName} />}
+      </dl>
+      {p.note && <p className="mt-1.5 italic text-muted">“{p.note}”</p>}
     </div>
   );
 }
@@ -888,6 +1143,38 @@ function remainingOn(l: { qtyOrdered: string; qtyInvoicedElsewhere: string }): s
  */
 function receivedNothing(poLines: { qtyReceived: string }[]): boolean {
   return poLines.length > 0 && poLines.every((l) => Number(l.qtyReceived) <= 0);
+}
+
+/**
+ * Statuses where the document has not been read and matched yet. Only here
+ * does "no exceptions" mean "nothing was checked"; past approval it means the
+ * match ran and was cleared, and saying otherwise misleads the reviewer.
+ */
+const PRE_MATCH = [
+  'RECEIVED',
+  'OCR_PENDING',
+  'OCR_FAILED',
+  'OCR_LOW_CONFIDENCE',
+  'PENDING_VENDOR_MATCH',
+];
+
+/** Statuses before approval, where routing (or confirming a tax invoice) applies. */
+const PRE_APPROVAL = ['RECEIVED', 'OCR_DONE', 'MATCH_EXCEPTION'];
+
+/** Where a proforma cannot take its tax invoice yet. Mirrors the API. */
+const TAX_INVOICE_WAIT: Record<string, string> = {
+  OCR_PENDING: 'Wait for the proforma to finish being read first.',
+  AWAITING_APPROVAL: 'Wait for the approver to decide first.',
+  SCHEDULED: 'Wait for the payment run holding it to settle first.',
+  HELD: 'Release the hold first.',
+  REJECTED: 'It was rejected. Submit the tax invoice as a new invoice.',
+};
+
+function attachmentLabel(docType: string, isProforma: boolean): string {
+  if (docType === 'PROFORMA_PDF') return 'Proforma (PDF, replaced)';
+  if (docType === 'INVOICE_PDF') return isProforma ? 'Proforma (PDF)' : 'Tax invoice (PDF)';
+  if (docType === 'EMAIL_BODY') return 'Original email';
+  return 'Attachment';
 }
 
 function complianceVariant(status: string): 'success' | 'danger' | 'warn' | 'neutral' {

@@ -70,6 +70,7 @@ const STATUS_LABELS: Record<string, string> = {
   AWAITING_APPROVAL: 'Awaiting approval',
   APPROVED: 'Approved',
   SCHEDULED: 'Scheduled',
+  PARTIALLY_PAID: 'Partially paid',
   PAID: 'Paid',
   HELD: 'Held',
   REJECTED: 'Rejected',
