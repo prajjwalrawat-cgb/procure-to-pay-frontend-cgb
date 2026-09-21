@@ -27,6 +27,7 @@ export function AttentionTile({
   tone = 'neutral',
   isLoading,
   error,
+  compact,
 }: {
   label: string;
   value: number | undefined;
@@ -35,6 +36,8 @@ export function AttentionTile({
   tone?: Tone;
   isLoading?: boolean;
   error?: unknown;
+  /** Denser tile for the home command center, where eight sit in one row. */
+  compact?: boolean;
 }): React.JSX.Element | null {
   // Permissions changed under us: the tile is not this user's business.
   if (isForbidden(error)) return null;
@@ -42,21 +45,30 @@ export function AttentionTile({
   return (
     <Link
       href={href}
-      className="border-line bg-panel shadow-xs hover:bg-canvas duration-hover group flex flex-col rounded-lg border p-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className={cn(
+        'border-line bg-panel shadow-xs hover:bg-canvas duration-hover group flex min-w-0 flex-col rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        compact ? 'p-3' : 'p-4',
+      )}
     >
-      <span className="text-muted flex items-center gap-1.5 text-caption font-medium">
+      <span className="text-muted flex items-start gap-1.5 text-caption font-medium">
         <span
           aria-hidden
-          className={cn('h-1.5 w-1.5 shrink-0 rounded-full', TONE_DOT[zero ? 'neutral' : tone])}
+          className={cn(
+            'mt-1 shrink-0 rounded-full',
+            compact ? 'h-2 w-2' : 'h-1.5 w-1.5',
+            TONE_DOT[zero ? 'neutral' : tone],
+          )}
         />
-        {label}
+        {/* Compact tiles reserve two label lines so the counts align across the row. */}
+        <span className={cn('min-w-0', compact && 'line-clamp-2 sm:min-h-[2lh]')}>{label}</span>
       </span>
       {isLoading ? (
-        <Skeleton className="mt-2 h-7 w-12" />
+        <Skeleton className={cn('mt-2', compact ? 'h-6 w-10' : 'h-7 w-12')} />
       ) : (
         <span
           className={cn(
-            'font-numeric mt-1.5 text-display font-semibold',
+            'font-numeric mt-1.5 font-semibold',
+            compact ? 'text-h1' : 'text-display',
             zero || error ? 'text-faint' : 'text-ink',
           )}
         >
@@ -64,7 +76,7 @@ export function AttentionTile({
         </span>
       )}
       <span className="text-muted mt-1 flex items-end justify-between gap-2 text-caption">
-        <span className="min-w-0">
+        <span className={cn('min-w-0', compact && 'truncate')}>
           {error ? 'Couldn’t load' : isLoading ? ' ' : footnote}
         </span>
         <ArrowRight
