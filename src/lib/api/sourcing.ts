@@ -19,6 +19,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type RfqTab =
   'active' | 'draft' | 'my_action' | 'evaluation' | 'awarded' | 'cancelled';
@@ -36,6 +37,14 @@ export function useRfqList(tab: RfqTab): UseQueryResult<RfqListResponse> {
   return useQuery({
     queryKey: sourcingKeys.list(tab),
     queryFn: () => apiFetch<RfqListResponse>(`/rfq?tab=${tab}&limit=50`),
+  });
+}
+
+/** Every RFQ in a tab (see useAllRmas) — the list sorts and filters client-side. */
+export function useAllRfqs(tab: RfqTab): UseQueryResult<AllPages<RfqListResponse>> {
+  return useQuery({
+    queryKey: [...sourcingKeys.list(tab), 'all-pages'],
+    queryFn: () => fetchAllPages<RfqListResponse>(`/rfq?tab=${tab}`),
   });
 }
 

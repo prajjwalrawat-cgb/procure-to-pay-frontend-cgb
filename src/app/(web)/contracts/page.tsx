@@ -1,6 +1,6 @@
 'use client';
 
-import type { ContractTab } from '@/lib/shared';
+import type { ContractListItem, ContractTab } from '@/lib/shared';
 import {
   Badge,
   Button,
@@ -11,15 +11,23 @@ import {
   CardMeta,
   CardTitle,
   DataState,
+  FilterBar,
+  Input,
   PageHeader,
+  Select,
+  SkeletonCards,
   StatusText,
   SubNav,
+  matchesFilters,
+  optionsFrom,
+  useFilters,
+  type FilterDef,
 } from '@/components/ui';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import { useContracts } from '@/lib/api/contracts';
+import { useAllContracts } from '@/lib/api/contracts';
 import { formatDate, inr, statusLabel, statusVariant } from '@/lib/format';
 
 const TABS: { key: ContractTab; label: string }[] = [
@@ -38,6 +46,47 @@ const TYPE_LABEL: Record<string, string> = {
   SERVICE_AGREEMENT: 'Service agreement',
 };
 
+type Cmp = (a: ContractListItem, b: ContractListItem) => number;
+const cmpBy =
+  (get: (c: ContractListItem) => string | number, dir: 1 | -1): Cmp =>
+  (a, b) => {
+    const x = get(a);
+    const y = get(b);
+    return (x < y ? -1 : x > y ? 1 : 0) * dir;
+  };
+
+/**
+ * A card grid has no column headers to click, so sorting is a picker with a
+ * fixed, useful direction per field. Expiry first: "what runs out next" is the
+ * question a contract list is usually opened to answer.
+ */
+const SORTS = {
+  expiry: { label: 'Expiry — soonest', cmp: cmpBy((c) => c.validityEnd, 1) },
+  value: { label: 'Committed value — highest', cmp: cmpBy((c) => Number(c.totalValueEstimate), -1) },
+  start: { label: 'Newest start date', cmp: cmpBy((c) => c.validityStart, -1) },
+  title: { label: 'Title A–Z', cmp: (a: ContractListItem, b: ContractListItem) => a.title.localeCompare(b.title) },
+} satisfies Record<string, { label: string; cmp: Cmp }>;
+type SortKey = keyof typeof SORTS;
+
+function filterValue(c: ContractListItem, key: string): string | number | null {
+  switch (key) {
+    case 'vendor':
+      return c.vendor.id;
+    case 'type':
+      return c.contractType;
+    case 'category':
+      return c.category;
+    case 'status':
+      return c.status;
+    case 'value':
+      return Number(c.totalValueEstimate);
+    case 'validTo':
+      return c.validityEnd;
+    default:
+      return null;
+  }
+}
+
 /**
  * Contracts as a card grid.
  *
@@ -51,8 +100,72 @@ const TYPE_LABEL: Record<string, string> = {
  */
 export default function ContractsPage(): React.JSX.Element {
   const [tab, setTab] = useState<ContractTab>('active');
-  const { data, isLoading, error, refetch } = useContracts(tab);
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('expiry');
+  const filters = useFilters();
+  const { data, isLoading, error, refetch } = useAllContracts(tab);
   const counts = data?.counts;
+
+  const items = useMemo(() => data?.items ?? [], [data]);
+
+  const defs = useMemo<FilterDef[]>(
+    () => [
+      {
+        key: 'vendor',
+        label: 'Vendor',
+        type: 'select',
+        options: optionsFrom(items, (c) => ({ value: c.vendor.id, label: c.vendor.name })),
+      },
+      {
+        key: 'type',
+        label: 'Contract type',
+        type: 'select',
+        options: optionsFrom(items, (c) => ({
+          value: c.contractType,
+          label: TYPE_LABEL[c.contractType] ?? c.contractType,
+        })),
+      },
+      {
+        key: 'category',
+        label: 'Category',
+        type: 'select',
+        options: optionsFrom(items, (c) => ({ value: c.category, label: c.category })),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: optionsFrom(items, (c) => ({ value: c.status, label: statusLabel(c.status) })),
+      },
+      { key: 'value', label: 'Committed value', type: 'amount' },
+      { key: 'validTo', label: 'Valid to', type: 'date' },
+    ],
+    [items],
+  );
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items
+      .filter(
+        (c) =>
+          (!q ||
+            c.title.toLowerCase().includes(q) ||
+            c.number.toLowerCase().includes(q) ||
+            c.vendor.name.toLowerCase().includes(q)) &&
+          matchesFilters(c, defs, filters.values, filterValue),
+      )
+      .sort(SORTS[sortKey].cmp);
+  }, [items, search, defs, filters.values, sortKey]);
+
+  const narrowed = search.trim() !== '' || filters.activeCount > 0;
+
+  const newContract = (variant: 'primary' | 'secondary'): React.JSX.Element => (
+    <Button asChild variant={variant} size="sm">
+      <Link href="/contracts/new">
+        <Plus className="h-3.5 w-3.5" aria-hidden /> New contract
+      </Link>
+    </Button>
+  );
 
   return (
     <div>
@@ -61,21 +174,13 @@ export default function ContractsPage(): React.JSX.Element {
         description="Rate contracts, framework agreements and call-offs."
         actions={
           <>
-            <Link href="/contracts/clause-library">
-              <Button variant="secondary" size="sm">
-                Clause library
-              </Button>
-            </Link>
-            <Link href="/contracts/renewals">
-              <Button variant="secondary" size="sm">
-                Renewal calendar
-              </Button>
-            </Link>
-            <Link href="/contracts/new">
-              <Button variant="primary" size="sm">
-                <Plus className="h-3.5 w-3.5" /> New contract
-              </Button>
-            </Link>
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/contracts/clause-library">Clause library</Link>
+            </Button>
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/contracts/renewals">Renewal calendar</Link>
+            </Button>
+            {newContract('primary')}
           </>
         }
       />
@@ -87,26 +192,77 @@ export default function ContractsPage(): React.JSX.Element {
         onChange={(k) => setTab(k as ContractTab)}
       />
 
+      <FilterBar
+        defs={defs}
+        filters={filters}
+        search={
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search title, number or vendor…"
+            aria-label="Search contracts"
+          />
+        }
+        summary={
+          isLoading ? null : `${rows.length} shown${data?.truncated ? ' — first 2,000 loaded' : ''}`
+        }
+        actions={
+          <Select
+            aria-label="Sort contracts"
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="h-9 w-auto"
+          >
+            {(Object.keys(SORTS) as SortKey[]).map((k) => (
+              <option key={k} value={k}>
+                {SORTS[k].label}
+              </option>
+            ))}
+          </Select>
+        }
+      />
+
       <DataState
         isLoading={isLoading}
+        loading={<SkeletonCards />}
         error={error}
-        isEmpty={(data?.items.length ?? 0) === 0}
+        isEmpty={rows.length === 0}
         onRetry={() => void refetch()}
-        empty={{
-          title: 'No contracts in this view',
-          detail:
-            'Agreements you sign with suppliers appear here with their rate card, committed value and validity, and can be called off against directly.',
-          action: (
-            <Link href="/contracts/new">
-              <Button variant="primary" size="sm">
-                <Plus className="h-3.5 w-3.5" /> New contract
-              </Button>
-            </Link>
-          ),
-        }}
+        empty={
+          narrowed
+            ? {
+                title: 'No contracts match these filters',
+                detail: 'Clear a filter or change the search to see more.',
+                action: (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      filters.clear();
+                      setSearch('');
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                ),
+              }
+            : tab === 'active' || tab === 'draft'
+              ? {
+                  title: tab === 'active' ? 'No active contracts' : 'No draft contracts',
+                  detail:
+                    'Agreements you sign with suppliers appear here with their rate card, committed value and validity, and can be called off against directly.',
+                  action: newContract('secondary'),
+                }
+              : {
+                  title: 'Nothing in this view',
+                  detail: 'No contracts are in this state right now.',
+                }
+        }
       >
-        <CardGrid>
-          {data?.items.map((c) => {
+        {/* grid-cols-1 = minmax(0, 1fr): without it the single phone column
+            sizes to the longest (truncated) title and pushes cards off-screen. */}
+        <CardGrid className="grid-cols-1">
+          {rows.map((c) => {
             const expiringSoon = c.daysToExpiry >= 0 && c.daysToExpiry <= 90;
             return (
               <Card key={c.id} interactive>
@@ -117,7 +273,11 @@ export default function ContractsPage(): React.JSX.Element {
                     </StatusText>
                   }
                 >
-                  <CardTitle>{c.title}</CardTitle>
+                  <CardTitle>
+                    <Link href={`/contracts/${c.id}`} className="hover:text-accent">
+                      {c.title}
+                    </Link>
+                  </CardTitle>
                   <CardMeta>
                     <span className="font-numeric">{c.number}</span>
                     <span className="text-faint"> — {c.vendor.name}</span>
@@ -147,16 +307,12 @@ export default function ContractsPage(): React.JSX.Element {
 
                 <CardFooter
                   action={
-                    <Link href={`/contracts/${c.id}`}>
-                      <Button variant="secondary" size="sm">
-                        Open contract
-                      </Button>
-                    </Link>
+                    <Button asChild variant="secondary" size="sm">
+                      <Link href={`/contracts/${c.id}`}>Open contract</Link>
+                    </Button>
                   }
                 >
-                  <Badge variant="neutral">
-                    {TYPE_LABEL[c.contractType] ?? c.contractType}
-                  </Badge>
+                  <Badge variant="neutral">{TYPE_LABEL[c.contractType] ?? c.contractType}</Badge>
                 </CardFooter>
               </Card>
             );
