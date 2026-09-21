@@ -38,6 +38,7 @@ import { useInvoiceCounts, useInvoices } from '@/lib/api/invoices';
 import { downloadCsv } from '@/lib/csv';
 import { inr, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
 import { useHasPermission } from '@/lib/permissions';
+import { useInitialTab } from '@/lib/use-initial-tab';
 import { useToastStore } from '@/store/toast-store';
 
 const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
@@ -93,6 +94,7 @@ function filterValue(i: InvoiceListItem, key: string): string | number | null {
 
 export default function InvoicesInboxPage(): React.JSX.Element {
   const [tab, setTab] = useState<InvoiceTab>('all');
+  useInitialTab(TABS.map((t) => t.key), setTab);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dialog, setDialog] = useState<'assign' | 'hold' | null>(null);
@@ -416,8 +418,8 @@ export default function InvoicesInboxPage(): React.JSX.Element {
         note={
           // Approve/reject need each invoice's approval id, which the list
           // does not carry — the Approvals queue is where they happen in bulk.
-          <Link href="/approvals" className="underline underline-offset-2 hover:text-white">
-            Approve or reject in Approvals
+          <Link href="/inbox" className="underline underline-offset-2 hover:text-white">
+            Approve or reject in your Approvals inbox
           </Link>
         }
       >

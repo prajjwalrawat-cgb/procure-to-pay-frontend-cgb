@@ -26,6 +26,7 @@ import { useMemo, useState } from 'react';
 import { usePaymentRuns, type PaymentRunTab } from '@/lib/api/payments';
 import { downloadCsv } from '@/lib/csv';
 import { formatDate, inr, statusLabel, statusVariant } from '@/lib/format';
+import { useInitialTab } from '@/lib/use-initial-tab';
 
 const TABS: { key: PaymentRunTab; label: string; countKey: keyof Counts }[] = [
   { key: 'all', label: 'All', countKey: 'all' },
@@ -75,6 +76,7 @@ function filterValue(r: PaymentRunListItem, key: string): string | number | null
 
 export default function PaymentRunsPage(): React.JSX.Element {
   const [tab, setTab] = useState<PaymentRunTab>('all');
+  useInitialTab(TABS.map((t) => t.key), setTab);
   const [search, setSearch] = useState('');
   const filters = useFilters();
   const { data, isLoading, error, refetch } = usePaymentRuns(tab);
@@ -325,8 +327,8 @@ export default function PaymentRunsPage(): React.JSX.Element {
         onClear={selection.clear}
         note={
           // Deciding a run needs its approval id, which list rows do not carry.
-          <Link href="/approvals" className="hover:text-white underline underline-offset-2">
-            Approve or reject in Approvals
+          <Link href="/inbox" className="hover:text-white underline underline-offset-2">
+            Approve or reject in your Approvals inbox
           </Link>
         }
       >

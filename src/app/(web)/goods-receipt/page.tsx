@@ -29,6 +29,7 @@ import { usePurchaseOrders } from '@/lib/api/purchase-orders';
 import { useReceipts, type GrnTab } from '@/lib/api/receipts';
 import { downloadCsv } from '@/lib/csv';
 import { formatDate, humanise, inr, statusLabel, statusVariant } from '@/lib/format';
+import { useInitialTab } from '@/lib/use-initial-tab';
 
 const TABS: { key: GrnTab; label: string }[] = [
   { key: 'pending_receipt', label: 'Pending receipt' },
@@ -42,6 +43,7 @@ type ReceiptTab = Exclude<GrnTab, 'pending_receipt'>;
 
 export default function GoodsReceiptPage(): React.JSX.Element {
   const [tab, setTab] = useState<GrnTab>('pending_receipt');
+  useInitialTab(TABS.map((t) => t.key), setTab);
   // Pending receipt is purchase orders, not GRNs: the same endpoint the PO
   // list's "Awaiting GRN" tab reads, fetched in full so it sorts honestly.
   const pending = usePurchaseOrders('awaiting_grn');

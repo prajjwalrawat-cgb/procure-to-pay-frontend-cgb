@@ -31,6 +31,7 @@ import { PoRowDetail } from '@/components/purchase-orders/po-row-detail';
 import { usePurchaseOrders, type PoTab } from '@/lib/api/purchase-orders';
 import { downloadCsv } from '@/lib/csv';
 import { formatDate, humanise, inr, statusLabel, statusVariant } from '@/lib/format';
+import { useInitialTab } from '@/lib/use-initial-tab';
 
 const TABS: { key: PoTab; label: string }[] = [
   { key: 'open', label: 'Open' },
@@ -82,6 +83,7 @@ function filterValue(p: PoListItem, key: string): string | number | null {
 
 export default function PurchaseOrdersPage(): React.JSX.Element {
   const [tab, setTab] = useState<PoTab>('open');
+  useInitialTab(TABS.map((t) => t.key), setTab);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const filters = useFilters();
@@ -382,8 +384,8 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
         note={
           // Approving a PO needs its approval id, which list rows do not
           // carry — the Approvals queue is where orders are decided in bulk.
-          <Link href="/approvals" className="hover:text-white underline underline-offset-2">
-            Approve or reject in Approvals
+          <Link href="/inbox" className="hover:text-white underline underline-offset-2">
+            Approve or reject in your Approvals inbox
           </Link>
         }
       >
