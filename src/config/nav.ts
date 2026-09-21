@@ -1,61 +1,64 @@
-import type { TopNavGroup, TopNavItem } from '@/components/ui';
+import type { TopNavEntry } from '@/components/ui';
 
 /**
  * Buyer-portal navigation.
  *
- * The old navy rail listed all twenty-two destinations at once, grouped under
- * six ALL-CAPS headings. A top nav cannot do that and should not try: a tab row
- * is a claim about what the product is for, so it carries the ten sections a
- * buyer actually moves between during a day, and the rest live one click away
- * under "More".
- *
- * The split is by frequency, not by importance — Settings and Integrations are
- * important and almost never opened mid-task.
+ * The flat row of ten tabs plus a "More" menu had outgrown the bar, and the
+ * split between them was by frequency, which is a guess a user cannot see.
+ * The row is now grouped by the stage of the procure-to-pay cycle each section
+ * belongs to: each group is a hover dropdown, and only Home and Vendors — one
+ * destination, nothing to group — stay as direct tabs.
  *
  * Sentence case throughout. A nav is a set of labels, not a set of shouts.
  */
-export const PRIMARY_NAV: TopNavItem[] = [
+export const PRIMARY_NAV: TopNavEntry[] = [
   { label: 'Home', href: '/' },
-  { label: 'Requisitions', href: '/requisitions' },
-  { label: 'Sourcing', href: '/sourcing' },
-  { label: 'Purchase orders', href: '/purchase-orders' },
-  { label: 'Goods receipt', href: '/goods-receipt' },
-  { label: 'Inventory', href: '/inventory' },
-  { label: 'Invoices', href: '/invoices' },
-  { label: 'Payment runs', href: '/payment-runs' },
-  { label: 'Vendors', href: '/vendors' },
-  { label: 'Contracts', href: '/contracts' },
-];
-
-/** Everything else, one click away. Grouped so the menu is scannable. */
-export const OVERFLOW_NAV: TopNavGroup[] = [
   {
-    heading: 'Work queue',
+    label: 'Procurement',
     items: [
-      { label: 'Inbox', href: '/inbox' },
-      { label: 'Approval matrix', href: '/approvals' },
-      { label: 'Returns (RMA)', href: '/rma' },
+      { label: 'Requisitions', href: '/requisitions' },
+      { label: 'Sourcing', href: '/sourcing' },
+      { label: 'Purchase orders', href: '/purchase-orders' },
+      { label: 'Contracts', href: '/contracts' },
     ],
   },
   {
-    heading: 'Warehouse',
+    label: 'Warehouse',
     items: [
+      { label: 'Goods receipt', href: '/goods-receipt' },
+      { label: 'Inventory', href: '/inventory' },
+      { label: 'Item master', href: '/items' },
+      { label: 'Returns (RMA)', href: '/rma' },
       // Leaves the desktop shell for the phone-sized scanner UI. Listed
       // because a stores officer opening this app on a handset has no other
       // way to find it.
       { label: 'Scanner', href: '/scan' },
-      { label: 'Item master', href: '/items' },
     ],
   },
   {
-    heading: 'Insights',
+    label: 'Finance',
+    items: [
+      { label: 'Invoices', href: '/invoices' },
+      { label: 'Payment runs', href: '/payment-runs' },
+    ],
+  },
+  { label: 'Vendors', href: '/vendors' },
+  {
+    label: 'Approvals',
+    items: [
+      { label: 'Inbox', href: '/inbox' },
+      { label: 'Approval matrix', href: '/approvals' },
+    ],
+  },
+  {
+    label: 'Insights',
     items: [
       { label: 'Analytics', href: '/analytics' },
       { label: 'Audit log', href: '/audit' },
     ],
   },
   {
-    heading: 'Administration',
+    label: 'Administration',
     items: [
       { label: 'Team', href: '/team' },
       { label: 'Integrations', href: '/integrations' },

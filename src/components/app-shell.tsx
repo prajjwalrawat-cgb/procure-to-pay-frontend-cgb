@@ -6,6 +6,8 @@ import {
   CommandPalette,
   TopNav,
   type CommandRoute,
+  isTopNavMenu,
+  type TopNavEntry,
   type TopNavItem,
 } from '@/components/ui';
 import { Bell } from 'lucide-react';
@@ -14,7 +16,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { NotificationsTray } from '@/components/notifications-tray';
-import { LIVE_ROUTES, OVERFLOW_NAV, PRIMARY_NAV } from '@/config/nav';
+import { LIVE_ROUTES, PRIMARY_NAV } from '@/config/nav';
 import { useSidebarCounts } from '@/lib/api/inbox';
 import { useUnreadCount } from '@/lib/api/notifications';
 import { refreshAccessToken } from '@/lib/api-client';
@@ -40,10 +42,9 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
   const { data: approvalCounts } = useSidebarCounts();
   const { data: unread } = useUnreadCount();
 
-  // Pending-approval counts ride on the nav items that own the queue. Invoices
-  // and Payment runs are primary tabs; Inbox sits in the overflow menu, which
-  // is exactly why its count has to be visible on the "More" trigger's items —
-  // an approval queue nobody can see is an approval queue nobody clears.
+  // Pending-approval counts ride on the nav items that own the queue. Those
+  // items all sit inside dropdowns now, and each dropdown trigger sums its
+  // items' badges — an approval queue nobody can see is one nobody clears.
   const withBadge = (item: TopNavItem): TopNavItem => {
     if (!approvalCounts) return item;
     if (item.href === '/inbox' && approvalCounts.total > 0) {
@@ -58,8 +59,10 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     return item;
   };
 
-  const primary = PRIMARY_NAV.map(withBadge);
-  const overflow = OVERFLOW_NAV.map((g) => ({ ...g, items: g.items.map(withBadge) }));
+  const primary = PRIMARY_NAV.map(
+    (entry): TopNavEntry =>
+      isTopNavMenu(entry) ? { ...entry, items: entry.items.map(withBadge) } : withBadge(entry),
+  );
 
   /*
    * Bootstrap: exchange the httpOnly refresh cookie for an access token + load
@@ -162,7 +165,6 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
           </Link>
         }
         primary={primary}
-        overflow={overflow}
         activeHref={pathname}
         renderLink={renderLink}
         onOpenSearch={() => setCommandOpen(true)}

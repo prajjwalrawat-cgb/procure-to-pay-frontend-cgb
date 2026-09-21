@@ -18,6 +18,23 @@ export interface TopNavGroup {
 }
 
 /**
+ * A top-level section that opens a dropdown instead of navigating — e.g.
+ * "Finance" holding Invoices and Payment runs. The trigger is lit when any of
+ * its items is current, and carries the sum of their badges so a queue inside
+ * a closed menu is still visible.
+ */
+export interface TopNavMenu {
+  label: string;
+  items: TopNavItem[];
+}
+
+export type TopNavEntry = TopNavItem | TopNavMenu;
+
+export function isTopNavMenu(entry: TopNavEntry): entry is TopNavMenu {
+  return 'items' in entry;
+}
+
+/**
  * Whether a nav item should read as current.
  *
  * A section owns its subtree, so `/invoices` stays current on
@@ -32,8 +49,11 @@ export function isActiveHref(href: string, current: string): boolean {
 
 export interface TopNavProps {
   brand: React.ReactNode;
-  /** The sections that get their own tab, in priority order. */
-  primary: TopNavItem[];
+  /**
+   * The top-level row, in order. A plain item is a tab; a menu is a hover
+   * dropdown of related sections.
+   */
+  primary: TopNavEntry[];
   /** Everything else, grouped, behind the overflow menu. */
   overflow?: TopNavGroup[];
   overflowLabel?: string;
@@ -84,6 +104,14 @@ export function TopNav({
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   const overflowItems = overflow.flatMap((g) => g.items);
+
+  // The drawer has room for everything, so it lists it all: loose tabs first,
+  // then each dropdown as a headed group, then the overflow groups.
+  const drawerGroups: TopNavGroup[] = [
+    { items: primary.filter((e): e is TopNavItem => !isTopNavMenu(e)) },
+    ...primary.filter(isTopNavMenu).map((m) => ({ heading: m.label, items: m.items })),
+    ...overflow,
+  ].filter((g) => g.items.length > 0);
   const overflowActive = overflowItems.some((i) => isActiveHref(i.href, activeHref));
 
   // Escape and outside-pointer close the overflow menu.
@@ -197,19 +225,25 @@ export function TopNav({
 
       {/* Row 2 — section tabs. Hidden below lg, where the drawer takes over.
 
-          The scroll container is the inner <nav> only. The overflow trigger is
-          its sibling, because `overflow-x: auto` also clips on the y axis and
-          would cut the open menu off at the row's edge. */}
+          No `overflow-x: auto` here: it also clips on the y axis, which would
+          cut every dropdown off at the row's edge. The row wraps instead — the
+          grouped menus keep it short enough that it never needs to. */}
       <div className="hidden items-center gap-1 px-3 pb-2 sm:px-5 lg:flex">
-        <nav
-          aria-label="Sections"
-          className="pf-scroll-x flex min-w-0 items-center gap-0.5"
-        >
-          {primary.map((item) => (
-            <React.Fragment key={item.href}>
-              {tab(item, isActiveHref(item.href, activeHref))}
-            </React.Fragment>
-          ))}
+        <nav aria-label="Sections" className="flex min-w-0 flex-wrap items-center gap-0.5">
+          {primary.map((entry) =>
+            isTopNavMenu(entry) ? (
+              <NavMenu
+                key={entry.label}
+                menu={entry}
+                activeHref={activeHref}
+                renderLink={renderLink}
+              />
+            ) : (
+              <React.Fragment key={entry.href}>
+                {tab(entry, isActiveHref(entry.href, activeHref))}
+              </React.Fragment>
+            ),
+          )}
         </nav>
 
         {overflowItems.length > 0 ? (
@@ -292,9 +326,9 @@ export function TopNav({
               </button>
             </div>
             <nav aria-label="Sections" className="flex-1 overflow-y-auto p-2">
-              {[{ items: primary }, ...overflow].map((group, gi) => (
+              {drawerGroups.map((group, gi) => (
                 <div key={gi} className="py-1">
-                  {'heading' in group && group.heading ? (
+                  {group.heading ? (
                     <p className="text-faint px-2 py-1 text-[11px]">{group.heading}</p>
                   ) : null}
                   {group.items.map((item) => {
@@ -334,6 +368,142 @@ export function TopNav({
         </div>
       ) : null}
     </header>
+  );
+}
+
+/** How long the pointer may be outside a menu before it closes. Long enough to
+ *  cross from trigger to panel, or to overshoot it slightly. */
+const HOVER_CLOSE_DELAY_MS = 150;
+
+/**
+ * One grouped section in the tab row, opened by hovering.
+ *
+ * Hover opens only for a mouse — on touch, the tap that would fire the
+ * synthetic enter also fires the click, and the two cancel out. Touch and
+ * keyboard use the trigger as a toggle instead; Escape closes and hands focus
+ * back to the trigger, and tabbing out of the menu closes it.
+ */
+function NavMenu({
+  menu,
+  activeHref,
+  renderLink,
+}: {
+  menu: TopNavMenu;
+  activeHref: string;
+  renderLink: TopNavProps['renderLink'];
+}): React.JSX.Element {
+  const [open, setOpen] = React.useState(false);
+  const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const menuId = React.useId();
+
+  const active = menu.items.some((i) => isActiveHref(i.href, activeHref));
+  const badge = menu.items.reduce((n, i) => n + (i.badge ?? 0), 0);
+
+  const cancelClose = (): void => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+  const scheduleClose = (): void => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(false), HOVER_CLOSE_DELAY_MS);
+  };
+
+  React.useEffect(() => cancelClose, []);
+
+  // Navigating away is what a menu click is for, so a route change closes it.
+  React.useEffect(() => {
+    setOpen(false);
+  }, [activeHref]);
+
+  return (
+    <div
+      className="relative"
+      onPointerEnter={(e) => {
+        if (e.pointerType !== 'mouse') return;
+        cancelClose();
+        setOpen(true);
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType === 'mouse') scheduleClose();
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && open) {
+          setOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'rounded-pill duration-hover flex items-center gap-1 whitespace-nowrap px-3 py-1.5 text-[13px] font-medium transition-colors',
+          active ? 'bg-accent text-white' : 'text-muted hover:text-text',
+          open && !active && 'text-text',
+        )}
+      >
+        {menu.label}
+        {badge > 0 ? (
+          <span
+            className={cn(
+              'font-numeric rounded-pill px-1.5 text-[11px] font-semibold leading-[16px]',
+              active ? 'bg-white/20 text-white' : 'bg-accent-wash text-accent',
+            )}
+          >
+            {badge > 99 ? '99+' : badge}
+          </span>
+        ) : null}
+        <ChevronDown
+          className={cn('duration-hover h-3.5 w-3.5 transition-transform', open && 'rotate-180')}
+          aria-hidden
+        />
+      </button>
+
+      {/* The panel sits flush under the trigger and spaces itself with
+          padding, not margin: a margin is a dead strip the pointer has to
+          cross, and crossing it would count as leaving the menu. */}
+      {open ? (
+        <div id={menuId} role="menu" className="absolute left-0 top-full z-50 pt-1.5">
+          <div className="border-line bg-panel min-w-[13rem] rounded-lg border p-1.5 shadow-lg">
+            {menu.items.map((item) => {
+              const itemActive = isActiveHref(item.href, activeHref);
+              return (
+                <div key={item.href} role="none" onClick={() => setOpen(false)}>
+                  {renderLink(
+                    item,
+                    <span
+                      role="menuitem"
+                      aria-current={itemActive ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center justify-between gap-4 whitespace-nowrap rounded-sm px-2 py-1.5 text-[13px]',
+                        itemActive
+                          ? 'text-accent bg-accent-wash font-medium'
+                          : 'text-text hover:bg-canvas',
+                      )}
+                    >
+                      {item.label}
+                      {item.badge ? (
+                        <span className="font-numeric text-accent text-[11px] font-semibold">
+                          {item.badge > 99 ? '99+' : item.badge}
+                        </span>
+                      ) : null}
+                    </span>,
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
