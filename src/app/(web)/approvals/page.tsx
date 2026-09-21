@@ -2,7 +2,21 @@
 
 import type { ApprovalMatrixView, ApprovalStep, DocumentType } from '@/lib/shared';
 import { PERMISSIONS, ROLE_PERMISSIONS, type RoleName } from '@/lib/shared';
-import { Button, PageHeader, Pill, Tabs, TabsList, TabsTrigger } from '@/components/ui';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  EmptyState,
+  PageHeader,
+  Pill,
+  Skeleton,
+  SkeletonCards,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 import { useState } from 'react';
 
 import { ConditionChips } from '@/components/approvals/condition-chips';
@@ -138,10 +152,11 @@ function MatrixTab({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="text-body-sm text-muted">
-          {data?.items.length ?? 0} active rule
-          {(data?.items.length ?? 0) === 1 ? '' : 's'}
+          {isLoading
+            ? 'Loading rules…'
+            : `${data?.items.length ?? 0} active rule${(data?.items.length ?? 0) === 1 ? '' : 's'}`}
         </div>
         {canEdit && (
           <Button variant="primary" size="sm" onClick={() => setEditing('new')}>
@@ -150,7 +165,7 @@ function MatrixTab({
         )}
       </div>
 
-      {isLoading && <div className="text-body-sm text-muted">Loading rules…</div>}
+      {isLoading && <SkeletonCards count={3} className="sm:grid-cols-1 xl:grid-cols-1" />}
 
       <div className="flex flex-col gap-3">
         {data?.items.map((rule) => (
@@ -175,10 +190,21 @@ function MatrixTab({
           />
         ))}
         {data && data.items.length === 0 && !isLoading && (
-          <div className="text-body-sm text-muted">
-            No active rules — documents of this type cannot be submitted for approval
-            until one exists.
-            {canEdit ? ' Add one to start routing.' : ''}
+          <div className="border-line bg-panel rounded-lg border">
+            <EmptyState
+              title="No active rules"
+              detail={
+                'Documents of this type cannot be submitted for approval until a rule exists.' +
+                (canEdit ? ' Add one to start routing.' : '')
+              }
+              action={
+                canEdit ? (
+                  <Button variant="secondary" size="sm" onClick={() => setEditing('new')}>
+                    Add rule
+                  </Button>
+                ) : undefined
+              }
+            />
           </div>
         )}
       </div>
@@ -196,6 +222,7 @@ function MatrixTab({
       {activating && (
         <ActivateConfirm
           rule={activating}
+          busy={action.isPending}
           onCancel={() => setActivating(null)}
           onConfirm={() => {
             action.mutate(
@@ -233,11 +260,11 @@ function RuleCard({
 }): React.JSX.Element {
   return (
     <div className="rounded-lg border border-line bg-panel p-4" data-testid="rule-card">
-      <div className="mb-3 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="text-body font-semibold text-ink">{rule.name}</span>
-            <Pill variant={rule.isActive ? 'success' : 'gray'} dot>
+            <Pill variant={rule.isActive ? 'success' : 'neutral'} dot>
               {rule.isActive ? 'Active' : 'Draft'}
             </Pill>
             <span className="font-numeric text-micro text-faint">
@@ -245,7 +272,7 @@ function RuleCard({
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="-mx-2 flex flex-wrap items-center gap-1 sm:mx-0">
           {canEdit && (
             <Button variant="ghost" size="sm" onClick={onEdit}>
               Edit
@@ -282,12 +309,12 @@ function RuleCard({
           {rule.steps.map((s: ApprovalStep) => (
             <span
               key={s.step_no}
-              className="flex items-center gap-2 rounded-sm border border-line bg-canvas px-2.5 py-1.5 text-caption"
+              className="flex max-w-full items-start gap-2 rounded-sm border border-line bg-canvas px-2.5 py-1.5 text-caption"
             >
-              <span className="font-numeric flex h-5 w-5 items-center justify-center rounded-full bg-panel text-micro">
+              <span className="font-numeric flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-panel text-micro">
                 {s.step_no}
               </span>
-              <span className="font-medium text-text">{s.name}</span>
+              <span className="whitespace-nowrap font-medium text-text">{s.name}</span>
               <span className="text-muted">
                 {s.scope === 'tenant'
                   ? 'Org-wide'
@@ -306,22 +333,24 @@ function RuleCard({
 
 function ActivateConfirm({
   rule,
+  busy,
   onCancel,
   onConfirm,
 }: {
   rule: ApprovalMatrixView;
+  busy: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }): React.JSX.Element {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6">
-      <div className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg">
-        <h3 className="text-h3 font-semibold text-ink">Activate “{rule.name}”?</h3>
-        <p className="mt-2 text-body-sm text-muted">
+    <Dialog open onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent className="max-w-md">
+        <DialogTitle>Activate “{rule.name}”?</DialogTitle>
+        <DialogDescription className="mt-2">
           This will affect all future documents matching these conditions. In-flight
           documents keep their snapshot and are not re-routed.
-        </p>
-        <div className="mt-4 flex justify-end gap-2">
+        </DialogDescription>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={onCancel}>
             Cancel
           </Button>
@@ -329,13 +358,14 @@ function ActivateConfirm({
             variant="primary"
             size="sm"
             onClick={onConfirm}
+            disabled={busy}
             data-testid="confirm-activate"
           >
-            Activate
+            {busy ? 'Activating…' : 'Activate'}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -346,30 +376,32 @@ function VersionHistory({
   id: string;
   onClose: () => void;
 }): React.JSX.Element {
-  const { data } = useMatrixVersions(id);
+  const { data, isLoading } = useMatrixVersions(id);
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/30">
-      <div className="h-full w-full max-w-md overflow-y-auto border-l border-line bg-panel p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-h3 font-semibold text-ink">Version history</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            Close
-          </Button>
+    // Side sheet, same shape as the list filter drawer.
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="inset-y-0 left-auto right-0 top-0 flex h-full max-w-md translate-x-0 translate-y-0 flex-col gap-0 rounded-none p-0">
+        <div className="border-line border-b px-5 py-4">
+          <DialogTitle>Version history</DialogTitle>
+          <DialogDescription className="mt-0.5">
+            Every edit is a new version; the newest active one routes documents.
+          </DialogDescription>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-5 py-4">
+          {isLoading &&
+            [0, 1, 2].map((k) => <Skeleton key={k} className="h-20 w-full" />)}
           {data?.map((v) => (
             <div key={v.id} className="rounded-lg border border-line p-3">
               <div className="flex items-center justify-between">
                 <span className="font-numeric text-body-sm font-semibold text-ink">
                   v{v.version}
                 </span>
-                <Pill variant={v.isActive ? 'success' : 'gray'} dot>
+                <Pill variant={v.isActive ? 'success' : 'neutral'} dot>
                   {v.isActive ? 'Active' : 'Draft'}
                 </Pill>
               </div>
               <div className="mt-1 text-micro text-muted">
-                {v.updatedByName ?? 'system'} ,{' '}
-                {formatDateTime(v.createdAt)}
+                {v.updatedByName ?? 'system'} · {formatDateTime(v.createdAt)}
               </div>
               <div className="mt-2">
                 <ConditionChips condition={v.conditions} />
@@ -377,7 +409,7 @@ function VersionHistory({
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
