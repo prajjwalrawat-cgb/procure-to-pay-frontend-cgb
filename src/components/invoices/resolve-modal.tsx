@@ -6,6 +6,8 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  Field,
+  Textarea,
 } from '@/components/ui';
 import { useState } from 'react';
 import type {
@@ -14,6 +16,7 @@ import type {
 } from '@/lib/shared';
 
 import { useResolveException } from '@/lib/api/invoices';
+import { exceptionLabel } from '@/lib/exception-display';
 import { useToastStore } from '@/store/toast-store';
 
 const ACTIONS: { key: ExceptionResolutionAction; label: string }[] = [
@@ -57,19 +60,20 @@ export function ResolveModal({
       <DialogContent>
         <DialogTitle>Resolve exception</DialogTitle>
         <DialogDescription>
-          {exception?.type.replace(/_/g, ' ')} — {exception?.message}
+          {exception ? `${exceptionLabel(exception.type)}. ${exception.message}` : null}
         </DialogDescription>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2" role="group" aria-label="Resolution">
           {ACTIONS.map((a) => (
             <button
               key={a.key}
               type="button"
+              aria-pressed={action === a.key}
               onClick={() => setAction(a.key)}
               className={
                 'duration-hover rounded-sm border px-3 py-2 text-left text-body-sm font-medium transition-colors ' +
                 (action === a.key
-                  ? 'border-accent bg-accent-wash text-accent-2'
+                  ? 'border-accent bg-accent-wash text-accent'
                   : 'border-line text-text hover:bg-canvas')
               }
             >
@@ -78,18 +82,17 @@ export function ResolveModal({
           ))}
         </div>
 
-        <label className="text-text mt-4 flex flex-col gap-1 text-caption font-medium">
-          Notes
-          <textarea
+        <Field label="Notes" htmlFor="resolve-notes" className="mt-4">
+          <Textarea
+            id="resolve-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
             placeholder="Reason for this resolution…"
-            className="border-line bg-panel focus-visible:ring-accent rounded-sm border px-3 py-2 text-body-sm outline-none focus-visible:ring-2"
           />
-        </label>
+        </Field>
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={onClose}>
             Cancel
           </Button>

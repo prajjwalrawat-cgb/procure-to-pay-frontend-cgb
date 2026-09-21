@@ -1,6 +1,6 @@
 'use client';
 
-import { cn, controlClass } from '@/components/ui';
+import { ErrorState, Skeleton, cn, controlClass } from '@/components/ui';
 
 /** Shared chrome for the settings sections — one card per topic, matching the
  *  left-nav layout of the page. */
@@ -17,10 +17,10 @@ export function Panel({
 }): React.JSX.Element {
   return (
     <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-body font-semibold text-ink">{title}</h2>
-          <p className="text-caption text-muted">{hint}</p>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-h3 font-semibold text-ink">{title}</h2>
+          <p className="mt-0.5 text-caption text-muted">{hint}</p>
         </div>
         {action}
       </div>
@@ -69,3 +69,37 @@ export function Field({
 // One control definition for the whole app — see components/ui/components/input.tsx.
 export const selectCls = controlClass;
 export const textareaCls = cn(controlClass, 'min-h-[72px]');
+
+/**
+ * What a section shows before its data arrives: a panel-shaped skeleton, or
+ * the error with a retry. A bare "Loading…" never resolved when the fetch
+ * failed, so a 403 or a dropped connection read as an endless load.
+ */
+export function SectionLoading({
+  error,
+  onRetry,
+}: {
+  error?: unknown;
+  onRetry?: () => void;
+}): React.JSX.Element {
+  if (error) {
+    return (
+      <section className="mb-4 rounded-lg border border-line bg-panel">
+        <ErrorState error={error} onRetry={onRetry} compact />
+      </section>
+    );
+  }
+  return (
+    <section
+      className="mb-4 flex flex-col gap-3 rounded-lg border border-line bg-panel p-4"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-3 w-72 max-w-full" />
+      <Skeleton className="mt-2 h-9 w-full max-w-md" />
+      <Skeleton className="h-9 w-full max-w-md" />
+      <Skeleton className="h-9 w-full max-w-md" />
+    </section>
+  );
+}

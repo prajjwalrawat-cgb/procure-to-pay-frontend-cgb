@@ -1,10 +1,15 @@
 'use client';
 
 import {
+  Button,
+  DataState,
+  Field,
+  Input,
   PageHeader,
   Pill,
   SandboxBanner,
-  controlClass,
+  Select,
+  Skeleton,
 } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -37,12 +42,21 @@ const PROVIDERS: IntegrationProvider[] = ['OCR', 'GSP', 'EMAIL_INBOUND'];
  * worked.
  */
 const CREDENTIAL_PROVIDERS: IntegrationProvider[] = ['GSP'];
+
+/** Provider enums in words; the raw constants read as a system dump. */
+const PROVIDER_LABEL: Record<string, string> = {
+  OCR: 'OCR (document reading)',
+  GSP: 'GSP (GST portal)',
+  EMAIL_INBOUND: 'Inbound email',
+};
 const thisMonth = new Date().toISOString().slice(0, 7);
 
 export default function IntegrationsPage(): React.JSX.Element {
   const push = useToastStore((s) => s.push);
-  const { data: creds } = useCredentialStatus();
-  const { data: usage } = useIntegrationUsage(thisMonth);
+  const credsQuery = useCredentialStatus();
+  const usageQuery = useIntegrationUsage(thisMonth);
+  const creds = credsQuery.data;
+  const usage = usageQuery.data;
   const setCred = useSetCredential();
   const runGstr2b = useRunGstr2b();
 
@@ -78,7 +92,7 @@ export default function IntegrationsPage(): React.JSX.Element {
     <div>
       <PageHeader
         title="Integrations"
-        description="Provider credentials (encrypted at rest) & per-tenant usage"
+        description="Provider credentials, encrypted at rest, and this workspace's usage of each provider."
       />
 
       {anySimulated && (
@@ -90,11 +104,17 @@ export default function IntegrationsPage(): React.JSX.Element {
         </SandboxBanner>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         {/* Credential vault */}
         <div className="rounded-lg border border-line bg-panel p-4">
-          <h2 className="mb-2 text-body-sm font-semibold text-ink">Credentials</h2>
-          <div className="mb-3 space-y-1">
+          <h2 className="mb-3 text-h3 font-semibold text-ink">Credentials</h2>
+          <DataState
+            isLoading={credsQuery.isLoading}
+            error={credsQuery.error}
+            onRetry={() => void credsQuery.refetch()}
+            compact
+          >
+          <div className="mb-3 space-y-2">
             {PROVIDERS.map((p) => {
               const c = configured.get(p);
               const simulated = isSimulated(p);
@@ -102,7 +122,7 @@ export default function IntegrationsPage(): React.JSX.Element {
                 <div key={p}
                   className="flex flex-wrap items-center justify-between gap-1.5 text-body-sm"
                 >
-                  <span className="font-numeric">{p}</span>
+                  <span className="text-text">{PROVIDER_LABEL[p] ?? p}</span>
                   <span className="flex flex-wrap items-center gap-1.5">
                     {/* Green is reserved for a provider whose recorded calls came
                         back real. A configured-but-sandbox credential (the demo
@@ -129,57 +149,73 @@ export default function IntegrationsPage(): React.JSX.Element {
               );
             })}
           </div>
-          <div className="space-y-2 border-t border-line pt-3">
+          </DataState>
+          <div className="space-y-3 border-t border-line pt-3">
             <p className="text-caption text-muted">
               Set a credential (stored AES-256-GCM; never returned or logged). Only
               providers whose account belongs to this tenant appear here — OCR and inbound
               email are configured once for the whole deployment.
             </p>
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                className={controlClass}
-                value={provider}
-                onChange={(e) => setProvider(e.target.value)}
-              >
-                {CREDENTIAL_PROVIDERS.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </select>
-              <input
-                className={controlClass}
-                placeholder="Label (optional)"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-              />
-              <input
-                className={controlClass}
-                placeholder="Key (e.g. apiKey)"
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-              />
-              <input
-                className={controlClass}
-                placeholder="Secret value"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-              />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Provider" htmlFor="cred-provider">
+                <Select
+                  id="cred-provider"
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                >
+                  {CREDENTIAL_PROVIDERS.map((p) => (
+                    <option key={p} value={p}>
+                      {PROVIDER_LABEL[p] ?? p}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Label" htmlFor="cred-label" hint="Optional">
+                <Input
+                  id="cred-label"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                />
+              </Field>
+              <Field label="Key" htmlFor="cred-key" hint="For example apiKey">
+                <Input id="cred-key" value={key} onChange={(e) => setKey(e.target.value)} />
+              </Field>
+              <Field label="Secret value" htmlFor="cred-value">
+                <Input
+                  id="cred-value"
+                  type="password"
+                  autoComplete="off"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                />
+              </Field>
             </div>
-            <button
-              type="button"
-              onClick={save}
-              className="rounded-md bg-ink px-3 py-1.5 text-body-sm font-medium text-white"
-            >
-              Save credential
-            </button>
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => void save()}
+                disabled={setCred.isPending}
+              >
+                {setCred.isPending ? 'Saving…' : 'Save credential'}
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Usage + jobs */}
         <div className="rounded-lg border border-line bg-panel p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-body-sm font-semibold text-ink">Usage — {thisMonth}</h2>
-            <button
-              type="button"
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-h3 font-semibold text-ink">
+              Usage
+              <span className="ml-2 font-numeric text-body-sm font-normal text-muted">
+                {thisMonth}
+              </span>
+            </h2>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={runGstr2b.isPending}
               onClick={async () => {
                 try {
                   const r = await runGstr2b.mutateAsync();
@@ -191,23 +227,36 @@ export default function IntegrationsPage(): React.JSX.Element {
                   push(e instanceof Error ? e.message : 'Failed', 'error');
                 }
               }}
-              className="rounded-md border border-line px-3 py-1.5 text-caption text-text hover:bg-canvas"
             >
-              Run GSTR-2B reconciliation
-            </button>
+              {runGstr2b.isPending ? 'Reconciling…' : 'Run GSTR-2B reconciliation'}
+            </Button>
           </div>
-          {!usage || usage.rows.length === 0 ? (
-            <p className="py-6 text-center text-body-sm text-muted">
-              No integration calls yet.
-            </p>
-          ) : (
-            <table className="w-full text-body-sm">
+          <DataState
+            isLoading={usageQuery.isLoading}
+            error={usageQuery.error}
+            onRetry={() => void usageQuery.refetch()}
+            isEmpty={!usage || usage.rows.length === 0}
+            compact
+            empty={{
+              title: 'No integration calls this month',
+              detail: 'Calls to OCR, the GST portal and inbound email are counted here as they happen.',
+            }}
+            loading={
+              <div className="flex flex-col gap-2" aria-busy="true">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-5 w-full" />
+                ))}
+              </div>
+            }
+          >
+          {usage && (
+            <table className="pf-stack w-full text-body-sm">
               <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
-                  <th className="py-1.5 font-medium">Operation</th>
-                  <th className="py-1.5 text-right font-medium">Calls</th>
-                  <th className="py-1.5 text-right font-medium">Errors</th>
-                  <th className="py-1.5 text-right font-medium">Cost</th>
+                  <th className="py-2.5 pr-3 font-medium">Operation</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Calls</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Errors</th>
+                  <th className="py-2.5 pl-3 text-right font-medium">Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -216,8 +265,8 @@ export default function IntegrationsPage(): React.JSX.Element {
                     key={`${r.provider}-${r.operation}`}
                     className="border-b border-line last:border-0"
                   >
-                    <td className="py-1.5">
-                      <span className="flex flex-wrap items-center gap-1.5">
+                    <td className="py-3 pr-3">
+                      <span className="font-numeric flex flex-wrap items-center gap-1.5">
                         {r.operation}
                         {/* This is the console where "simulated" is the
                             subject, so it is stated as a count rather than
@@ -231,28 +280,38 @@ export default function IntegrationsPage(): React.JSX.Element {
                         ) : null}
                       </span>
                     </td>
-                    <td className="font-numeric py-1.5 text-right">{r.calls}</td>
-                    <td className="font-numeric py-1.5 text-right">{r.errors}</td>
-                    <td className="font-numeric py-1.5 text-right">{inr(r.costInr)}</td>
+                    <td className="font-numeric px-3 py-3 text-right">{r.calls}</td>
+                    <td
+                      className={
+                        'font-numeric px-3 py-3 text-right ' +
+                        (r.errors > 0 ? 'text-danger' : 'text-text')
+                      }
+                    >
+                      {r.errors}
+                    </td>
+                    <td className="font-numeric py-3 pl-3 text-right">{inr(r.costInr)}</td>
                   </tr>
                 ))}
-                <tr className="font-semibold">
-                  <td className="py-1.5">Total</td>
-                  <td />
-                  <td />
-                  <td className="font-numeric py-1.5 text-right">
+              </tbody>
+              {/* A footer rather than a body row, so the stacked phone layout
+                  does not turn the total into a card of empty labels. */}
+              <tfoot className="border-line border-t">
+                <tr className="font-semibold text-ink">
+                  <td className="py-3 pr-3">Total</td>
+                  <td colSpan={3} className="font-numeric py-3 pl-3 text-right">
                     {inr(usage.totalInr)}
                   </td>
                 </tr>
-              </tbody>
+              </tfoot>
             </table>
           )}
+          </DataState>
         </div>
       </div>
 
       <p className="mt-4 text-caption text-muted">
         Invoice intake queues (email → invoice, manual OCR review) live under{' '}
-        <Link href="/invoices/intake" className="text-accent-2">
+        <Link href="/invoices/intake" className="text-accent hover:underline">
           Invoices → Intake
         </Link>
         .

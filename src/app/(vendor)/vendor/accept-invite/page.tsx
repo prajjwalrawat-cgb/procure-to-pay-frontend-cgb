@@ -56,66 +56,88 @@ export default function AcceptInvitePage(): React.JSX.Element {
     }
   }
 
-  if (done) {
-    return (
-      <div className="mx-auto mt-24 max-w-[440px] px-4 text-center">
-        <h1 className="text-ink text-h2 font-semibold">You&apos;re all set</h1>
-        <p className="text-muted mt-2 text-body-sm">
-          Your password has been set. Sign in to complete your onboarding profile.
-        </p>
-        <Link
-          href="/vendor/login"
-          className="text-accent mt-4 inline-block text-body-sm hover:underline"
-        >
-          Go to sign in →
-        </Link>
-      </div>
-    );
-  }
-
+  // Same centred card as the other supplier sign-in screens, so a supplier
+  // arriving from the invitation email lands on something that looks like the
+  // portal they are about to use.
   return (
-    <div className="mx-auto mt-16 max-w-[440px] px-4">
-      <h1 className="text-ink text-h2 font-semibold">Accept your invitation</h1>
-      <p className="text-muted mt-1 text-body-sm">
-        Set a password for your vendor account. You&apos;ll complete a short onboarding
-        wizard after signing in.
-      </p>
-      <form onSubmit={submit} className="mt-6 space-y-3">
-        <div>
-          <label className="text-muted mb-1 block text-caption font-medium">
-            New password
-          </label>
-          <Input
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+    <main className="flex min-h-screen items-center justify-center bg-canvas px-4 py-10">
+      <div className="w-full max-w-sm rounded-xl border border-line bg-panel p-8 shadow-lg">
+        <div className="mb-6 flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent text-white">
+            <span className="font-numeric text-body-sm font-bold">P</span>
+          </span>
+          <span className="text-h3 font-semibold tracking-heading text-ink">
+            Supplier Portal
+          </span>
         </div>
-        <div>
-          <label className="text-muted mb-1 block text-caption font-medium">
-            Confirm password
-          </label>
-          <Input
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-          />
-        </div>
-        {error && <p className="text-danger text-caption">{error}</p>}
-        <Button type="submit" variant="primary" disabled={loading} className="w-full">
-          {loading ? 'Setting password…' : 'Set password & continue'}
-        </Button>
-      </form>
-      <Link
-        href="/vendor/login"
-        className="text-muted mt-4 inline-block text-caption hover:underline"
-      >
-        Already have access? Sign in
-      </Link>
-    </div>
+
+        {done ? (
+          <div>
+            <h2 className="text-h3 font-semibold text-ink">You&apos;re all set</h2>
+            <p className="mt-2 text-body-sm text-muted">
+              Your password has been set. Sign in to complete your onboarding profile.
+            </p>
+            <Link
+              href="/vendor/login"
+              className="text-accent mt-4 inline-block text-body-sm hover:underline"
+            >
+              Go to sign in →
+            </Link>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-h3 font-semibold text-ink">Accept your invitation</h2>
+            <p className="mt-1 text-body-sm text-muted">
+              Set a password for your vendor account. You&apos;ll complete a short
+              onboarding wizard after signing in.
+            </p>
+            <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
+                New password
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
+                Confirm password
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                />
+              </label>
+              {error && (
+                <p
+                  role="alert"
+                  className="rounded-sm bg-danger-wash px-2.5 py-2 text-caption text-danger"
+                >
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={loading}
+                className="mt-1 w-full"
+              >
+                {loading ? 'Setting password…' : 'Set password & continue'}
+              </Button>
+            </form>
+            <Link
+              href="/vendor/login"
+              className="mt-4 inline-block text-caption text-muted hover:underline"
+            >
+              Already have access? Sign in
+            </Link>
+          </>
+        )}
+      </div>
+    </main>
   );
 }

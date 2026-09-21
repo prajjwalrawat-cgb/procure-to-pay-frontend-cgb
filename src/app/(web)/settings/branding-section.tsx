@@ -6,7 +6,7 @@ import {
   useUploadSignature,
 } from '@/lib/api/settings';
 import { useToastStore } from '@/store/toast-store';
-import { Panel } from './ui';
+import { Panel, SectionLoading } from './ui';
 
 /** One uploaded branding image: its preview, and the picker that replaces it. */
 function ImageUpload({
@@ -55,13 +55,13 @@ function ImageUpload({
 
 /** Letterhead logo and authorised signature — both print on the PO PDF. */
 export function BrandingSection(): React.JSX.Element {
-  const { data, isLoading } = useOrganisationSettings();
+  const { data, isLoading, error, refetch } = useOrganisationSettings();
   const uploadLogo = useUploadLogo();
   const uploadSignature = useUploadSignature();
   const toast = useToastStore((s) => s.push);
 
   if (isLoading || !data) {
-    return <div className="text-body-sm text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const onLogo = (file: File): void =>

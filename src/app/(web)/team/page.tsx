@@ -7,10 +7,17 @@ import {
   CardMeta,
   CardTitle,
   DataState,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  EmptyState,
   Field,
   Input,
   PageHeader,
   Select,
+  SkeletonRows,
+  SortableHead,
   StatusText,
   Table,
   TableBody,
@@ -20,6 +27,7 @@ import {
   TableRow,
   cn,
   controlClass,
+  useSort,
 } from '@/components/ui';
 import { Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -47,7 +55,7 @@ function initials(name: string, email: string): string {
 
 export default function TeamPage(): React.JSX.Element {
   const { data: members, isLoading, error, refetch } = useTeam();
-  const { data: pending } = usePendingInvites();
+  const { data: pending, isLoading: pendingLoading } = usePendingInvites();
   const invite = useInviteMember();
   const remove = useRemoveMember();
   const revoke = useRevokeInvite();
@@ -58,6 +66,22 @@ export default function TeamPage(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState(ASSIGNABLE_ROLES[0]?.value ?? 'REQUESTER');
+  // Removing a member and revoking an invite both cut someone's access, so
+  // each goes through the same confirm step rather than a browser dialog.
+  const [confirm, setConfirm] = useState<
+    | { kind: 'remove'; member: TeamMember }
+    | { kind: 'revoke'; id: string; email: string }
+    | null
+  >(null);
+  const { sorted, sort, toggle } = useSort<TeamMember, 'member' | 'role' | 'status' | 'joined'>(
+    members ?? [],
+    {
+      member: (m) => m.name || m.email,
+      role: (m) => m.roles.map(roleLabel).join(', '),
+      status: (m) => (m.isActive ? 'Active' : 'Invited'),
+      joined: (m) => new Date(m.createdAt),
+    },
+  );
 
   const onInvite = (e: React.FormEvent): void => {
     e.preventDefault();
@@ -89,21 +113,22 @@ export default function TeamPage(): React.JSX.Element {
   };
 
   const onRemove = (m: TeamMember): void => {
-    if (!window.confirm(`Remove ${m.name || m.email}? They will lose access.`)) return;
     remove.mutate(m.id, {
-      onSuccess: () => toast(`${m.name || m.email} removed`, 'success'),
+      onSuccess: () => {
+        setConfirm(null);
+        toast(`${m.name || m.email} removed`, 'success');
+      },
       onError: (err) =>
         toast(err instanceof Error ? err.message : 'Failed to remove', 'error'),
     });
   };
 
   const onRevoke = (id: string, email: string): void => {
-    if (
-      !window.confirm(`Revoke the invitation for ${email}? Their link will stop working.`)
-    )
-      return;
     revoke.mutate(id, {
-      onSuccess: () => toast(`Invitation to ${email} revoked`, 'success'),
+      onSuccess: () => {
+        setConfirm(null);
+        toast(`Invitation to ${email} revoked`, 'success');
+      },
       onError: (err) =>
         toast(err instanceof Error ? err.message : 'Failed to revoke', 'error'),
     });
@@ -127,17 +152,19 @@ export default function TeamPage(): React.JSX.Element {
           <Table>
             <TableHeader>
               <tr>
-                <TableHead>Member</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
+                <SortableHead label="Member" sortKey="member" sort={sort} onSort={toggle} />
+                <SortableHead label="Role" sortKey="role" sort={sort} onSort={toggle} />
+                <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggle} />
+                <SortableHead label="Joined" sortKey="joined" sort={sort} onSort={toggle} />
                 <TableHead className="text-right">
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </tr>
             </TableHeader>
             <TableBody>
-              {isLoading || error || !members?.length ? (
+              {isLoading ? (
+                <SkeletonRows rows={6} cols={5} />
+              ) : error || !members?.length ? (
                 <tr>
                   <td colSpan={5} className="p-0">
                     <DataState
@@ -157,7 +184,7 @@ export default function TeamPage(): React.JSX.Element {
                 </tr>
               ) : null}
 
-              {members?.map((m) => {
+              {!isLoading && sorted.map((m) => {
                 const isSelf = m.id === currentUser?.id;
                 return (
                   <TableRow key={m.id}>
@@ -195,7 +222,7 @@ export default function TeamPage(): React.JSX.Element {
                           // clipped under it. The min-width buys that room.
                           className={cn(
                             controlClass,
-                            'w-auto min-w-[11rem] py-1.5 text-caption',
+                            'w-auto min-w-44 py-1.5 text-caption',
                           )}
                           aria-label={`Role for ${m.name || m.email}`}
                         >
@@ -223,7 +250,7 @@ export default function TeamPage(): React.JSX.Element {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onRemove(m)}
+                          onClick={() => setConfirm({ kind: 'remove', member: m })}
                           disabled={remove.isPending}
                           className="hover:text-danger"
                         >
@@ -307,7 +334,13 @@ export default function TeamPage(): React.JSX.Element {
           immediately disables its link.
         </p>
 
-        {pending && pending.length > 0 ? (
+        {pendingLoading ? (
+          <Table className="mt-3">
+            <TableBody>
+              <SkeletonRows rows={2} cols={4} />
+            </TableBody>
+          </Table>
+        ) : pending && pending.length > 0 ? (
           <Table className="mt-3">
             <TableHeader>
               <tr>
@@ -333,7 +366,7 @@ export default function TeamPage(): React.JSX.Element {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onRevoke(p.id, p.email)}
+                      onClick={() => setConfirm({ kind: 'revoke', id: p.id, email: p.email })}
                       disabled={revoke.isPending}
                       className="hover:text-danger"
                     >
@@ -346,12 +379,54 @@ export default function TeamPage(): React.JSX.Element {
             </TableBody>
           </Table>
         ) : (
-          <p className="text-muted mt-3 text-body-sm">
-            No invitations are outstanding. Anyone you invite will be listed here until
-            they set a password.
-          </p>
+          <div className="border-line bg-panel mt-3 rounded-lg border">
+            <EmptyState
+              compact
+              title="No invitations outstanding"
+              detail="Anyone you invite is listed here until they set a password."
+            />
+          </div>
         )}
       </section>
+
+      <Dialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+        <DialogContent>
+          {confirm?.kind === 'remove' && (
+            <>
+              <DialogTitle>Remove {confirm.member.name || confirm.member.email}?</DialogTitle>
+              <DialogDescription>
+                They lose access to the workspace straight away. Documents they created
+                or approved keep their history.
+              </DialogDescription>
+            </>
+          )}
+          {confirm?.kind === 'revoke' && (
+            <>
+              <DialogTitle>Revoke the invitation for {confirm.email}?</DialogTitle>
+              <DialogDescription>
+                Their invitation link stops working immediately. You can invite them again
+                later.
+              </DialogDescription>
+            </>
+          )}
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={remove.isPending || revoke.isPending}
+              onClick={() => {
+                if (confirm?.kind === 'remove') onRemove(confirm.member);
+                if (confirm?.kind === 'revoke') onRevoke(confirm.id, confirm.email);
+              }}
+            >
+              {confirm?.kind === 'revoke' ? 'Revoke invitation' : 'Remove member'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

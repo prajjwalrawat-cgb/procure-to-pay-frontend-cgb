@@ -37,7 +37,7 @@ export function CustomFieldInputs({
 
   return (
     <section className="rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-body font-semibold text-ink">Additional details</h2>
+      <h2 className="mb-3 text-h3 font-semibold text-ink">Additional details</h2>
       <div className="grid gap-3 md:grid-cols-2">
         {defs.map((def) => (
           <CustomFieldInput

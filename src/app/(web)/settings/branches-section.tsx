@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import { Badge, Button, Input, Pill } from '@/components/ui';
 import { SELECTABLE_GST_STATES, type Branch, type BranchInput } from '@/lib/shared';
 import { useState } from 'react';
 
@@ -12,7 +12,7 @@ import {
 } from '@/lib/api/settings';
 import { ApiError } from '@/lib/api-error';
 import { useToastStore } from '@/store/toast-store';
-import { Field, Panel, selectCls, textareaCls } from './ui';
+import { Field, Panel, SectionLoading, selectCls, textareaCls } from './ui';
 
 const EMPTY: BranchInput = {
   name: '',
@@ -29,7 +29,7 @@ const EMPTY: BranchInput = {
  * bills to when it names none.
  */
 export function BranchesSection(): React.JSX.Element {
-  const { data, isLoading } = useOrganisationSettings();
+  const { data, isLoading, error, refetch } = useOrganisationSettings();
   const create = useCreateBranch();
   const update = useUpdateBranch();
   const setDefault = useSetDefaultBranch();
@@ -40,7 +40,7 @@ export function BranchesSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-body-sm text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const startNew = (): void => {
@@ -104,7 +104,7 @@ export function BranchesSection(): React.JSX.Element {
       hint="One branch per state you are registered in. The default is used when an order does not name a registration — it decides the GSTIN printed on the PO, the place of supply (CGST+SGST vs IGST) and the jurisdiction clause."
       action={
         editing === null ? (
-          <Button size="sm" variant="default" onClick={startNew}>
+          <Button size="sm" variant="secondary" onClick={startNew}>
             Add registration
           </Button>
         ) : undefined
@@ -120,18 +120,18 @@ export function BranchesSection(): React.JSX.Element {
         {data.branches.map((b) => (
           <div
             key={b.id}
-            className="flex items-center justify-between gap-3 rounded-sm border border-line px-3 py-2"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line px-3 py-2"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-body-sm font-medium text-text">{b.name}</span>
-                {b.isDefault && <Pill variant="success">Default</Pill>}
+                {b.isDefault && <Badge variant="classification">Default</Badge>}
               </div>
               <div className="font-numeric truncate text-micro text-muted">
-                {b.gstin ?? 'No GSTIN'} ,{' '}
+                {b.gstin ?? 'No GSTIN'} ·{' '}
                 {SELECTABLE_GST_STATES.find((s) => s.code === b.stateCode)?.name ??
                   b.stateCode}
-                {b.address ? `, ${b.address}` : ''}
+                {b.address ? ` · ${b.address}` : ''}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">

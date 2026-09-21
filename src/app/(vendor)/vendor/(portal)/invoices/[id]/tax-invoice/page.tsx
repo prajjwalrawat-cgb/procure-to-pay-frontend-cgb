@@ -1,6 +1,6 @@
 'use client';
 
-import { PageHeader } from '@/components/ui';
+import { ErrorState, PageHeader, Skeleton } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -16,24 +16,43 @@ import { useAttachTaxInvoice, useMyInvoice } from '@/vendor/lib/api/invoices';
 export default function VendorTaxInvoicePage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data, isLoading } = useMyInvoice(id);
+  const { data, isLoading, error: loadError, refetch } = useMyInvoice(id);
   const attach = useAttachTaxInvoice(id);
   const [error, setError] = useState<string | null>(null);
   const back = (): void => router.push('/vendor/invoices');
 
+  const backLink = (
+    <button
+      type="button"
+      onClick={back}
+      className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to invoices
+    </button>
+  );
+
+  if (loadError) {
+    return (
+      <div className="mx-auto w-full max-w-3xl">
+        {backLink}
+        <ErrorState error={loadError} onRetry={() => void refetch()} />
+      </div>
+    );
+  }
   if (isLoading || !data) {
-    return <div className="p-6 text-body-sm text-muted">Loading invoice…</div>;
+    return (
+      <div className="mx-auto w-full max-w-3xl" aria-busy="true" aria-live="polite">
+        {backLink}
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="mt-2 h-4 w-full max-w-md" />
+        <Skeleton className="mt-6 h-72 rounded-lg" />
+      </div>
+    );
   }
 
   return (
-    <div className="mx-auto max-w-3xl pb-16">
-      <button
-        type="button"
-        onClick={back}
-        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to invoices
-      </button>
+    <div className="mx-auto w-full max-w-3xl pb-16">
+      {backLink}
       <PageHeader
         title="Upload tax invoice"
         description={`For proforma ${data.vendorInvoiceRef} (${data.number}). It replaces the proforma on the same invoice; any advance already paid stays counted.`}

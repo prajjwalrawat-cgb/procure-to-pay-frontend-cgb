@@ -2,12 +2,21 @@
 
 import {
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  EmptyState,
+  ErrorState,
   Input,
   PageHeader,
   Pill,
+  Skeleton,
   cn,
   controlClass,
 } from '@/components/ui';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { QuoteLineInput, SpecCompliance } from '@/lib/shared';
@@ -21,6 +30,7 @@ import {
   useVendorRfq,
 } from '@/vendor/lib/sourcing';
 import { useToastStore } from '@/vendor/store/toast-store';
+import { statusLabel } from '@/lib/format';
 
 interface LineDraft {
   rfqLineId: string;
@@ -76,7 +86,8 @@ function daysLeft(deadline: string | null): { text: string; urgent: boolean } | 
 export default function VendorRfqDetailPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const toast = useToastStore((s) => s.push);
-  const { data: rfq, isLoading } = useVendorRfq(id);
+  const { data: rfq, isLoading, error, refetch } = useVendorRfq(id);
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const createQuote = useCreateQuote();
   const [quoteId, setQuoteId] = useState<string | null>(null);
   const submitQuote = useSubmitQuote(quoteId ?? '');
@@ -108,8 +119,26 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
     );
   }, [rfq, lines.length]);
 
-  if (isLoading || !rfq)
-    return <div className="p-8 text-center text-muted">Loading…</div>;
+  if (error) {
+    return (
+      <div>
+        <BackLink />
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
+  }
+  if (isLoading || !rfq) {
+    return (
+      <div aria-busy="true" aria-live="polite">
+        <BackLink />
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="mt-3 h-7 w-80 max-w-full" />
+        <Skeleton className="mt-2 h-4 w-64 max-w-full" />
+        <Skeleton className="mt-6 h-48 rounded-lg" />
+        <Skeleton className="mt-4 h-24 rounded-lg" />
+      </div>
+    );
+  }
 
   const lineTotal = (l: LineDraft): number => {
     const qty = Number(l.qtyQuoted) || 0;
@@ -163,15 +192,12 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
     );
   };
 
+  // Sealed and final: there is no edit after this, so the confirm dialog makes
+  // the vendor say so before this runs.
   const submit = (): void => {
-    // Sealed and final: there is no edit after this, so make the vendor say so.
-    const ok = window.confirm(
-      'Submit your sealed quote?\n\nThe buyer cannot see it until the open ceremony, ' +
-        'and you cannot edit it afterwards — you would have to withdraw and re-quote.',
-    );
-    if (!ok) return;
     submitQuote.mutate(undefined, {
       onSuccess: (r) => {
+        setConfirmSubmit(false);
         setProof(r.short);
         toast(`Quote submitted, ${r.short}`, 'success');
       },
@@ -191,32 +217,31 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
   };
 
   return (
-    <div className="pb-24">
-      <div className="mb-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-caption text-accent">{rfq.number}</span>
-          <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
-          {closing && (
-            <Pill variant={closing.urgent ? 'danger' : 'success'} dot>
-              {closing.text}
-            </Pill>
-          )}
-        </div>
-        <PageHeader
-          title={<>{rfq.title}</>}
-          description={
-            <>
-              {rfq.category}, INCOTERM {rfq.incotermDefault}, {rfq.paymentTermsDefault}{' '}
-            {`, quote in ${rfq.currency ?? 'INR'}`}
-            </>
-          }
-        />
+    <div className={quoteId && !submitted ? 'pb-28' : 'pb-8'}>
+      <BackLink />
+      <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="font-numeric text-caption text-muted">{rfq.number}</span>
+        <span className="text-caption text-muted">{statusLabel(rfq.rfqType)}</span>
+        {closing && (
+          <Pill variant={closing.urgent ? 'danger' : 'neutral'} dot>
+            {closing.text}
+          </Pill>
+        )}
       </div>
+      <PageHeader
+        title={rfq.title}
+        description={
+          <>
+            {rfq.category} · Incoterm {rfq.incotermDefault} ·{' '}
+            {statusLabel(rfq.paymentTermsDefault)} · Quote in {rfq.currency ?? 'INR'}
+          </>
+        }
+      />
 
       {proof && (
-        <div className="mb-4 rounded-lg border border-accent bg-accent-wash p-4 text-body-sm">
+        <div className="mb-4 rounded-lg border border-success/30 bg-success-bg p-4 text-body-sm text-text">
           <strong>Quote submitted.</strong> Proof-of-submission hash:{' '}
-          <span className="font-mono">{proof}</span>. Keep it — it proves what you sent
+          <span className="font-numeric break-all">{proof}</span>. Keep it — it proves what you sent
           and when, before any envelope was opened.
         </div>
       )}
@@ -239,12 +264,12 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                 <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-body-sm font-medium text-ink">{l.itemDesc}</span>
                   <span className="text-caption text-muted">
-                    asked: {l.qtyRequired} {l.uom}
-                    {l.hsnCode ? `, HSN ${l.hsnCode}` : ''}, tax{' '}
+                    Asked for {l.qtyRequired} {l.uom}
+                    {l.hsnCode ? ` · HSN ${l.hsnCode}` : ''} · Tax{' '}
                     {(Number(l.taxRate) * 100).toFixed(0)}%
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   <LabelledInput
                     label={`Qty (${l.uom})`}
                     value={l.qtyQuoted}
@@ -266,7 +291,7 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
                   <label className="block">
                     <span className="mb-1 block text-caption text-muted">Compliance</span>
                     <select
-                      className={cn(controlClass, 'w-auto')}
+                      className={cn(controlClass, 'w-full')}
                       value={l.specCompliance}
                       disabled={submitted}
                       onChange={(e) =>
@@ -321,14 +346,17 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
               Attach your own quotation document, technical specs or certificates. PDF or
               image, up to 10 MB each.
             </p>
+            {(quote?.attachments ?? []).length === 0 && (
+              <p className="text-caption text-faint">Nothing attached yet.</p>
+            )}
             {(quote?.attachments ?? []).map((a) => (
               <div
                 key={a.id}
-                className="flex items-center justify-between border-t border-line py-2 text-body-sm first:border-0"
+                className="flex flex-wrap items-center justify-between gap-x-3 border-t border-line py-2 text-body-sm first:border-0"
               >
-                <span className="truncate">{a.filename}</span>
+                <span className="min-w-0 truncate text-text">{a.filename}</span>
                 <span className="shrink-0 text-caption text-muted">
-                  {a.docType.replace(/_/g, ' ').toLowerCase()}, {fileSize(a.sizeBytes)}
+                  {statusLabel(a.docType)} · {fileSize(a.sizeBytes)}
                 </span>
               </div>
             ))}
@@ -366,22 +394,26 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
 
       <Section title="Public Q&amp;A">
         {rfq.questions.length === 0 && (
-          <p className="text-body-sm text-muted">No public answers yet.</p>
+          <EmptyState
+            compact
+            title="No public answers yet"
+            detail="Answers the buyer publishes to any supplier's question appear here for everyone invited."
+          />
         )}
         {rfq.questions.map((q) => (
           <div
             key={q.id}
             className="border-t border-line py-2 text-body-sm first:border-0"
           >
-            <p>{q.questionText}</p>
-            {q.answerText && <p className="text-accent-2">↳ {q.answerText}</p>}
+            <p className="text-text">{q.questionText}</p>
+            {q.answerText && <p className="mt-0.5 text-muted">↳ {q.answerText}</p>}
           </div>
         ))}
       </Section>
 
       {quoteId && !submitted && (
-        <div className="fixed inset-x-0 bottom-0 border-t border-line bg-panel">
-          <div className="mx-auto flex max-w-[980px] flex-wrap items-center gap-3 px-4 py-3">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
+          <div className="pf-container flex flex-wrap items-center gap-3 py-3">
             <label className="flex items-center gap-2 text-caption">
               <span className="text-muted">Validity (days)</span>
               <Input
@@ -393,12 +425,12 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
             <span className="ml-auto text-body-sm text-muted">
               Total {money(subtotal + taxTotal)}
             </span>
-            <Button variant="primary" onClick={saveLines} disabled={updateQuote.isPending}>
+            <Button variant="secondary" onClick={saveLines} disabled={updateQuote.isPending}>
               {updateQuote.isPending ? 'Saving…' : 'Save draft'}
             </Button>
             <Button
               variant="primary"
-              onClick={submit}
+              onClick={() => setConfirmSubmit(true)}
               disabled={submitQuote.isPending || !priced}
               title={priced ? undefined : 'Enter a unit price on every line first'}
             >
@@ -407,7 +439,41 @@ export default function VendorRfqDetailPage(): React.JSX.Element {
           </div>
         </div>
       )}
+
+      <Dialog open={confirmSubmit} onOpenChange={setConfirmSubmit}>
+        <DialogContent>
+          <DialogTitle>Submit your sealed quote?</DialogTitle>
+          <DialogDescription>
+            The buyer cannot see it until the bids are opened, and you cannot edit it
+            afterwards. To change it you would have to withdraw and quote again.
+          </DialogDescription>
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmSubmit(false)}>
+              Keep editing
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={submitQuote.isPending}
+              onClick={submit}
+            >
+              {submitQuote.isPending ? 'Submitting…' : 'Submit sealed quote'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function BackLink(): React.JSX.Element {
+  return (
+    <Link
+      href="/vendor/sourcing"
+      className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to RFQ invitations
+    </Link>
   );
 }
 
@@ -420,7 +486,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-body font-semibold text-ink">{title}</h2>
+      <h2 className="mb-3 text-h3 font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );

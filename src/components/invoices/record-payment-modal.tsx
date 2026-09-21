@@ -130,7 +130,7 @@ export function RecordPaymentModal({
             </div>
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Paid on">
               <Input
                 type="date"
@@ -154,7 +154,7 @@ export function RecordPaymentModal({
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label={mode === 'CHEQUE' ? 'Cheque number' : 'UTR / reference'}>
               <Input
                 value={reference}
@@ -206,7 +206,7 @@ export function RecordPaymentModal({
             Cancel
           </Button>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             onClick={submit}
             disabled={record.isPending || !validAmount || !reference.trim() || !paidOn}

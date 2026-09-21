@@ -1,7 +1,9 @@
 'use client';
 
 import type { AnalyticsPeriodKey, MsmeBucketKey } from '@/lib/shared';
+import { DataState, Skeleton, SubNav } from '@/components/ui';
 import { RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 import { useMemo } from 'react';
 
 /**
@@ -20,11 +22,17 @@ export {
   CHART_TICK,
 } from '@/components/ui';
 
-/** Recharts tooltips are unstyled by default and clash with the panel. */
+/**
+ * Recharts tooltips are unstyled by default and clash with the panel. The
+ * colours are the design-system CSS variables rather than hex, so the tooltip
+ * follows the tokens instead of a copy of them.
+ */
 export const TOOLTIP_STYLE = {
   fontSize: 12,
   borderRadius: 6,
-  border: '1px solid #D4DEEC',
+  border: '1px solid var(--pf-line)',
+  background: 'var(--pf-panel)',
+  color: 'var(--pf-text)',
 } as const;
 
 export const PERIODS: { key: AnalyticsPeriodKey; label: string }[] = [
@@ -41,15 +49,21 @@ export function PeriodPicker({
   onChange: (v: AnalyticsPeriodKey) => void;
 }): React.JSX.Element {
   return (
-    <div className="border-line flex items-center gap-0.5 rounded-md border p-0.5">
+    <div
+      role="group"
+      aria-label="Period"
+      className="border-line bg-panel flex items-center gap-0.5 rounded-md border p-0.5"
+    >
       {PERIODS.map((p) => (
         <button
           key={p.key}
+          type="button"
+          aria-pressed={value === p.key}
           onClick={() => onChange(p.key)}
           className={
-            'rounded px-2.5 py-1 text-caption font-medium ' +
+            'duration-hover rounded-sm px-2.5 py-1 text-caption font-medium transition-colors ' +
             (value === p.key
-              ? 'bg-accent-wash text-accent-2'
+              ? 'bg-accent-wash text-accent'
               : 'text-muted hover:text-text')
           }
         >
@@ -87,12 +101,14 @@ export function AsOfBadge({
       {refreshedAt ? `Updated ${label}` : 'Live'}
       {onRefresh && (
         <button
+          type="button"
           onClick={onRefresh}
           disabled={refreshing}
           title="Refresh analytics"
-          className="hover:text-accent-2 disabled:opacity-40"
+          aria-label="Refresh analytics"
+          className="hover:text-accent disabled:opacity-40"
         >
-          <RefreshCw className={'h-3 w-3 ' + (refreshing ? 'animate-spin' : '')} />
+          <RefreshCw className={'h-3 w-3 ' + (refreshing ? 'animate-spin' : '')} aria-hidden />
         </button>
       )}
     </span>
@@ -148,4 +164,90 @@ export function humanise(value: string): string {
           : word.toLowerCase(),
     )
     .join(' ');
+}
+
+const TABS = [
+  { label: 'Overview', href: '/analytics' },
+  { label: 'Savings', href: '/analytics/savings' },
+  { label: 'MSME', href: '/analytics/msme' },
+  { label: 'AP performance', href: '/analytics/ap-performance' },
+];
+
+/**
+ * The analytics views as one tab row. It sat on the overview only, so opening
+ * Savings or MSME dropped the reader out of the set with a breadcrumb as the
+ * only way sideways.
+ */
+export function AnalyticsTabs({
+  active,
+  className,
+}: {
+  active: string;
+  className?: string;
+}): React.JSX.Element {
+  return (
+    <SubNav
+      className={className ?? 'mb-4'}
+      aria-label="Analytics views"
+      items={TABS.map((t) => ({ key: t.href, label: t.label, href: t.href }))}
+      value={active}
+      renderLink={(item, content) => (
+        <Link key={item.key} href={item.href ?? '#'}>
+          {content}
+        </Link>
+      )}
+    />
+  );
+}
+
+/** A chart panel with the three data states designed in, sized like its chart. */
+export function ChartCard({
+  title,
+  asOf,
+  className,
+  query,
+  isEmpty,
+  height,
+  empty,
+  children,
+}: {
+  title: string;
+  /** Omit to leave the staleness stamp off. */
+  asOf?: string | null;
+  className?: string;
+  query: { isLoading: boolean; error: unknown; refetch: () => unknown };
+  isEmpty: boolean;
+  /** Height of the chart, so the skeleton holds the same space. */
+  height: number;
+  empty?: { title: string; detail?: string };
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <div className={'border-line bg-panel min-w-0 rounded-lg border p-4 ' + (className ?? '')}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <h3 className="text-ink text-h3 font-semibold">{title}</h3>
+        {asOf !== undefined && <AsOfBadge refreshedAt={asOf} />}
+      </div>
+      <DataState
+        isLoading={query.isLoading}
+        error={query.error}
+        onRetry={() => void query.refetch()}
+        isEmpty={isEmpty}
+        compact
+        empty={
+          empty ?? {
+            title: 'No data for this period',
+            detail: 'Figures appear once documents are posted in the selected period.',
+          }
+        }
+        loading={
+          <div style={{ height }}>
+            <Skeleton className="h-full w-full rounded-md" />
+          </div>
+        }
+      >
+        {children}
+      </DataState>
+    </div>
+  );
 }

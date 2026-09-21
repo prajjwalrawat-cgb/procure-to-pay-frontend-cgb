@@ -6,15 +6,19 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  EmptyState,
+  ErrorState,
+  Input,
   PageHeader,
   Pill,
+  Skeleton,
   SubNav,
   VerificationResult,
 } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { Children, useState } from 'react';
 import {
   PERMISSIONS,
   type InvoiceExceptionView,
@@ -46,7 +50,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
-  const { data, isLoading } = useInvoice(id);
+  const { data, isLoading, error, refetch } = useInvoice(id);
   const route = useResolveAndRoute(id);
   const retryOcr = useRetryOcr(id);
   // Paired with the commented-out Re-run match button below.
@@ -69,9 +73,15 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const setKind = useSetDocumentKind(id);
   const attachTax = useAttachTaxInvoice(id);
 
-  if (isLoading || !data) {
-    return <div className="p-6 text-body-sm text-muted">Loading invoice…</div>;
+  if (error) {
+    return (
+      <div>
+        <BackLink />
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
   }
+  if (isLoading || !data) return <InvoiceSkeleton />;
 
   // Exceptions raised on a proforma since replaced by its tax invoice are kept
   // for the record, but they describe a different document.
@@ -157,14 +167,14 @@ export default function InvoiceDetailPage(): React.JSX.Element {
     );
   };
 
+  // The bottom bar only exists when it has something to offer; an empty
+  // frosted strip along the viewport edge read as a rendering glitch.
+  const awaiting = data.status === 'AWAITING_APPROVAL';
+  const showActionBar = awaiting || routable;
+
   return (
-    <div className="pb-20">
-      <Link
-        href="/invoices"
-        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to invoices
-      </Link>
+    <div className={showActionBar ? 'pb-28' : 'pb-8'}>
+      <BackLink />
 
       <PageHeader
         title={data.number}
@@ -186,10 +196,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           <>
             <EntityRef kind="vendor" id={data.vendor.id}>
               {data.vendor.name}
-            </EntityRef>{' '}
-            {' — '}Ref <span className="font-numeric">{data.vendorInvoiceRef}</span>,
-            source{' '}
-            {data.source}
+            </EntityRef>
+            {' · '}Ref <span className="font-numeric">{data.vendorInvoiceRef}</span>
+            {' · '}
+            {statusLabel(data.source)}
             {data.proformaRef && (
               <>
                 {' '}
@@ -235,7 +245,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           </div>
           {(canIntake || canResolve) && (
             <Button
-              variant="accent"
+              variant="secondary"
               size="sm"
               disabled={Boolean(taxInvoiceWait)}
               onClick={() => setAttachingTax(true)}
@@ -256,13 +266,20 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         </div>
       )}
 
-      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex flex-col gap-5">
+      <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-6">
           {/* 3-way match */}
           <section>
-            <h2 className="mb-2 text-body font-semibold text-ink">3-way match</h2>
-            <div className="grid gap-3 md:grid-cols-3">
-              <MatchCard title="Purchase order" subtitle={data.po?.number ?? '—'}>
+            <h2 className="mb-2 text-h3 font-semibold text-ink">3-way match</h2>
+            {/* Three across wherever the main column is wide enough for a line
+                description and its figures. At lg the 360px sidebar squeezes the
+                column to ~580px, so the cards stack there until xl. */}
+            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+              <MatchCard
+                title="Purchase order"
+                subtitle={data.po?.number ?? '—'}
+                empty={data.po ? 'No lines on this order.' : 'No purchase order linked.'}
+              >
                 {data.poLines.map((l) => (
                   <div key={l.id}>
                     <LineRow desc={l.itemDesc} qty={l.qtyOrdered} price={l.unitPrice} />
@@ -296,7 +313,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                   </div>
                 )}
               </MatchCard>
-              <MatchCard title="Invoice" subtitle={data.vendorInvoiceRef} accent="danger">
+              <MatchCard
+                title="Invoice"
+                subtitle={data.vendorInvoiceRef}
+                accent={data.lines.some((l) => l.hasVariance) ? 'danger' : undefined}
+                empty="No lines extracted yet."
+              >
                 {data.lines.map((l) => (
                   <LineRow
                     key={l.id}
@@ -313,9 +335,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           {/* Exceptions */}
           <section>
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-body font-semibold text-ink">
-                Exceptions ({openExceptions.length} open
-                {overridden.length > 0 && `, ${overridden.length} overridden`})
+              <h2 className="text-h3 font-semibold text-ink">
+                Exceptions
+                <span className="ml-2 text-body-sm font-normal text-muted">
+                  {openExceptions.length} open
+                  {overridden.length > 0 && `, ${overridden.length} overridden`}
+                </span>
               </h2>
               {/*
                 Hidden, not deleted. The match already re-runs on every event
@@ -361,19 +386,19 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                   // Not "all clear": a HIGH/CRITICAL was overridden by a human, not
                   // satisfied by the data. The approver is the one who has to weigh
                   // that, so name it instead of painting the section green.
-                  <div className="rounded-sm border border-warn/30 bg-warn-wash px-3 py-2 text-caption text-warn">
+                  <div className="mb-3 rounded-sm border border-warn/30 bg-warn-wash px-3 py-2 text-caption text-warn">
                     No exceptions are open, but {overridden.length}{' '}
                     {overridden.length === 1 ? 'was' : 'were'} overridden rather than
                     cleared by matching data. Review the override reason below before
                     approving.
                   </div>
                 ) : matched ? (
-                  <div className="rounded-sm bg-accent-wash px-3 py-2 text-caption text-accent-2">
+                  <div className="mb-3 rounded-sm bg-accent-wash px-3 py-2 text-caption text-accent-2">
                     All exceptions resolved. Ready to route for approval.
                   </div>
                 ) : null
               ) : (
-                <div className="rounded-sm bg-info-wash px-3 py-2 text-caption text-info">
+                <div className="mb-3 rounded-sm bg-info-wash px-3 py-2 text-caption text-info">
                   <div>
                     The 3-way match has not run yet ({statusLabel(data.status)}), so
                     nothing has been checked against the PO or the goods receipt.
@@ -383,10 +408,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                       matcher never runs, and routing refuses it forever. The
                       state was reachable and had no way out. */}
                   {retryable && (
-                    <div className="mt-2 flex items-center gap-3">
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
                       <Button
                         size="sm"
-                        variant="default"
+                        variant="secondary"
                         onClick={() =>
                           retryOcr.mutate(undefined, {
                             onSuccess: () =>
@@ -417,10 +442,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 <div
                   key={e.id}
                   data-testid={`exc-${e.type}`}
-                  className="flex items-center justify-between rounded-lg border border-line bg-panel p-3"
+                  className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-3 sm:flex-row sm:items-start sm:justify-between"
                 >
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       {/* Green is for a variance accepted inside tolerance. An
                           overridden HIGH — "we skipped the goods-receipt check"
                           — is not a success, and painting it green is the same
@@ -481,7 +506,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     )}
                   </div>
                   {!e.resolved && (
-                    <Button size="sm" variant="default" onClick={() => setResolving(e)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="self-start"
+                      onClick={() => setResolving(e)}
+                    >
                       Resolve
                     </Button>
                   )}
@@ -511,9 +541,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             )}
           </section>
 
-          {/* Approval routing — live (Slice 2) */}
+          {/* Approval routing */}
           <section>
-            <h2 className="mb-2 text-body font-semibold text-ink">Approval routing</h2>
+            <h2 className="mb-2 text-h3 font-semibold text-ink">Approval routing</h2>
             <div className="flex flex-wrap items-center gap-2">
               {data.liveApprovalChain.map((s) => (
                 <span
@@ -553,13 +583,13 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                       ? s.isCurrent
                         ? 'Current'
                         : 'Pending'
-                      : s.decision.replace(/_/g, ' ')}
+                      : statusLabel(s.decision)}
                   </Pill>
                   {s.isEscalation && (
                     <span className="text-micro font-semibold text-warn">ESC</span>
                   )}
                   {s.delegatedFromName && (
-                    <span className="text-micro text-violet">
+                    <span className="text-micro text-muted">
                       via {s.delegatedFromName}
                     </span>
                   )}
@@ -586,41 +616,46 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               onChange={(k) => setActivityTab(k as 'activity' | 'payments')}
             />
             {activityTab === 'activity' ? (
-              <ul className="mb-3 flex flex-col gap-1.5 border-l border-line pl-4">
-                {data.activity.map((a) => (
-                  <li key={a.id} className="text-caption text-muted">
-                    <span className="font-medium text-text">
-                      {a.action.replace(/_/g, ' ')}
-                    </span>{' '}
-                    ,{' '}
-                    <span className="font-numeric">
-                      {formatDateTime(a.at)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              data.activity.length > 0 ? (
+                <ul className="mb-3 flex flex-col gap-2 border-l border-line pl-4">
+                  {data.activity.map((a) => (
+                    <li
+                      key={a.id}
+                      className="flex flex-wrap items-baseline justify-between gap-x-3 text-caption"
+                    >
+                      <span className="font-medium text-text">{activityLabel(a.action)}</span>
+                      <span className="font-numeric text-muted">{formatDateTime(a.at)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="mb-3">
+                  <EmptyState compact title="No activity recorded yet" />
+                </div>
+              )
             ) : (
               <div className="mb-3 flex flex-col gap-2">
                 {data.payments.length > 0 ? (
                   data.payments.map((p) => <PaymentCard key={p.id} payment={p} />)
                 ) : (
-                  <div className="text-caption text-muted">
-                    Not yet paid. Payments appear here once a run is confirmed by the
-                    bank, or when a payment made outside a run is recorded.
-                  </div>
+                  <EmptyState
+                    compact
+                    title="Not paid yet"
+                    detail="Payments appear here once a run is confirmed by the bank, or when a payment made outside a run is recorded."
+                  />
                 )}
               </div>
             )}
             <div className="flex gap-2">
-              <input
+              <Input
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="Add an internal comment…"
-                className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-body-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                aria-label="Internal comment"
+                className="min-w-0 flex-1"
               />
               <Button
-                size="sm"
-                variant="default"
+                variant="secondary"
                 disabled={!comment.trim() || addComment.isPending}
                 onClick={() =>
                   addComment.mutate(comment, {
@@ -638,7 +673,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
         </div>
 
         {/* Right panel */}
-        <aside className="flex flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4">
           <div className="rounded-lg border border-line bg-panel p-4">
             <div className="text-micro text-faint">
               Amount payable
@@ -682,7 +717,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
               payable &&
               canPay && (
                 <Button
-                  variant="default"
+                  variant="secondary"
                   size="sm"
                   className="mt-3 w-full"
                   onClick={() => setRecording(true)}
@@ -726,13 +761,18 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 <span className="text-caption font-semibold text-danger">
                   MSME §15 clock
                 </span>
+                {/* "-42 days left" made the reviewer do the sign flip; past the
+                    due date the clock is counting overdue days, so say that. */}
                 <Pill variant={msmeVariant(data.msme.bucket)} dot>
-                  {data.msme.daysRemaining} days left
+                  {data.msme.daysRemaining < 0
+                    ? `${-data.msme.daysRemaining} days overdue`
+                    : `${data.msme.daysRemaining} days left`}
                 </Pill>
               </div>
               <p className="mt-1 text-micro text-danger/80">
-                Due {formatDate(data.msme.dueDate)}. Pay within
-                the 45-day cap to avoid interest.
+                {data.msme.daysRemaining < 0
+                  ? `Was due ${formatDate(data.msme.dueDate)}. Past the 45-day cap, so interest is accruing.`
+                  : `Due ${formatDate(data.msme.dueDate)}. Pay within the 45-day cap to avoid interest.`}
               </p>
             </div>
           )}
@@ -806,8 +846,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                         {r.number}
                       </EntityRef>
                       <div className="truncate text-micro text-faint">
-                        {r.vendorInvoiceRef} ,{' '}
-                        {formatDate(r.invoiceDate)}
+                        {r.vendorInvoiceRef} · {formatDate(r.invoiceDate)}
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
@@ -838,6 +877,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                 <EntityRef kind="grn" id={data.grn.id}>
                   {data.grn.number}
                 </EntityRef>
+              )}
+              {!data.po && !data.grn && data.attachments.length === 0 && (
+                <span className="text-muted">No linked documents.</span>
               )}
               {data.attachments.map((a) => (
                 <a
@@ -882,9 +924,12 @@ export default function InvoiceDetailPage(): React.JSX.Element {
             </div>
             <div className="text-body-sm font-medium text-ink">{data.vendor.name}</div>
             <dl className="mt-1 flex flex-col gap-1 text-caption">
-              <Row label="Risk score" value={`A, ${data.vendor.riskScore ?? '—'}`} />
+              <Row label="Risk score" value={data.vendor.riskScore != null ? String(data.vendor.riskScore) : '—'} />
               <Row label="FYTD spend" value={inrCompact(data.vendor.fytdSpend)} />
-              <Row label="On-time" value={`${data.vendor.onTimePct ?? '—'}%`} />
+              <Row
+                label="On-time"
+                value={data.vendor.onTimePct != null ? `${data.vendor.onTimePct}%` : '—'}
+              />
             </dl>
           </div>
 
@@ -894,68 +939,71 @@ export default function InvoiceDetailPage(): React.JSX.Element {
       </div>
 
       {/* Sticky action bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
-          {data.status === 'AWAITING_APPROVAL' ? (
-            data.canDecide ? (
-              <>
-                <input
-                  value={decisionComment}
-                  onChange={(e) => setDecisionComment(e.target.value)}
-                  placeholder="Add a decision comment…"
-                  className="flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-body-sm outline-none"
-                />
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={decide.isPending}
-                    onClick={() => onDecide('REJECT')}
-                  >
-                    Reject
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    disabled={decide.isPending}
-                    onClick={() => onDecide('REQUEST_CHANGES')}
-                  >
-                    Request changes
-                  </Button>
-                  <Button
-                    variant="primary"
-                    disabled={decide.isPending}
-                    onClick={() => onDecide('APPROVE')}
-                  >
-                    Approve
-                  </Button>
+      {showActionBar && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
+          <div className="pf-container flex flex-wrap items-center justify-between gap-2 py-3 sm:gap-3">
+            {awaiting ? (
+              data.canDecide ? (
+                <>
+                  <Input
+                    value={decisionComment}
+                    onChange={(e) => setDecisionComment(e.target.value)}
+                    placeholder="Add a decision comment…"
+                    aria-label="Decision comment"
+                    className="min-w-0 flex-1 basis-full sm:basis-auto"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={decide.isPending}
+                      onClick={() => onDecide('REJECT')}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={decide.isPending}
+                      onClick={() => onDecide('REQUEST_CHANGES')}
+                    >
+                      Request changes
+                    </Button>
+                    <Button
+                      variant="primary"
+                      disabled={decide.isPending}
+                      onClick={() => onDecide('APPROVE')}
+                    >
+                      Approve
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div
+                  className="ml-auto text-body-sm text-muted"
+                  title="Waiting for the current approver"
+                >
+                  Waiting for{' '}
+                  {data.liveApprovalChain.find((s) => s.isCurrent)?.approverName ??
+                    'the current approver'}
                 </div>
-              </>
-            ) : (
-              <div
-                className="ml-auto text-body-sm text-muted"
-                title="Waiting for the current approver"
+              )
+            ) : routable ? (
+              <Button
+                variant="primary"
+                className="ml-auto"
+                onClick={onRoute}
+                disabled={route.isPending || openExceptions.length > 0 || !matched}
+                title={
+                  matched ? undefined : 'The 3-way match has not run on this invoice yet'
+                }
               >
-                Waiting for{' '}
-                {data.liveApprovalChain.find((s) => s.isCurrent)?.approverName ??
-                  'the current approver'}
-              </div>
-            )
-          ) : routable ? (
-            <Button
-              variant="primary"
-              className="ml-auto"
-              onClick={onRoute}
-              disabled={route.isPending || openExceptions.length > 0 || !matched}
-              title={
-                matched ? undefined : 'The 3-way match has not run on this invoice yet'
-              }
-            >
-              {data.priorApproval ? 'Confirm tax invoice' : 'Resolve & route for approval'}
-            </Button>
-          ) : null}
+                {data.priorApproval ? 'Confirm tax invoice' : 'Resolve & route for approval'}
+              </Button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
 
       <ResolveModal
         invoiceId={id}
@@ -1018,7 +1066,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
 function PaymentCard({ payment: p }: { payment: InvoicePaymentInfo }): React.JSX.Element {
   return (
     <div className="rounded-lg border border-line bg-panel p-3 text-caption">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {p.paymentRunId ? (
           <Link
             href={`/payment-runs/${p.paymentRunId}`}
@@ -1038,7 +1086,7 @@ function PaymentCard({ payment: p }: { payment: InvoicePaymentInfo }): React.JSX
         <Row label="Settled" value={inr(p.gross)} />
         {Number(p.tds) > 0 && <Row label="TDS withheld" value={inr(p.tds)} />}
         <Row label="Net paid" value={inr(p.net)} />
-        <Row label="Paid on" value={new Date(p.paidAt).toLocaleDateString('en-IN')} />
+        <Row label="Paid on" value={formatDate(p.paidAt)} />
         {p.recordedByName && <Row label="Recorded by" value={p.recordedByName} />}
       </dl>
       {p.note && <p className="mt-1.5 italic text-muted">“{p.note}”</p>}
@@ -1050,13 +1098,17 @@ function MatchCard({
   title,
   subtitle,
   accent,
+  empty,
   children,
 }: {
   title: string;
   subtitle: string;
   accent?: 'danger';
+  /** Shown when there are no lines, so a card never renders blank. */
+  empty?: string;
   children: React.ReactNode;
 }): React.JSX.Element {
+  const hasContent = Children.toArray(children).length > 0;
   return (
     <div
       className={
@@ -1066,7 +1118,11 @@ function MatchCard({
     >
       <div className="text-caption font-semibold text-ink">{title}</div>
       <div className="font-numeric mb-2 text-micro text-faint">{subtitle}</div>
-      <div className="flex flex-col gap-1">{children}</div>
+      {hasContent || !empty ? (
+        <div className="flex flex-col gap-1">{children}</div>
+      ) : (
+        <p className="text-caption text-muted">{empty}</p>
+      )}
     </div>
   );
 }
@@ -1218,4 +1274,55 @@ const COMPLIANCE_LABELS: Record<string, string> = {
 function complianceLabel(status: string): string {
   const s = status.toUpperCase();
   return COMPLIANCE_LABELS[s] ?? status;
+}
+
+/**
+ * Audit actions arrive as event keys ("invoice.match run", "DOCUMENT_ROUTED").
+ * Read them as a sentence rather than as constants.
+ */
+function activityLabel(action: string): string {
+  const words = action.replace(/[._]+/g, ' ').trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function BackLink(): React.JSX.Element {
+  return (
+    <Link
+      href="/invoices"
+      className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to invoices
+    </Link>
+  );
+}
+
+/** Shaped like the page it stands in for, so nothing jumps when data lands. */
+function InvoiceSkeleton(): React.JSX.Element {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      <BackLink />
+      <Skeleton className="h-7 w-40" />
+      <Skeleton className="mt-2 h-4 w-80 max-w-full" />
+      <div className="mt-5 flex gap-1">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-6 w-20" />
+        ))}
+      </div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+            <Skeleton className="h-28 rounded-lg" />
+            <Skeleton className="h-28 rounded-lg" />
+            <Skeleton className="h-28 rounded-lg" />
+          </div>
+          <Skeleton className="h-24 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-48 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -2,12 +2,13 @@
 
 import type { AnalyticsPeriodKey, TopVendorRow } from '@/lib/shared';
 import {
+  Badge,
+  Button,
   CHART_CHROME,
   CHART_SERIES,
   CHART_TICK,
+  KpiCard,
   PageHeader,
-  Pill,
-  SubNav,
 } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -36,14 +37,14 @@ import {
 } from '@/lib/api/analytics';
 import { inr, inrCompact } from '@/lib/format';
 
-import { AsOfBadge, MSME_BUCKET, PeriodPicker, TOOLTIP_STYLE } from './_lib';
-
-const TABS = [
-  { label: 'Overview', href: '/analytics' },
-  { label: 'Savings', href: '/analytics/savings' },
-  { label: 'MSME', href: '/analytics/msme' },
-  { label: 'AP Performance', href: '/analytics/ap-performance' },
-];
+import {
+  AnalyticsTabs,
+  AsOfBadge,
+  ChartCard,
+  MSME_BUCKET,
+  PeriodPicker,
+  TOOLTIP_STYLE,
+} from './_lib';
 
 export default function AnalyticsPage(): React.JSX.Element {
   const [period, setPeriod] = useState<AnalyticsPeriodKey>('LAST_12M');
@@ -52,6 +53,14 @@ export default function AnalyticsPage(): React.JSX.Element {
 
   const total = useTotalSpend(period);
   const trend = useSpendTrend(period, compare);
+  // Amounts arrive as decimal strings. Recharts sizes the Y axis from raw
+  // values, and with strings it drew a ₹1 Cr ceiling under a ₹1.08 Cr month,
+  // clipping the line off the top of the chart. Numbers give it a true domain.
+  const trendPoints = (trend.data?.points ?? []).map((p) => ({
+    ...p,
+    netSpend: Number(p.netSpend),
+    priorYearNetSpend: p.priorYearNetSpend == null ? null : Number(p.priorYearNetSpend),
+  }));
   const category = useSpendByCategory(period);
   const topVendors = useTopVendors(period);
   const concentration = useConcentration(period);
@@ -76,6 +85,7 @@ export default function AnalyticsPage(): React.JSX.Element {
         <label className="text-muted flex items-center gap-1.5 text-caption">
           <input
             type="checkbox"
+            className="accent-accent"
             checked={compare}
             onChange={(e) => setCompare(e.target.checked)}
           />
@@ -90,61 +100,77 @@ export default function AnalyticsPage(): React.JSX.Element {
         </span>
       </div>
 
-      <SubNav
-        className="mb-4"
-        aria-label="Analytics views"
-        items={TABS.map((t) => ({ key: t.href, label: t.label, href: t.href }))}
-        value="/analytics"
-        renderLink={(item, content) => (
-          <Link key={item.key} href={item.href ?? '#'}>
-            {content}
-          </Link>
-        )}
-      />
+      <AnalyticsTabs active="/analytics" />
 
       {/* KPI strip */}
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Kpi
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <KpiCard
           label="Total spend"
+          isLoading={total.isLoading}
           value={total.data ? inrCompact(total.data.netSpend) : '—'}
         />
-        <Kpi
+        <KpiCard
           label="Hard savings"
+          isLoading={savings.isLoading}
           value={savings.data ? inrCompact(savings.data.hardSavingsTotal) : '—'}
-          accent
         />
         <button
+          type="button"
           onClick={() => setDrill(concentration.data?.vendors ?? [])}
-          className="text-left"
+          disabled={!concentration.data}
+          className="rounded-lg text-left"
         >
-          <Kpi
+          <KpiCard
+            className="hover:border-accent/40 duration-hover h-full transition-colors"
             label="Top-10 concentration"
+            isLoading={concentration.isLoading}
             value={concentration.data ? `${concentration.data.concentrationPct}%` : '—'}
-            hint="Click to drill down"
+            footnote="Select to see the vendors"
           />
         </button>
-        <Kpi
+        <KpiCard
           label="Contract coverage"
+          isLoading={coverage.isLoading}
           value={coverage.data ? `${coverage.data.coveragePct}%` : '—'}
-          hint={coverage.data?.note ?? undefined}
+          footnote={coverage.data?.note ?? undefined}
         />
-        <Kpi label="MSME spend" value={msme.data ? `${msme.data.msmeSpendPct}%` : '—'} />
-        <Link href="/analytics/msme">
-          <Kpi
+        <KpiCard
+          label="MSME spend"
+          isLoading={msme.isLoading}
+          value={msme.data ? `${msme.data.msmeSpendPct}%` : '—'}
+        />
+        <Link href="/analytics/msme" className="rounded-lg">
+          <KpiCard
+            className="hover:border-accent/40 duration-hover h-full transition-colors"
             label="MSME 45-day exposure"
-            value={breach ? inrCompact(breach.totalExposure) : '—'}
-            danger={!!breach && breach.invoiceCount > 0}
-            hint={breach ? `${breach.invoiceCount} invoice(s) in breach` : undefined}
+            isLoading={msme.isLoading}
+            value={
+              <span className={breach && breach.invoiceCount > 0 ? 'text-danger' : undefined}>
+                {breach ? inrCompact(breach.totalExposure) : '—'}
+              </span>
+            }
+            footnote={
+              breach
+                ? `${breach.invoiceCount} invoice${breach.invoiceCount === 1 ? '' : 's'} in breach`
+                : undefined
+            }
           />
         </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Trend */}
-        <Card title="Monthly spend trend" asOf={asOf} className="lg:col-span-2">
+        <ChartCard
+          title="Monthly spend trend"
+          asOf={asOf}
+          className="lg:col-span-2"
+          query={trend}
+          isEmpty={(trend.data?.points ?? []).length === 0}
+          height={240}
+        >
           <ResponsiveContainer width="100%" height={240}>
             <LineChart
-              data={trend.data?.points ?? []}
+              data={trendPoints}
               margin={{ left: 8, right: 8, top: 8 }}
             >
               <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
@@ -154,7 +180,7 @@ export default function AnalyticsPage(): React.JSX.Element {
                 tick={CHART_TICK}
                 width={70}
               />
-              <Tooltip formatter={(v: number) => inr(String(v))} />
+              <Tooltip formatter={(v: number) => inr(String(v))} contentStyle={TOOLTIP_STYLE} />
               <Line
                 type="monotone"
                 dataKey="netSpend"
@@ -176,7 +202,7 @@ export default function AnalyticsPage(): React.JSX.Element {
               )}
             </LineChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartCard>
 
         {/* Spend by category.
             Was a donut. A donut is the wrong form for comparing close values —
@@ -185,7 +211,13 @@ export default function AnalyticsPage(): React.JSX.Element {
             where every pair is co-visible. A ranked horizontal bar answers the
             actual question ("which categories cost most, in order") and carries
             its own labels. */}
-        <Card title="Spend by category" asOf={category.data?.refreshedAt ?? null}>
+        <ChartCard
+          title="Spend by category"
+          asOf={category.data?.refreshedAt ?? null}
+          query={category}
+          isEmpty={(category.data?.slices ?? []).length === 0}
+          height={240}
+        >
           <ResponsiveContainer width="100%" height={240}>
             <BarChart
               data={[...(category.data?.slices ?? [])].sort(
@@ -219,13 +251,19 @@ export default function AnalyticsPage(): React.JSX.Element {
               />
             </BarChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartCard>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Top vendors */}
-        <Card title="Top vendors by spend" asOf={topVendors.data?.refreshedAt ?? null}>
-          <ResponsiveContainer width="100%" height={280}>
+        <ChartCard
+          title="Top vendors by spend"
+          asOf={topVendors.data?.refreshedAt ?? null}
+          query={topVendors}
+          isEmpty={(topVendors.data?.vendors ?? []).length === 0}
+          height={320}
+        >
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart
               data={topVendors.data?.vendors ?? []}
               layout="vertical"
@@ -240,9 +278,12 @@ export default function AnalyticsPage(): React.JSX.Element {
                 type="category"
                 dataKey={(v: TopVendorRow) => (v.isMsme ? `${v.vendorName}, MSME` : v.vendorName)}
                 width={150}
+                // Every bar gets its name; recharts otherwise drops alternate
+                // labels when they crowd, leaving unnamed bars.
+                interval={0}
                 tick={{ fontSize: 11, fill: CHART_CHROME.label }}
               />
-              <Tooltip formatter={(v: number) => inr(String(v))} />
+              <Tooltip formatter={(v: number) => inr(String(v))} contentStyle={TOOLTIP_STYLE} />
               <Bar
                 dataKey={(v: TopVendorRow) => Number(v.netSpend)}
                 fill={CHART_SERIES[0]}
@@ -256,18 +297,24 @@ export default function AnalyticsPage(): React.JSX.Element {
             MSME suppliers are marked in the label. One series, so the bars carry no
             separate identity colour.
           </p>
-        </Card>
+        </ChartCard>
 
         {/* MSME Section 15 widget */}
-        <Card title="MSME Section 15 — aging" asOf={null}>
-          <div className="grid grid-cols-3 gap-2">
+        <ChartCard
+          title="MSME Section 15 aging"
+          asOf={null}
+          query={msme}
+          isEmpty={(msme.data?.buckets ?? []).length === 0}
+          height={140}
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
             {(msme.data?.buckets ?? []).map((b) => (
               <Link
                 key={b.bucket}
                 href="/analytics/msme"
-                className="border-line hover:bg-canvas rounded-md border p-3"
+                className="border-line hover:bg-canvas duration-hover rounded-md border p-3 transition-colors"
               >
-                <div className="text-faint text-micro">
+                <div className="text-text text-caption font-medium">
                   {MSME_BUCKET[b.bucket].short}
                 </div>
                 <div className="text-faint text-micro">
@@ -283,63 +330,12 @@ export default function AnalyticsPage(): React.JSX.Element {
             ))}
           </div>
           <p className="text-faint mt-2 text-micro">
-            Click a bucket to see the at-risk invoices behind it.
+            Select a bucket to see the at-risk invoices behind it.
           </p>
-        </Card>
+        </ChartCard>
       </div>
 
       {drill && <ConcentrationDrawer vendors={drill} onClose={() => setDrill(null)} />}
-    </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  accent,
-  danger,
-  hint,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  danger?: boolean;
-  hint?: string;
-}): React.JSX.Element {
-  return (
-    <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-micro">{label}</div>
-      <div
-        className={
-          'font-numeric tracking-display mt-1 text-h2 font-semibold ' +
-          (danger ? 'text-danger' : accent ? 'text-accent-2' : 'text-ink')
-        }
-      >
-        {value}
-      </div>
-      {hint && <div className="text-faint mt-0.5 text-micro">{hint}</div>}
-    </div>
-  );
-}
-
-function Card({
-  title,
-  asOf,
-  className,
-  children,
-}: {
-  title: string;
-  asOf: string | null;
-  className?: string;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <div className={'border-line bg-panel rounded-lg border p-4 ' + (className ?? '')}>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-ink text-body font-semibold">{title}</h3>
-        <AsOfBadge refreshedAt={asOf} />
-      </div>
-      {children}
     </div>
   );
 }
@@ -353,44 +349,57 @@ function ConcentrationDrawer({
 }): React.JSX.Element {
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/30"
+      className="bg-ink/30 fixed inset-0 z-50 flex justify-end"
       role="presentation"
       onClick={onClose}
     >
       <div
         className="bg-panel border-line h-full w-full max-w-lg overflow-y-auto border-l p-5"
-        role="presentation"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Top-10 vendor concentration"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="text-ink text-h3 font-semibold">
             Top-10 vendor concentration
           </h3>
-          <button onClick={onClose} className="text-muted hover:text-ink text-body-sm">
+          <Button variant="ghost" size="sm" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
         <table className="w-full text-body-sm">
+          <thead className="border-line border-b text-left">
+            <tr>
+              <th className="text-muted py-2.5 pr-3 text-caption font-medium">Vendor</th>
+              <th className="text-muted px-3 py-2.5 text-right text-caption font-medium">
+                Net spend
+              </th>
+              <th className="text-muted py-2.5 pl-3 text-right text-caption font-medium">
+                Share
+              </th>
+            </tr>
+          </thead>
           <tbody>
             {vendors.map((v) => (
               <tr key={v.vendorId} className="border-line border-b last:border-0">
-                <td className="py-2">
+                <td className="py-3 pr-3">
                   <Link
                     href={`/vendors/${v.vendorId}`}
-                    className="text-accent-2 hover:underline"
+                    className="text-accent hover:underline"
                   >
                     {v.vendorName}
                   </Link>
                   {v.isMsme && (
-                    <Pill variant="success" className="ml-1">
+                    <Badge variant="classification" className="ml-1.5">
                       MSME
-                    </Pill>
+                    </Badge>
                   )}
                 </td>
-                <td className="font-numeric py-2 text-right tabular-nums">
+                <td className="font-numeric px-3 py-3 text-right tabular-nums">
                   {inr(v.netSpend)}
                 </td>
-                <td className="text-muted font-numeric py-2 text-right tabular-nums">
+                <td className="text-muted font-numeric py-3 pl-3 text-right tabular-nums">
                   {v.pctOfTotal}%
                 </td>
               </tr>

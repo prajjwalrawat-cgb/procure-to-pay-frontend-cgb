@@ -1,67 +1,95 @@
 'use client';
 
-import { PageHeader, Pill } from '@/components/ui';
-import { ScrollText } from 'lucide-react';
+import {
+  Badge,
+  PageHeader,
+  Pill,
+  SortableHead,
+  TableState,
+  useSort,
+} from '@/components/ui';
+import type { VendorContractListItem } from '@/lib/shared';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useVendorContracts } from '@/vendor/lib/api/contracts';
-import { formatDate } from '@/lib/format';
+import { formatDate, statusLabel, statusVariant } from '@/lib/format';
 
-const label = (s: string): string => s.replace(/_/g, ' ');
-const fmt = (iso: string): string => formatDate(iso);
+type SortKey = 'number' | 'title' | 'end' | 'status';
 
 export default function VendorContractsPage(): React.JSX.Element {
   const router = useRouter();
-  const { data, isLoading } = useVendorContracts();
+  const { data, isLoading, error, refetch } = useVendorContracts();
+  const rows = data ?? [];
+  const { sorted, sort, toggle } = useSort<VendorContractListItem, SortKey>(rows, {
+    number: (c) => c.number,
+    title: (c) => c.title,
+    end: (c) => new Date(c.validityEnd),
+    status: (c) => c.status,
+  });
 
   return (
     <div>
-      <PageHeader title="Contracts" description="Your active agreements" />
+      <PageHeader title="Contracts" description="Your agreements with this buyer." />
 
-      {isLoading ? (
-        <p className="py-10 text-center text-body-sm text-muted">Loading…</p>
-      ) : !data || data.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-16 text-center text-body-sm text-muted">
-          <ScrollText className="h-8 w-8 text-faint-line" />
-          No active contracts.
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-body-sm">
-            <thead className="border-line border-b text-left text-caption text-muted">
-              <tr>
-                <th className="px-3 py-2 font-medium">Contract</th>
-                <th className="px-3 py-2 font-medium">Title</th>
-                <th className="px-3 py-2 font-medium">Validity</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((c) => (
+      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-line border-b text-left">
+            <tr>
+              <SortableHead label="Contract" sortKey="number" sort={sort} onSort={toggle} />
+              <SortableHead label="Title" sortKey="title" sort={sort} onSort={toggle} />
+              <SortableHead label="Validity" sortKey="end" sort={sort} onSort={toggle} />
+              <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggle} />
+            </tr>
+          </thead>
+          <tbody>
+            <TableState
+              colSpan={4}
+              isLoading={isLoading}
+              error={error}
+              onRetry={() => void refetch()}
+              isEmpty={rows.length === 0}
+              empty={{
+                title: 'No contracts yet',
+                detail: 'Agreements the buyer shares with you appear here for review and counter-signature.',
+              }}
+            />
+            {!isLoading &&
+              sorted.map((c) => (
                 <tr
                   key={c.id}
                   onClick={() => router.push(`/vendor/contracts/${c.id}`)}
-                  className="cursor-pointer border-b border-line last:border-0 hover:bg-canvas"
+                  className="border-line hover:bg-canvas cursor-pointer border-b last:border-0"
                 >
-                  <td className="px-3 py-2 font-mono font-medium text-success">
-                    {c.number}
+                  <td className="px-3 py-3">
+                    <Link
+                      href={`/vendor/contracts/${c.id}`}
+                      className="font-numeric text-ink hover:text-accent font-medium"
+                    >
+                      {c.number}
+                    </Link>
                   </td>
-                  <td className="px-3 py-2">
-                    {c.title}
-                    {c.requiresCountersign && <Pill variant="warn">Counter-sign</Pill>}
+                  <td className="text-text px-3 py-3">
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      {c.title}
+                      {c.requiresCountersign && (
+                        <Badge variant="caution">Needs your counter-signature</Badge>
+                      )}
+                    </span>
                   </td>
-                  <td className="px-3 py-2 text-muted">
-                    {fmt(c.validityStart)} → {fmt(c.validityEnd)}
+                  <td className="font-numeric text-muted px-3 py-3">
+                    {formatDate(c.validityStart)} → {formatDate(c.validityEnd)}
                   </td>
-                  <td className="px-3 py-2">
-                    <Pill variant="info">{label(c.status)}</Pill>
+                  <td className="px-3 py-3">
+                    <Pill variant={statusVariant(c.status)} dot>
+                      {statusLabel(c.status)}
+                    </Pill>
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

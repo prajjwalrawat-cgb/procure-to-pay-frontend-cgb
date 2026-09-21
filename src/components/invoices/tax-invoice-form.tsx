@@ -139,7 +139,7 @@ export function TaxInvoiceForm({
         </p>
         <div className="overflow-x-auto rounded-lg border border-line">
           <table className="w-full text-caption">
-            <thead className="bg-canvas text-left text-micro uppercase tracking-wide text-faint">
+            <thead className="bg-canvas text-left text-caption text-muted">
               <tr>
                 <th className="px-2.5 py-2 font-medium">Item</th>
                 <th className="w-20 px-2.5 py-2 font-medium">Qty</th>
@@ -219,7 +219,7 @@ export function TaxInvoiceForm({
         <Button variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
           Cancel
         </Button>
-        <Button variant="accent" size="sm" onClick={submit} disabled={!ready || pending}>
+        <Button variant="primary" size="sm" onClick={submit} disabled={!ready || pending}>
           {pending ? 'Uploading…' : 'Upload tax invoice'}
         </Button>
       </div>

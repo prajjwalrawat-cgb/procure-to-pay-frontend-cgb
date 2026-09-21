@@ -65,7 +65,7 @@ export function DocumentLedger({
       verdict={verdict}
       isLoading={isLoading}
       onVerify={() => void onVerify()}
-      auditHref={`/audit-log?entityId=${encodeURIComponent(entityId)}`}
+      auditHref={`/audit?entityId=${encodeURIComponent(entityId)}`}
       title={title}
       className={className}
     />

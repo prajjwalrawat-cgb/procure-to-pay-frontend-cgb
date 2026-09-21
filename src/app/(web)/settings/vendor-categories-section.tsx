@@ -20,7 +20,7 @@ import {
   useVendorCategories,
 } from '@/lib/api/settings';
 import { useToastStore } from '@/store/toast-store';
-import { Field, Panel } from './ui';
+import { Field, Panel, SectionLoading } from './ui';
 
 /**
  * Documents the wizard already handles for every vendor, so ticking them per
@@ -56,7 +56,7 @@ const EMPTY_FORM = {
  * offered to new ones.
  */
 export function VendorCategoriesSection(): React.JSX.Element {
-  const { data, isLoading } = useVendorCategories();
+  const { data, isLoading, error, refetch } = useVendorCategories();
   const create = useCreateVendorCategory();
   const update = useUpdateVendorCategory();
   const toast = useToastStore((s) => s.push);
@@ -67,7 +67,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-body-sm text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const active = data.filter((c) => c.isActive);
@@ -242,14 +242,14 @@ export function VendorCategoriesSection(): React.JSX.Element {
       hint="The categories vendors are filed under. They fill the category dropdown on the invite dialog, the self-registration form and the onboarding wizard."
       action={
         !adding && !editingId ? (
-          <Button size="sm" variant="default" onClick={() => setAdding(true)}>
+          <Button size="sm" variant="secondary" onClick={() => setAdding(true)}>
             Add category
           </Button>
         ) : undefined
       }
     >
       <div className="overflow-hidden rounded-sm border border-line">
-        <table className="w-full text-caption">
+        <table className="pf-stack w-full text-caption">
           <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">Category</th>
@@ -282,7 +282,7 @@ export function VendorCategoriesSection(): React.JSX.Element {
                   >
                     Edit
                   </button>
-                  <span className="px-1 text-faint">,</span>
+                  <span className="px-1 text-faint">·</span>
                   {c.isActive ? (
                     <button
                       type="button"

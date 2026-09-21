@@ -128,7 +128,7 @@ export default function SettingsPage(): React.JSX.Element {
                       className={
                         'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-body-sm transition-colors ' +
                         (on
-                          ? 'bg-accent-wash font-medium text-accent-2'
+                          ? 'bg-accent-wash font-medium text-accent'
                           : 'text-muted hover:bg-canvas hover:text-text')
                       }
                     >
@@ -141,7 +141,7 @@ export default function SettingsPage(): React.JSX.Element {
           ))}
         </nav>
 
-        <div>
+        <div className="min-w-0">
           {current === 'organisation' && <OrganisationSection />}
           {current === 'branches' && <BranchesSection />}
           {current === 'branding' && <BrandingSection />}

@@ -1,6 +1,16 @@
 'use client';
 
-import { Button, PageHeader } from '@/components/ui';
+import {
+  Button,
+  Card,
+  DateInput,
+  EmptyState,
+  ErrorState,
+  Field,
+  PageHeader,
+  Select,
+  Skeleton,
+} from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,12 +19,19 @@ import { useState } from 'react';
 import { useBankAccounts, useCreatePaymentRun } from '@/lib/api/payments';
 import { useToastStore } from '@/store/toast-store';
 
+/** Today as yyyy-mm-dd in local time — the date picker's value format. */
+function today(): string {
+  const d = new Date();
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export default function NewPaymentRunPage(): React.JSX.Element {
   const router = useRouter();
   const toast = useToastStore((s) => s.push);
-  const { data: banks } = useBankAccounts();
+  const { data: banks, isLoading, error, refetch } = useBankAccounts();
   const create = useCreatePaymentRun();
-  const [cycleDate, setCycleDate] = useState('2026-06-14');
+  const [cycleDate, setCycleDate] = useState(today);
   const [bankAccountId, setBankAccountId] = useState('');
 
   const accounts = banks?.items ?? [];
@@ -41,59 +58,74 @@ export default function NewPaymentRunPage(): React.JSX.Element {
     <div className="mx-auto w-full max-w-xl">
       <Link
         href="/payment-runs"
-        className="text-muted mb-3 inline-flex items-center gap-1 text-caption"
+        className="text-muted hover:text-text mb-3 inline-flex items-center gap-1 text-caption"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to payment runs
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to payment runs
       </Link>
       <PageHeader
         title="New payment run"
         description="Pick a cycle date and the bank account the file will be drawn on."
       />
 
-      <div className="border-line bg-panel flex flex-col gap-4 rounded-lg border p-5">
-        <label className="flex flex-col gap-1">
-          <span className="text-muted text-caption font-medium">Cycle date</span>
-          <input
-            type="date"
-            value={cycleDate}
-            aria-label="Cycle date"
-            onChange={(e) => setCycleDate(e.target.value)}
-            className="border-line bg-panel rounded-sm border px-3 py-2 text-body-sm outline-none"
+      <Card className="gap-4 p-5">
+        {error ? (
+          <ErrorState error={error} onRetry={() => void refetch()} compact />
+        ) : isLoading ? (
+          <div className="flex flex-col gap-4" aria-busy="true">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ) : accounts.length === 0 ? (
+          <EmptyState
+            compact
+            title="No bank accounts set up"
+            detail="A payment run is drawn on one of the organisation's bank accounts. Add one in Settings, under Bank accounts."
+            action={
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/settings">Open settings</Link>
+              </Button>
+            }
           />
-        </label>
+        ) : (
+          <>
+            <Field label="Cycle date" htmlFor="cycle-date">
+              <DateInput
+                id="cycle-date"
+                value={cycleDate}
+                onChange={(e) => setCycleDate(e.target.value)}
+              />
+            </Field>
 
-        <label className="flex flex-col gap-1">
-          <span className="text-muted text-caption font-medium">Bank account</span>
-          <select
-            value={selectedBank}
-            aria-label="Bank account"
-            onChange={(e) => setBankAccountId(e.target.value)}
-            className="border-line bg-panel rounded-sm border px-3 py-2 text-body-sm outline-none"
-          >
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.bankName} ••••{a.accountNoLast4}, {a.formatKey}
-              </option>
-            ))}
-          </select>
-        </label>
+            <Field label="Bank account" htmlFor="bank-account">
+              <Select
+                id="bank-account"
+                value={selectedBank}
+                onChange={(e) => setBankAccountId(e.target.value)}
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.bankName} ••••{a.accountNoLast4}, {a.formatKey}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </>
+        )}
 
-        <div className="flex justify-end gap-2">
-          <Link href="/payment-runs">
-            <Button variant="ghost" size="sm">
-              Cancel
-            </Button>
-          </Link>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/payment-runs">Cancel</Link>
+          </Button>
           <Button
             variant="primary"
             size="sm"
-            disabled={create.isPending || accounts.length === 0}
+            disabled={create.isPending || accounts.length === 0 || !cycleDate}
             onClick={onCreate}
           >
             Create draft
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

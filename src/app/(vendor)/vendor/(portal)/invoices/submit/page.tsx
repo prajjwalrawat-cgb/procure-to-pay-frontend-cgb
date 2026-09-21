@@ -219,19 +219,22 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
   // Step 2 — invoice form.
   return (
-    <div className="pb-24">
+    <div className="mx-auto w-full max-w-5xl pb-28">
       <button
         type="button"
         onClick={backToList}
-        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to invoices
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to invoices
       </button>
-      <PageHeader title="Create invoice" />
+      <PageHeader
+        title="Create invoice"
+        description={`Against purchase order ${po.number}.`}
+      />
       <div className="flex flex-col gap-5">
         {/* Section 1 — PO information */}
         <Section title="Purchase order">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-3">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
             <Field label="PO Number" value={po.number} mono />
             <Field label="Line items" value={String(po.lines.length)} mono />
             <Field label="Taxable value" value={inr(po.amounts.subtotal)} mono />
@@ -286,7 +289,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
               </p>
             )} */}
           </fieldset>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Labeled label={isProforma ? 'PI number' : 'Invoice number'} required>
               <Input
                 value={invoiceNumber}
@@ -320,11 +323,13 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
         {/* Section 3 — line items */}
         <Section title="Line items">
-          <div className="overflow-hidden rounded-lg border border-line">
-            <table className="w-full text-body-sm">
+          {/* An editable grid, so it scrolls inside its own frame on a phone
+              rather than collapsing into stacked cards. */}
+          <div className="overflow-x-auto rounded-lg border border-line">
+            <table className="w-full min-w-[720px] text-body-sm">
               <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Description</th>
+                  <th className="min-w-48 px-3 py-2 font-medium">Description</th>
                   <th className="w-24 px-3 py-2 font-medium">Quantity</th>
                   <th className="w-28 px-3 py-2 font-medium">Rate</th>
                   <th className="w-24 px-3 py-2 font-medium">GST %</th>
@@ -457,9 +462,11 @@ export default function SubmitInvoicePage(): React.JSX.Element {
         </Section>
 
         {(error || notice) && (
-          <div className={
+          <div
+            role={error ? 'alert' : 'status'}
+            className={
               'rounded-sm px-3 py-2 text-caption ' +
-              (error ? 'bg-danger-wash text-danger' : 'bg-accent-wash text-accent-2')
+              (error ? 'bg-danger-wash text-danger' : 'bg-success-bg text-success')
             }
           >
             {error ?? notice}
@@ -469,26 +476,30 @@ export default function SubmitInvoicePage(): React.JSX.Element {
 
       {/* Section 5 — sticky actions */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-line bg-panel/95 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center justify-end gap-2 px-6 py-3">
-          <Button variant="ghost" size="sm" onClick={backToList}>
-            Cancel
-          </Button>
-          <Button variant="default" size="sm" onClick={saveDraft}>
-            Save draft
-          </Button>
-          <Button
-            variant="primary"
-            disabled={!canSubmit || uploading || submit.isPending}
-            onClick={() => void onSubmit()}
-          >
-            {uploading
-              ? 'Uploading…'
-              : submit.isPending
-                ? 'Submitting…'
-                : isProforma
-                  ? 'Submit proforma'
-                  : 'Submit invoice'}
-          </Button>
+        {/* Same column as the form above, so the buttons line up with its edge. */}
+        <div className="pf-container">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-end gap-2 py-3">
+            <Button variant="ghost" size="sm" onClick={backToList}>
+              Cancel
+            </Button>
+            <Button variant="secondary" size="sm" onClick={saveDraft}>
+              Save draft
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!canSubmit || uploading || submit.isPending}
+              onClick={() => void onSubmit()}
+            >
+              {uploading
+                ? 'Uploading…'
+                : submit.isPending
+                  ? 'Submitting…'
+                  : isProforma
+                    ? 'Submit proforma'
+                    : 'Submit invoice'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -504,7 +515,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <section className="rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-body font-semibold text-ink">{title}</h2>
+      <h2 className="mb-3 text-h3 font-semibold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -527,7 +538,7 @@ function Field({
       <dd
         className={
           (mono ? 'font-numeric ' : '') +
-          (strong ? 'font-semibold text-ink' : 'text-text') +
+          (strong ? 'font-semibold text-ink ' : 'text-text ') +
           'mt-0.5 text-body-sm'
         }
       >

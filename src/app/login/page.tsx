@@ -58,7 +58,9 @@ export default function LoginPage(): React.JSX.Element {
         return;
       }
       if (data.mfaRequired) {
-        setError('MFA is enabled for this account (not exercised in Slice 0 demo).');
+        setError(
+          'This account requires two-factor sign-in, which this page cannot complete. Ask your administrator to check your sign-in settings.',
+        );
         return;
       }
       setSession(data.accessToken, data.user);

@@ -73,7 +73,7 @@ export default function VendorLoginPage(): React.JSX.Element {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
-      {/* Emerald-gradient hero signals the supplier side (Slice 0 spec). */}
+      {/* Emerald-gradient hero signals the supplier side. */}
       <div className="bg-accent relative hidden overflow-hidden lg:block">
         <div className="from-accent via-accent-2 to-ink absolute inset-0 bg-gradient-to-br opacity-95" />
         <div className="relative flex h-full flex-col justify-between p-12 text-white">
@@ -90,16 +90,26 @@ export default function VendorLoginPage(): React.JSX.Element {
               Supplier Portal
             </h1>
             <p className="mt-3 max-w-sm text-body text-white/80">
-              Submit invoices, track purchase orders, and manage your documents with your
-              buyers.
+              Submit invoices, track purchase orders and quote on RFQs from
+              your buyers.
             </p>
           </div>
           <p className="text-caption text-white/60">Separate, secure supplier access.</p>
         </div>
       </div>
 
-      <div className="bg-canvas flex items-center justify-center px-4">
+      <div className="bg-canvas flex items-center justify-center px-4 py-10">
         <div className="border-line bg-panel w-full max-w-sm rounded-xl border p-8 shadow-lg">
+          {/* The hero carries the brand from lg up; below that it is hidden, so
+              the card has to say whose sign-in this is. */}
+          <div className="mb-5 flex items-center gap-2 lg:hidden">
+            <span className="bg-accent flex h-7 w-7 items-center justify-center rounded-sm text-white">
+              <span className="font-numeric text-body-sm font-bold">P</span>
+            </span>
+            <span className="tracking-heading text-ink text-h3 font-semibold">
+              Supplier Portal
+            </span>
+          </div>
           <h2 className="tracking-heading text-ink text-h3 font-semibold">
             Vendor sign in
           </h2>

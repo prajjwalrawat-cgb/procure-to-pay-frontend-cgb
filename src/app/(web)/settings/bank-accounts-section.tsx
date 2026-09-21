@@ -18,7 +18,7 @@ import {
 import { ApiError } from '@/lib/api-error';
 import { useHasPermission } from '@/lib/permissions';
 import { useToastStore } from '@/store/toast-store';
-import { Field, Panel, selectCls } from './ui';
+import { Field, Panel, SectionLoading, selectCls } from './ui';
 
 /** What each bank file layout is, in the words of whoever picks it. */
 const FORMAT_LABELS: Record<string, string> = {
@@ -49,7 +49,7 @@ const EMPTY: BankAccountInput = {
  * full number would put a payment credential in the database for no gain.
  */
 export function BankAccountsSection(): React.JSX.Element {
-  const { data, isLoading } = useAllBankAccounts();
+  const { data, isLoading, error, refetch } = useAllBankAccounts();
   const create = useCreateBankAccount();
   const update = useUpdateBankAccount();
   const setActive = useSetBankAccountActive();
@@ -61,7 +61,7 @@ export function BankAccountsSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-body-sm text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const startEdit = (a: BankAccountView): void => {
@@ -116,7 +116,7 @@ export function BankAccountsSection(): React.JSX.Element {
         canManage && editing === null ? (
           <Button
             size="sm"
-            variant="default"
+            variant="secondary"
             onClick={() => {
               setForm(EMPTY);
               setErrors({});
@@ -138,7 +138,7 @@ export function BankAccountsSection(): React.JSX.Element {
         {data.items.map((a) => (
           <div
             key={a.id}
-            className="flex items-center justify-between gap-3 rounded-sm border border-line px-3 py-2"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line px-3 py-2"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">

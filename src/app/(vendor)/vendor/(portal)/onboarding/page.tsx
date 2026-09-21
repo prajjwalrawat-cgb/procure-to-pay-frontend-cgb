@@ -6,9 +6,12 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  EmptyState,
+  ErrorState,
   Input,
   PageHeader,
   Pill,
+  Skeleton,
 } from '@/components/ui';
 import {
   LEGAL_ENTITY_TYPE,
@@ -359,7 +362,7 @@ function onboardingStatus(data: ResumeResponse): {
 }
 
 export default function OnboardingWizardPage(): React.JSX.Element {
-  const { data, isLoading, error } = useOnboarding();
+  const { data, isLoading, error, refetch } = useOnboarding();
   // The buyer's own category list — what documents this vendor's category
   // expects is their configuration, not a constant.
   const { data: categoryOptions } = useCategoryOptions();
@@ -493,13 +496,35 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     };
   }, [f.ifsc]);
 
-  if (isLoading) return <p className="p-6 text-body-sm text-muted">Loading…</p>;
+  if (isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-3xl" aria-busy="true" aria-live="polite">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="mt-2 h-4 w-full max-w-md" />
+        <div className="mt-5 flex gap-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-28" />
+          ))}
+        </div>
+        <Skeleton className="mt-4 h-80 rounded-lg" />
+      </div>
+    );
+  }
   if (error || !data)
     return (
-      <div className="p-6">
-        <p className="text-body-sm text-muted">
-          No onboarding in progress for this account.
-        </p>
+      <div className="mx-auto w-full max-w-3xl">
+        <PageHeader title="Vendor onboarding" />
+        <div className="border-line bg-panel rounded-lg border">
+          {/* A 404 is the normal "nothing to onboard" answer, not a fault. */}
+          {error && (error as { status?: number }).status !== 404 ? (
+            <ErrorState error={error} onRetry={() => void refetch()} />
+          ) : (
+            <EmptyState
+              title="No onboarding in progress"
+              detail="This account has no onboarding to complete. If you expected one, ask your buyer to re-send the invitation."
+            />
+          )}
+        </div>
       </div>
     );
 
@@ -751,7 +776,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         )}
         {done && (
           <>
-            <span className="max-w-[180px] truncate text-caption text-muted">
+            <span className="max-w-44 truncate text-caption text-muted">
               {done.filename}, {formatBytes(done.sizeBytes)}
             </span>
             {done.url && (
@@ -811,7 +836,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto w-full max-w-[760px]">
+    <div className="mx-auto w-full max-w-3xl">
       <div className="mb-4">
         <PageHeader
           title="Vendor onboarding"
@@ -869,6 +894,8 @@ export default function OnboardingWizardPage(): React.JSX.Element {
           return (
             <button
               key={n}
+              type="button"
+              aria-current={step === n ? 'step' : undefined}
               onClick={() => {
                 setStep(n);
                 setFieldErrors({});
@@ -967,7 +994,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   error={fieldErrors.addressLine1}
                   provenance={provenance('addressLine1')}
                 />
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid gap-2 sm:grid-cols-3">
                   <Field
                     label="City"
                     value={f.city ?? ''}

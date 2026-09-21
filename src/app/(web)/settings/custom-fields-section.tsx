@@ -21,7 +21,7 @@ import {
 } from '@/lib/api/settings';
 import { ApiError } from '@/lib/api-error';
 import { useToastStore } from '@/store/toast-store';
-import { Field, Panel, selectCls } from './ui';
+import { Field, Panel, SectionLoading, selectCls } from './ui';
 
 /**
  * Custom fields. An admin adds a field to a document type here; every form for
@@ -30,7 +30,7 @@ import { Field, Panel, selectCls } from './ui';
  * cannot be enumerated up front.
  */
 export function CustomFieldsSection(): React.JSX.Element {
-  const { data, isLoading } = useCustomFields();
+  const { data, isLoading, error, refetch } = useCustomFields();
   const create = useCreateCustomField();
   const update = useUpdateCustomField();
   const toast = useToastStore((s) => s.push);
@@ -46,7 +46,7 @@ export function CustomFieldsSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-body-sm text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const fields = data
@@ -111,7 +111,7 @@ export function CustomFieldsSection(): React.JSX.Element {
       hint="Fields you add here appear on the matching form, on the document's detail page, and — when marked printable — on the purchase-order PDF."
       action={
         !adding ? (
-          <Button size="sm" variant="default" onClick={() => setAdding(true)}>
+          <Button size="sm" variant="secondary" onClick={() => setAdding(true)}>
             Add field
           </Button>
         ) : undefined
@@ -137,7 +137,7 @@ export function CustomFieldsSection(): React.JSX.Element {
         </p>
       ) : (
         <div className="overflow-hidden rounded-sm border border-line">
-          <table className="w-full text-caption">
+          <table className="pf-stack w-full text-caption">
             <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Label</th>

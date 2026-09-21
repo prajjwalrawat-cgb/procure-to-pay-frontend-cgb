@@ -1,7 +1,16 @@
 'use client';
 
 import type { InvoiceListResponse } from '@/lib/shared';
-import { DataState, PageHeader, Pill, SandboxBanner } from '@/components/ui';
+import {
+  Button,
+  DataState,
+  Field,
+  Input,
+  PageHeader,
+  Pill,
+  SandboxBanner,
+  Select,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +22,7 @@ import {
   useResolveVendorMatch,
 } from '@/lib/api/integrations';
 import { useVendorList } from '@/lib/api/vendors';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import { statusLabel, statusVariant } from '@/lib/format';
 import { useProviderLiveness } from '@/lib/integration-status';
 import { useToastStore } from '@/store/toast-store';
 
@@ -38,7 +47,7 @@ export default function InvoiceIntakePage(): React.JSX.Element {
     <div>
       <PageHeader
         title="Invoice intake"
-        description="Email → invoice, manual OCR review, and quarantined senders, AP queue"
+        description="The AP work queue for invoices that could not be read or attributed automatically."
       />
 
       {/* Every invoice in this queue was read by the OCR provider. When that
@@ -53,8 +62,9 @@ export default function InvoiceIntakePage(): React.JSX.Element {
       )}
 
       <Section
-        title="OCR review — low confidence / failed"
-        count={review.data?.items.length ?? 0}
+        title="OCR review"
+        detail="Low-confidence or failed extractions that need the figures entered by hand."
+        count={review.data ? review.data.items.length : undefined}
       >
         {/* Previously `!review.data` rendered the empty message, so a slow or
             failed fetch read as "nothing to review" on a work queue. */}
@@ -75,7 +85,11 @@ export default function InvoiceIntakePage(): React.JSX.Element {
         </DataState>
       </Section>
 
-      <Section title="Pending vendor match — unrecognised senders" count={pending.length}>
+      <Section
+        title="Pending vendor match"
+        detail="Invoices emailed from an address no vendor is registered under."
+        count={inbound ? pending.length : undefined}
+      >
         <DataState
           isLoading={inboundQ.isLoading}
           error={inboundQ.error}
@@ -90,7 +104,11 @@ export default function InvoiceIntakePage(): React.JSX.Element {
         </DataState>
       </Section>
 
-      <Section title="Dead letter — malformed emails" count={dead.length}>
+      <Section
+        title="Dead letter"
+        detail="Emails that could not be turned into an invoice at all."
+        count={inbound ? dead.length : undefined}
+      >
         <DataState
           isLoading={inboundQ.isLoading}
           error={inboundQ.error}
@@ -99,21 +117,28 @@ export default function InvoiceIntakePage(): React.JSX.Element {
           compact
           empty={{ title: 'No dead-lettered emails' }}
         >
-          <div className="overflow-x-auto">
-            <table className="w-full text-body-sm">
-              <tbody>
-                {dead.map((e) => (
-                  <tr key={e.id} className="border-line border-b last:border-0">
-                    <td className="py-1.5">{e.fromEmail}</td>
-                    <td className="text-muted py-1.5">{e.subject ?? '—'}</td>
-                    <td className="py-1.5 text-right">
-                      <Pill variant="danger">{e.deadLetterReason}</Pill>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <table className="pf-stack w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
+              <tr>
+                <th className="py-2.5 pr-3 font-medium">From</th>
+                <th className="px-3 py-2.5 font-medium">Subject</th>
+                <th className="py-2.5 pl-3 text-right font-medium">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dead.map((e) => (
+                <tr key={e.id} className="border-line border-b last:border-0">
+                  <td className="font-numeric py-3 pr-3 break-all">{e.fromEmail}</td>
+                  <td className="text-muted px-3 py-3">{e.subject ?? '—'}</td>
+                  <td className="py-3 pl-3 text-right">
+                    <Pill variant="danger" dot>
+                      {e.deadLetterReason ? statusLabel(e.deadLetterReason) : '—'}
+                    </Pill>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </DataState>
       </Section>
     </div>
@@ -154,56 +179,53 @@ function ReviewRow({
   };
 
   return (
-    <div className="border-line border-b py-2 last:border-0">
-      <div className="flex items-center justify-between text-body-sm">
-        <div>
-          <Link href={`/invoices/${inv.id}`} className="text-accent-2 font-numeric">
+    <div className="border-line border-b py-3 last:border-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-body-sm">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <Link
+            href={`/invoices/${inv.id}`}
+            className="font-numeric text-ink font-medium hover:text-accent"
+          >
             {inv.number}
           </Link>
-          <span className="text-muted ml-2">{inv.vendor.name}</span>
-          <Pill variant={statusVariant(inv.status)}>{statusLabel(inv.status)}</Pill>
+          <span className="text-muted">{inv.vendor.name}</span>
+          <Pill variant={statusVariant(inv.status)} dot>
+            {statusLabel(inv.status)}
+          </Pill>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="border-line hover:bg-canvas rounded-md border px-3 py-1 text-caption"
-        >
+        <Button variant={open ? 'ghost' : 'secondary'} size="sm" onClick={() => setOpen((o) => !o)}>
           {open ? 'Cancel' : 'Enter data'}
-        </button>
+        </Button>
       </div>
       {open && (
-        <div className="bg-canvas mt-2 grid grid-cols-1 gap-2 rounded-md p-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input
-            className={i}
-            placeholder="Vendor inv ref"
-            value={ref}
-            onChange={(e) => setRef(e.target.value)}
-          />
-          <input
-            className={i}
-            placeholder="Item description"
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-          />
-          <input
-            className={i}
-            placeholder="Qty"
-            value={qty}
-            onChange={(e) => setQty(e.target.value)}
-          />
-          <input
-            className={i}
-            placeholder="Unit price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-          />
-          <button
-            type="button"
-            onClick={submit}
-            className="bg-accent rounded-md px-3 py-1.5 text-body-sm font-medium text-white sm:col-span-2 lg:col-span-4"
-          >
-            Save & match
-          </button>
+        <div className="bg-canvas mt-3 grid grid-cols-1 gap-3 rounded-md p-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Vendor invoice ref" htmlFor={`ref-${inv.id}`}>
+            <Input id={`ref-${inv.id}`} value={ref} onChange={(e) => setRef(e.target.value)} />
+          </Field>
+          <Field label="Item description" htmlFor={`desc-${inv.id}`} required>
+            <Input id={`desc-${inv.id}`} value={desc} onChange={(e) => setDesc(e.target.value)} />
+          </Field>
+          <Field label="Quantity" htmlFor={`qty-${inv.id}`}>
+            <Input
+              id={`qty-${inv.id}`}
+              inputMode="decimal"
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+            />
+          </Field>
+          <Field label="Unit price (₹)" htmlFor={`price-${inv.id}`} required>
+            <Input
+              id={`price-${inv.id}`}
+              inputMode="decimal"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          </Field>
+          <div className="flex justify-end sm:col-span-2 lg:col-span-4">
+            <Button variant="primary" size="sm" onClick={() => void submit()} disabled={complete.isPending}>
+              {complete.isPending ? 'Saving…' : 'Save & match'}
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -221,14 +243,15 @@ function PendingRow({
   const [vendorId, setVendorId] = useState('');
 
   return (
-    <div className="border-line flex items-center justify-between border-b py-2 text-body-sm last:border-0">
-      <div>
-        <span className="font-numeric">{email.fromEmail}</span>
-        <span className="text-muted ml-2">{email.subject ?? '—'}</span>
+    <div className="border-line flex flex-wrap items-center justify-between gap-3 border-b py-3 text-body-sm last:border-0">
+      <div className="min-w-0">
+        <div className="font-numeric text-text break-all">{email.fromEmail}</div>
+        <div className="text-muted text-caption">{email.subject ?? 'No subject'}</div>
       </div>
-      <div className="flex items-center gap-2">
-        <select
-          className={i}
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <Select
+          className="min-w-0 flex-1 sm:w-56 sm:flex-none"
+          aria-label={`Vendor for ${email.fromEmail}`}
           value={vendorId}
           onChange={(e) => setVendorId(e.target.value)}
         >
@@ -238,10 +261,11 @@ function PendingRow({
               {v.name}
             </option>
           ))}
-        </select>
-        <button
-          type="button"
-          disabled={!vendorId}
+        </Select>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={!vendorId || resolve.isPending}
           onClick={async () => {
             try {
               await resolve.mutateAsync({ id: email.id, vendorId });
@@ -250,34 +274,37 @@ function PendingRow({
               push(e instanceof Error ? e.message : 'Failed', 'error');
             }
           }}
-          className="bg-ink rounded-md px-3 py-1.5 text-caption font-medium text-white disabled:opacity-40"
         >
           Attribute
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-const i =
-  'rounded-md border border-line bg-panel px-2 py-1.5 text-body-sm outline-none focus:border-ink';
-
 function Section({
   title,
+  detail,
   count,
   children,
 }: {
   title: string;
-  count: number;
+  detail: string;
+  /** Undefined until the queue has loaded — a "0" beside an error reads as "done". */
+  count?: number;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-2 text-body-sm font-semibold">
-        {title} <span className="text-faint">({count})</span>
+    <section className="border-line bg-panel mb-4 rounded-lg border p-4">
+      <h2 className="text-ink text-h3 font-semibold">
+        {title}
+        {count !== undefined && (
+          <span className="font-numeric text-muted ml-2 text-body-sm font-normal">{count}</span>
+        )}
       </h2>
+      <p className="text-muted mb-2 mt-0.5 text-caption">{detail}</p>
       {children}
-    </div>
+    </section>
   );
 }
 
