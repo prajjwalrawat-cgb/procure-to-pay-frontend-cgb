@@ -113,7 +113,7 @@ export default function ScanPutawayPage(): React.JSX.Element {
           </ProductCard>
 
           {awaitingBin ? (
-            <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+            <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
               <h2 className="text-body font-semibold">Now scan the bin</h2>
               <BarcodeScanner
                 label="bin label"

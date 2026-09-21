@@ -14,8 +14,7 @@ import type {
   PoSpotBuyLineInput,
   VendorRef,
 } from '@/lib/shared';
-import { ArrowLeft, FileText, Paperclip, Plus, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { FileText, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -246,13 +245,11 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto w-full max-w-4xl pb-8">
-      <Link
-        href="/purchase-orders"
-        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
-      </Link>
       <PageHeader
+        breadcrumbs={[
+          { label: 'Purchase orders', href: '/purchase-orders' },
+          { label: 'New' },
+        ]}
         title="New purchase order"
         description="Raised directly against a vendor quote — no requisition required. It still goes through the normal PO approval before it can be issued."
       />
@@ -261,7 +258,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
       <div className="rounded-lg border border-line bg-panel p-4">
         {step === 0 && (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             {/* Both of these are searchable rather than native dropdowns. A
                 tenant's vendor master runs to hundreds of rows and its cost
                 centres to dozens; a native <select> there means scrolling a
@@ -299,7 +296,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                 <select
                   value={billToPlantId}
                   onChange={(e) => setBillToPlantId(e.target.value)}
-                  className={inputCls}
+                  className={inputCls + ' pr-8'}
                 >
                   {plants.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -326,7 +323,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               <select
                 value={deliveryTerms}
                 onChange={(e) => setDeliveryTerms(e.target.value)}
-                className={inputCls}
+                className={inputCls + ' pr-8'}
               >
                 {INCOTERM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -339,7 +336,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               <select
                 value={paymentKind}
                 onChange={(e) => setPaymentKind(e.target.value)}
-                className={inputCls}
+                className={inputCls + ' pr-8'}
               >
                 {PAYMENT_TERM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -386,7 +383,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                   placeholder="Description as quoted"
                   className={inputCls}
                 />
-                <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-6">
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   <Small label="Qty">
                     <input
                       value={l.qtyOrdered}
@@ -439,7 +436,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                 </div>
               </div>
             ))}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="default"
                 size="sm"
@@ -595,9 +592,9 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             />
             <Row label="Lines" value={String(lines.length)} />
             <Row label="PO total" value={inr(total.toFixed(2))} />
-            <div className="flex items-center justify-between border-b border-line pb-2">
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
               <span className="text-muted">Quote</span>
-              <span className="flex items-center gap-2 font-medium text-ink">
+              <span className="flex min-w-0 items-center gap-2 font-medium text-ink">
                 {quote ? (
                   <>
                     <span className="truncate">{quote.name}</span>
@@ -699,9 +696,9 @@ function Small({
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="flex items-center justify-between border-b border-line pb-2">
-      <span className="text-muted">{label}</span>
-      <span className="font-medium text-ink">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-ink">{value}</span>
     </div>
   );
 }

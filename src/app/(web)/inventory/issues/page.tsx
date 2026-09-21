@@ -1,11 +1,12 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill, TableState, cn, controlClass } from '@/components/ui';
 import { ISSUE_DEPT } from '@/lib/shared';
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { useCreateIssue, useLedger, useReturnIssue } from '@/lib/api/inventory';
+import { useTeam } from '@/lib/api/users';
 import {
   Field,
   FormResult,
@@ -15,7 +16,7 @@ import {
   TextArea,
   TextInput,
 } from '../_components/form-controls';
-import { formatDate } from '@/lib/format';
+import { formatDate, humanise } from '@/lib/format';
 
 /**
  * Internal issue — stock out to the photoshoot team, a sales person or another
@@ -31,13 +32,9 @@ export default function IssuesPage(): React.JSX.Element {
         title="Internal issues"
         description="Issue stock to a team, track the outstanding balance, and receive returns."
         actions={
-          <>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
-                Stock overview
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory">Stock overview</Link>
+          </Button>
         }
       />
 
@@ -62,6 +59,7 @@ function IssueForm(): React.JSX.Element {
   const [success, setSuccess] = useState<string | null>(null);
 
   const issue = useCreateIssue();
+  const approvers = (useTeam().data ?? []).filter((u) => u.isActive);
 
   async function submit(): Promise<void> {
     setError(null);
@@ -92,8 +90,8 @@ function IssueForm(): React.JSX.Element {
 
   return (
     <div className="mb-6 rounded-lg border border-line bg-panel p-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Field label="Product" required>
             <ProductSelect
               value={productId}
@@ -123,7 +121,7 @@ function IssueForm(): React.JSX.Element {
           >
             {ISSUE_DEPT.map((d) => (
               <option key={d} value={d}>
-                {d.charAt(0) + d.slice(1).toLowerCase()}
+                {humanise(d)}
               </option>
             ))}
           </SelectInput>
@@ -147,11 +145,27 @@ function IssueForm(): React.JSX.Element {
           label="Approved by"
           hint="Required above the tenant quantity or value threshold."
         >
-          <TextInput
-            value={approvedById}
-            onChange={(e) => setApprovedById(e.target.value)}
-            placeholder="usr_01H…"
-          />
+          {/* A named list where the caller may read the team; otherwise the
+              raw user id is still accepted so the issue is never blocked. */}
+          {approvers.length > 0 ? (
+            <SelectInput
+              value={approvedById}
+              onChange={(e) => setApprovedById(e.target.value)}
+            >
+              <option value="">Not needed</option>
+              {approvers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </SelectInput>
+          ) : (
+            <TextInput
+              value={approvedById}
+              onChange={(e) => setApprovedById(e.target.value)}
+              placeholder="Approver user id"
+            />
+          )}
         </Field>
         <Field label="Expected return date">
           <TextInput
@@ -160,14 +174,14 @@ function IssueForm(): React.JSX.Element {
             onChange={(e) => setTentativeReturnDate(e.target.value)}
           />
         </Field>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Field label="Remark">
             <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
           </Field>
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <FormResult error={error} success={success} />
         <Button
           variant="primary"
@@ -183,44 +197,44 @@ function IssueForm(): React.JSX.Element {
 }
 
 function OpenIssuesBoard(): React.JSX.Element {
-  const { data, isLoading } = useLedger({ openOnly: true, limit: 100 });
+  const {
+    data,
+    isLoading,
+    error: loadError,
+    refetch,
+  } = useLedger({ openOnly: true, limit: 100 });
   const [error, setError] = useState<string | null>(null);
   const rows = data?.items ?? [];
 
   return (
     <section>
-      <h2 className="mb-2 text-micro font-medium text-faint">
-        Open issues ({rows.length})
-      </h2>
+      <h2 className="mb-3 text-h3 font-semibold text-ink">Open issues ({rows.length})</h2>
       {error && <p className="mb-2 text-caption text-danger">{error}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full text-body-sm">
-          <thead className="border-line border-b text-left text-caption text-muted">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-b border-line text-left text-caption text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Issued</th>
-              <th className="px-3 py-2 font-medium">Product</th>
-              <th className="px-3 py-2 font-medium">Dept</th>
-              <th className="px-3 py-2 font-medium">Person / place</th>
-              <th className="px-3 py-2 text-right font-medium">Issued</th>
-              <th className="px-3 py-2 text-right font-medium">Balance</th>
-              <th className="w-56 px-3 py-2" />
+              <th className="px-3 py-2.5 font-medium">Issued on</th>
+              <th className="px-3 py-2.5 font-medium">Product</th>
+              <th className="px-3 py-2.5 font-medium">Dept</th>
+              <th className="px-3 py-2.5 font-medium">Person / place</th>
+              <th className="px-3 py-2.5 text-right font-medium">Qty issued</th>
+              <th className="px-3 py-2.5 text-right font-medium">Balance</th>
+              {/* Labelled for the stacked mobile card; visually the column speaks for itself. */}
+              <th className="w-56 px-3 py-2.5 text-right font-medium">
+                <span className="sr-only">Return</span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-muted">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-muted">
-                  No open issues — everything has come back.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={7}
+              isLoading={isLoading}
+              error={loadError}
+              onRetry={() => void refetch()}
+              isEmpty={rows.length === 0}
+              empty="No open issues — everything has come back"
+            />
             {rows.map((r) => (
               <OpenIssueRow key={r.id} row={r} onError={setError} />
             ))}
@@ -256,7 +270,7 @@ function OpenIssueRow({
 
   return (
     <tr className="border-t border-line">
-      <td className="font-numeric px-3 py-2 text-caption text-muted">
+      <td className="font-numeric px-3 py-3.5 text-caption text-muted">
         {formatDate(row.txnDate)}
         {overdue && (
           <Pill variant="danger" className="ml-1.5">
@@ -264,19 +278,22 @@ function OpenIssueRow({
           </Pill>
         )}
       </td>
-      <td className="px-3 py-2">
+      <td className="px-3 py-3.5">
         <div className="text-ink">{row.productName}</div>
         <div className="font-numeric text-micro text-faint">{row.productCode}</div>
       </td>
-      <td className="px-3 py-2">
-        <Pill variant="info">{row.issueDept ?? '—'}</Pill>
+      <td className="px-3 py-3.5">
+        {/* A department is a fact about the issue, not a state it moves through. */}
+        <span className="text-caption text-text">
+          {row.issueDept ? humanise(row.issueDept) : '—'}
+        </span>
       </td>
-      <td className="px-3 py-2 text-caption text-text">{row.issuedToName ?? '—'}</td>
-      <td className="font-numeric px-3 py-2 text-right text-muted">{row.qty}</td>
-      <td className="font-numeric px-3 py-2 text-right font-medium text-warn">
+      <td className="px-3 py-3.5 text-caption text-text">{row.issuedToName ?? '—'}</td>
+      <td className="font-numeric px-3 py-3.5 text-right text-muted">{row.qty}</td>
+      <td className="font-numeric px-3 py-3.5 text-right font-medium text-warn">
         {balance}
       </td>
-      <td className="px-3 py-2">
+      <td className="px-3 py-3.5">
         <div className="flex items-center justify-end gap-1.5">
           <input
             type="number"
@@ -285,10 +302,13 @@ function OpenIssueRow({
             value={qty}
             onChange={(e) => setQty(e.target.value)}
             placeholder={String(balance)}
-            className="w-20 rounded-md border border-line bg-panel px-2 py-1 text-caption text-text outline-none"
+            aria-label={`Quantity to return, up to ${balance}`}
+            className={cn(controlClass, 'h-8 w-20 py-1')}
           />
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             disabled={ret.isPending}
             onClick={() => {
               onError(null);
@@ -297,10 +317,9 @@ function OpenIssueRow({
                 { onError: (e) => onError(e.message), onSuccess: () => setQty('') },
               );
             }}
-            className="text-caption font-medium text-accent-2 hover:underline"
           >
             Return
-          </button>
+          </Button>
         </div>
       </td>
     </tr>

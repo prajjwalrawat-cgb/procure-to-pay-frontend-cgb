@@ -1,13 +1,26 @@
 'use client';
 
 import { History } from 'lucide-react';
+import { useState } from 'react';
 
 import {
   Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
   EmptyState,
+  ErrorState,
+  Field,
   PageHeader,
   Pill,
+  Skeleton,
   StageStrip,
+  Textarea,
 } from '@/components/ui';
 
 import { DocumentLedger } from '@/components/document-ledger';
@@ -20,19 +33,44 @@ import {
   useReverseReceipt,
   useSubmitReceipt,
 } from '@/lib/api/receipts';
-import { formatDateTime, inr, statusLabel, statusVariant } from '@/lib/format';
+import {
+  formatDateTime,
+  humanise,
+  inr,
+  qty,
+  statusLabel,
+  statusVariant,
+} from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 export default function ReceiptDetailPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const push = useToastStore((s) => s.push);
-  const { data, isLoading } = useReceipt(id);
+  const { data, isLoading, error, refetch } = useReceipt(id);
   const submit = useSubmitReceipt(id);
   const post = usePostReceipt(id);
   const reverse = useReverseReceipt(id);
+  const [reversing, setReversing] = useState(false);
 
+  if (error) {
+    return (
+      <div className="rounded-lg border border-line bg-panel">
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
+  }
   if (isLoading || !data) {
-    return <div className="text-muted px-4 py-10">Loading…</div>;
+    return (
+      <div aria-busy="true" aria-live="polite" className="flex flex-col gap-4">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-72" />
+        <Skeleton className="h-16 w-full" />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <Skeleton className="h-72 w-full" />
+          <Skeleton className="h-72 w-full" />
+        </div>
+      </div>
+    );
   }
 
   const act = (fn: { mutate: (v: void, o: object) => void }, ok: string): void =>
@@ -44,6 +82,10 @@ export default function ReceiptDetailPage(): React.JSX.Element {
   return (
     <div>
       <PageHeader
+        breadcrumbs={[
+          { label: 'Goods receipts', href: '/goods-receipt' },
+          { label: data.number },
+        ]}
         title={data.number}
         numeric
         meta={
@@ -69,8 +111,14 @@ export default function ReceiptDetailPage(): React.JSX.Element {
         }
         actions={
           <>
-          {data.canStartQc || data.status === 'DRAFT' ? (
-            data.status === 'DRAFT' ? (
+            {/* Reversal first and quiet: the button only opens the dialog, and
+                the dialog's confirm is the one red control. */}
+            {data.canReverse && (
+              <Button size="sm" variant="secondary" onClick={() => setReversing(true)}>
+                Reverse
+              </Button>
+            )}
+            {data.status === 'DRAFT' ? (
               <Button
                 size="sm"
                 variant="primary"
@@ -79,52 +127,39 @@ export default function ReceiptDetailPage(): React.JSX.Element {
               >
                 Send for QC
               </Button>
-            ) : (
-              <Link href={`/goods-receipt/${id}/qc`}>
-                <Button size="sm" variant="primary">
-                  Start QC
-                </Button>
-              </Link>
-            )
-          ) : null}
-          {data.canCompleteQc && (
-            <Link href={`/goods-receipt/${id}/qc`}>
-              <Button size="sm" variant="primary">
-                Continue QC
+            ) : data.canStartQc ? (
+              <Button asChild size="sm" variant="primary">
+                <Link href={`/goods-receipt/${id}/qc`}>Start QC</Link>
               </Button>
-            </Link>
-          )}
-          {data.canPost && (
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={post.isPending}
-              onClick={() => act(post, 'Receipt posted')}
-            >
-              Post GRN
-            </Button>
-          )}
-          {data.canReverse && (
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => {
-                const reason = window.prompt('Reversal reason?');
-                if (reason)
-                  reverse.mutate(reason, {
-                    onSuccess: () => push('Receipt reversed', 'success'),
-                    onError: (e) => push((e as Error).message, 'error'),
-                  });
-              }}
-            >
-              Reverse
-            </Button>
-          )}
+            ) : null}
+            {data.canCompleteQc && (
+              <Button
+                asChild
+                size="sm"
+                variant={
+                  data.canPost || data.canStartQc || data.status === 'DRAFT'
+                    ? 'secondary'
+                    : 'primary'
+                }
+              >
+                <Link href={`/goods-receipt/${id}/qc`}>Continue QC</Link>
+              </Button>
+            )}
+            {data.canPost && (
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={post.isPending}
+                onClick={() => act(post, 'Receipt posted')}
+              >
+                Post GRN
+              </Button>
+            )}
           </>
         }
       />
 
-      <div className="border-line bg-panel mb-4 rounded-lg border p-3.5">
+      <div className="mb-4 overflow-x-auto rounded-lg border border-line bg-panel p-3.5">
         <StageStrip
           stages={data.stages.map((s) => ({ key: s.key, label: s.label }))}
           activeIndex={Math.max(
@@ -137,17 +172,19 @@ export default function ReceiptDetailPage(): React.JSX.Element {
       </div>
 
       {data.varianceFlags.length > 0 && (
-        <div className="bg-warn-wash text-warn mb-4 rounded-sm px-3 py-2 text-caption">
-          Flags: {data.varianceFlags.join(', ')}
+        <div
+          role="status"
+          className="mb-4 rounded-sm bg-warn-bg px-3 py-2 text-caption text-warn"
+        >
+          Flags: {data.varianceFlags.map(humanise).join(', ')}
           {data.requiresPlantHeadSignoff && ', plant-head sign-off required to post'}
         </div>
       )}
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="min-w-0 space-y-4 lg:col-span-2">
-          {/* Gate details */}
-          <Card title="Gate details">
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-caption sm:grid-cols-2">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Section title="Gate details">
+            <dl className="grid gap-x-6 gap-y-2 text-caption sm:grid-cols-2">
               <Def k="Gate entry" v={data.gate.gateEntryRef} />
               <Def k="Vehicle" v={data.gate.vehicleNo} />
               <Def k="Driver" v={data.gate.driverName} />
@@ -160,71 +197,72 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                 v={data.gate.netWeightKg ? `${data.gate.netWeightKg} kg` : null}
               />
             </dl>
-          </Card>
+          </Section>
 
-          {/* Lines */}
-          <Card title="Line items">
-            {/* Six columns will not fit a phone; the table scrolls inside the
-                card rather than widening the page. */}
-            <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-caption">
-              <thead className="border-line border-b text-left text-caption text-muted">
+          <Section title="Line items" flush>
+            {/* Below 768px the rows stack into labelled cards (pf-stack)
+                instead of scrolling six columns sideways. */}
+            <table className="pf-stack w-full text-body-sm">
+              <thead className="border-y border-line text-left text-caption text-muted">
                 <tr>
-                  <th className="py-1">Item</th>
-                  <th className="py-1 text-right">Received</th>
-                  <th className="py-1 text-right">Accepted</th>
-                  <th className="py-1 text-right">Rejected</th>
-                  <th className="py-1">Batch</th>
-                  <th className="py-1 text-right">Landed</th>
+                  <th className="px-3 py-2.5 font-medium">Item</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Received</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Accepted</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Rejected</th>
+                  <th className="px-3 py-2.5 font-medium">Batch</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Landed</th>
                 </tr>
               </thead>
               <tbody>
+                {data.lines.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted">
+                      No lines on this receipt.
+                    </td>
+                  </tr>
+                )}
                 {data.lines.map((l) => (
-                  <tr key={l.id} className="border-line border-t">
-                    <td className="text-text py-1.5">{l.itemDesc}</td>
-                    <td className="font-numeric py-1.5 text-right">
-                      {l.qtyReceived} {l.uom}
+                  <tr key={l.id} className="border-t border-line">
+                    <td className="px-3 py-3.5 text-text">{l.itemDesc}</td>
+                    <td className="font-numeric px-3 py-3.5 text-right">
+                      {qty(l.qtyReceived, 2)} {l.uom}
                     </td>
-                    <td className="font-numeric text-accent-2 py-1.5 text-right">
-                      {l.qtyAccepted}
+                    <td className="font-numeric px-3 py-3.5 text-right text-success">
+                      {qty(l.qtyAccepted, 2)}
                     </td>
-                    <td className="font-numeric text-danger py-1.5 text-right">
-                      {Number(l.qtyRejected) > 0 ? l.qtyRejected : '—'}
+                    <td className="font-numeric px-3 py-3.5 text-right text-danger">
+                      {Number(l.qtyRejected) > 0 ? qty(l.qtyRejected, 2) : '—'}
                     </td>
-                    <td className="text-faint font-numeric py-1.5">
+                    <td className="font-numeric px-3 py-3.5 text-faint">
                       {l.batchNumber ?? '—'}
                     </td>
-                    <td className="font-numeric py-1.5 text-right">
+                    <td className="font-numeric px-3 py-3.5 text-right">
                       {inr(l.unitLandedCost)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            </div>
-          </Card>
+          </Section>
 
-          {/* QC samples */}
           {data.lines.some((l) => l.qcSamples.length > 0) && (
-            <Card title="QC samples">
+            <Section title="QC samples">
               {data.lines.flatMap((l) =>
                 l.qcSamples.map((s) => (
-                  <div key={s.id} className="border-line border-t py-2 first:border-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-text text-caption">
+                  <div key={s.id} className="border-t border-line py-2 first:border-0">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-caption text-text">
                         {l.itemDesc}, sample {s.sampleSize}
                       </span>
                       <Pill variant={statusVariant(s.result)}>
                         {statusLabel(s.result)}
                       </Pill>
                     </div>
-                    <div className="text-faint mt-1 flex flex-wrap gap-2 text-micro">
+                    <div className="mt-1 flex flex-wrap gap-2 text-micro text-faint">
                       {s.parameters.map((p) => (
                         <span
                           key={p.parameter}
-                          className={
-                            p.result === 'PASS' ? 'text-accent-2' : 'text-danger'
-                          }
+                          className={p.result === 'PASS' ? 'text-success' : 'text-danger'}
                         >
                           {p.parameter}: {String(p.measured)} ({p.result})
                         </span>
@@ -233,11 +271,10 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                   </div>
                 )),
               )}
-            </Card>
+            </Section>
           )}
 
-          {/* Activity */}
-          <Card title="Activity">
+          <Section title="Activity">
             {/* Rendered as a bare heading over an empty <ul> when there was no
                 activity, which reads as a broken panel rather than "nothing
                 has happened yet". */}
@@ -249,22 +286,28 @@ export default function ReceiptDetailPage(): React.JSX.Element {
                 detail="Receipt events will be listed here as they happen."
               />
             ) : (
-              <ul className="space-y-1 text-caption">
+              <ul className="space-y-1.5 text-caption">
                 {data.activity.map((a) => (
                   <li key={a.id} className="flex justify-between gap-3">
-                    <span className="text-text">{a.action}</span>
-                    <span className="text-faint font-numeric shrink-0">
+                    <span className="text-text">{humanise(a.action)}</span>
+                    <span className="font-numeric shrink-0 text-faint">
                       {formatDateTime(a.at)}
                     </span>
                   </li>
                 ))}
               </ul>
             )}
-          </Card>
+          </Section>
         </div>
 
-        <div className="space-y-4">
-          <Card title="Purchase order">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Section title="Total">
+            <p className="font-numeric text-h2 font-semibold text-ink">
+              {inr(data.totals.value)}
+            </p>
+          </Section>
+
+          <Section title="Purchase order">
             <div className="text-caption">
               <Link
                 href={`/purchase-orders/${data.po.id}`}
@@ -272,83 +315,154 @@ export default function ReceiptDetailPage(): React.JSX.Element {
               >
                 {data.po.number}
               </Link>
-              <p className="text-muted mt-1">
+              <p className="mt-1 text-muted">
                 Fulfilment {data.po.fulfilmentPct.toFixed(0)}%
               </p>
             </div>
-          </Card>
+          </Section>
 
           {data.rma && (
-            <Card title="Return authorisation">
-              <Link
-                href={`/rma/${data.rma.id}`}
-                className="font-numeric text-accent-2 text-caption hover:underline"
-              >
-                {data.rma.number}
-              </Link>
-              <div className="mt-1">
+            <Section title="Return authorisation">
+              <div className="flex items-center justify-between gap-2 text-caption">
+                <Link
+                  href={`/rma/${data.rma.id}`}
+                  className="font-numeric text-accent-2 hover:underline"
+                >
+                  {data.rma.number}
+                </Link>
                 <Pill variant={statusVariant(data.rma.status)}>
                   {statusLabel(data.rma.status)}
                 </Pill>
               </div>
-            </Card>
+            </Section>
           )}
 
           {data.invoiceLinks.length > 0 && (
-            <Card title="Invoice matches">
-              {data.invoiceLinks.map((i) => (
-                <div key={i.id} className="flex items-center justify-between text-caption">
-                  <Link
-                    href={`/invoices/${i.id}`}
-                    className="font-numeric text-accent-2 hover:underline"
+            <Section title="Invoice matches">
+              <div className="flex flex-col gap-1.5">
+                {data.invoiceLinks.map((i) => (
+                  <div
+                    key={i.id}
+                    className="flex items-center justify-between gap-2 text-caption"
                   >
-                    {i.number}
-                  </Link>
-                  <Pill variant={statusVariant(i.status)}>{statusLabel(i.status)}</Pill>
-                </div>
-              ))}
-            </Card>
+                    <Link
+                      href={`/invoices/${i.id}`}
+                      className="font-numeric text-accent-2 hover:underline"
+                    >
+                      {i.number}
+                    </Link>
+                    <Pill variant={statusVariant(i.status)}>{statusLabel(i.status)}</Pill>
+                  </div>
+                ))}
+              </div>
+            </Section>
           )}
 
-          <Card title="Stock impact">
-            {data.lines.map((l) => (
-              <div key={l.id} className="text-caption">
-                <span className="text-text">{l.itemDesc}</span>
-                <p className="text-faint font-numeric">
-                  {l.stockBefore ?? '—'} → {l.stockAfter ?? '—'}
-                </p>
-              </div>
-            ))}
-          </Card>
-
-          <Card title="Total">
-            <p className="font-numeric text-ink text-h3 font-semibold">
-              {inr(data.totals.value)}
-            </p>
-          </Card>
+          <Section title="Stock impact">
+            <div className="flex flex-col gap-2">
+              {data.lines.map((l) => (
+                <div key={l.id} className="flex justify-between gap-3 text-caption">
+                  <span className="min-w-0 truncate text-text">{l.itemDesc}</span>
+                  <span className="font-numeric shrink-0 text-faint">
+                    {l.stockBefore ?? '—'} → {l.stockAfter ?? '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Section>
 
           {/* The trust column. Same position on every document detail page. */}
           <DocumentLedger entityId={data.id} />
         </div>
       </div>
+
+      <ReverseDialog
+        open={reversing}
+        number={data.number}
+        pending={reverse.isPending}
+        onClose={() => setReversing(false)}
+        onConfirm={(reason) =>
+          reverse.mutate(reason, {
+            onSuccess: () => {
+              push('Receipt reversed', 'success');
+              setReversing(false);
+            },
+            onError: (e) => push((e as Error).message, 'error'),
+          })
+        }
+      />
     </div>
   );
 }
 
-function Card({
+function ReverseDialog({
+  open,
+  number,
+  pending,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  number: string;
+  pending: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+}): React.JSX.Element {
+  const [reason, setReason] = useState('');
+  const close = (): void => {
+    setReason('');
+    onClose();
+  };
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && close()}>
+      <DialogContent>
+        <DialogTitle>Reverse {number}?</DialogTitle>
+        <DialogDescription className="mt-1">
+          This undoes the posting of the receipt and cannot be taken back. The reason is
+          kept on the record.
+        </DialogDescription>
+        <Field label="Reason" required className="mt-4">
+          <Textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            autoFocus
+          />
+        </Field>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <Button variant="ghost" onClick={close} disabled={pending}>
+            Back
+          </Button>
+          <Button
+            variant="danger"
+            disabled={!reason.trim() || pending}
+            onClick={() => onConfirm(reason.trim())}
+          >
+            Reverse receipt
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** A titled card. `flush` drops the body padding so a table can run edge to edge. */
+function Section({
   title,
+  flush,
   children,
 }: {
   title: string;
+  flush?: boolean;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel rounded-lg border p-4">
-      <h2 className="text-faint mb-2 text-micro font-medium ">
-        {title}
-      </h2>
-      {children}
-    </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className={flush ? 'px-0 pb-0' : undefined}>{children}</CardContent>
+    </Card>
   );
 }
 
@@ -356,7 +470,7 @@ function Def({ k, v }: { k: string; v: string | null }): React.JSX.Element {
   return (
     <div>
       <dt className="text-faint">{k}</dt>
-      <dd className="text-text font-numeric">{v ?? '—'}</dd>
+      <dd className="font-numeric break-words text-text">{v ?? '—'}</dd>
     </div>
   );
 }

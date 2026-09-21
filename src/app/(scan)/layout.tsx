@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import { ScanShell } from '@/components/scan/scan-shell';
+import { colors } from '@/components/ui/tokens';
 
 export const metadata: Metadata = {
   title: 'ProcureFlow Scanner',
@@ -18,7 +19,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  // The browser chrome colour on a handset; taken from the token so it tracks
+  // the palette rather than a hex nobody updates.
+  themeColor: colors.ink,
   width: 'device-width',
   initialScale: 1,
   // No zoom-out on rotate, and the safe-area insets a notched handset needs

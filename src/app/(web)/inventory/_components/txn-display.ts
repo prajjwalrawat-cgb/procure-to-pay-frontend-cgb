@@ -13,12 +13,17 @@ const TXN_LABELS: Record<string, string> = {
   CUSTOMER_RETURN_IN: 'Customer return',
   DAMAGE_WRITE_OFF: 'Damage write-off',
   ADJUSTMENT: 'Adjustment',
+  // Scanner moves between sections post as a matched out/in pair.
+  TRANSFER_OUT: 'Transfer out',
+  TRANSFER_IN: 'Transfer in',
 };
 
-export type TxnVariant = 'success' | 'danger' | 'warn' | 'info' | 'violet' | 'gray';
+export type TxnVariant = 'success' | 'danger' | 'warn' | 'info' | 'neutral';
 
 export function txnLabel(t: string): string {
-  return TXN_LABELS[t] ?? t;
+  // A type added server-side before this map learns it still reads as words,
+  // not as a raw SCREAMING_CASE enum.
+  return TXN_LABELS[t] ?? t.charAt(0) + t.slice(1).toLowerCase().replace(/_/g, ' ');
 }
 
 export function txnVariant(t: string): TxnVariant {
@@ -36,7 +41,7 @@ export function txnVariant(t: string): TxnVariant {
     case 'CUSTOMER_RETURN_IN':
       return 'warn';
     default:
-      return 'gray';
+      return 'neutral';
   }
 }
 

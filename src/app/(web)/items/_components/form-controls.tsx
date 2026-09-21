@@ -34,9 +34,9 @@ export function Field({
       </span>
       {children}
       {error ? (
-        <span className="text-micro text-danger">{error}</span>
+        <span className="text-caption text-danger">{error}</span>
       ) : hint ? (
-        <span className="text-micro text-faint">{hint}</span>
+        <span className="text-caption text-muted">{hint}</span>
       ) : null}
     </label>
   );
@@ -57,7 +57,10 @@ export function SelectInput({
 }: React.SelectHTMLAttributes<HTMLSelectElement> & {
   invalid?: boolean;
 }): React.JSX.Element {
-  return <select {...props} className={`${INPUT_CLASS} ${invalid ? ERROR_CLASS : ''}`} />;
+  // pr-8 clears the chevron the global select style draws on the right.
+  return (
+    <select {...props} className={`${INPUT_CLASS} pr-8 ${invalid ? ERROR_CLASS : ''}`} />
+  );
 }
 
 export function TextArea({

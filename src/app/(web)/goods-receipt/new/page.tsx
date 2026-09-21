@@ -3,6 +3,7 @@
 import {
   Button,
   PageHeader,
+  Skeleton,
   StepIndicator,
   controlClass,
 } from '@/components/ui';
@@ -13,9 +14,12 @@ import { Suspense, useMemo, useState } from 'react';
 import { usePurchaseOrder, usePurchaseOrders } from '@/lib/api/purchase-orders';
 import { useCreateReceipt } from '@/lib/api/receipts';
 import { useToastStore } from '@/store/toast-store';
-import { formatDate } from '@/lib/format';
+import { formatDate, humanise, qty } from '@/lib/format';
 
-const STEPS = ['Gate entry', 'Line receipt', 'Attachments', 'Review'];
+// There is no attachments step: the GRN attachment endpoint takes an
+// already-uploaded storage key and nothing in the app produces one yet, so a
+// step promising uploads "after saving" was a dead end.
+const STEPS = ['Gate entry', 'Line receipt', 'Review'];
 // One definition for every text field, select and date input on this page —
 // see components/ui/components/input.tsx.
 const inputCls = controlClass;
@@ -36,7 +40,15 @@ interface LineDraft {
 // `next build` fails prerendering this route.
 export default function NewReceiptPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="p-6 text-body-sm text-muted">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div aria-busy="true" className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+          <Skeleton className="h-7 w-56" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-80 w-full" />
+        </div>
+      }
+    >
       <NewReceiptForm />
     </Suspense>
   );
@@ -145,25 +157,38 @@ function NewReceiptForm(): React.JSX.Element {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
+        breadcrumbs={[
+          { label: 'Goods receipts', href: '/goods-receipt' },
+          { label: 'New' },
+        ]}
         title="New goods receipt"
-        description="Gate-to-post receipt"
+        description="Record what arrived at the gate against an issued purchase order, then send it for QC."
       />
 
       <StepIndicator steps={STEPS} current={step} className="mb-6" />
 
-      <div className="rounded-lg border border-line bg-panel p-5">
+      <div className="rounded-lg border border-line bg-panel p-4 sm:p-5">
         {step === 0 && (
           <div className="space-y-4">
-            <Field label="Purchase order">
+            <Field label="Purchase order" required>
               <select
-                className={inputCls}
+                className={inputCls + ' pr-8'}
+                disabled={pendingPos.isLoading}
                 value={poId}
                 onChange={(e) => {
                   setPoId(e.target.value);
                   setLines([]);
                 }}
               >
-                <option value="">Select an issued PO…</option>
+                <option value="">
+                  {pendingPos.isLoading
+                    ? 'Loading purchase orders…'
+                    : pendingPos.error
+                      ? 'Could not load purchase orders'
+                      : pendingPos.data?.items.length
+                        ? 'Select an issued PO…'
+                        : 'No POs are waiting for a receipt'}
+                </option>
                 {pendingPos.data?.items.map((po) => (
                   <option key={po.id} value={po.id}>
                     {po.number} — {po.vendor.name}
@@ -173,22 +198,23 @@ function NewReceiptForm(): React.JSX.Element {
             </Field>
             {poDetail.data?.vendor && (
               <p className="text-caption text-muted">
-                Vendor: <span className="text-text">{poDetail.data.vendor.name}</span> ,
+                Vendor <span className="text-text">{poDetail.data.vendor.name}</span>
+                <span aria-hidden> · </span>
                 Expected{' '}
                 {poDetail.data.expectedDeliveryDate
                   ? formatDate(poDetail.data.expectedDeliveryDate)
                   : '—'}
               </p>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Gate entry / challan ref">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Gate entry / challan ref" required>
                 <input
                   className={inputCls}
                   value={gateEntryRef}
                   onChange={(e) => setGateEntryRef(e.target.value)}
                 />
               </Field>
-              <Field label="Vehicle no">
+              <Field label="Vehicle no" required>
                 <input
                   className={inputCls}
                   value={vehicleNo}
@@ -227,7 +253,7 @@ function NewReceiptForm(): React.JSX.Element {
             </div>
             <Field label="Packing condition">
               <select
-                className={inputCls}
+                className={inputCls + ' pr-8'}
                 value={packingCondition}
                 onChange={(e) =>
                   setPackingCondition(
@@ -242,14 +268,15 @@ function NewReceiptForm(): React.JSX.Element {
               </select>
             </Field>
             {packingCondition !== 'OK' && (
-              <div className="rounded-sm bg-warn-wash px-3 py-2 text-caption text-warn">
+              <div className="rounded-sm bg-warn-bg px-3 py-2 text-caption text-warn">
                 QC will be mandatory even for tolerance-auto-accept items.
               </div>
             )}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Weighbridge gross (kg)">
                 <input
                   className={inputCls}
+                  inputMode="decimal"
                   value={grossWeightKg}
                   onChange={(e) => setGrossWeightKg(e.target.value)}
                 />
@@ -257,6 +284,7 @@ function NewReceiptForm(): React.JSX.Element {
               <Field label="Tare (kg)">
                 <input
                   className={inputCls}
+                  inputMode="decimal"
                   value={tareWeightKg}
                   onChange={(e) => setTareWeightKg(e.target.value)}
                 />
@@ -272,16 +300,18 @@ function NewReceiptForm(): React.JSX.Element {
           <div className="space-y-3">
             {lines.map((l, i) => (
               <div key={l.poLineId} className="rounded-md border border-line p-3">
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="text-body-sm font-medium text-text">{l.itemDesc}</span>
-                  <span className="font-numeric text-micro text-faint">
-                    ordered {l.qtyOrdered}, remaining {l.qtyRemaining} {l.uom}
+                  <span className="font-numeric text-caption text-faint">
+                    ordered {qty(l.qtyOrdered, 2)}, remaining {qty(l.qtyRemaining, 2)}{' '}
+                    {l.uom}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid gap-3 sm:grid-cols-3">
                   <Field label={`Qty received (${l.uom})`}>
                     <input
                       className={inputCls}
+                      inputMode="decimal"
                       value={l.qtyReceived}
                       onChange={(e) => setLine(i, { qtyReceived: e.target.value })}
                     />
@@ -303,38 +333,36 @@ function NewReceiptForm(): React.JSX.Element {
                 </div>
                 <button
                   type="button"
-                  className="mt-2 text-micro text-accent-2 hover:underline"
+                  className="mt-2 text-caption font-medium text-accent hover:underline"
                   onClick={() => setLine(i, { qtyReceived: l.qtyRemaining })}
                 >
                   Copy remaining from PO
                 </button>
               </div>
             ))}
-            {lines.length === 0 && (
-              <p className="text-body-sm text-muted">Select a PO in step 1 first.</p>
-            )}
+            {lines.length === 0 &&
+              (poId && poDetail.isLoading ? (
+                <div aria-busy="true" className="flex flex-col gap-3">
+                  <Skeleton className="h-28 w-full" />
+                  <Skeleton className="h-28 w-full" />
+                </div>
+              ) : (
+                <p className="py-6 text-center text-body-sm text-muted">
+                  {poId
+                    ? 'This purchase order has no lines left to receive.'
+                    : 'Choose a purchase order in the first step.'}
+                </p>
+              ))}
           </div>
         )}
 
         {step === 2 && (
-          <div className="space-y-3">
-            <p className="text-body-sm text-muted">
-              Attach the delivery challan, invoice copy, COA and packing/damage photos
-              after saving. Attachments upload to the receipt once created.
-            </p>
-            <div className="rounded-sm bg-canvas px-3 py-6 text-center text-caption text-faint">
-              Attachment upload is available on the receipt detail page after saving.
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
           <div className="space-y-3 text-body-sm">
             <Row k="Purchase order" v={poDetail.data?.number ?? poId} />
             <Row k="Vendor" v={poDetail.data?.vendor.name ?? '—'} />
             <Row k="Gate entry" v={gateEntryRef} />
             <Row k="Vehicle" v={vehicleNo} />
-            <Row k="Packing" v={packingCondition} />
+            <Row k="Packing" v={humanise(packingCondition)} />
             <Row k="Weighbridge net" v={netWeight ? `${netWeight} kg` : '—'} />
             <div className="mt-2 border-t border-line pt-2">
               {lines
@@ -343,7 +371,7 @@ function NewReceiptForm(): React.JSX.Element {
                   <Row
                     key={l.poLineId}
                     k={l.itemDesc}
-                    v={`${l.qtyReceived} ${l.uom}, ${l.batchNumber || 'no batch'}`}
+                    v={`${qty(l.qtyReceived, 2)} ${l.uom}, ${l.batchNumber || 'no batch'}`}
                   />
                 ))}
             </div>
@@ -351,7 +379,7 @@ function NewReceiptForm(): React.JSX.Element {
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -359,7 +387,7 @@ function NewReceiptForm(): React.JSX.Element {
         >
           {step === 0 ? 'Cancel' : 'Back'}
         </Button>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {step === STEPS.length - 1 ? (
             <>
               <Button
@@ -397,15 +425,18 @@ function NewReceiptForm(): React.JSX.Element {
 
 function Field({
   label,
+  required,
   children,
 }: {
   label: string;
+  required?: boolean;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
     <label className="block">
-      <span className="mb-1 block text-micro font-medium text-faint">
+      <span className="mb-1 block text-caption font-medium text-text">
         {label}
+        {required && <span className="ml-0.5 text-danger">*</span>}
       </span>
       {children}
     </label>
@@ -414,9 +445,9 @@ function Field({
 
 function Row({ k, v }: { k: string; v: string }): React.JSX.Element {
   return (
-    <div className="flex justify-between py-0.5">
-      <span className="text-muted">{k}</span>
-      <span className="font-numeric text-text">{v}</span>
+    <div className="flex justify-between gap-3 py-0.5">
+      <span className="min-w-0 text-muted">{k}</span>
+      <span className="font-numeric min-w-0 break-words text-right text-text">{v}</span>
     </div>
   );
 }

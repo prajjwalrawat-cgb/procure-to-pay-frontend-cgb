@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Button,
-  PageHeader,
-  Pill,
-  SubNav,
-} from '@/components/ui';
+import { Button, PageHeader, Pill, SubNav, TableState } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -23,6 +18,7 @@ import {
   TextArea,
   TextInput,
 } from '../_components/form-controls';
+import { ConfirmAction } from '../_components/confirm-action';
 import { formatDate } from '@/lib/format';
 
 /**
@@ -40,15 +36,11 @@ export default function ReturnsPage(): React.JSX.Element {
     <div>
       <PageHeader
         title="Returns"
-        description="Customer returns &amp; restock decisions, vendor repair tracker"
+        description="Customer returns and restock decisions, and the vendor repair tracker."
         actions={
-          <>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
-                Stock overview
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory">Stock overview</Link>
+          </Button>
         }
       />
 
@@ -115,8 +107,8 @@ function CustomerReturnForm(): React.JSX.Element {
 
   return (
     <div className="mb-6 rounded-lg border border-line bg-panel p-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Field label="Product" required>
             <ProductSelect
               value={productId}
@@ -159,13 +151,13 @@ function CustomerReturnForm(): React.JSX.Element {
             placeholder="Sealed, box damaged, used…"
           />
         </Field>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Field label="Remark">
             <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
           </Field>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <FormResult error={error} success={success} />
         <Button
           variant="primary"
@@ -181,99 +173,98 @@ function CustomerReturnForm(): React.JSX.Element {
 }
 
 function RestockQueue(): React.JSX.Element {
-  const { data, isLoading } = usePendingDispositions();
+  const { data, isLoading, error: loadError, refetch } = usePendingDispositions();
   const decide = useRestockDecision();
   const [error, setError] = useState<string | null>(null);
   const rows = data?.restockPending ?? [];
 
   return (
     <section>
-      <h2 className="mb-2 text-micro font-medium text-faint">
+      <h2 className="mb-3 text-h3 font-semibold text-ink">
         Awaiting restock decision ({rows.length})
       </h2>
       {error && <p className="mb-2 text-caption text-danger">{error}</p>}
       <div className="overflow-x-auto">
-        <table className="w-full text-body-sm">
-          <thead className="border-line border-b text-left text-caption text-muted">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-b border-line text-left text-caption text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Returned</th>
-              <th className="px-3 py-2 font-medium">Product</th>
-              <th className="px-3 py-2 font-medium">Order</th>
-              <th className="px-3 py-2 font-medium">Condition</th>
-              <th className="px-3 py-2 text-right font-medium">Qty</th>
-              <th className="w-52 px-3 py-2" />
+              <th className="px-3 py-2.5 font-medium">Returned</th>
+              <th className="px-3 py-2.5 font-medium">Product</th>
+              <th className="px-3 py-2.5 font-medium">Order</th>
+              <th className="px-3 py-2.5 font-medium">Condition</th>
+              <th className="px-3 py-2.5 text-right font-medium">Qty</th>
+              <th className="w-52 px-3 py-2.5 text-right font-medium">
+                <span className="sr-only">Decision</span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-muted">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && rows.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-3 py-8 text-center text-muted">
-                  No returns awaiting a decision.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={6}
+              isLoading={isLoading}
+              error={loadError}
+              onRetry={() => void refetch()}
+              isEmpty={rows.length === 0}
+              empty="No returns awaiting a decision"
+            />
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-line">
-                <td className="font-numeric px-3 py-2 text-caption text-muted">
+                <td className="font-numeric px-3 py-3.5 text-caption text-muted">
                   {formatDate(r.txnDate)}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-3.5">
                   <div className="text-ink">{r.productName}</div>
                   <div className="font-numeric text-micro text-faint">
                     {r.productCode}
                   </div>
                 </td>
-                <td className="font-numeric px-3 py-2 text-caption text-text">
+                <td className="font-numeric px-3 py-3.5 text-caption text-text">
                   {r.orderId ?? '—'}
                 </td>
-                <td className="px-3 py-2 text-caption text-muted">
+                <td className="px-3 py-3.5 text-caption text-muted">
                   {r.productCondition ?? '—'}
                 </td>
-                <td className="font-numeric px-3 py-2 text-right text-ink">{r.qty}</td>
-                <td className="px-3 py-2 text-right">
-                  <button
-                    type="button"
-                    disabled={decide.isPending}
-                    onClick={() => {
-                      setError(null);
-                      decide.mutate(
-                        { id: r.id, restock: true },
-                        { onError: (e) => setError(e.message) },
-                      );
-                    }}
-                    className="text-caption font-medium text-success hover:underline"
-                  >
-                    Restock
-                  </button>
-                  <button
-                    type="button"
-                    disabled={decide.isPending}
-                    onClick={() => {
-                      setError(null);
-                      decide.mutate(
-                        { id: r.id, restock: false },
-                        { onError: (e) => setError(e.message) },
-                      );
-                    }}
-                    className="ml-3 text-caption font-medium text-danger hover:underline"
-                  >
-                    Write off
-                  </button>
+                <td className="font-numeric px-3 py-3.5 text-right text-ink">{r.qty}</td>
+                <td className="px-3 py-3.5 text-right">
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={decide.isPending}
+                      onClick={() => {
+                        setError(null);
+                        decide.mutate(
+                          { id: r.id, restock: true },
+                          { onError: (e) => setError(e.message) },
+                        );
+                      }}
+                    >
+                      Restock
+                    </Button>
+                    <ConfirmAction
+                      label="Write off"
+                      title={`Write off ${r.qty} × ${r.productName}?`}
+                      detail="Posts a damage write-off entry linked to this return. It can only be offset by a later adjustment, never removed."
+                      confirmLabel="Write off"
+                      disabled={decide.isPending}
+                      onConfirm={() => {
+                        setError(null);
+                        decide.mutate(
+                          { id: r.id, restock: false },
+                          { onError: (e) => setError(e.message) },
+                        );
+                      }}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-micro text-faint">
-        Writing off posts a DAMAGE_WRITE_OFF entry linked to the return — the return
+      <p className="mt-2 text-caption text-muted">
+        Writing off posts a damage write-off entry linked to the return — the return
         itself is never edited.
       </p>
     </section>
@@ -323,8 +314,8 @@ function VendorReturnForm(): React.JSX.Element {
 
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Field label="Product" required>
             <ProductSelect
               value={productId}
@@ -361,13 +352,13 @@ function VendorReturnForm(): React.JSX.Element {
             onChange={(e) => setTentativeReturnDate(e.target.value)}
           />
         </Field>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Field label="Remark">
             <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
           </Field>
         </div>
       </div>
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <FormResult error={error} success={success} />
         <Button
           variant="primary"
@@ -378,11 +369,9 @@ function VendorReturnForm(): React.JSX.Element {
           {ret.isPending ? 'Recording…' : 'Record vendor return'}
         </Button>
       </div>
-      <div className="mt-3">
-        <Pill variant="gray">
-          Stock leaves immediately — the ledger records the outward movement
-        </Pill>
-      </div>
+      <p className="mt-3 text-caption text-muted">
+        Stock leaves immediately — the ledger records the outward movement.
+      </p>
     </div>
   );
 }

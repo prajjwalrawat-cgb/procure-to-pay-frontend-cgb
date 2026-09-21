@@ -5,6 +5,7 @@ import {
   Button,
   PageHeader,
   Pill,
+  Skeleton,
   SubNav,
 } from '@/components/ui';
 import type { LedgerEntryView } from '@/lib/shared';
@@ -34,7 +35,7 @@ import { formatDate } from '@/lib/format';
 // `next build` fails prerendering this route.
 export default function AdjustmentsPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="p-6 text-body-sm text-muted">Loading…</div>}>
+    <Suspense fallback={<div aria-busy="true" className="flex flex-col gap-3"><Skeleton className="h-7 w-48" /><Skeleton className="h-64 w-full" /></div>}>
       <AdjustmentsScreen />
     </Suspense>
   );
@@ -64,13 +65,9 @@ function AdjustmentsScreen(): React.JSX.Element {
         title="Adjustments"
         description="Correct a wrong count or write off damaged stock — both post a new ledger entry"
         actions={
-          <>
-            <Link href="/inventory/ledger">
-              <Button variant="ghost" size="sm">
-                Stock ledger
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory/ledger">Stock ledger</Link>
+          </Button>
         }
       />
 
@@ -87,7 +84,7 @@ function AdjustmentsScreen(): React.JSX.Element {
       )}
 
       {correctId && isLoading && (
-        <p className="mb-3 text-body-sm text-muted">Loading the entry to correct…</p>
+        <Skeleton className="mb-4 h-20 w-full" />
       )}
       {correctId && isError && (
         <p className="mb-3 text-body-sm text-danger">
@@ -103,7 +100,7 @@ function AdjustmentsScreen(): React.JSX.Element {
         <DamageForm />
       )}
 
-      <p className="mt-3 text-micro text-faint">
+      <p className="mt-3 text-caption text-muted">
         Nothing on this screen edits an existing entry. Stock figures are the sum of every
         ledger movement, so both the original and the correction stay in the audit trail.
       </p>
@@ -114,19 +111,19 @@ function AdjustmentsScreen(): React.JSX.Element {
 function CorrectionBanner({ entry }: { entry: LedgerEntryView }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-canvas p-3">
-      <div className="mb-1.5 flex items-center gap-2">
+      <div className="mb-1.5 flex flex-wrap items-center gap-2">
         <Badge variant="classification">Correcting an entry</Badge>
         <Pill variant={txnVariant(entry.txnType)}>{txnLabel(entry.txnType)}</Pill>
       </div>
       <p className="text-body-sm text-text">
         {entry.productName}
         {entry.colour ? `, ${entry.colour}` : ''}{' '}
-        <span className="font-numeric text-faint">({entry.productCode})</span>,{' '}
-        {entry.locationName} ,{' '}
+        <span className="font-numeric text-faint">({entry.productCode})</span> at{' '}
+        {entry.locationName}:{' '}
         <span className="font-numeric">{formatSignedQty(entry.signedQty)}</span> on{' '}
         {formatDate(entry.txnDate)}
       </p>
-      <p className="mt-1 text-micro text-faint">
+      <p className="mt-1 text-caption text-muted">
         The quantity below is pre-filled to reverse it exactly. Change it if only part of
         the entry was wrong.
       </p>
@@ -182,8 +179,8 @@ function AdjustmentForm({
 
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Field label="Product" required>
             <ProductSelect
               value={productId}
@@ -209,7 +206,7 @@ function AdjustmentForm({
             placeholder="e.g. -3"
           />
         </Field>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Field
             label="Reason"
             required
@@ -232,7 +229,7 @@ function AdjustmentForm({
         </p>
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <FormResult error={error} success={success} />
         <Button
           variant="primary"
@@ -293,8 +290,8 @@ function DamageForm(): React.JSX.Element {
 
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Field label="Product" required>
             <ProductSelect
               value={productId}
@@ -320,7 +317,7 @@ function DamageForm(): React.JSX.Element {
             onChange={(e) => setQty(e.target.value)}
           />
         </Field>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Field label="Reason" required>
             <TextInput
               value={reason}
@@ -329,7 +326,7 @@ function DamageForm(): React.JSX.Element {
             />
           </Field>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Field label="Remark">
             <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
           </Field>
@@ -338,7 +335,7 @@ function DamageForm(): React.JSX.Element {
 
       <StockPreview onHand={onHand} delta={ready ? -amount : 0} negativeAllowed={false} />
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <FormResult error={error} success={success} />
         <Button
           variant="primary"
@@ -349,11 +346,9 @@ function DamageForm(): React.JSX.Element {
           {writeOff.isPending ? 'Posting…' : 'Write off damage'}
         </Button>
       </div>
-      <div className="mt-3">
-        <Pill variant="gray">
-          Counts towards the product&rsquo;s Damage Qty. — it does not come back
-        </Pill>
-      </div>
+      <p className="mt-3 text-caption text-muted">
+        Counts towards the product&rsquo;s damage quantity — it does not come back.
+      </p>
     </div>
   );
 }

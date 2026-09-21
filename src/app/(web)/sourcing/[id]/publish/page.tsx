@@ -1,6 +1,21 @@
 'use client';
 
-import { Badge, Button, Input, PageHeader, Pill } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  ErrorState,
+  Field,
+  Input,
+  PageHeader,
+  Skeleton,
+  Textarea,
+  cn,
+  controlClass,
+} from '@/components/ui';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -11,6 +26,7 @@ import {
   useRfq,
 } from '@/lib/api/sourcing';
 import { useVendorList } from '@/lib/api/vendors';
+import { humanise } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 function plusDays(d: number): string {
@@ -98,7 +114,7 @@ export default function PublishPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const toast = useToastStore((s) => s.push);
-  const { data: rfq } = useRfq(id);
+  const { data: rfq, isLoading, error, refetch } = useRfq(id);
   const invite = useInvite(id);
   const remove = useRemoveInvitation(id);
   const publish = usePublish(id);
@@ -110,18 +126,24 @@ export default function PublishPage(): React.JSX.Element {
   const [comm, setComm] = useState(plusDays(14));
   const [award, setAward] = useState(plusDays(20));
   const [spotBuyException, setSpotBuyException] = useState(false);
+  // The invitation being withdrawn — the reason is asked for in a dialog.
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
+  const [removeReason, setRemoveReason] = useState('');
 
   const twoEnvelope = rfq?.rfqType === 'TWO_ENVELOPE';
 
   /** The API records a reason on every withdrawal — it is an audited change to
    *  who was given the chance to bid, not just a UI tidy-up. */
-  const removeVendor = (invitationId: string, vendorName: string): void => {
-    const reason = window.prompt(`Why is ${vendorName} being removed from this RFQ?`);
-    if (reason == null || reason.trim().length === 0) return;
+  const removeVendor = (): void => {
+    if (!removing || !removeReason.trim()) return;
     remove.mutate(
-      { invitationId, reason: reason.trim() },
+      { invitationId: removing.id, reason: removeReason.trim() },
       {
-        onSuccess: () => toast(`${vendorName} removed`, 'success'),
+        onSuccess: () => {
+          toast(`${removing.name} removed`, 'success');
+          setRemoving(null);
+          setRemoveReason('');
+        },
         onError: (e) => toast(e.message, 'error'),
       },
     );
@@ -161,38 +183,71 @@ export default function PublishPage(): React.JSX.Element {
     );
   };
 
+  if (error) {
+    return (
+      <div className="border-line bg-panel mx-auto w-full max-w-3xl rounded-lg border">
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
+  }
+  if (isLoading || !rfq) {
+    return (
+      <div aria-busy="true" className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-56 w-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto w-full max-w-[720px]">
+    <div className="mx-auto w-full max-w-3xl">
       <PageHeader
-        title={`Publish ${rfq?.number ?? ''}`.trim()}
-        breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'Publish' }]}
+        title={`Publish ${rfq.number}`}
+        breadcrumbs={[
+          { label: 'Sourcing', href: '/sourcing' },
+          { label: rfq.number, href: `/sourcing/${id}` },
+          { label: 'Publish' },
+        ]}
         description="Invite vendors and set the timeline. After publishing, criteria and lines are immutable."
       />
 
       <Section title="Invitations">
-        {rfq?.invitations.map((i) => (
-          <div key={i.id} className="flex items-center gap-2 py-1 text-body-sm">
-            <Pill variant="gray">{i.source.toLowerCase()}</Pill>
-            <span>{i.vendorName}</span>
+        {rfq.invitations.length === 0 && (
+          <p className="text-muted py-2 text-body-sm">
+            No vendors invited yet. Search the directory below to add them.
+          </p>
+        )}
+        {rfq.invitations.map((i) => (
+          <div
+            key={i.id}
+            className="border-line flex flex-wrap items-center gap-2 border-b py-2 text-body-sm last:border-0"
+          >
+            <span className="text-text min-w-0">{i.vendorName}</span>
             {i.isMsme && <Badge variant="classification">MSME</Badge>}
-            <button
+            <Badge variant="neutral">{humanise(i.source)}</Badge>
+            <Button
               type="button"
-              onClick={() => removeVendor(i.id, i.vendorName)}
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={() => setRemoving({ id: i.id, name: i.vendorName })}
               disabled={remove.isPending}
-              className="text-muted hover:text-danger ml-auto text-caption"
             >
               Remove
-            </button>
+            </Button>
           </div>
         ))}
         <div className="mt-2">
           <VendorPicker
-            invitedIds={new Set((rfq?.invitations ?? []).map((i) => i.vendorId))}
+            invitedIds={new Set(rfq.invitations.map((i) => i.vendorId))}
             onPick={addVendor}
           />
-          <label className="text-muted mt-2 flex items-center gap-2 text-caption">
+          <label className="text-muted mt-2 flex items-start gap-2 text-caption">
             <input
               type="checkbox"
+              className="mt-0.5 accent-[var(--accent)]"
               checked={preliminary}
               onChange={(e) => setPreliminary(e.target.checked)}
             />
@@ -200,14 +255,15 @@ export default function PublishPage(): React.JSX.Element {
             verified (they can quote, but cannot be awarded until it is)
           </label>
         </div>
-        {(rfq?.invitations.length ?? 0) < 2 && (
-          <label className="text-muted mt-2 flex items-center gap-2 text-caption">
+        {rfq.invitations.length < 2 && (
+          <label className="text-muted mt-2 flex items-start gap-2 text-caption">
             <input
               type="checkbox"
+              className="mt-0.5 accent-[var(--accent)]"
               checked={spotBuyException}
               onChange={(e) => setSpotBuyException(e.target.checked)}
             />
-            Single-source: spot-buy exemption + PLANT_HEAD approval
+            Single source: claim the spot-buy exemption (needs plant head approval)
           </label>
         )}
       </Section>
@@ -222,7 +278,7 @@ export default function PublishPage(): React.JSX.Element {
         <TimeField label="Award deadline" value={award} onChange={setAward} />
       </Section>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => router.push(`/sourcing/${id}`)}>
           Back
         </Button>
@@ -230,6 +286,44 @@ export default function PublishPage(): React.JSX.Element {
           {publish.isPending ? 'Publishing…' : 'Publish RFQ'}
         </Button>
       </div>
+
+      <Dialog
+        open={removing !== null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setRemoving(null);
+            setRemoveReason('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>Remove {removing?.name}?</DialogTitle>
+          <DialogDescription className="mt-1">
+            Withdrawing an invitation changes who may bid, so the reason is kept on the
+            RFQ&rsquo;s audit trail.
+          </DialogDescription>
+          <Field label="Reason" required className="mt-4">
+            <Textarea
+              rows={3}
+              value={removeReason}
+              onChange={(e) => setRemoveReason(e.target.value)}
+              autoFocus
+            />
+          </Field>
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <Button variant="ghost" onClick={() => setRemoving(null)} disabled={remove.isPending}>
+              Back
+            </Button>
+            <Button
+              variant="danger"
+              disabled={!removeReason.trim() || remove.isPending}
+              onClick={removeVendor}
+            >
+              Remove vendor
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -243,7 +337,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="border-line bg-panel mb-4 rounded-lg border p-4">
-      <h2 className="text-ink mb-3 text-body font-semibold">{title}</h2>
+      <h2 className="text-ink mb-3 text-h3 font-semibold">{title}</h2>
       {children}
     </div>
   );
@@ -259,11 +353,11 @@ function TimeField({
   onChange: (v: string) => void;
 }): React.JSX.Element {
   return (
-    <label className="mb-2 flex items-center justify-between text-body-sm">
+    <label className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-body-sm">
       <span className="text-muted">{label}</span>
       <input
         type="datetime-local"
-        className="border-line bg-panel h-9 rounded-md border px-2"
+        className={cn(controlClass, 'w-full sm:w-auto')}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

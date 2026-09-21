@@ -91,7 +91,7 @@ export default function ScanCountPage(): React.JSX.Element {
   return (
     <div className="space-y-4">
       {!sessionId ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <h2 className="text-body font-semibold">Scan the bin to count</h2>
           <BarcodeScanner
             label="bin label"
@@ -104,7 +104,7 @@ export default function ScanCountPage(): React.JSX.Element {
       {banner ? <ResultBanner tone={banner.tone} message={banner.message} /> : null}
 
       {session.data ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <div className="flex items-baseline justify-between">
             <h2 className="text-h3 font-semibold">{session.data.locationName}</h2>
             <span className="text-caption text-muted">
@@ -129,7 +129,7 @@ export default function ScanCountPage(): React.JSX.Element {
 
       {sessionId && status === 'IN_PROGRESS' ? (
         <>
-          <section className="space-y-3 rounded-lg border border-line bg-white p-3">
+          <section className="space-y-3 rounded-lg border border-line bg-panel p-3">
             <QtyField value={quantity} onChange={setQuantity} label="Counted quantity" />
             <BarcodeScanner
               label="product barcode"
@@ -140,7 +140,8 @@ export default function ScanCountPage(): React.JSX.Element {
 
           <Button
             type="button"
-            className="w-full py-4 text-h3"
+            variant="primary"
+            className="h-12 w-full text-h3"
             disabled={complete.isPending}
             onClick={() => void submitForReview()}
           >
@@ -150,7 +151,7 @@ export default function ScanCountPage(): React.JSX.Element {
       ) : null}
 
       {status === 'PENDING_REVIEW' && session.data ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <h2 className="text-body font-semibold">Variances awaiting approval</h2>
           <ul className="divide-y divide-line">
             {session.data.variances.map((v) => (

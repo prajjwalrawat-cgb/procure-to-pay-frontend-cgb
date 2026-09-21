@@ -91,7 +91,7 @@ export default function ScanTransferPage(): React.JSX.Element {
       {banner ? <ResultBanner tone={banner.tone} message={banner.message} /> : null}
 
       {step === 'product' ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <h2 className="text-body font-semibold">1. Scan the product</h2>
           <BarcodeScanner
             label="product barcode"
@@ -116,7 +116,7 @@ export default function ScanTransferPage(): React.JSX.Element {
       ) : null}
 
       {step === 'source' ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <h2 className="text-body font-semibold">2. Scan the bin it is leaving</h2>
           <BarcodeScanner
             label="source bin label"
@@ -133,7 +133,7 @@ export default function ScanTransferPage(): React.JSX.Element {
       ) : null}
 
       {step === 'dest' ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <h2 className="text-body font-semibold">3. Scan the bin it is going to</h2>
           <p className="text-caption text-muted">Leaving: {sourceBin}</p>
           <BarcodeScanner

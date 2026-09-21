@@ -5,7 +5,11 @@ import {
   Button,
   PageHeader,
   Pill,
+  SortableHead,
+  TableState,
+  cn,
   controlClass,
+  useSort,
 } from '@/components/ui';
 import type { ItemListItem } from '@/lib/shared';
 import { Plus } from 'lucide-react';
@@ -45,7 +49,7 @@ export default function ItemMasterPage(): React.JSX.Element {
   // `q` and active-only are filtered server-side. Category is filtered here so
   // the dropdown keeps offering every category rather than collapsing to the
   // one already selected.
-  const { data, isLoading } = useItems({
+  const { data, isLoading, error, refetch } = useItems({
     q: q.trim() || undefined,
     activeOnly: status === 'active' || undefined,
     limit: 200,
@@ -60,6 +64,15 @@ export default function ItemMasterPage(): React.JSX.Element {
       (!category || i.category === category) && (status !== 'inactive' || !i.isActive),
   );
 
+  const { sorted, sort, toggle } = useSort(visible, {
+    sku: (i) => i.skuCode,
+    name: (i) => i.name,
+    category: (i) => i.category,
+    gst: (i) => Number(i.gstRate),
+    lastPaid: (i) => (i.lastPaidPrice ? Number(i.lastPaidPrice) : null),
+    vendor: (i) => i.preferredVendor?.name,
+  });
+
   const truncated = (data?.totalEstimate ?? 0) > rows.length;
 
   return (
@@ -67,20 +80,21 @@ export default function ItemMasterPage(): React.JSX.Element {
       <PageHeader
         title="Item master"
         description={
-          <>{data?.totalEstimate ?? 0} SKUs, catalogue behind requisition lines</>
+          <>
+            {data ? `${data.totalEstimate} SKUs. ` : ''}The catalogue behind requisition
+            lines.
+          </>
         }
         actions={
-          <>
-            {canManage && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setTarget({ mode: 'create' })}
-              >
-                <Plus className="h-3.5 w-3.5" /> New item
-              </Button>
-            )}
-          </>
+          canManage ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setTarget({ mode: 'create' })}
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden /> New item
+            </Button>
+          ) : undefined
         }
       />
 
@@ -89,12 +103,14 @@ export default function ItemMasterPage(): React.JSX.Element {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search SKU, name or description…"
-          className="min-w-[260px] flex-1 rounded-md border border-line bg-panel px-3 py-1.5 text-body-sm text-text outline-none placeholder:text-faint focus:border-accent"
+          aria-label="Search items"
+          className={cn(controlClass, 'w-full sm:w-auto sm:min-w-[16rem] sm:flex-1')}
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className={controlClass}
+          aria-label="Category"
+          className={cn(controlClass, 'w-auto min-w-0 max-w-full pr-8')}
         >
           <option value="">All categories</option>
           {categories.map((c) => (
@@ -106,7 +122,8 @@ export default function ItemMasterPage(): React.JSX.Element {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusFilter)}
-          className={controlClass}
+          aria-label="Status"
+          className={cn(controlClass, 'w-auto pr-8')}
         >
           <option value="all">All statuses</option>
           <option value="active">Active only</option>
@@ -115,37 +132,63 @@ export default function ItemMasterPage(): React.JSX.Element {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-body-sm">
-          <thead className="border-line border-b text-left text-caption text-muted">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-b border-line text-left text-caption text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">SKU</th>
-              <th className="px-3 py-2 font-medium">Item</th>
-              <th className="px-3 py-2 font-medium">Category</th>
-              <th className="px-3 py-2 font-medium">HSN</th>
-              <th className="px-3 py-2 text-right font-medium">GST</th>
-              <th className="px-3 py-2 font-medium">UoM</th>
-              <th className="px-3 py-2 text-right font-medium">Last paid</th>
-              <th className="px-3 py-2 font-medium">Preferred vendor</th>
+              <SortableHead label="SKU" sortKey="sku" sort={sort} onSort={toggle} />
+              <SortableHead label="Item" sortKey="name" sort={sort} onSort={toggle} />
+              <SortableHead
+                label="Category"
+                sortKey="category"
+                sort={sort}
+                onSort={toggle}
+              />
+              <th className="px-3 py-2.5 font-medium">HSN</th>
+              <SortableHead
+                label="GST"
+                sortKey="gst"
+                sort={sort}
+                onSort={toggle}
+                numeric
+              />
+              <th className="px-3 py-2.5 font-medium">UoM</th>
+              <SortableHead
+                label="Last paid"
+                sortKey="lastPaid"
+                sort={sort}
+                onSort={toggle}
+                numeric
+              />
+              <SortableHead
+                label="Preferred vendor"
+                sortKey="vendor"
+                sort={sort}
+                onSort={toggle}
+              />
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-muted">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && visible.length === 0 && (
-              <tr>
-                <td colSpan={8} className="px-3 py-8 text-center text-muted">
-                  {q || category || status !== 'all'
-                    ? 'No items match this view.'
-                    : 'No items in the catalogue yet.'}
-                </td>
-              </tr>
-            )}
-            {visible.map((item) => (
+            <TableState
+              colSpan={8}
+              isLoading={isLoading}
+              error={error}
+              onRetry={() => void refetch()}
+              isEmpty={visible.length === 0}
+              empty={
+                q || category || status !== 'all'
+                  ? {
+                      title: 'No items match this view',
+                      detail: 'Clear the search or filters to see the whole catalogue.',
+                    }
+                  : {
+                      title: 'No items in the catalogue yet',
+                      detail: canManage
+                        ? 'Add the first SKU so requisitions can pick it.'
+                        : 'A procurement head or tenant admin adds SKUs here.',
+                    }
+              }
+            />
+            {sorted.map((item) => (
               <ItemRow
                 key={item.id}
                 item={item}
@@ -157,7 +200,7 @@ export default function ItemMasterPage(): React.JSX.Element {
       </div>
 
       {truncated && (
-        <p className="mt-2 text-micro text-faint">
+        <p className="mt-2 text-caption text-muted">
           Showing the first {rows.length} of {data?.totalEstimate} SKUs — narrow the
           search to see the rest.
         </p>
@@ -184,29 +227,29 @@ function ItemRow({
 }): React.JSX.Element {
   return (
     <tr onClick={onOpen} className="cursor-pointer border-t border-line hover:bg-canvas">
-      <td className="font-numeric px-3 py-2 text-muted">{item.skuCode}</td>
-      <td className="px-3 py-2">
-        <div className="flex items-center gap-1.5 text-text">
+      <td className="font-numeric px-3 py-3.5 text-muted">{item.skuCode}</td>
+      <td className="px-3 py-3.5">
+        <div className="flex flex-wrap items-center gap-1.5 text-text">
           {item.name}
-          {!item.isActive && <Pill variant="danger">inactive</Pill>}
+          {!item.isActive && <Pill variant="neutral">Inactive</Pill>}
           {item.isCapex && <Badge variant="classification">Capex</Badge>}
         </div>
         {item.subcategory && (
-          <div className="text-micro text-faint">{item.subcategory}</div>
+          <div className="text-caption text-faint">{item.subcategory}</div>
         )}
       </td>
-      <td className="px-3 py-2 text-muted">{item.category}</td>
-      <td className="font-numeric px-3 py-2 text-muted">{item.hsnCode}</td>
-      <td className="font-numeric px-3 py-2 text-right">{gstPercent(item.gstRate)}</td>
-      <td className="px-3 py-2 text-muted">{item.primaryUom}</td>
-      <td className="font-numeric px-3 py-2 text-right">
+      <td className="px-3 py-3.5 text-muted">{item.category}</td>
+      <td className="font-numeric px-3 py-3.5 text-muted">{item.hsnCode}</td>
+      <td className="font-numeric px-3 py-3.5 text-right">{gstPercent(item.gstRate)}</td>
+      <td className="px-3 py-3.5 text-muted">{item.primaryUom}</td>
+      <td className="font-numeric px-3 py-3.5 text-right">
         {item.lastPaidPrice ? (
           inr(item.lastPaidPrice)
         ) : (
           <span className="text-faint">—</span>
         )}
       </td>
-      <td className="px-3 py-2 text-muted">
+      <td className="px-3 py-3.5 text-muted">
         {item.preferredVendor?.name ?? <span className="text-faint">—</span>}
       </td>
     </tr>

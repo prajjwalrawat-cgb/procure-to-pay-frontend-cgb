@@ -4,9 +4,10 @@ import { useState } from 'react';
 
 import { BarcodeScanner } from '@/components/scan/barcode-scanner';
 import { QtyField, ResultBanner } from '@/components/scan/scan-ui';
-import { Button } from '@/components/ui';
+import { Button, Skeleton } from '@/components/ui';
 import { useBoxByBarcode, useMoveBox, usePackBox, useUnpackBox } from '@/lib/api/box';
 import type { BoxContentLine, LocationPath } from '@/lib/shared';
+import { formatDate } from '@/lib/format';
 
 type Mode = 'view' | 'pack' | 'unpack' | 'move';
 
@@ -96,7 +97,7 @@ export default function ScanBoxPage(): React.JSX.Element {
   return (
     <div className="space-y-4">
       {!barcode ? (
-        <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+        <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
           <h2 className="text-body font-semibold">Scan a box label</h2>
           <BarcodeScanner label="box label" onScan={setBarcode} />
         </section>
@@ -111,13 +112,20 @@ export default function ScanBoxPage(): React.JSX.Element {
         />
       ) : null}
 
+      {barcode && box.isLoading ? (
+        <div aria-busy="true" className="space-y-2">
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </div>
+      ) : null}
+
       {box.data ? (
         <>
-          <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+          <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
             <div className="flex items-baseline justify-between gap-2">
               <div>
                 <h2 className="text-h3 font-semibold">{box.data.code}</h2>
-                <p className="font-mono text-micro text-muted">{box.data.barcode}</p>
+                <p className="font-numeric text-caption text-muted">{box.data.barcode}</p>
               </div>
               <span className="text-caption tabular-nums text-muted">
                 {box.data.totalQty} pcs, {box.data.distinctProducts} SKU
@@ -134,7 +142,7 @@ export default function ScanBoxPage(): React.JSX.Element {
             ) : null}
           </section>
 
-          <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+          <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
             <h3 className="text-body font-semibold">Contents</h3>
             {box.data.contents.length === 0 ? (
               <p className="text-body-sm text-muted">Empty.</p>
@@ -152,7 +160,7 @@ export default function ScanBoxPage(): React.JSX.Element {
                     <p className="text-caption text-muted">
                       {line.productCode}
                       {line.batchNumber ? `, batch ${line.batchNumber}` : ''}
-                      {line.expiryDate ? `, exp ${line.expiryDate.slice(0, 10)}` : ''}
+                      {line.expiryDate ? `, exp ${formatDate(line.expiryDate)}` : ''}
                     </p>
                     {line.expired ? (
                       <p className="text-caption text-danger">Expired — do not ship.</p>
@@ -165,12 +173,19 @@ export default function ScanBoxPage(): React.JSX.Element {
 
           {mode === 'view' ? (
             <div className="grid grid-cols-3 gap-2">
-              <Button type="button" disabled={busy} onClick={() => setMode('pack')}>
+              <Button
+                type="button"
+                variant="primary"
+                className="h-11"
+                disabled={busy}
+                onClick={() => setMode('pack')}
+              >
                 Add stock
               </Button>
               <Button
                 type="button"
                 variant="default"
+                className="h-11"
                 disabled={busy || box.data.contents.length === 0}
                 onClick={() => setMode('unpack')}
               >
@@ -179,6 +194,7 @@ export default function ScanBoxPage(): React.JSX.Element {
               <Button
                 type="button"
                 variant="default"
+                className="h-11"
                 disabled={busy}
                 onClick={() => setMode('move')}
               >
@@ -188,7 +204,7 @@ export default function ScanBoxPage(): React.JSX.Element {
           ) : null}
 
           {mode === 'pack' || mode === 'unpack' ? (
-            <section className="space-y-3 rounded-lg border border-line bg-white p-3">
+            <section className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <h3 className="text-body font-semibold">
                 {mode === 'pack' ? 'Add stock to this box' : 'Remove stock from this box'}
               </h3>
@@ -202,7 +218,7 @@ export default function ScanBoxPage(): React.JSX.Element {
           ) : null}
 
           {mode === 'move' ? (
-            <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+            <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
               <h3 className="text-body font-semibold">
                 Scan the section it is going to
               </h3>

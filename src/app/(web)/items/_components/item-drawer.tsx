@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, ErrorState, Pill, Skeleton } from '@/components/ui';
 import {
   ItemCreateInputSchema,
   type ItemCreateInput,
@@ -130,7 +130,7 @@ function Drawer({
   onClose: () => void;
 }): React.JSX.Element {
   const editingId = target.mode === 'edit' ? target.id : null;
-  const { data, isLoading } = useItem(editingId);
+  const { data, isLoading, error, refetch } = useItem(editingId);
 
   return (
     <>
@@ -144,7 +144,13 @@ function Drawer({
         <header className="sticky top-0 z-10 flex items-start justify-between border-b border-line bg-panel px-5 py-4">
           <div className="min-w-0">
             <h2 className="truncate text-h3 font-semibold tracking-heading text-ink">
-              {target.mode === 'create' ? 'New item' : (data?.name ?? 'Loading…')}
+              {target.mode === 'create' ? (
+                'New item'
+              ) : data ? (
+                data.name
+              ) : (
+                <Skeleton className="h-5 w-48" />
+              )}
             </h2>
             <p className="font-numeric text-caption text-muted">
               {target.mode === 'create'
@@ -153,19 +159,25 @@ function Drawer({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {data && !data.isActive && <Pill variant="danger">Inactive</Pill>}
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-body-sm text-muted hover:text-ink"
-            >
+            {data && !data.isActive && <Pill variant="neutral">Inactive</Pill>}
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               Close
-            </button>
+            </Button>
           </div>
         </header>
 
         {target.mode === 'edit' && isLoading && (
-          <p className="px-5 py-8 text-body-sm text-muted">Loading…</p>
+          <div aria-busy="true" className="flex flex-col gap-4 px-5 py-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-1.5">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+        {target.mode === 'edit' && error && !isLoading && (
+          <ErrorState error={error} onRetry={() => void refetch()} />
         )}
         {target.mode === 'create' && (
           <ItemForm
@@ -389,7 +401,7 @@ function ItemForm({
               placeholder="5100-CONSUMABLES"
             />
           </Field>
-          <label className="mt-6 flex items-center gap-2 text-body-sm">
+          <label className="flex items-center gap-2 text-body-sm sm:mt-6">
             <input
               type="checkbox"
               checked={form.isCapex}
@@ -403,7 +415,7 @@ function ItemForm({
         {/* ── UoM conversions ── */}
         <div className="rounded-lg border border-line p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-micro font-semibold text-faint">
+            <span className="text-body-sm font-semibold text-ink">
               UoM conversions
             </span>
             {!readOnly && itemId === null && (
@@ -424,7 +436,7 @@ function ItemForm({
               </button>
             )}
           </div>
-          <p className="mb-2 text-micro text-faint">
+          <p className="mb-2 text-caption text-muted">
             Used when goods are received in a different unit from the PO. Without a
             conversion the GRN treats the two units as 1:1.
           </p>
@@ -472,7 +484,7 @@ function ItemForm({
             </div>
           ))}
           {itemId !== null && form.uomConversions.length > 0 && (
-            <p className="mt-1 text-micro text-faint">
+            <p className="mt-1 text-caption text-muted">
               Conversions are set at creation time and cannot be edited here.
             </p>
           )}
@@ -481,7 +493,7 @@ function ItemForm({
         {/* ── Vendor pricing (read-only; maintained by sourcing/contracts) ── */}
         {detail && (
           <div className="rounded-lg border border-line p-3">
-            <div className="mb-2 text-micro font-semibold text-faint">
+            <div className="mb-2 text-body-sm font-semibold text-ink">
               Vendor pricing
             </div>
             {detail.vendorPricing.length === 0 ? (

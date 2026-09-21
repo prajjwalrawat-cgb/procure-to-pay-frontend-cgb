@@ -81,21 +81,17 @@ export default function FulfillPage(): React.JSX.Element {
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
         title="Order fulfilment"
-        description="Stock-checked customer dispatch"
+        description="Dispatch a customer order, checked against stock at the pick location."
         actions={
-          <>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
-                Stock overview
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory">Stock overview</Link>
+          </Button>
         }
       />
 
       <div className="rounded-lg border border-line bg-panel p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <Field label="Product" required>
               <ProductSelect
                 value={productId}
@@ -168,7 +164,7 @@ export default function FulfillPage(): React.JSX.Element {
               onChange={(e) => setOrderValue(e.target.value)}
             />
           </Field>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <Field label="Remark">
               <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
             </Field>
@@ -192,7 +188,7 @@ export default function FulfillPage(): React.JSX.Element {
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <FormResult error={error} success={success} />
           <Button
             variant="primary"

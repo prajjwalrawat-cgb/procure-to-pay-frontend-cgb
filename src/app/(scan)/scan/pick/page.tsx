@@ -70,7 +70,7 @@ export default function ScanPickPage(): React.JSX.Element {
 
   return (
     <div className="space-y-4">
-      <section className="space-y-3 rounded-lg border border-line bg-white p-3">
+      <section className="space-y-3 rounded-lg border border-line bg-panel p-3">
         <TextField
           label="Order reference"
           value={orderRef}
@@ -79,7 +79,8 @@ export default function ScanPickPage(): React.JSX.Element {
         />
         <Button
           type="button"
-          className="w-full"
+          variant="primary"
+          className="h-11 w-full"
           disabled={!orderRef.trim()}
           onClick={() => {
             setBanner(null);
@@ -105,7 +106,7 @@ export default function ScanPickPage(): React.JSX.Element {
 
       {list.data ? (
         <>
-          <section className="space-y-2 rounded-lg border border-line bg-white p-3">
+          <section className="space-y-2 rounded-lg border border-line bg-panel p-3">
             <div className="flex items-baseline justify-between">
               <h2 className="text-h3 font-semibold">{list.data.orderRef}</h2>
               <span className="text-caption tabular-nums text-muted">
@@ -139,7 +140,7 @@ export default function ScanPickPage(): React.JSX.Element {
           {list.data.status === 'PICKED' ? (
             <ResultBanner tone="ok" message="Every line is picked." />
           ) : (
-            <section className="space-y-3 rounded-lg border border-line bg-white p-3">
+            <section className="space-y-3 rounded-lg border border-line bg-panel p-3">
               <QtyField
                 value={quantity}
                 onChange={setQuantity}

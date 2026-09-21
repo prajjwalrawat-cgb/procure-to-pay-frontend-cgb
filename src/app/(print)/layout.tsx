@@ -18,5 +18,5 @@ export default function PrintLayout({
 }: {
   children: ReactNode;
 }): React.JSX.Element {
-  return <div className="min-h-screen bg-white">{children}</div>;
+  return <div className="min-h-screen bg-panel">{children}</div>;
 }

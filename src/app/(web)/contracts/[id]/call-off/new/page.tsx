@@ -1,13 +1,8 @@
 'use client';
 
-import {
-  PageHeader,
-  controlClass,
-} from '@/components/ui';
+import { Button, ErrorState, PageHeader, Skeleton, controlClass } from '@/components/ui';
 
 import type { CallOffInput } from '@/lib/shared';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
@@ -19,7 +14,7 @@ export default function NewCallOffPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const push = useToastStore((s) => s.push);
-  const { data: c } = useContract(id);
+  const { data: c, error, refetch } = useContract(id);
   const callOff = useCreateCallOff(id);
 
   const [rateCardId, setRateCardId] = useState('');
@@ -58,39 +53,50 @@ export default function NewCallOffPage(): React.JSX.Element {
     }
   };
 
+  if (error)
+    return (
+      <div className="mx-auto w-full max-w-3xl rounded-lg border border-line bg-panel">
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
   if (!c)
     return (
-      <p className="max-w-3xl py-10 text-center text-body-sm text-muted">
-        Loading…
-      </p>
+      <div aria-busy="true" className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-72" />
+        <Skeleton className="h-72 w-full" />
+      </div>
     );
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <Link
-        href={`/contracts/${id}`}
-        className="mb-3 inline-flex items-center gap-1 text-body-sm text-muted hover:text-text"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> {c.number}
-      </Link>
       <PageHeader
+        breadcrumbs={[
+          { label: 'Contracts', href: '/contracts' },
+          { label: c.number, href: `/contracts/${id}` },
+          { label: 'New call-off' },
+        ]}
         title="New call-off"
         description="Pricing is locked to the contract rate card — no override possible."
       />
 
-      <div className="space-y-3 rounded-lg border border-line bg-panel p-5">
+      <div className="space-y-3 rounded-lg border border-line bg-panel p-4 sm:p-5">
         <label className="block">
-          <span className="mb-1 block text-caption text-muted">Rate card row</span>
+          <span className="mb-1 block text-caption font-medium text-text">
+            Rate card row
+          </span>
           <select
-            className={controlClass}
+            className={controlClass + ' pr-8'}
             value={rateCardId}
             onChange={(e) => setRateCardId(e.target.value)}
           >
-            <option value="">Select…</option>
+            <option value="">
+              {c.rateCards.length ? 'Select…' : 'This contract has no rate rows'}
+            </option>
             {c.rateCards.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.routeOrigin ? `${r.routeOrigin}→${r.routeDest}` : r.itemDesc}, Yr
-                {r.rateYear}, ₹{r.unitRate}/{r.uom}
+                {r.routeOrigin ? `${r.routeOrigin} → ${r.routeDest}` : r.itemDesc} · year{' '}
+                {r.rateYear} · {inr(r.unitRate)}/{r.uom}
               </option>
             ))}
           </select>
@@ -99,23 +105,27 @@ export default function NewCallOffPage(): React.JSX.Element {
         {card && (
           <p className="text-caption text-muted">
             Locked unit price:{' '}
-            <span className="font-numeric text-ink">₹{card.unitRate}</span> per {card.uom}
+            <span className="font-numeric text-ink">{inr(card.unitRate)}</span> per{' '}
+            {card.uom}
           </p>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-caption text-muted">
+            <span className="mb-1 block text-caption font-medium text-text">
               Quantity ({card?.uom ?? 'unit'})
             </span>
             <input
               className={controlClass}
+              inputMode="decimal"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-caption text-muted">Expected delivery</span>
+            <span className="mb-1 block text-caption font-medium text-text">
+              Expected delivery
+            </span>
             <input
               type="date"
               className={controlClass}
@@ -126,7 +136,9 @@ export default function NewCallOffPage(): React.JSX.Element {
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-caption text-muted">Delivery location</span>
+          <span className="mb-1 block text-caption font-medium text-text">
+            Delivery location
+          </span>
           <input
             className={controlClass}
             value={line1}
@@ -136,12 +148,21 @@ export default function NewCallOffPage(): React.JSX.Element {
 
         {lineValue > 0 && (
           <div className="rounded-md bg-canvas p-3 text-body-sm">
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <span className="text-muted">Call-off value (incl. tax)</span>
               <span className="font-numeric text-ink">{inr(lineValue)}</span>
             </div>
             {projected != null && (
-              <p className="mt-1 text-caption text-accent-2">
+              <p
+                className={
+                  'mt-1 text-caption ' +
+                  (projected >= 90
+                    ? 'text-success'
+                    : projected >= 70
+                      ? 'text-warn'
+                      : 'text-danger')
+                }
+              >
                 This brings YTD to {Math.round(projected)}% of the annual commitment
                 {projected >= 90
                   ? ' — on track.'
@@ -153,14 +174,14 @@ export default function NewCallOffPage(): React.JSX.Element {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={submit}
-          disabled={callOff.isPending}
-          className="w-full rounded-md bg-ink px-4 py-2 text-body-sm font-medium text-white disabled:opacity-50"
-        >
-          Create call-off PO
-        </button>
+        <div className="flex flex-wrap justify-end gap-2 pt-1">
+          <Button variant="ghost" onClick={() => router.push(`/contracts/${id}`)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={submit} disabled={callOff.isPending}>
+            {callOff.isPending ? 'Creating…' : 'Create call-off PO'}
+          </Button>
+        </div>
       </div>
     </div>
   );

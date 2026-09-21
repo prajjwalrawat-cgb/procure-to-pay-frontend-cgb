@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill, TableState } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -30,7 +30,7 @@ const KIND_LABEL: Record<LocationKind, string> = {
  * still holds stock cannot be retired; move or write the stock off first.
  */
 export default function LocationsPage(): React.JSX.Element {
-  const { data, isLoading } = useLocations();
+  const { data, isLoading, error: loadError, refetch } = useLocations();
   const create = useCreateLocation();
 
   const [name, setName] = useState('');
@@ -74,18 +74,16 @@ export default function LocationsPage(): React.JSX.Element {
         }
         actions={
           <>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* A barcode in this table is only a value until somebody prints it. */}
-              <Link href="/labels?type=location" target="_blank">
-                <Button variant="ghost" size="sm">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/labels?type=location" target="_blank">
                   Print labels
-                </Button>
-              </Link>
-              <Link href="/inventory">
-                <Button variant="ghost" size="sm">
-                  Stock overview
-                </Button>
-              </Link>
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/inventory">Stock overview</Link>
+              </Button>
             </div>
           </>
         }
@@ -101,7 +99,7 @@ export default function LocationsPage(): React.JSX.Element {
       )}
 
       <div className="mb-6 rounded-lg border border-line bg-panel p-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Name" required>
             <TextInput
               value={name}
@@ -157,7 +155,7 @@ export default function LocationsPage(): React.JSX.Element {
             />
           </Field>
         </div>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <FormResult error={error} success={success} />
           <Button
             variant="primary"
@@ -171,33 +169,29 @@ export default function LocationsPage(): React.JSX.Element {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-body-sm">
-          <thead className="border-line border-b text-left text-caption text-muted">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-b border-line text-left text-caption text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Location</th>
-              <th className="px-3 py-2 font-medium">Level</th>
-              <th className="px-3 py-2 font-medium">Barcode</th>
-              <th className="px-3 py-2 font-medium">Inside</th>
-              <th className="px-3 py-2 text-right font-medium">Products</th>
-              <th className="px-3 py-2 text-right font-medium">Units on hand</th>
-              <th className="w-40 px-3 py-2" />
+              <th className="px-3 py-2.5 font-medium">Location</th>
+              <th className="px-3 py-2.5 font-medium">Level</th>
+              <th className="px-3 py-2.5 font-medium">Barcode</th>
+              <th className="px-3 py-2.5 font-medium">Inside</th>
+              <th className="px-3 py-2.5 text-right font-medium">Products</th>
+              <th className="px-3 py-2.5 text-right font-medium">Units on hand</th>
+              <th className="w-40 px-3 py-2.5 text-right font-medium">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-muted">
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && items.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-muted">
-                  No locations yet.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={7}
+              isLoading={isLoading}
+              error={loadError}
+              onRetry={() => void refetch()}
+              isEmpty={items.length === 0}
+              empty="No locations yet"
+            />
             {items.map((l) => (
               <LocationRow key={l.id} location={l} onError={setError} />
             ))}
@@ -250,10 +244,10 @@ function LocationRow({
   if (editing) {
     return (
       <tr className="border-t border-line bg-canvas/50">
-        <td className="px-3 py-2">
+        <td className="px-3 py-3.5">
           <TextInput value={name} onChange={(e) => setName(e.target.value)} />
         </td>
-        <td className="px-3 py-2">
+        <td className="px-3 py-3.5">
           <SelectInput
             value={kind}
             onChange={(e) => setKind(e.target.value as LocationKind)}
@@ -265,38 +259,42 @@ function LocationRow({
             <option value="OTHER">Other</option>
           </SelectInput>
         </td>
-        <td className="px-3 py-2">
+        <td className="px-3 py-3.5">
           <TextInput
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             placeholder="BIN-A1"
           />
         </td>
-        <td colSpan={3} className="px-3 py-2 text-micro text-faint">
+        <td colSpan={3} className="px-3 py-3.5 text-caption text-muted">
           Label an existing shelf here — the barcode is what the scanner reads during
           putaway, transfer and cycle count.
         </td>
-        <td className="px-3 py-2 text-right">
-          <button
-            type="button"
-            disabled={!name.trim() || busy}
-            onClick={save}
-            className="text-caption font-medium text-accent-2 hover:underline"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setName(l.name);
-              setKind(l.kind);
-              setBarcode(l.barcode ?? '');
-              setEditing(false);
-            }}
-            className="ml-3 text-caption text-muted hover:underline"
-          >
-            Cancel
-          </button>
+        <td className="px-3 py-3.5 text-right">
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              disabled={!name.trim() || busy}
+              onClick={save}
+            >
+              Save
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setName(l.name);
+                setKind(l.kind);
+                setBarcode(l.barcode ?? '');
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
         </td>
       </tr>
     );
@@ -304,47 +302,53 @@ function LocationRow({
 
   return (
     <tr className="border-t border-line">
-      <td className="px-3 py-2 text-ink">
+      <td className="px-3 py-3.5 text-ink">
         {l.name}
         {!l.active && (
-          <Pill variant="gray" className="ml-1.5">
+          <Pill variant="neutral" className="ml-1.5">
             Retired
           </Pill>
         )}
       </td>
-      <td className="px-3 py-2 text-caption text-muted">{KIND_LABEL[l.kind]}</td>
-      <td className="px-3 py-2 font-mono text-caption text-muted">{l.barcode ?? '—'}</td>
-      <td className="px-3 py-2 text-caption text-muted">{l.parentName ?? '—'}</td>
-      <td className="font-numeric px-3 py-2 text-right text-text">{l.productCount}</td>
-      <td className="font-numeric px-3 py-2 text-right font-medium text-ink">
+      <td className="px-3 py-3.5 text-caption text-muted">{KIND_LABEL[l.kind]}</td>
+      <td className="font-numeric px-3 py-3.5 text-caption text-muted">
+        {l.barcode ?? '—'}
+      </td>
+      <td className="px-3 py-3.5 text-caption text-muted">{l.parentName ?? '—'}</td>
+      <td className="font-numeric px-3 py-3.5 text-right text-text">{l.productCount}</td>
+      <td className="font-numeric px-3 py-3.5 text-right font-medium text-ink">
         {l.totalQty.toLocaleString('en-IN')}
       </td>
-      <td className="px-3 py-2 text-right">
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="text-caption font-medium text-accent-2 hover:underline"
-        >
-          Rename
-        </button>
-        {l.active && (
-          <button
+      <td className="px-3 py-3.5 text-right">
+        <div className="flex flex-wrap justify-end gap-1.5">
+          <Button
             type="button"
-            disabled={busy || l.totalQty !== 0}
-            title={
-              l.totalQty !== 0
-                ? 'Move or write off the stock here before retiring it'
-                : undefined
-            }
-            onClick={() => {
-              onError(null);
-              deactivate.mutate(l.id, { onError: (e) => onError(e.message) });
-            }}
-            className="ml-3 text-caption text-muted hover:underline disabled:opacity-40 disabled:hover:no-underline"
+            variant="ghost"
+            size="sm"
+            onClick={() => setEditing(true)}
           >
-            Retire
-          </button>
-        )}
+            Edit
+          </Button>
+          {l.active && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={busy || l.totalQty !== 0}
+              title={
+                l.totalQty !== 0
+                  ? 'Move or write off the stock here before retiring it'
+                  : undefined
+              }
+              onClick={() => {
+                onError(null);
+                deactivate.mutate(l.id, { onError: (e) => onError(e.message) });
+              }}
+            >
+              Retire
+            </Button>
+          )}
+        </div>
       </td>
     </tr>
   );

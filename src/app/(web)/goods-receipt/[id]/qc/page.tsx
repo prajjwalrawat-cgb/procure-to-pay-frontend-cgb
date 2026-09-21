@@ -2,8 +2,10 @@
 
 import {
   Button,
+  ErrorState,
   PageHeader,
   Pill,
+  Skeleton,
   controlClass,
 } from '@/components/ui';
 import type { GrnCompleteQcInput, GrnQcSampleInput } from '@/lib/shared';
@@ -16,7 +18,7 @@ import {
   useRecordSample,
   useStartQc,
 } from '@/lib/api/receipts';
-import { statusLabel, statusVariant } from '@/lib/format';
+import { humanise, qty, statusLabel, statusVariant } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 // One definition for every text field, select and date input on this page —
@@ -35,7 +37,7 @@ export default function QcPage(): React.JSX.Element {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const push = useToastStore((s) => s.push);
-  const { data } = useReceipt(id);
+  const { data, error, refetch } = useReceipt(id);
   const startQc = useStartQc(id);
   const recordSample = useRecordSample(id);
   const completeQc = useCompleteQc(id);
@@ -46,8 +48,21 @@ export default function QcPage(): React.JSX.Element {
     Record<string, { accepted: string; rejected: string; reason: string }>
   >({});
 
+  if (error)
+    return (
+      <div className="mx-auto w-full max-w-4xl rounded-lg border border-line bg-panel">
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
   if (!data)
-    return <div className="text-muted max-w-4xl px-4 py-10">Loading…</div>;
+    return (
+      <div aria-busy="true" className="mx-auto flex w-full max-w-4xl flex-col gap-4">
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
 
   function recordFor(lineId: string, sampleSize: number): void {
     const m = measured[lineId] ?? {};
@@ -102,12 +117,21 @@ export default function QcPage(): React.JSX.Element {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
+        breadcrumbs={[
+          { label: 'Goods receipts', href: '/goods-receipt' },
+          { label: data.number, href: `/goods-receipt/${id}` },
+          { label: 'QC' },
+        ]}
         title={
           <>
             QC inspection, <span className="font-numeric">{data.number}</span>
           </>
         }
-        description={`${data.vendor.name}, packing ${data.gate.packingCondition}`}
+        description={
+          data.gate.packingCondition
+            ? `${data.vendor.name}, packing ${humanise(data.gate.packingCondition).toLowerCase()}`
+            : data.vendor.name
+        }
         actions={
           data.qcStatus === 'NOT_STARTED' ? (
             <Button
@@ -129,11 +153,11 @@ export default function QcPage(): React.JSX.Element {
 
       <div className="space-y-4">
         {data.lines.map((l) => (
-          <div key={l.id} className="border-line bg-panel rounded-lg border p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-text text-body-sm font-medium">{l.itemDesc}</span>
-              <span className="font-numeric text-faint text-micro">
-                received {l.qtyReceived} {l.uom}
+          <div key={l.id} className="rounded-lg border border-line bg-panel p-4">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="text-h3 font-semibold text-ink">{l.itemDesc}</span>
+              <span className="font-numeric text-caption text-faint">
+                received {qty(l.qtyReceived, 2)} {l.uom}
                 {l.samplePlan &&
                   `, sample ${l.samplePlan.sampleSize} (Ac ${l.samplePlan.acceptNumber} / Re ${l.samplePlan.rejectNumber}, AQL ${l.samplePlan.aqlLevel})`}
               </span>
@@ -144,7 +168,7 @@ export default function QcPage(): React.JSX.Element {
                 <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {Object.entries(l.qcParameters).map(([param, spec]) => (
                     <label key={param} className="block">
-                      <span className="text-faint mb-1 block text-micro">
+                      <span className="mb-1 block text-caption font-medium text-muted">
                         {param}{' '}
                         {spec.min !== undefined ? `[${spec.min}–${spec.max}]` : ''}
                         {spec.unit ? ` ${spec.unit}` : ''}
@@ -168,7 +192,7 @@ export default function QcPage(): React.JSX.Element {
                   ))}
                 </div>
                 <label className="mb-3 block">
-                  <span className="text-faint mb-1 block text-micro">
+                  <span className="mb-1 block text-caption font-medium text-muted">
                     Defects found (comma-separated)
                   </span>
                   <input
@@ -188,7 +212,7 @@ export default function QcPage(): React.JSX.Element {
                   Record sample
                 </Button>
                 {l.qcSamples.length > 0 && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {l.qcSamples.map((s) => (
                       <Pill key={s.id} variant={statusVariant(s.result)}>
                         {statusLabel(s.result)}
@@ -198,18 +222,22 @@ export default function QcPage(): React.JSX.Element {
                 )}
               </>
             ) : (
-              <p className="text-faint text-caption">
+              <p className="text-caption text-faint">
                 No parametric QC required for this item.
               </p>
             )}
 
             {/* Decision */}
-            <div className="border-line mt-3 grid grid-cols-1 gap-3 border-t pt-3 sm:grid-cols-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 border-t border-line pt-3 sm:grid-cols-3">
               <label className="block">
-                <span className="text-faint mb-1 block text-micro">Qty accepted</span>
+                <span className="mb-1 block text-caption font-medium text-muted">
+                  Qty accepted
+                </span>
                 <input
                   className={inputCls}
-                  value={decisions[l.id]?.accepted ?? l.qtyReceived}
+                  inputMode="decimal"
+                  // The wire value is a 4dp decimal string; show "12", not "12.0000".
+                  value={decisions[l.id]?.accepted ?? String(Number(l.qtyReceived))}
                   onChange={(e) =>
                     setDecisions((prev) => ({
                       ...prev,
@@ -219,9 +247,12 @@ export default function QcPage(): React.JSX.Element {
                 />
               </label>
               <label className="block">
-                <span className="text-faint mb-1 block text-micro">Qty rejected</span>
+                <span className="mb-1 block text-caption font-medium text-muted">
+                  Qty rejected
+                </span>
                 <input
                   className={inputCls}
+                  inputMode="decimal"
                   value={decisions[l.id]?.rejected ?? '0'}
                   onChange={(e) =>
                     setDecisions((prev) => ({
@@ -232,11 +263,11 @@ export default function QcPage(): React.JSX.Element {
                 />
               </label>
               <label className="block">
-                <span className="text-faint mb-1 block text-micro">
+                <span className="mb-1 block text-caption font-medium text-muted">
                   Rejection reason
                 </span>
                 <select
-                  className={inputCls}
+                  className={inputCls + ' pr-8'}
                   value={decisions[l.id]?.reason ?? 'VISIBLE_DAMAGE'}
                   onChange={(e) =>
                     setDecisions((prev) => ({
@@ -247,7 +278,7 @@ export default function QcPage(): React.JSX.Element {
                 >
                   {REJECTION_REASONS.map((r) => (
                     <option key={r} value={r}>
-                      {r}
+                      {humanise(r)}
                     </option>
                   ))}
                 </select>
@@ -284,7 +315,7 @@ function PassHint({
   const n = Number(value);
   const pass = n >= min && n <= max;
   return (
-    <span className={'text-micro ' + (pass ? 'text-accent-2' : 'text-danger')}>
+    <span className={'text-micro font-medium ' + (pass ? 'text-success' : 'text-danger')}>
       {pass ? 'PASS' : 'FAIL'}
     </span>
   );

@@ -16,7 +16,7 @@ export default function ScanOfflinePage(): React.JSX.Element {
       </p>
       <Link
         href="/scan"
-        className="inline-block rounded-md border border-line bg-white px-4 py-3 text-body"
+        className="inline-block rounded-md border border-line bg-panel px-4 py-3 text-body"
       >
         Back to tasks
       </Link>

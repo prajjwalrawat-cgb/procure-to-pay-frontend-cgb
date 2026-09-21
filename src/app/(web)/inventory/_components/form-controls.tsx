@@ -1,6 +1,6 @@
 'use client';
 
-import { Combobox, controlClass } from '@/components/ui';
+import { Combobox, Skeleton, controlClass } from '@/components/ui';
 import { qty } from '@/lib/format';
 
 import { useProduct, useProducts, useLocations } from '@/lib/api/inventory';
@@ -20,12 +20,12 @@ export function Field({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-muted text-caption font-medium">
+      <span className="text-caption font-medium text-muted">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
       {children}
-      {hint && <span className="text-faint text-micro">{hint}</span>}
+      {hint && <span className="text-caption text-muted">{hint}</span>}
     </label>
   );
 }
@@ -42,7 +42,8 @@ export function TextInput(
 export function SelectInput(
   props: React.SelectHTMLAttributes<HTMLSelectElement>,
 ): React.JSX.Element {
-  return <select {...props} className={INPUT_CLASS} />;
+  // pr-8 clears the chevron the global select style draws on the right.
+  return <select {...props} className={`${INPUT_CLASS} pr-8`} />;
 }
 
 export function TextArea(
@@ -111,21 +112,21 @@ function SelectedProduct({
 
   if (!productId) {
     return (
-      <p className="text-faint text-micro">
+      <p className="text-micro text-faint">
         No product selected — pick one from the list above.
       </p>
     );
   }
 
   return (
-    <div className="border-accent/40 bg-canvas flex items-center gap-2.5 rounded-md border px-2.5 py-2">
+    <div className="flex items-center gap-2.5 rounded-md border border-accent/40 bg-canvas px-2.5 py-2">
       <ProductThumb url={data?.imageUrl ?? null} alt={data?.name ?? ''} size={28} />
       <div className="min-w-0 flex-1">
-        <div className="text-ink truncate text-body-sm font-medium">
-          {isLoading ? 'Loading…' : data?.name}
+        <div className="truncate text-body-sm font-medium text-ink">
+          {isLoading ? <Skeleton className="h-3.5 w-40" /> : data?.name}
           {data?.colour ? <span className="text-muted"> — {data.colour}</span> : null}
         </div>
-        <div className="font-numeric text-faint text-micro">
+        <div className="font-numeric text-micro text-faint">
           {data?.code}
           {data ? ` — ${qty(data.currentStock)} on hand` : ''}
         </div>
@@ -133,7 +134,7 @@ function SelectedProduct({
       <button
         type="button"
         onClick={onClear}
-        className="text-muted hover:text-ink shrink-0 text-caption"
+        className="shrink-0 text-caption text-muted hover:text-ink"
       >
         Clear
       </button>
@@ -172,7 +173,7 @@ export function FormResult({
   error: string | null;
   success: string | null;
 }): React.JSX.Element | null {
-  if (error) return <p className="text-danger text-caption">{error}</p>;
-  if (success) return <p className="text-success text-caption">{success}</p>;
+  if (error) return <p className="text-caption text-danger">{error}</p>;
+  if (success) return <p className="text-caption text-success">{success}</p>;
   return null;
 }
