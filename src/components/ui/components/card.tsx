@@ -129,7 +129,10 @@ export function CardGrid({
     <div
       // `auto-rows-fr` keeps every card in a row the same height, so the
       // footers form a line the eye can read across.
-      className={cn('grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-3', className)}
+      // `grid-cols-1` is load-bearing: without an explicit track the phone
+      // column sizes to its widest child, and one long truncated title pushes
+      // every card off-screen.
+      className={cn('grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3', className)}
       {...props}
     />
   );

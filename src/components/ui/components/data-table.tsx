@@ -249,7 +249,9 @@ export function SortableHead<K extends string>({
         type="button"
         onClick={() => onSort(sortKey)}
         className={cn(
-          'hover:text-text duration-hover -mx-1 inline-flex items-center gap-1 rounded-xs px-1 transition-colors',
+          // align-middle + leading-[inherit]: an inline-flex button otherwise
+          // sits on its own line box and rides ~2px above plain header text.
+          'hover:text-text duration-hover -mx-1 inline-flex items-center gap-1 rounded-xs px-1 align-middle leading-[inherit] transition-colors',
           numeric && 'flex-row-reverse',
           active ? 'text-text' : 'text-muted',
         )}
