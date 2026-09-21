@@ -406,8 +406,8 @@ export default function PurchaseOrdersPage(): React.JSX.Element {
  * rows, which is a column of noise you learn to skip.
  *
  * A percentage in the numeric column solves both: 0% is unambiguous, the
- * figures align down the page, and the eye can find the one order that is
- * part-received without reading anything. Only 100% takes colour, because
+ * figures align down the page, and a slim bar beside it lets the eye find the
+ * one order that is part-received without reading anything. Only 100% takes colour, because
  * "done" is the state you scan for; everything short of it is just progress.
  * Billing sits underneath only once something has been invoiced, and only
  * over-invoicing is coloured.
@@ -416,9 +416,23 @@ function Fulfilment({ po }: { po: PoListItem }): React.JSX.Element {
   const clamped = Math.max(0, Math.min(100, po.fulfilmentPct));
   const billing = po.fulfilment.billing;
   return (
-    <span className="inline-flex flex-col items-end">
-      <span className={clamped >= 100 ? 'text-success font-medium' : 'text-muted'}>
-        {clamped.toFixed(0)}%
+    <span className="inline-flex flex-col items-end gap-0.5">
+      <span className="inline-flex items-center gap-2">
+        {/* A slim bar beside the figure: part-received orders stand out down
+            the column before the numbers are read. Decorative — the % is the
+            value, so it is hidden from assistive tech. */}
+        <span aria-hidden className="bg-canvas relative h-1 w-14 overflow-hidden rounded-full">
+          <span
+            className={
+              'absolute inset-y-0 left-0 rounded-full ' +
+              (clamped >= 100 ? 'bg-success-solid' : 'bg-accent')
+            }
+            style={{ width: `${clamped}%` }}
+          />
+        </span>
+        <span className={clamped >= 100 ? 'text-success font-medium' : 'text-muted'}>
+          {clamped.toFixed(0)}%
+        </span>
       </span>
       {billing !== 'NONE' && (
         <span className={'text-micro ' + (billing === 'OVER' ? 'text-warn' : 'text-faint')}>

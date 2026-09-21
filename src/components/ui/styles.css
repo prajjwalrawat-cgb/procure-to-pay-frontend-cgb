@@ -355,3 +355,61 @@ input[type='date']:disabled {
     background: transparent;
   }
 }
+
+/* ── List tables: the data-grid surface (768px and up) ────────────────────
+   Every read-only list table (`pf-stack`) sits on a card: white panel,
+   hairline border, 12px radius, a tinted header band and inset first/last
+   columns. Styled here, on the table's wrapper, so ~47 list screens get it
+   without each re-implementing it. A table that already lives inside a card
+   (`.bg-panel` ancestor — detail pages) is left alone, or it would draw a
+   frame inside a frame. Below 768px the stacked-card rules above take over.
+
+   Cells carry the row dividers: in the `separate` border model a <tr> border
+   does not render, and `separate` is what lets the corners round. */
+@media (min-width: 768px) {
+  div:has(> table.pf-stack):not(.bg-panel *) {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > thead > tr > th {
+    background: #f8f6f0;
+    border-bottom: 1px solid var(--line);
+    padding-top: 11px;
+    padding-bottom: 11px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr > td {
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr:last-child > td {
+    border-bottom: 0;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr {
+    border: 0;
+    transition: background-color 100ms;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > * > tr > :first-child {
+    padding-left: 20px;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > * > tr > :last-child {
+    padding-right: 20px;
+  }
+  /* Full-width rows (skeleton, empty state, expanded detail) keep their own
+     insets — the detail panels bring their padding with them. */
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr > td[colspan] {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}

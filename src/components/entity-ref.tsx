@@ -47,7 +47,7 @@ export function EntityRef({
       onMouseLeave={onLeave}
       data-ref={`${kind}:${id}`}
     >
-      <span className="text-accent cursor-default font-medium underline decoration-dotted underline-offset-2">
+      <span className="text-accent-2 hover:text-accent cursor-default font-medium underline-offset-2 hover:underline">
         {children}
       </span>
       {open && data && (
