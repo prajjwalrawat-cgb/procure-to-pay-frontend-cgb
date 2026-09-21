@@ -309,7 +309,7 @@ export function LedgerStrip({
               {auditHref && (
                 <a
                   href={auditHref}
-                  className="text-info duration-hover text-micro font-medium hover:underline"
+                  className="text-accent hover:text-accent-2 duration-hover text-micro font-medium hover:underline"
                 >
                   Open in audit log →
                 </a>

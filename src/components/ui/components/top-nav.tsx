@@ -10,6 +10,11 @@ export interface TopNavItem {
   href: string;
   /** Pending-count badge — approvals waiting on this user, exceptions, etc. */
   badge?: number;
+  /**
+   * Lit only on an exact path match. For a portal root like `/vendor`, which
+   * every other vendor page sits under — prefix matching lit it everywhere.
+   */
+  exact?: boolean;
 }
 
 export interface TopNavGroup {
@@ -42,8 +47,8 @@ export function isTopNavMenu(entry: TopNavEntry): entry is TopNavMenu {
  * page with nothing lit, which loses your place in a product with eighteen
  * modules. `/` is matched exactly or Home would be current everywhere.
  */
-export function isActiveHref(href: string, current: string): boolean {
-  if (href === '/') return current === '/';
+export function isActiveHref(href: string, current: string, exact = false): boolean {
+  if (href === '/' || exact) return current === href;
   return current === href || current.startsWith(`${href}/`);
 }
 
@@ -112,7 +117,7 @@ export function TopNav({
     ...primary.filter(isTopNavMenu).map((m) => ({ heading: m.label, items: m.items })),
     ...overflow,
   ].filter((g) => g.items.length > 0);
-  const overflowActive = overflowItems.some((i) => isActiveHref(i.href, activeHref));
+  const overflowActive = overflowItems.some((i) => isActiveHref(i.href, activeHref, i.exact));
 
   // Escape and outside-pointer close the overflow menu.
   React.useEffect(() => {
@@ -240,7 +245,7 @@ export function TopNav({
               />
             ) : (
               <React.Fragment key={entry.href}>
-                {tab(entry, isActiveHref(entry.href, activeHref))}
+                {tab(entry, isActiveHref(entry.href, activeHref, entry.exact))}
               </React.Fragment>
             ),
           )}
@@ -273,7 +278,7 @@ export function TopNav({
                       <p className="text-faint px-2 py-1 text-micro">{group.heading}</p>
                     ) : null}
                     {group.items.map((item) => {
-                      const active = isActiveHref(item.href, activeHref);
+                      const active = isActiveHref(item.href, activeHref, item.exact);
                       return (
                         <div key={item.href} onClick={() => setMenuOpen(false)}>
                           {renderLink(
@@ -332,7 +337,7 @@ export function TopNav({
                     <p className="text-faint px-2 py-1 text-micro">{group.heading}</p>
                   ) : null}
                   {group.items.map((item) => {
-                    const active = isActiveHref(item.href, activeHref);
+                    const active = isActiveHref(item.href, activeHref, item.exact);
                     return (
                       <div key={item.href} onClick={() => setDrawerOpen(false)}>
                         {renderLink(
@@ -397,7 +402,7 @@ function NavMenu({
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const menuId = React.useId();
 
-  const active = menu.items.some((i) => isActiveHref(i.href, activeHref));
+  const active = menu.items.some((i) => isActiveHref(i.href, activeHref, i.exact));
   const badge = menu.items.reduce((n, i) => n + (i.badge ?? 0), 0);
 
   const cancelClose = (): void => {
@@ -474,7 +479,7 @@ function NavMenu({
         <div id={menuId} role="menu" className="absolute left-0 top-full z-50 pt-1.5">
           <div className="border-line bg-panel min-w-[13rem] rounded-lg border p-1.5 shadow-lg">
             {menu.items.map((item) => {
-              const itemActive = isActiveHref(item.href, activeHref);
+              const itemActive = isActiveHref(item.href, activeHref, item.exact);
               return (
                 <div key={item.href} role="none" onClick={() => setOpen(false)}>
                   {renderLink(

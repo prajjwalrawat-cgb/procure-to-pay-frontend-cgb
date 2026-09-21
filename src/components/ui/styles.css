@@ -177,6 +177,14 @@ select {
   background-position: right 9px center;
 }
 
+/* The chevron's room survives a utility class. A <select> styled with
+   controlClass (`px-2.5`) otherwise loses the 28px above to the utility, and the
+   chevron runs into the text. The attribute selector out-ranks a single class;
+   an explicit wider `pr-*` on the element still reads as intent and is kept. */
+select[class]:not([multiple]):not([class*='pr-']) {
+  padding-right: 28px;
+}
+
 select:focus,
 input[type='date']:focus,
 input[type='datetime-local']:focus,

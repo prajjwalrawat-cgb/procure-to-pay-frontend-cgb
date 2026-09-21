@@ -45,7 +45,9 @@ export function ScanShell({ children }: { children: ReactNode }): React.JSX.Elem
   const atRoot = !segment;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-paper">
+    // Capped and centred: the scanner is a handheld layout, and on a desktop
+    // browser its full-bleed buttons stretched a metre wide.
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col bg-paper sm:border-x sm:border-line">
       <header className="sticky top-0 z-10 border-b border-line bg-white pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2 px-3 py-3">
           {atRoot ? (

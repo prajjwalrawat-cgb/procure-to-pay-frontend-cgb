@@ -31,6 +31,10 @@ export interface StepIndicatorProps {
  *
  * The connector is a rule, not a punctuation mark: it says the steps are a
  * sequence, which is the thing a middle dot cannot say.
+ *
+ * On phones only the current step keeps its label — five labelled steps do not
+ * fit in 343px, and a clipped "Revie…" reads as broken. The row still scrolls,
+ * and the current step is scrolled into view whenever it changes.
  */
 export function StepIndicator({
   steps,
@@ -38,6 +42,11 @@ export function StepIndicator({
   onStepClick,
   className,
 }: StepIndicatorProps): React.JSX.Element {
+  const currentRef = React.useRef<HTMLLIElement>(null);
+  React.useEffect(() => {
+    currentRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [current]);
+
   return (
     <ol className={cn('pf-scroll-x flex items-center gap-1', className)}>
       {steps.map((label, i) => {
@@ -63,6 +72,7 @@ export function StepIndicator({
               className={cn(
                 'whitespace-nowrap text-body-sm',
                 isCurrent ? 'text-accent font-medium' : done ? 'text-text' : 'text-faint',
+                !isCurrent && 'sr-only sm:not-sr-only',
               )}
             >
               {label}
@@ -71,7 +81,11 @@ export function StepIndicator({
         );
 
         return (
-          <li key={label} className="flex items-center gap-1">
+          <li
+            key={label}
+            ref={isCurrent ? currentRef : undefined}
+            className="flex shrink-0 items-center gap-1"
+          >
             {clickable ? (
               <button
                 type="button"
@@ -85,7 +99,7 @@ export function StepIndicator({
               <span aria-current={isCurrent ? 'step' : undefined}>{content}</span>
             )}
             {i < steps.length - 1 ? (
-              <span aria-hidden className="bg-line mx-2 h-px w-6 shrink-0" />
+              <span aria-hidden className="bg-line mx-1 h-px w-4 shrink-0 sm:mx-2 sm:w-6" />
             ) : null}
           </li>
         );
