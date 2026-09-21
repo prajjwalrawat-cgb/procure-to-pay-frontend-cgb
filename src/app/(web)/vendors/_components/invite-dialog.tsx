@@ -7,7 +7,7 @@ import {
   DialogDescription,
   DialogTitle,
   Input,
-  controlClass,
+  Select,
 } from '@/components/ui';
 import { InviteVendorInputSchema } from '@/lib/shared';
 import Link from 'next/link';
@@ -152,7 +152,7 @@ export function InviteVendorDialog({
           onboarding wizard. It then lands in the review queue.
         </DialogDescription>
         {duplicate && (
-          <div className="border-warn/40 bg-warn/10 mt-4 rounded-md border p-3">
+          <div className="border-warn/40 bg-warn-wash mt-4 rounded-md border p-3">
             <p className="text-ink text-body-sm font-medium">
               This looks like an existing vendor
             </p>
@@ -204,26 +204,22 @@ export function InviteVendorDialog({
             />
           </Field>
           <Field label="Category" error={errors.categoryKey}>
-            <select
-              value={categoryKey}
-              onChange={(e) => setCategoryKey(e.target.value)}
-              className={controlClass}
-            >
+            <Select value={categoryKey} onChange={(e) => setCategoryKey(e.target.value)}>
               {(categories ?? []).map((c) => (
                 <option key={c.key} value={c.key}>
                   {c.displayName}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="default" onClick={onClose}>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           {duplicate?.overridable && (
             <Button
-              variant="default"
+              variant="secondary"
               onClick={() => submit(true)}
               disabled={invite.isPending}
             >
