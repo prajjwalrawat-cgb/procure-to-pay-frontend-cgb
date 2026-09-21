@@ -11,8 +11,11 @@ import type {
   InvoiceDetailResponse,
   InvoiceListResponse,
   InvoiceTab,
+  InvoiceDocumentKind,
   InvoiceTabCounts,
   RecordManualPaymentInput,
+  ResolveAndRouteResult,
+  TaxInvoiceInput,
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
@@ -97,7 +100,9 @@ export function useResolveAndRoute(invoiceId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiFetch(`/invoices/${invoiceId}/resolve-and-route`, { method: 'POST' }),
+      apiFetch<ResolveAndRouteResult>(`/invoices/${invoiceId}/resolve-and-route`, {
+        method: 'POST',
+      }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },
@@ -132,6 +137,47 @@ export function useRunMatch(invoiceId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch(`/invoices/${invoiceId}/match/run`, { method: 'POST' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
+/** Say whether the document on the invoice is a proforma or a tax invoice. */
+export function useSetDocumentKind(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: InvoiceDocumentKind) =>
+      apiFetch(`/invoices/${invoiceId}/document-kind`, {
+        method: 'POST',
+        body: JSON.stringify({ kind }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
+/**
+ * Replace a proforma with its tax invoice: store the file, then attach it with
+ * the header and lines. The file goes first so a failed upload never leaves the
+ * record pointing at a document that is not there.
+ */
+export function useAttachTaxInvoice(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { file: File; body: Omit<TaxInvoiceInput, 's3Key'> }) => {
+      const form = new FormData();
+      form.append('file', vars.file);
+      const { s3Key } = await apiFetch<{ s3Key: string }>(
+        `/invoices/${invoiceId}/tax-invoice/file`,
+        { method: 'POST', body: form },
+      );
+      return apiFetch(`/invoices/${invoiceId}/tax-invoice`, {
+        method: 'POST',
+        body: JSON.stringify({ ...vars.body, s3Key }),
+      });
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },

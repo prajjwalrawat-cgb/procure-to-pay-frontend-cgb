@@ -6,7 +6,12 @@ import {
   useQueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import type { VendorInvoiceSubmitInput, VendorPoOption } from '@/lib/shared';
+import type {
+  InvoiceDocumentKind,
+  TaxInvoiceInput,
+  VendorInvoiceSubmitInput,
+  VendorPoOption,
+} from '@/lib/shared';
 
 import { apiFetch } from '@/vendor/lib/api-client';
 
@@ -17,6 +22,21 @@ export interface VendorInvoiceSummary {
   status: string;
   grossAmount: string;
   invoiceDate: string;
+  documentKind: InvoiceDocumentKind;
+  /** The PI this invoice started as, once its tax invoice replaced it. */
+  proformaRef: string | null;
+}
+
+export interface VendorInvoiceDetail extends VendorInvoiceSummary {
+  lines: {
+    lineNo: number;
+    poLineId: string | null;
+    itemDesc: string;
+    uom: string;
+    qty: string;
+    unitPrice: string;
+    taxRate: string;
+  }[];
 }
 
 export function useOpenPos(): UseQueryResult<VendorPoOption[]> {
@@ -30,6 +50,32 @@ export function useMyInvoices(): UseQueryResult<VendorInvoiceSummary[]> {
   return useQuery({
     queryKey: ['vendor', 'invoices'],
     queryFn: () => apiFetch<VendorInvoiceSummary[]>('/vendor/invoices'),
+  });
+}
+
+export function useMyInvoice(id: string): UseQueryResult<VendorInvoiceDetail> {
+  return useQuery({
+    queryKey: ['vendor', 'invoices', id],
+    queryFn: () => apiFetch<VendorInvoiceDetail>(`/vendor/invoices/${id}`),
+  });
+}
+
+/**
+ * Replace one of the vendor's proformas with its tax invoice. The file is
+ * stored first, so a failed upload never leaves the invoice pointing at a
+ * document that is not there.
+ */
+export function useAttachTaxInvoice(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (vars: { file: File; body: Omit<TaxInvoiceInput, 's3Key'> }) => {
+      const s3Key = await uploadInvoiceFile(vars.file);
+      return apiFetch<{ ok: true }>(`/vendor/invoices/${id}/tax-invoice`, {
+        method: 'POST',
+        body: JSON.stringify({ ...vars.body, s3Key }),
+      });
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['vendor', 'invoices'] }),
   });
 }
 
