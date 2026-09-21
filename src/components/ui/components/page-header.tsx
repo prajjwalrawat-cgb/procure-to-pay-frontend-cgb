@@ -17,6 +17,7 @@
  */
 
 import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import * as React from 'react';
 
 import { cn } from '../lib/cn';
@@ -60,12 +61,14 @@ export function PageHeader({
                   <ChevronRight className="text-faint h-3 w-3 shrink-0" aria-hidden />
                 )}
                 {c.href ? (
-                  <a
+                  // next/link, not <a>: a full page load drops the in-memory
+                  // access token and bounces through the session refresh.
+                  <Link
                     href={c.href}
                     className="hover:text-accent duration-hover transition-colors"
                   >
                     {c.label}
-                  </a>
+                  </Link>
                 ) : (
                   <span className="text-text" aria-current="page">
                     {c.label}
