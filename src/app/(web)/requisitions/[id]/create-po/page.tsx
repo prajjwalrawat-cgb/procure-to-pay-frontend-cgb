@@ -2,8 +2,13 @@
 
 import {
   Button,
+  Card,
+  EmptyState,
+  ErrorState,
   PageHeader,
   Pill,
+  Skeleton,
+  cn,
   controlClass,
 } from '@/components/ui';
 import { ArrowLeft, ChevronDown, ChevronRight, Plus, Trash2 } from 'lucide-react';
@@ -72,7 +77,7 @@ export default function CreatePoPage(): React.JSX.Element {
   const id = params.id;
   const router = useRouter();
   const toast = useToastStore((s) => s.push);
-  const { data, isLoading } = useRequisition(id);
+  const { data, isLoading, error, refetch } = useRequisition(id);
   const { data: vendorData } = useVendors();
   const vendors = vendorData?.items ?? [];
   const createPo = useCreatePurchaseOrder();
@@ -87,11 +92,30 @@ export default function CreatePoPage(): React.JSX.Element {
   const [cards, setCards] = useState<PoCard[]>(() => [blankCard(defaultDate)]);
   const [saving, setSaving] = useState(false);
 
-  if (isLoading || !data) {
-    return <div className="p-6 text-body-sm text-muted">Loading requisition…</div>;
+  if (isLoading) {
+    return (
+      <div aria-busy="true">
+        <Skeleton className="mb-4 h-3 w-32" />
+        <Skeleton className="mb-6 h-6 w-64" />
+        <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-96 w-full rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+  if (error || !data) {
+    return (
+      <div>
+        <BackLink id={id} />
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </div>
+    );
   }
 
   const prLines = data.lines;
+  // Every line already fully on a PO: there is nothing left to award.
+  const nothingLeft = prLines.every((l) => num(l.qtyRemaining) <= 0);
 
   const allocatedFor = (prLineId: string): number =>
     cards.reduce((s, c) => s + num(c.lines[prLineId]), 0);
@@ -199,48 +223,55 @@ export default function CreatePoPage(): React.JSX.Element {
     }
   };
 
+  if (nothingLeft) {
+    return (
+      <div>
+        <BackLink id={id} />
+        <EmptyState
+          title="Nothing left to order"
+          detail={`Every line on ${data.number} is already on a purchase order.`}
+          action={
+            <Button asChild variant="secondary" size="sm">
+              <Link href={`/requisitions/${id}`}>Back to {data.number}</Link>
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="pb-8">
-      <Link
-        href={`/requisitions/${id}`}
-        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to requisition
-      </Link>
+      <BackLink id={id} />
       <PageHeader
         title="Create purchase orders"
         description={
           <>
-            Split-award <span className="font-numeric">{data.number}</span> {data.title}
+            Split-award <span className="font-numeric">{data.number}</span> · {data.title}
           </>
         }
         actions={
-          <>
-            <Button variant="primary" size="sm" disabled={saving} onClick={onSaveAll}>
-              Save all as drafts
-            </Button>
-          </>
+          <Button variant="primary" size="sm" disabled={saving} onClick={onSaveAll}>
+            {saving ? 'Saving…' : 'Save all as drafts'}
+          </Button>
         }
       />
 
-      <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
         {/* Left — PR lines with balance */}
-        <aside>
-          <h2 className="mb-2 text-body font-semibold text-ink">Requisition lines</h2>
+        <aside className="min-w-0">
+          <h2 className="mb-2 text-h3 font-semibold text-ink">Requisition lines</h2>
           <div className="flex flex-col gap-2">
             {prLines.map((l) => {
               const remaining = remainingFor(l);
               return (
-                <div
-                  key={l.id}
-                  className="rounded-lg border border-line bg-panel p-3 text-caption"
-                >
+                <Card key={l.id} className="p-3 text-body-sm">
                   <div className="font-medium text-text">{l.itemDesc}</div>
-                  <div className="font-numeric text-micro text-faint">
-                    {l.skuCode ?? 'Non-catalogued'}, {inr(l.unitPrice, 0)} / {l.uom}
+                  <div className="font-numeric text-caption text-faint">
+                    {l.skuCode ?? 'Non-catalogued'} · {inr(l.unitPrice, 0)} / {l.uom}
                   </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="text-muted">
+                  <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-caption">
+                    <span className="font-numeric text-muted">
                       Remaining {num(l.qtyRemaining)} {l.uom}
                     </span>
                     <Pill
@@ -254,33 +285,33 @@ export default function CreatePoPage(): React.JSX.Element {
                     >
                       {remaining < -1e-6
                         ? `over by ${Math.abs(remaining)}`
-                        : `${remaining} to allocate`}
+                        : remaining < 1e-6
+                          ? 'Fully allocated'
+                          : `${remaining} to allocate`}
                     </Pill>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
         </aside>
 
         {/* Right — PO builder cards */}
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           {cards.map((card, ci) => (
-            <div key={card.key} className="rounded-lg border border-line bg-panel p-4">
+            <Card key={card.key} className="p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-body-sm font-semibold text-ink">
-                  PO draft {ci + 1}
-                </span>
+                <h2 className="text-h3 font-semibold text-ink">PO draft {ci + 1}</h2>
                 {cards.length > 1 && (
                   <button
                     type="button"
-                    aria-label="Remove PO"
+                    aria-label={`Remove PO draft ${ci + 1}`}
                     onClick={() =>
                       setCards((prev) => prev.filter((c) => c.key !== card.key))
                     }
-                    className="text-muted hover:text-danger"
+                    className="text-muted hover:text-danger rounded-sm p-1"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" aria-hidden />
                   </button>
                 )}
               </div>
@@ -355,25 +386,26 @@ export default function CreatePoPage(): React.JSX.Element {
               </div>
 
               {/* Line allocation */}
-              <div className="mt-3">
-                <div className="mb-1 text-micro text-faint">
-                  Allocate lines
-                </div>
+              <div className="mt-4">
+                <div className="mb-1.5 text-caption font-medium text-muted">Allocate lines</div>
                 <div className="flex flex-col gap-1.5">
                   {prLines.map((l) => (
-                    <div key={l.id} className="flex items-center gap-2 text-caption">
-                      <span className="flex-1 truncate text-text">{l.itemDesc}</span>
-                      <span className="font-numeric text-faint">
-                        rem {remainingFor(l)}
+                    <div key={l.id} className="flex items-center gap-2 text-body-sm">
+                      <span className="min-w-0 flex-1 truncate text-text" title={l.itemDesc}>
+                        {l.itemDesc}
+                      </span>
+                      <span className="font-numeric hidden shrink-0 text-caption text-faint sm:inline">
+                        {remainingFor(l)} left
                       </span>
                       <input
                         value={card.lines[l.id] ?? ''}
                         onChange={(e) => setLineQty(card.key, l.id, e.target.value)}
                         inputMode="decimal"
                         placeholder="0"
-                        className="font-numeric w-20 rounded-sm border border-line bg-canvas px-2 py-1 text-right text-caption outline-none"
+                        aria-label={`Quantity of ${l.itemDesc} on PO draft ${ci + 1}`}
+                        className={cn(inputCls, 'font-numeric w-24 shrink-0 text-right')}
                       />
-                      <span className="w-10 text-faint">{l.uom}</span>
+                      <span className="w-10 shrink-0 text-caption text-faint">{l.uom}</span>
                     </div>
                   ))}
                 </div>
@@ -381,11 +413,12 @@ export default function CreatePoPage(): React.JSX.Element {
 
               {/* Terms & conditions — same clause set as a spot-buy PO, so the
                   printed PDF reads identically whichever route raised it. */}
-              <div className="mt-3 border-t border-line pt-2">
+              <div className="mt-4 border-t border-line pt-3">
                 <button
                   type="button"
                   onClick={() => updateCard(card.key, { termsOpen: !card.termsOpen })}
-                  className="flex w-full items-center justify-between text-caption font-medium text-text"
+                  aria-expanded={card.termsOpen}
+                  className="flex w-full items-center justify-between text-body-sm font-medium text-text"
                 >
                   <span className="flex items-center gap-1">
                     {card.termsOpen ? (
@@ -395,7 +428,7 @@ export default function CreatePoPage(): React.JSX.Element {
                     )}
                     Terms &amp; conditions
                   </span>
-                  <span className="font-numeric text-faint">
+                  <span className="font-numeric text-caption text-faint">
                     {termsFor(card).filter((t) => t.selected).length +
                       card.special.filter((t) => t.title.trim()).length}{' '}
                     selected
@@ -413,26 +446,37 @@ export default function CreatePoPage(): React.JSX.Element {
                 )}
               </div>
 
-              <div className="mt-3 flex items-center justify-between border-t border-line pt-2">
-                <span className="text-caption text-muted">PO total</span>
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
+                <span className="text-body-sm text-muted">PO total</span>
                 <span className="font-numeric text-body font-semibold text-ink">
                   {inr(cardTotal(card).toFixed(2))}
                 </span>
               </div>
-            </div>
+            </Card>
           ))}
 
           <Button
-            variant="default"
+            variant="secondary"
             size="sm"
             className="self-start"
             onClick={() => setCards((prev) => [...prev, blankCard(defaultDate)])}
           >
-            <Plus className="h-3.5 w-3.5" /> Add another PO
+            <Plus className="h-3.5 w-3.5" aria-hidden /> Add another PO
           </Button>
         </div>
       </div>
     </div>
+  );
+}
+
+function BackLink({ id }: { id: string }): React.JSX.Element {
+  return (
+    <Link
+      href={`/requisitions/${id}`}
+      className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to requisition
+    </Link>
   );
 }
 

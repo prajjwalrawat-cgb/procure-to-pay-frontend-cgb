@@ -2,7 +2,9 @@
 
 import {
   Button,
+  Card,
   PageHeader,
+  cn,
   Pill,
   StepIndicator,
   controlClass,
@@ -37,7 +39,7 @@ import {
 } from '@/lib/api/requisitions';
 import { formatDate, inr } from '@/lib/format';
 import { percentToRate, rateToPercent } from '@/lib/rate';
-import { NON_CATALOG_REASONS, PRIORITIES } from '@/lib/refs';
+import { NON_CATALOG_REASONS, PRIORITIES, priorityLabel } from '@/lib/refs';
 import { useToastStore } from '@/store/toast-store';
 
 /**
@@ -249,9 +251,9 @@ export default function NewRequisitionPage(): React.JSX.Element {
     <div className="mx-auto w-full max-w-4xl pb-8">
       <Link
         href="/requisitions"
-        className="mb-3 inline-flex items-center gap-1 text-caption text-muted"
+        className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to requisitions
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to requisitions
       </Link>
       <PageHeader
         title="New requisition"
@@ -260,7 +262,7 @@ export default function NewRequisitionPage(): React.JSX.Element {
 
       <StepIndicator steps={STEPS} current={step - 1} className="mb-5" />
 
-      <div className="rounded-lg border border-line bg-panel p-5">
+      <Card className="p-4 sm:p-5">
         {step === 1 && (
           <StepBasics
             title={title}
@@ -318,10 +320,24 @@ export default function NewRequisitionPage(): React.JSX.Element {
             costCenters={costCenters}
           />
         )}
-      </div>
+      </Card>
+
+      {/* Say what is missing rather than leave a silently disabled button. */}
+      {step === 1 && !step1Valid && (
+        <p className="mt-3 text-caption text-muted">
+          To continue: a title of 5+ characters, a cost centre, a branch, a needed-by date and a
+          justification of 20+ characters.
+        </p>
+      )}
+      {step === 2 && !step2Valid && (
+        <p className="mt-3 text-caption text-muted">
+          To continue: every line needs a description and a quantity above zero — pick
+          catalogued items from the list, and give non-catalogued lines a reason code.
+        </p>
+      )}
 
       {/* Wizard controls */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -340,9 +356,9 @@ export default function NewRequisitionPage(): React.JSX.Element {
             Continue
           </Button>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="default"
+              variant="secondary"
               size="sm"
               disabled={create.isPending || flushing || !step1Valid || !step2Valid}
               onClick={onSaveDraft}
@@ -528,7 +544,7 @@ function BudgetChip({
         : 'bg-accent-wash text-accent-2';
   return (
     <div
-      className={`flex items-center justify-between rounded-sm px-3 py-2 text-caption ${tone}`}
+      className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm px-3 py-2 text-caption ${tone}`}
     >
       <span className="font-medium">
         {inr(budget.remaining)} available of {inr(budget.allocated)} allocated
@@ -578,9 +594,9 @@ function StepLines({
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
-          variant="default"
+          variant="secondary"
           size="sm"
           onClick={() => setLines((prev) => [...prev, blankLine(true)])}
         >
@@ -593,7 +609,7 @@ function StepLines({
         >
           <Plus className="h-3.5 w-3.5" /> Add non-catalogued item
         </Button>
-        <span className="font-numeric ml-auto text-body font-semibold text-ink">
+        <span className="font-numeric ml-auto whitespace-nowrap text-body font-semibold text-ink">
           PR total {inr(total.toFixed(2))}
         </span>
       </div>
@@ -618,7 +634,7 @@ function LineEditor({
   return (
     <div className="rounded-lg border border-line bg-canvas/40 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-micro font-semibold text-faint">
+        <span className="flex items-center text-caption font-semibold text-muted">
           Line {index + 1}
           {!isCatalogued && (
             <Pill variant="warn" className="ml-2">
@@ -626,7 +642,7 @@ function LineEditor({
             </Pill>
           )}
           {isCatalogued && line.skuCode && (
-            <Pill variant="info" className="ml-2">
+            <Pill variant="neutral" className="font-numeric ml-2">
               {line.skuCode}
             </Pill>
           )}
@@ -634,10 +650,10 @@ function LineEditor({
         <button
           type="button"
           onClick={remove}
-          aria-label="Remove line"
-          className="text-muted hover:text-danger"
+          aria-label={`Remove line ${index + 1}`}
+          className="text-muted hover:text-danger rounded-sm p-1"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" aria-hidden />
         </button>
       </div>
 
@@ -747,13 +763,13 @@ function LineEditor({
         </SmallField>
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <label className="flex flex-1 items-center gap-2">
-          <span className="text-micro text-muted">Preferred vendor</span>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-2">
+        <label className="flex min-w-0 flex-1 flex-col gap-1 sm:max-w-xs">
+          <span className="text-micro text-faint">Preferred vendor</span>
           <select
             value={line.preferredVendorId}
             onChange={(e) => update({ preferredVendorId: e.target.value })}
-            className={inputCls + ' max-w-xs'}
+            className={inputCls}
           >
             <option value="">None</option>
             {vendors.map((v) => (
@@ -764,7 +780,7 @@ function LineEditor({
             ))}
           </select>
         </label>
-        <span className="font-numeric text-body-sm font-semibold text-ink">
+        <span className="font-numeric pb-2 text-body-sm font-semibold text-ink">
           {inr(lineTotal(line).toFixed(2))}
         </span>
       </div>
@@ -936,7 +952,7 @@ function StepAttachments(props: {
           {props.staged.map((s, i) => (
             <div
               key={`${s.file.name}-${i}`}
-              className="flex items-center gap-3 px-3 py-2"
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2"
             >
               <FileText className="h-4 w-4 shrink-0 text-faint" />
               <div className="min-w-0 flex-1">
@@ -957,7 +973,7 @@ function StepAttachments(props: {
                     ),
                   )
                 }
-                className="rounded-sm border border-line bg-panel px-2 py-1 text-caption"
+                className={cn(inputCls, 'w-auto')}
               >
                 {REQUISITION_ATTACHMENT_TYPE.map((t) => (
                   <option key={t} value={t}>
@@ -971,16 +987,16 @@ function StepAttachments(props: {
                 onClick={() =>
                   props.setStaged((prev) => prev.filter((_, xi) => xi !== i))
                 }
-                className="text-faint hover:text-danger"
+                className="text-faint hover:text-danger rounded-sm p-1"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" aria-hidden />
               </button>
             </div>
           ))}
         </div>
       )}
 
-      <p className="text-micro text-faint">
+      <p className="text-caption text-muted">
         Files upload once the requisition is created. A proforma invoice attached here is
         price evidence for these lines — the vendor&apos;s tax invoice is entered later
         under Invoices.
@@ -1009,7 +1025,7 @@ function StepReview(props: {
       <div className="grid gap-3 md:grid-cols-2">
         <ReviewRow label="Title" value={props.title} />
         <ReviewRow label="Cost centre" value={cc ? `${cc.code}, ${cc.name}` : '—'} />
-        <ReviewRow label="Priority" value={props.priority} />
+        <ReviewRow label="Priority" value={priorityLabel(props.priority)} />
         <ReviewRow
           label="Needed by"
           value={
@@ -1022,7 +1038,7 @@ function StepReview(props: {
       </div>
 
       <div>
-        <h3 className="mb-2 text-body-sm font-semibold text-ink">Budget check</h3>
+        <h3 className="mb-2 text-h3 font-semibold text-ink">Budget check</h3>
         <BudgetChip
           costCenterId={props.costCenterId}
           total={props.total}
@@ -1085,11 +1101,12 @@ function ReviewRow({
   strong?: boolean;
 }): React.JSX.Element {
   return (
-    <div className="flex items-center justify-between rounded-sm border border-line bg-canvas/40 px-3 py-2">
-      <span className="text-caption text-muted">{label}</span>
+    <div className="flex items-center justify-between gap-3 rounded-sm border border-line bg-canvas/40 px-3 py-2">
+      <span className="shrink-0 text-caption text-muted">{label}</span>
       <span
         className={
-          'font-numeric text-body-sm ' + (strong ? 'font-semibold text-ink' : 'text-text')
+          'font-numeric min-w-0 truncate text-right text-body-sm ' +
+          (strong ? 'font-semibold text-ink' : 'text-text')
         }
       >
         {value}
