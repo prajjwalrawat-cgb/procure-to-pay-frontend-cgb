@@ -46,6 +46,9 @@ const preset: Partial<Config> = {
           2: colors['accent-2'],
           wash: colors['accent-wash'],
           bg: colors['accent-wash'],
+          tint: colors['accent-tint'],
+          mid: colors['accent-mid'],
+          soft: colors['accent-soft'],
         },
 
         // Semantic state. Status only, never decoration.

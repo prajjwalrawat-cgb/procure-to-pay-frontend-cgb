@@ -188,7 +188,7 @@ export function statusLabel(status: string): string {
  *   success — done, and done well: approved, paid, posted, passed QC
  *   warn    — stalled, needs a person: awaiting approval, pending QC, low confidence
  *   danger  — failed or rejected: match exception, reversed, failed payment
- *   info    — in flight: submitted, scheduled, being read, partly paid
+ *   info    — in flight: submitted, scheduled, being read, partly paid (grey dot)
  *   neutral — drafts, closed, cancelled. No judgement.
  *
  * `<StatusText>` renders these as coloured text with a dot, never as a filled

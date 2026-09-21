@@ -1,4 +1,4 @@
-/* ProcureFlow base layer — warm off-white, emerald accent, Geist.
+/* ProcureFlow base layer — warm canvas, SAP-blue accent, Geist.
    Tokens mirrored as CSS variables; derived from components/ui/tokens.ts,
    which is the single source of truth. Keep the two in sync.
 
@@ -7,14 +7,14 @@
    existing screens already reference. They point at the same values. */
 :root {
   /* surfaces */
-  --page-bg: #faf9f6;
+  --page-bg: #f6f4ee;
   --card-bg: #ffffff;
-  --line: #e6e3dc;
+  --line: #e4dfd1;
 
   /* accent — one colour, interactive/active elements only */
-  --accent: #047857;
-  --accent-2: #065f46;
-  --accent-bg: #e6f4ee;
+  --accent: #0a6ed1;
+  --accent-2: #0854a0;
+  --accent-bg: #eff6ff;
 
   /* text */
   --text-primary: #1c1b18;
@@ -23,17 +23,17 @@
 
   /* semantic state — status only, never decoration */
   --state-success: #15803d;
-  --state-success-solid: #22a55a;
+  --state-success-solid: #16a34a;
   --state-success-bg: #eaf6ee;
   --state-warning: #8a5a0b;
-  --state-warning-solid: #c98a12;
+  --state-warning-solid: #f59e0b;
   --state-warning-bg: #fbf3e3;
   --state-error: #b42318;
-  --state-error-solid: #d92d20;
+  --state-error-solid: #dc2626;
   --state-error-bg: #fdecea;
-  --state-info: #1d4ed8;
-  --state-info-solid: #3b82f6;
-  --state-info-bg: #ebf2fe;
+  --state-info: #5f5c52;
+  --state-info-solid: #8a8778;
+  --state-info-bg: #f1efe8;
 
   /* typography */
   /* next/font puts --font-geist-sans on <html> (the same element as :root). */
@@ -45,14 +45,14 @@
   --font-size-heading: 22px;
 
   /* radius / spacing */
-  --radius: 8px;
+  --radius: 12px;
   --radius-control: 5px;
   --radius-pill: 16px;
   --space-unit: 4px;
 
   /* ── --pf-* aliases (existing call sites) ──────────────────────────────── */
   --pf-paper: var(--page-bg);
-  --pf-canvas: #f2f0eb;
+  --pf-canvas: #efece3;
   --pf-panel: var(--card-bg);
   --pf-line: var(--line);
 
@@ -73,7 +73,7 @@
      any un-migrated `bg-navy` surface still renders legibly. */
   --pf-navy: #ffffff;
   --pf-navy-2: #ffffff;
-  --pf-navy-3: #f2f0eb;
+  --pf-navy-3: #efece3;
   --pf-on-navy: var(--text-primary);
   --pf-on-navy-muted: var(--text-muted);
 

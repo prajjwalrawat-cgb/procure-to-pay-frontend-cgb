@@ -5,7 +5,7 @@
  * variable layer (components/ui/styles.css) are both derived from it.
  *
  * ── The rule the palette enforces ──────────────────────────────────────────
- * ONE accent. `accent` (emerald, #047857) is the only non-semantic colour in the system
+ * ONE accent. `accent` (SAP Fiori blue, #0A6ED1) is the only non-semantic colour in the system
  * and it means "interactive or active" — the current nav pill, a primary
  * button, a focused input, a link. Everything else is either a neutral surface
  * or a semantic state.
@@ -37,10 +37,10 @@
 
 export const colors = {
   // ── Surfaces — warm, not blue-grey ───────────────────────────────────────
-  paper: '#FAF9F6', // page background — warm off-white
-  canvas: '#F2F0EB', // hover fill, inset wells, table zebra
+  paper: '#F6F4EE', // page background — warm canvas
+  canvas: '#EFECE3', // hover fill, inset wells, table zebra
   panel: '#FFFFFF', // cards, chrome, any raised surface
-  line: '#E6E3DC', // every hairline in the app
+  line: '#E4DFD1', // every hairline and card border in the app
 
   // ── Chrome (formerly the navy rail) ──────────────────────────────────────
   // Chrome is white: the nav is a hairline-bordered bar, not a dark frame.
@@ -48,7 +48,7 @@ export const colors = {
   // rendering correctly.
   navy: '#FFFFFF',
   'navy-2': '#FFFFFF',
-  'navy-3': '#F2F0EB', // hover inside chrome
+  'navy-3': '#EFECE3', // hover inside chrome
   'on-navy': '#1C1B18',
   'on-navy-muted': '#66625A',
 
@@ -57,40 +57,44 @@ export const colors = {
   text: '#1C1B18', // body copy
   muted: '#66625A', // secondary text — 5.9:1 on panel
   faint: '#75716A', // tertiary micro-labels — 4.8:1 on panel
-  'faint-line': '#A19D94', // non-text only: dots, dividers, placeholder bars
+  'faint-line': '#8A8778', // non-text only: neutral severity dot, dividers, placeholder bars
 
-  // ── Accent — emerald; interactive / active, and nothing else ────────────
-  accent: '#047857', // 5.5:1 on panel — holds AA as link text
-  'accent-2': '#065F46', // hover / pressed
-  'accent-wash': '#E6F4EE', // selected row, badge + hover tint
+  // ── Accent — SAP Fiori blue; interactive / active + positive charts ─────
+  accent: '#0A6ED1', // 4.8:1 on panel — holds AA as link text
+  'accent-2': '#0854A0', // hover / pressed, and small link text on the canvas
+  'accent-wash': '#EFF6FF', // selected row, badge + hover tint
+  'accent-tint': '#D1E8FF', // stronger tint: chart fills, active chips
+  'accent-mid': '#4098D7', // chart mid-tones
+  'accent-soft': '#89C4F4', // chart light-tones, gradient stops
 
   // ── Semantic state — status only, never decoration ──────────────────────
   success: '#15803D', // status text — 5.0:1 on panel
-  'success-solid': '#22A55A', // dots, bars, fills
+  'success-solid': '#16A34A', // dots, bars, fills
   'success-bg': '#EAF6EE',
 
   warn: '#8A5A0B', // status text — 5.6:1 on panel
-  'warn-solid': '#C98A12',
+  'warn-solid': '#F59E0B', // amber severity dot — medium
   'warn-bg': '#FBF3E3',
 
   danger: '#B42318', // status text — 6.2:1 on panel
-  'danger-solid': '#D92D20',
+  'danger-solid': '#DC2626', // red severity dot — urgent / overdue
   'danger-bg': '#FDECEA',
 
-  // In flight: submitted, scheduled, being read, partly paid. The only blue in
-  // the product — it means "moving, nothing for you to do yet".
-  info: '#1D4ED8', // status text — 6.7:1 on panel
-  'info-solid': '#3B82F6',
-  'info-bg': '#EBF2FE',
-  'info-wash': '#EBF2FE',
+  // In flight: submitted, scheduled, being read, partly paid. Blue is the accent
+  // now, so "moving, nothing for you to do yet" wears the neutral grey
+  // severity dot — the product has one severity system: red, amber, grey.
+  info: '#5F5C52', // status text — 6.6:1 on panel
+  'info-solid': '#8A8778',
+  'info-bg': '#F1EFE8',
+  'info-wash': '#F1EFE8',
 
   // ── Legacy aliases — remapped, not re-invented ───────────────────────────
-  gold: '#047857',
-  'gold-ink': '#047857',
-  'gold-wash': '#E6F4EE',
-  violet: '#047857',
-  'violet-bg': '#E6F4EE',
-  'violet-wash': '#E6F4EE',
+  gold: '#0A6ED1',
+  'gold-ink': '#0A6ED1',
+  'gold-wash': '#EFF6FF',
+  violet: '#0A6ED1',
+  'violet-bg': '#EFF6FF',
+  'violet-wash': '#EFF6FF',
   'danger-wash': '#FDECEA',
   'warn-wash': '#FBF3E3',
 } as const;
@@ -104,8 +108,8 @@ export const radius = {
   xs: '4px',
   sm: '5px', // controls: buttons, inputs, selects
   DEFAULT: '8px',
-  lg: '8px', // cards — same as DEFAULT; the brief has one card radius
-  xl: '12px',
+  lg: '12px', // cards and panels
+  xl: '16px',
   pill: '16px',
 } as const;
 

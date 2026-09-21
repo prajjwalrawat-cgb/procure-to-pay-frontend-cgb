@@ -21,10 +21,11 @@ import { cn } from '../lib/cn';
  * signal — the label is always present, and the dot gives the colour a
  * consistent anchor point down the column.
  *
- * Variants map onto the four semantic states plus neutral. `info` is the
- * in-flight state (submitted, scheduled, being read, partly paid) and is the
- * only blue in the product. `violet` and `gray` are legacy names that collapse
- * to neutral.
+ * Variants map onto the product's one severity system — red (danger), amber
+ * (warn), grey — plus green for done. `info` is the in-flight state
+ * (submitted, scheduled, being read, partly paid): it wears the grey dot, since
+ * blue is the interactive accent. `violet` and `gray` are legacy names that
+ * collapse to neutral.
  */
 const pillVariants = cva('inline-flex items-center gap-1.5 text-caption font-medium', {
   variants: {
@@ -34,7 +35,7 @@ const pillVariants = cva('inline-flex items-center gap-1.5 text-caption font-med
       warn: 'text-warn',
       /** Neutral / in-flight — no judgement attached. */
       neutral: 'text-muted',
-      /** In flight — moving, nothing for the reader to do yet. */
+      /** In flight — moving, nothing for the reader to do yet (grey dot). */
       info: 'text-info',
       violet: 'text-muted',
       gray: 'text-muted',
