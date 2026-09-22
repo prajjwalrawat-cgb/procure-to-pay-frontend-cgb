@@ -1,17 +1,18 @@
 'use client';
 
-import {
-  Button,
-  DataState,
-  PageHeader,
-  Pill,
-  StageStrip,
-} from '@/components/ui';
+import { Badge, Button, DataState, PageHeader, Pill, StageStrip } from '@/components/ui';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 import { useRfq } from '@/lib/api/sourcing';
-import { inr, statusLabel, statusVariant } from '@/lib/format';
+import {
+  formatDateTime,
+  humanise,
+  inr,
+  qty,
+  statusLabel,
+  statusVariant,
+} from '@/lib/format';
 
 const STAGES = [
   'DRAFT',
@@ -31,9 +32,9 @@ export default function RfqDetailPage(): React.JSX.Element {
 
   if (isLoading || error || !rfq) {
     return (
-      <div className="mx-auto max-w-[1400px]">
+      <div>
         <PageHeader title="RFQ" />
-        <div className="border-line bg-panel rounded-lg border">
+        <div className="rounded-lg border border-line bg-panel">
           <DataState
             isLoading={isLoading}
             error={error}
@@ -51,59 +52,56 @@ export default function RfqDetailPage(): React.JSX.Element {
   const stageIdx = STAGES.indexOf(rfq.status);
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div>
       <PageHeader
         title={rfq.title}
-        breadcrumbs={[
-          { label: 'Sourcing', href: '/sourcing' },
-          { label: rfq.number },
-        ]}
+        breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: rfq.number }]}
         meta={
           <>
-            <span className="font-numeric text-muted text-[12px]">{rfq.number}</span>
+            <span className="font-numeric text-caption text-muted">{rfq.number}</span>
             <Pill variant={statusVariant(rfq.status)} dot>
               {statusLabel(rfq.status)}
             </Pill>
-            <Pill variant="gray">{rfq.rfqType.replace(/_/g, ' ').toLowerCase()}</Pill>
+            <Pill variant="neutral">{humanise(rfq.rfqType)}</Pill>
           </>
         }
-        description={`${rfq.category}${rfq.subcategory ? ` · ${rfq.subcategory}` : ''}`}
+        description={`${rfq.category}${rfq.subcategory ? `, ${rfq.subcategory}` : ''}`}
         actions={
           <>
-          {rfq.status === 'DRAFT' && (
-            <Link href={`/sourcing/${id}/publish`}>
-              <Button variant="primary" size="sm">Publish</Button>
-            </Link>
-          )}
-          {(rfq.status === 'BID_CLOSED' ||
-            rfq.status === 'BIDDING_OPEN' ||
-            rfq.status === 'TECH_OPEN') && (
-            <Link href={`/sourcing/${id}/open`}>
-              <Button variant="primary" size="sm">Open ceremony</Button>
-            </Link>
-          )}
-          {(rfq.status === 'COMMERCIAL_OPEN' || rfq.status === 'EVALUATION') && (
-            <>
-              <Link href={`/sourcing/${id}/evaluate`}>
-                <Button variant="accent" size="sm">Evaluate</Button>
-              </Link>
-              <Link href={`/sourcing/${id}/award`}>
-                <Button variant="primary" size="sm">Award</Button>
-              </Link>
-            </>
-          )}
-          {rfq.isReverseAuction && (
-            <Link href={`/sourcing/${id}/reverse-auction`}>
-              <Button variant="ghost" size="sm">
-                Reverse auction
+            {rfq.isReverseAuction && (
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/sourcing/${id}/reverse-auction`}>Reverse auction</Link>
               </Button>
-            </Link>
-          )}
+            )}
+            {rfq.status === 'DRAFT' && (
+              <Button asChild variant="primary" size="sm">
+                <Link href={`/sourcing/${id}/publish`}>Publish</Link>
+              </Button>
+            )}
+            {(rfq.status === 'BID_CLOSED' ||
+              rfq.status === 'BIDDING_OPEN' ||
+              rfq.status === 'TECH_OPEN') && (
+              <Button asChild variant="primary" size="sm">
+                <Link href={`/sourcing/${id}/open`}>Open ceremony</Link>
+              </Button>
+            )}
+            {(rfq.status === 'COMMERCIAL_OPEN' || rfq.status === 'EVALUATION') && (
+              <>
+                {/* Secondary: Award is the decision this screen exists for, and
+                    two filled buttons side by side answer neither "what next". */}
+                <Button asChild variant="secondary" size="sm">
+                  <Link href={`/sourcing/${id}/evaluate`}>Evaluate</Link>
+                </Button>
+                <Button asChild variant="primary" size="sm">
+                  <Link href={`/sourcing/${id}/award`}>Award</Link>
+                </Button>
+              </>
+            )}
           </>
         }
       />
 
-      <div className="border-line bg-panel mb-4 rounded-lg border p-3.5">
+      <div className="mb-4 overflow-x-auto rounded-lg border border-line bg-panel p-3.5">
         <StageStrip
           stages={STAGES.map((st) => ({ key: st, label: statusLabel(st) }))}
           activeIndex={Math.max(0, stageIdx)}
@@ -113,29 +111,41 @@ export default function RfqDetailPage(): React.JSX.Element {
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-4">
-          {/* Lines */}
-          <Section title="Lines">
-            <table className="w-full text-[13px]">
-              <thead className="text-muted text-left">
+        <div className="flex min-w-0 flex-col gap-4">
+          <Section title="Lines" flush>
+            <table className="pf-stack w-full text-body-sm">
+              <thead className="border-b border-line text-left text-caption text-muted">
                 <tr>
-                  <th className="py-1">#</th>
-                  <th className="py-1">Item</th>
-                  <th className="py-1 text-right">Qty</th>
-                  <th className="py-1">UOM</th>
-                  <th className="py-1">HSN</th>
-                  <th className="py-1 text-right">Min split</th>
+                  <th className="w-10 px-3 py-2.5 font-medium">#</th>
+                  <th className="px-3 py-2.5 font-medium">Item</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Qty</th>
+                  <th className="px-3 py-2.5 font-medium">UOM</th>
+                  <th className="px-3 py-2.5 font-medium">HSN</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Min split</th>
                 </tr>
               </thead>
               <tbody>
+                {rfq.lines.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted">
+                      No lines on this RFQ.
+                    </td>
+                  </tr>
+                )}
                 {rfq.lines.map((l) => (
-                  <tr key={l.id} className="border-line border-t">
-                    <td className="py-1">{l.lineNo}</td>
-                    <td className="py-1">{l.itemDesc}</td>
-                    <td className="py-1 text-right tabular-nums">{l.qtyRequired}</td>
-                    <td className="py-1">{l.uom}</td>
-                    <td className="py-1 font-mono text-[12px]">{l.hsnCode ?? '—'}</td>
-                    <td className="py-1 text-right tabular-nums">{l.qtyMinSplit}</td>
+                  <tr key={l.id} className="border-t border-line">
+                    <td className="font-numeric px-3 py-3.5 text-muted">{l.lineNo}</td>
+                    <td className="px-3 py-3.5 text-text">{l.itemDesc}</td>
+                    <td className="font-numeric px-3 py-3.5 text-right">
+                      {qty(l.qtyRequired, 2)}
+                    </td>
+                    <td className="px-3 py-3.5 text-muted">{l.uom}</td>
+                    <td className="font-numeric px-3 py-3.5 text-caption text-muted">
+                      {l.hsnCode ?? '—'}
+                    </td>
+                    <td className="font-numeric px-3 py-3.5 text-right">
+                      {l.qtyMinSplit ? qty(l.qtyMinSplit, 2) : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -144,41 +154,53 @@ export default function RfqDetailPage(): React.JSX.Element {
 
           {/* Quote count summary (masked pre-open) */}
           <Section title="Quotes">
-            <p className="text-[13px]">
-              <span className="text-ink text-[18px] font-semibold tabular-nums">
+            <p className="text-body-sm">
+              <span className="font-numeric text-h2 font-semibold text-ink">
                 {rfq.submittedCount}
               </span>{' '}
               <span className="text-muted">of {rfq.invitedCount} vendors submitted</span>
             </p>
-            <p className="text-faint mt-1 text-[12px]">
-              Sealed — values &amp; vendor rankings are hidden until the open ceremony.
+            <p className="mt-1 text-caption text-muted">
+              Sealed — values and vendor rankings are hidden until the open ceremony.
             </p>
           </Section>
 
           {/* Invitations */}
-          <Section title="Invitations">
-            <table className="w-full text-[13px]">
-              <thead className="text-muted text-left">
+          <Section title="Invitations" flush>
+            <table className="pf-stack w-full text-body-sm">
+              <thead className="border-b border-line text-left text-caption text-muted">
                 <tr>
-                  <th className="py-1">Vendor</th>
-                  <th className="py-1">Source</th>
-                  <th className="py-1">MSME</th>
-                  <th className="py-1">OTIF</th>
-                  <th className="py-1">Quality</th>
-                  <th className="py-1">Status</th>
+                  <th className="px-3 py-2.5 font-medium">Vendor</th>
+                  <th className="px-3 py-2.5 font-medium">Source</th>
+                  <th className="px-3 py-2.5 font-medium">MSME</th>
+                  <th className="px-3 py-2.5 text-right font-medium">OTIF</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Quality</th>
+                  <th className="px-3 py-2.5 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {rfq.invitations.map((i) => (
-                  <tr key={i.id} className="border-line border-t">
-                    <td className="py-1">{i.vendorName}</td>
-                    <td className="text-muted py-1">{i.source.toLowerCase()}</td>
-                    <td className="py-1">
-                      {i.isMsme ? <Pill variant="violet">MSME</Pill> : '—'}
+                {rfq.invitations.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted">
+                      No vendors invited yet
+                      {rfq.status === 'DRAFT' ? ' — add them when you publish.' : '.'}
                     </td>
-                    <td className="py-1 tabular-nums">{i.historicalOtif ?? '—'}</td>
-                    <td className="py-1 tabular-nums">{i.historicalQuality ?? '—'}</td>
-                    <td className="py-1">
+                  </tr>
+                )}
+                {rfq.invitations.map((i) => (
+                  <tr key={i.id} className="border-t border-line">
+                    <td className="px-3 py-3.5 text-text">{i.vendorName}</td>
+                    <td className="px-3 py-3.5 text-muted">{humanise(i.source)}</td>
+                    <td className="px-3 py-3.5">
+                      {i.isMsme ? <Badge variant="classification">MSME</Badge> : '—'}
+                    </td>
+                    <td className="font-numeric px-3 py-3.5 text-right">
+                      {i.historicalOtif ?? '—'}
+                    </td>
+                    <td className="font-numeric px-3 py-3.5 text-right">
+                      {i.historicalQuality ?? '—'}
+                    </td>
+                    <td className="px-3 py-3.5">
                       <Pill variant={statusVariant(i.status)}>
                         {statusLabel(i.status)}
                       </Pill>
@@ -192,19 +214,19 @@ export default function RfqDetailPage(): React.JSX.Element {
           {/* Q&A */}
           <Section title={`Q&A (${rfq.questions.length})`}>
             {rfq.questions.length === 0 && (
-              <p className="text-muted text-[13px]">No questions yet.</p>
+              <p className="text-body-sm text-muted">No questions yet.</p>
             )}
             {rfq.questions.map((q) => (
-              <div key={q.id} className="border-line border-t py-2 first:border-0">
-                <div className="flex items-center gap-2">
-                  <Pill variant={q.isPublic ? 'info' : 'gray'}>
-                    {q.isPublic ? 'public' : 'private'}
-                  </Pill>
-                  <span className="text-muted text-[12px]">{q.vendorName}</span>
+              <div key={q.id} className="border-t border-line py-2 first:border-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="neutral">{q.isPublic ? 'Public' : 'Private'}</Badge>
+                  <span className="text-caption text-muted">{q.vendorName}</span>
                 </div>
-                <p className="text-[13px]">{q.questionText}</p>
+                <p className="text-body-sm">{q.questionText}</p>
                 {q.answerText && (
-                  <p className="text-accent-2 mt-1 text-[13px]">↳ {q.answerText}</p>
+                  <p className="mt-1 border-l-2 border-line pl-2 text-body-sm text-muted">
+                    {q.answerText}
+                  </p>
                 )}
               </div>
             ))}
@@ -212,13 +234,16 @@ export default function RfqDetailPage(): React.JSX.Element {
         </div>
 
         {/* Right panel */}
-        <div className="space-y-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <Section title="RFQ value">
-            <p className="text-ink text-[18px] font-semibold tabular-nums">
+            <p className="font-numeric text-h2 font-semibold text-ink">
               {inr(rfq.estimatedValue)}
             </p>
-            <p className="text-muted text-[12px]">
-              INCOTERM {rfq.incotermDefault} · {rfq.paymentTermsDefault}
+            <p className="text-caption text-muted">
+              Incoterm {rfq.incotermDefault ?? '—'}, payment{' '}
+              {rfq.paymentTermsDefault
+                ? humanise(rfq.paymentTermsDefault).toLowerCase()
+                : '—'}
             </p>
           </Section>
 
@@ -240,7 +265,7 @@ export default function RfqDetailPage(): React.JSX.Element {
             <Section title="Linked PR">
               <Link
                 href={`/requisitions/${rfq.requisitionId}`}
-                className="text-accent font-mono text-[12px]"
+                className="font-numeric text-caption text-accent hover:underline"
               >
                 {rfq.requisitionNumber}
               </Link>
@@ -253,7 +278,7 @@ export default function RfqDetailPage(): React.JSX.Element {
                 <Row
                   key={c.id}
                   label={`#${c.number} ${c.title}`}
-                  value={c.impact.toLowerCase()}
+                  value={humanise(c.impact)}
                 />
               ))}
             </Section>
@@ -264,16 +289,19 @@ export default function RfqDetailPage(): React.JSX.Element {
   );
 }
 
+/** A titled card. `flush` lets a table run edge to edge under the title. */
 function Section({
   title,
+  flush,
   children,
 }: {
   title: string;
+  flush?: boolean;
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <div className="border-line bg-panel rounded-lg border p-3">
-      <h2 className="text-muted mb-2 text-[12px] font-semibold uppercase tracking-wide">
+    <div className={'rounded-lg border border-line bg-panel ' + (flush ? 'pt-4' : 'p-4')}>
+      <h2 className={'mb-2 text-h3 font-semibold text-ink ' + (flush ? 'px-4' : '')}>
         {title}
       </h2>
       {children}
@@ -283,17 +311,13 @@ function Section({
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="flex justify-between py-0.5 text-[13px]">
-      <span className="text-muted">{label}</span>
-      <span className="text-ink tabular-nums">{value}</span>
+    <div className="flex justify-between gap-3 py-0.5 text-body-sm">
+      <span className="min-w-0 text-muted">{label}</span>
+      <span className="font-numeric shrink-0 text-right text-ink">{value}</span>
     </div>
   );
 }
 
 function fmt(iso: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  return formatDateTime(iso);
 }

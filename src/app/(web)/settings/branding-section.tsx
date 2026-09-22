@@ -6,7 +6,7 @@ import {
   useUploadSignature,
 } from '@/lib/api/settings';
 import { useToastStore } from '@/store/toast-store';
-import { Panel } from './ui';
+import { Panel, SectionLoading } from './ui';
 
 /** One uploaded branding image: its preview, and the picker that replaces it. */
 function ImageUpload({
@@ -32,10 +32,10 @@ function ImageUpload({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={alt} className="max-h-14 max-w-36 object-contain" />
         ) : (
-          <span className="text-[11px] text-faint">{emptyLabel}</span>
+          <span className="text-micro text-faint">{emptyLabel}</span>
         )}
       </div>
-      <label className="cursor-pointer text-[12px] font-medium text-accent-2">
+      <label className="cursor-pointer text-caption font-medium text-accent-2">
         {isPending ? 'Uploading…' : actionLabel}
         <input
           type="file"
@@ -55,13 +55,13 @@ function ImageUpload({
 
 /** Letterhead logo and authorised signature — both print on the PO PDF. */
 export function BrandingSection(): React.JSX.Element {
-  const { data, isLoading } = useOrganisationSettings();
+  const { data, isLoading, error, refetch } = useOrganisationSettings();
   const uploadLogo = useUploadLogo();
   const uploadSignature = useUploadSignature();
   const toast = useToastStore((s) => s.push);
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const onLogo = (file: File): void =>

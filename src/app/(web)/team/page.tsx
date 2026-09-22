@@ -1,6 +1,34 @@
 'use client';
 
-import { Button, Input, PageHeader } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardMeta,
+  CardTitle,
+  DataState,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  Select,
+  SkeletonRows,
+  SortableHead,
+  StatusText,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  cn,
+  controlClass,
+  useSort,
+} from '@/components/ui';
 import { Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -17,6 +45,7 @@ import {
 } from '@/lib/api/users';
 import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
+import { formatDate } from '@/lib/format';
 
 function initials(name: string, email: string): string {
   const src = name?.trim() || email;
@@ -24,17 +53,9 @@ function initials(name: string, email: string): string {
   return (parts[0]?.[0] ?? '?').concat(parts[1]?.[0] ?? '').toUpperCase();
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 export default function TeamPage(): React.JSX.Element {
-  const { data: members, isLoading, error } = useTeam();
-  const { data: pending } = usePendingInvites();
+  const { data: members, isLoading, error, refetch } = useTeam();
+  const { data: pending, isLoading: pendingLoading } = usePendingInvites();
   const invite = useInviteMember();
   const remove = useRemoveMember();
   const revoke = useRevokeInvite();
@@ -45,6 +66,22 @@ export default function TeamPage(): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState(ASSIGNABLE_ROLES[0]?.value ?? 'REQUESTER');
+  // Removing a member and revoking an invite both cut someone's access, so
+  // each goes through the same confirm step rather than a browser dialog.
+  const [confirm, setConfirm] = useState<
+    | { kind: 'remove'; member: TeamMember }
+    | { kind: 'revoke'; id: string; email: string }
+    | null
+  >(null);
+  const { sorted, sort, toggle } = useSort<TeamMember, 'member' | 'role' | 'status' | 'joined'>(
+    members ?? [],
+    {
+      member: (m) => m.name || m.email,
+      role: (m) => m.roles.map(roleLabel).join(', '),
+      status: (m) => (m.isActive ? 'Active' : 'Invited'),
+      joined: (m) => new Date(m.createdAt),
+    },
+  );
 
   const onInvite = (e: React.FormEvent): void => {
     e.preventDefault();
@@ -76,95 +113,117 @@ export default function TeamPage(): React.JSX.Element {
   };
 
   const onRemove = (m: TeamMember): void => {
-    if (!window.confirm(`Remove ${m.name || m.email}? They will lose access.`)) return;
     remove.mutate(m.id, {
-      onSuccess: () => toast(`${m.name || m.email} removed`, 'success'),
+      onSuccess: () => {
+        setConfirm(null);
+        toast(`${m.name || m.email} removed`, 'success');
+      },
       onError: (err) =>
         toast(err instanceof Error ? err.message : 'Failed to remove', 'error'),
     });
   };
 
   const onRevoke = (id: string, email: string): void => {
-    if (
-      !window.confirm(`Revoke the invitation for ${email}? Their link will stop working.`)
-    )
-      return;
     revoke.mutate(id, {
-      onSuccess: () => toast(`Invitation to ${email} revoked`, 'success'),
+      onSuccess: () => {
+        setConfirm(null);
+        toast(`Invitation to ${email} revoked`, 'success');
+      },
       onError: (err) =>
         toast(err instanceof Error ? err.message : 'Failed to revoke', 'error'),
     });
   };
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Team"
         description="Manage who can access your workspace and what they can do."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Member list */}
-        <div className="overflow-hidden rounded-xl border border-line bg-panel">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-muted">
-                <th className="px-4 py-3 font-medium">Member</th>
-                <th className="px-4 py-3 font-medium">Role</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3" />
+      {/*
+       * `minmax(0,1fr)`, not `1fr`. A grid track sized `1fr` refuses to shrink
+       * below its content's min-content width, so the member table pushed past
+       * its own column and the Remove action was clipped off the right edge.
+       * This is the fix for that class of bug everywhere, not a nudge.
+       */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          <Table>
+            <TableHeader>
+              <tr>
+                <SortableHead label="Member" sortKey="member" sort={sort} onSort={toggle} />
+                <SortableHead label="Role" sortKey="role" sort={sort} onSort={toggle} />
+                <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggle} />
+                <SortableHead label="Joined" sortKey="joined" sort={sort} onSort={toggle} />
+                <TableHead className="text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </tr>
-            </thead>
-            <tbody>
-              {isLoading && (
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <SkeletonRows rows={6} cols={5} />
+              ) : error || !members?.length ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                    Loading team…
+                  <td colSpan={5} className="p-0">
+                    <DataState
+                      isLoading={isLoading}
+                      error={error}
+                      isEmpty={!members?.length}
+                      onRetry={() => void refetch()}
+                      empty={{
+                        title: 'No one else here yet',
+                        detail:
+                          'People you invite appear here once they have set a password.',
+                      }}
+                    >
+                      {null}
+                    </DataState>
                   </td>
                 </tr>
-              )}
-              {error && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-danger">
-                    Failed to load team.
-                  </td>
-                </tr>
-              )}
-              {members?.map((m) => {
+              ) : null}
+
+              {!isLoading && sorted.map((m) => {
                 const isSelf = m.id === currentUser?.id;
                 return (
-                  <tr key={m.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-[12px] font-semibold text-white">
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <span className="bg-accent flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-caption font-semibold text-white">
                           {initials(m.name, m.email)}
                         </span>
-                        <div>
-                          <div className="font-medium text-ink">
+                        <div className="min-w-0">
+                          <div className="text-ink truncate font-medium">
                             {m.name || m.email}
-                            {isSelf && (
-                              <span className="ml-2 text-[10px] font-semibold uppercase text-muted">
-                                You
-                              </span>
-                            )}
+                            {isSelf && <span className="text-muted ml-1.5">(you)</span>}
                           </div>
-                          <div className="text-[12px] text-muted">{m.email}</div>
+                          <div className="text-muted truncate text-caption">{m.email}</div>
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+
+                    <TableCell>
                       {isSelf ? (
-                        // Don't let an admin change their own role inline.
-                        <span className="rounded-full border border-line px-2 py-0.5 text-[11px] text-ink">
+                        // An admin cannot change their own role inline — losing
+                        // your own admin rights mid-session is not undoable from
+                        // inside the app.
+                        <span className="text-text">
                           {m.roles.map(roleLabel).join(', ') || '—'}
                         </span>
                       ) : (
-                        <select
+                        <Select
                           value={m.roles[0] ?? ''}
                           onChange={(e) => onRoleChange(m, e.target.value)}
                           disabled={updateRole.isPending}
-                          className="rounded-md border border-line bg-panel px-2 py-1 text-[12px] text-ink disabled:opacity-50"
+                          // `w-auto` sizes to content, but an `appearance-none`
+                          // select does not reserve room for the chevron we
+                          // draw ourselves — so the longest role names were
+                          // clipped under it. The min-width buys that room.
+                          className={cn(
+                            controlClass,
+                            'w-auto min-w-44 py-1.5 text-caption',
+                          )}
                           aria-label={`Role for ${m.name || m.email}`}
                         >
                           {ASSIGNABLE_ROLES.map((r) => (
@@ -172,145 +231,202 @@ export default function TeamPage(): React.JSX.Element {
                               {r.label}
                             </option>
                           ))}
-                        </select>
+                        </Select>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={
-                          m.isActive
-                            ? 'rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700'
-                            : 'rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700'
-                        }
-                      >
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusText variant={m.isActive ? 'success' : 'warn'}>
                         {m.isActive ? 'Active' : 'Invited'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-muted">
+                      </StatusText>
+                    </TableCell>
+
+                    <TableCell className="text-muted font-numeric">
                       {formatDate(m.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    </TableCell>
+
+                    <TableCell className="text-right">
                       {!isSelf && (
-                        <button
-                          type="button"
-                          onClick={() => onRemove(m)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirm({ kind: 'remove', member: m })}
                           disabled={remove.isPending}
-                          className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-danger disabled:opacity-50"
+                          className="hover:text-danger"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden />
                           Remove
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Invite panel */}
-        <div className="h-fit rounded-xl border border-line bg-panel p-5">
-          <h2 className="text-[15px] font-semibold text-ink">Invite teammate</h2>
-          <p className="mt-1 text-[12px] text-muted">
-            Sends an invitation email. They join the workspace after setting a password.
-          </p>
-          <form onSubmit={onInvite} className="mt-4 flex flex-col gap-3">
-            <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
-              Full name
+        <Card className="h-fit">
+          <CardHeader>
+            <CardTitle>Invite teammate</CardTitle>
+            <CardMeta>
+              Sends an invitation email. They join the workspace after setting a password.
+            </CardMeta>
+          </CardHeader>
+          <form onSubmit={onInvite} className="flex flex-col gap-3 px-4 pb-4">
+            <Field label="Full name" htmlFor="invite-name" required>
               <Input
+                id="invite-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Jane Doe"
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
-              Email
+            </Field>
+            <Field label="Email" htmlFor="invite-email" required>
               <Input
+                id="invite-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="teammate@artboxsolutions.com"
+                placeholder="name@company.com"
                 required
               />
-            </label>
-            <label className="flex flex-col gap-1 text-[12px] font-medium text-text">
-              Role
-              <select
+            </Field>
+            <Field
+              label="Role"
+              htmlFor="invite-role"
+              hint={ASSIGNABLE_ROLES.find((r) => r.value === role)?.description}
+            >
+              <Select
+                id="invite-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-md border border-line bg-panel px-3 py-2 text-[13px] text-ink"
               >
                 {ASSIGNABLE_ROLES.map((r) => (
                   <option key={r.value} value={r.value}>
                     {r.label}
                   </option>
                 ))}
-              </select>
-              <span className="text-[11px] text-muted">
-                {ASSIGNABLE_ROLES.find((r) => r.value === role)?.description}
-              </span>
-            </label>
+              </Select>
+            </Field>
             <Button
               type="submit"
-              variant="accent"
+              variant="primary"
               disabled={invite.isPending}
               className="mt-1 w-full"
             >
-              <Send className="mr-1.5 h-3.5 w-3.5" />
+              <Send className="h-3.5 w-3.5" aria-hidden />
               {invite.isPending ? 'Sending…' : 'Send invitation'}
             </Button>
           </form>
-        </div>
+        </Card>
       </div>
 
       {/* Pending invitations */}
-      <div className="mt-6 rounded-xl border border-line bg-panel p-5">
-        <h2 className="text-[15px] font-semibold text-ink">Pending invitations</h2>
-        <p className="mt-1 text-[12px] text-muted">
-          Invited users appear in the team above once they accept. Revoking an invitation
+      <section className="mt-8">
+        <h2 className="text-ink tracking-heading text-h3 font-semibold">
+          Pending invitations
+        </h2>
+        <p className="text-muted mt-1 text-caption">
+          Invited people appear in the team above once they accept. Revoking an invitation
           immediately disables its link.
         </p>
-        {pending && pending.length > 0 ? (
-          <table className="mt-4 w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-line text-left text-[11px] uppercase tracking-wide text-muted">
-                <th className="px-2 py-2 font-medium">Email</th>
-                <th className="px-2 py-2 font-medium">Role</th>
-                <th className="px-2 py-2 font-medium">Sent</th>
-                <th className="px-2 py-2" />
+
+        {pendingLoading ? (
+          <Table className="mt-3">
+            <TableBody>
+              <SkeletonRows rows={2} cols={4} />
+            </TableBody>
+          </Table>
+        ) : pending && pending.length > 0 ? (
+          <Table className="mt-3">
+            <TableHeader>
+              <tr>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Sent</TableHead>
+                <TableHead className="text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </tr>
-            </thead>
-            <tbody>
+            </TableHeader>
+            <TableBody>
               {pending.map((p) => (
-                <tr key={p.id} className="border-b border-line last:border-0">
-                  <td className="px-2 py-2 text-ink">{p.email}</td>
-                  <td className="px-2 py-2 text-muted">
+                <TableRow key={p.id}>
+                  <TableCell className="text-ink">{p.email}</TableCell>
+                  <TableCell className="text-muted">
                     {p.roles.map(roleLabel).join(', ') || '—'}
-                  </td>
-                  <td className="px-2 py-2 tabular-nums text-muted">
+                  </TableCell>
+                  <TableCell className="text-muted font-numeric">
                     {formatDate(p.invitedAt)}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => onRevoke(p.id, p.email)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setConfirm({ kind: 'revoke', id: p.id, email: p.email })}
                       disabled={revoke.isPending}
-                      className="inline-flex items-center gap-1 text-[12px] text-muted hover:text-danger disabled:opacity-50"
+                      className="hover:text-danger"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
                       Revoke
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         ) : (
-          <p className="mt-4 text-[13px] text-muted">No pending invitations.</p>
+          <div className="border-line bg-panel mt-3 rounded-lg border">
+            <EmptyState
+              compact
+              title="No invitations outstanding"
+              detail="Anyone you invite is listed here until they set a password."
+            />
+          </div>
         )}
-      </div>
+      </section>
+
+      <Dialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+        <DialogContent>
+          {confirm?.kind === 'remove' && (
+            <>
+              <DialogTitle>Remove {confirm.member.name || confirm.member.email}?</DialogTitle>
+              <DialogDescription>
+                They lose access to the workspace straight away. Documents they created
+                or approved keep their history.
+              </DialogDescription>
+            </>
+          )}
+          {confirm?.kind === 'revoke' && (
+            <>
+              <DialogTitle>Revoke the invitation for {confirm.email}?</DialogTitle>
+              <DialogDescription>
+                Their invitation link stops working immediately. You can invite them again
+                later.
+              </DialogDescription>
+            </>
+          )}
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={remove.isPending || revoke.isPending}
+              onClick={() => {
+                if (confirm?.kind === 'remove') onRemove(confirm.member);
+                if (confirm?.kind === 'revoke') onRevoke(confirm.id, confirm.email);
+              }}
+            >
+              {confirm?.kind === 'revoke' ? 'Revoke invitation' : 'Remove member'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

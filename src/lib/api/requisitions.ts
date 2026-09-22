@@ -20,6 +20,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type RequisitionTab = 'active' | 'my_approval' | 'draft' | 'rejected' | 'closed';
 
@@ -42,10 +43,10 @@ export function useRequisitionBoard(): UseQueryResult<RequisitionKanbanResponse>
 
 export function useRequisitionList(
   tab: RequisitionTab,
-): UseQueryResult<RequisitionListResponse> {
+): UseQueryResult<AllPages<RequisitionListResponse>> {
   return useQuery({
     queryKey: requisitionKeys.list(tab),
-    queryFn: () => apiFetch<RequisitionListResponse>(`/requisitions?tab=${tab}&limit=50`),
+    queryFn: () => fetchAllPages<RequisitionListResponse>(`/requisitions?tab=${tab}`),
   });
 }
 

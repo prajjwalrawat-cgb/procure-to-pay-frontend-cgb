@@ -6,6 +6,7 @@ import { Suspense, useMemo, useState } from 'react';
 import { Barcode128, QrMark } from '@/components/labels/label-marks';
 import { useBoxes } from '@/lib/api/box';
 import { useLocations, useProducts } from '@/lib/api/inventory';
+import { Button, Skeleton, cn, controlClass } from '@/components/ui';
 
 type Source = 'location' | 'box' | 'product';
 type Format = 'barcode' | 'qr';
@@ -35,7 +36,14 @@ export default function PrintLabelsPage(): React.JSX.Element {
   // `useSearchParams` opts the subtree out of prerendering, so it has to sit
   // behind a Suspense boundary or the build fails outright.
   return (
-    <Suspense fallback={<p className="p-6 text-[13px] text-gray-500">Loading…</p>}>
+    <Suspense
+      fallback={
+        <div aria-busy="true" className="mx-auto flex max-w-5xl flex-col gap-3 p-6">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+      }
+    >
       <LabelSheet />
     </Suspense>
   );
@@ -112,17 +120,17 @@ function LabelSheet(): React.JSX.Element {
     <div className="mx-auto max-w-5xl p-6">
       {/* Controls: on screen only. `print:hidden` keeps them off the paper. */}
       <div className="print:hidden">
-        <h1 className="text-[20px] font-semibold">Print labels</h1>
-        <p className="mt-1 text-[13px] text-gray-600">
+        <h1 className="text-h1 font-semibold text-ink">Print labels</h1>
+        <p className="mt-1 text-body-sm text-muted">
           Print onto sticker sheets, then put each label on the shelf or box it names.
           Until a label exists physically, that code can only be typed.
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 p-3">
-          <label className="flex items-center gap-2 text-[13px]">
-            <span className="text-gray-600">Labels for</span>
+        <div className="mt-4 flex flex-wrap items-center gap-4 rounded-lg border border-line p-3">
+          <label className="flex items-center gap-2 text-body-sm">
+            <span className="text-muted">Labels for</span>
             <select
-              className="rounded border border-gray-300 px-2 py-1"
+              className={cn(controlClass, 'w-auto pr-8')}
               value={source}
               onChange={(e) => {
                 setSource(e.target.value as Source);
@@ -135,10 +143,10 @@ function LabelSheet(): React.JSX.Element {
             </select>
           </label>
 
-          <label className="flex items-center gap-2 text-[13px]">
-            <span className="text-gray-600">Format</span>
+          <label className="flex items-center gap-2 text-body-sm">
+            <span className="text-muted">Format</span>
             <select
-              className="rounded border border-gray-300 px-2 py-1"
+              className={cn(controlClass, 'w-auto pr-8')}
               value={format}
               onChange={(e) => setFormat(e.target.value as Format)}
             >
@@ -147,9 +155,10 @@ function LabelSheet(): React.JSX.Element {
             </select>
           </label>
 
-          <button
+          <Button
             type="button"
-            className="rounded border border-gray-300 px-3 py-1 text-[13px]"
+            variant="secondary"
+            size="sm"
             onClick={() =>
               setSelected(
                 selected.size === rows.length
@@ -161,11 +170,12 @@ function LabelSheet(): React.JSX.Element {
             {selected.size === rows.length && rows.length > 0
               ? 'Clear all'
               : 'Select all'}
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
-            className="ml-auto rounded bg-gray-900 px-4 py-1.5 text-[13px] font-medium text-white disabled:opacity-40"
+            variant="primary"
+            className="sm:ml-auto"
             disabled={chosen.length === 0}
             onClick={() => window.print()}
           >
@@ -173,13 +183,19 @@ function LabelSheet(): React.JSX.Element {
             {chosen.length > 0
               ? `${chosen.length} label${chosen.length === 1 ? '' : 's'}`
               : ''}
-          </button>
+          </Button>
         </div>
 
         <div className="mt-4 space-y-1">
-          {loading ? <p className="text-[13px] text-gray-500">Loading…</p> : null}
+          {loading ? (
+            <div aria-busy="true" className="space-y-1">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : null}
           {!loading && rows.length === 0 ? (
-            <p className="text-[13px] text-gray-500">
+            <p className="rounded border border-line px-3 py-6 text-center text-body-sm text-muted">
               {source === 'location'
                 ? 'No shelves have a barcode yet. Add one on Inventory → Locations first.'
                 : source === 'product'
@@ -190,17 +206,17 @@ function LabelSheet(): React.JSX.Element {
           {rows.map((r) => (
             <label
               key={r.key}
-              className="flex cursor-pointer items-center gap-3 rounded border border-gray-200 px-3 py-2 text-[13px]"
+              className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 rounded border border-line px-3 py-2 text-body-sm hover:bg-canvas"
             >
               <input
                 type="checkbox"
-                className="h-4 w-4"
+                className="h-4 w-4 accent-[var(--accent)]"
                 checked={selected.has(r.key)}
                 onChange={() => toggle(r.key)}
               />
               <span className="font-medium">{r.title}</span>
-              <span className="font-mono text-[12px] text-gray-500">{r.code}</span>
-              <span className="ml-auto text-[12px] text-gray-500">{r.subtitle}</span>
+              <span className="font-numeric text-caption text-muted">{r.code}</span>
+              <span className="ml-auto text-caption text-muted">{r.subtitle}</span>
             </label>
           ))}
         </div>
@@ -213,7 +229,7 @@ function LabelSheet(): React.JSX.Element {
           {chosen.map((r) => (
             <div
               key={r.key}
-              className="flex break-inside-avoid flex-col items-center justify-center rounded border border-gray-300 p-3 text-center print:border-gray-400"
+              className="flex break-inside-avoid flex-col items-center justify-center rounded border border-line p-3 text-center print:border-line"
             >
               {format === 'qr' ? (
                 <QrMark value={r.code} size={104} />
@@ -221,8 +237,8 @@ function LabelSheet(): React.JSX.Element {
                 <Barcode128 value={r.code} />
               )}
               {/* Always printed: a damaged label still has to be usable by hand. */}
-              <span className="mt-1 font-mono text-[12px] font-semibold">{r.code}</span>
-              <span className="text-[11px] text-gray-600">{r.title}</span>
+              <span className="mt-1 font-mono text-caption font-semibold">{r.code}</span>
+              <span className="text-micro text-muted">{r.title}</span>
             </div>
           ))}
         </div>

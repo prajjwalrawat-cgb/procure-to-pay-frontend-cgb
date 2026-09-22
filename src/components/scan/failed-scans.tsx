@@ -38,7 +38,7 @@ export function FailedScans(): React.JSX.Element | null {
 
   return (
     <section className="space-y-3 rounded-lg border border-danger/40 bg-danger/5 p-3">
-      <h2 className="text-[13px] font-semibold text-danger">
+      <h2 className="text-body-sm font-semibold text-danger">
         {failed.length} scan{failed.length === 1 ? '' : 's'} need attention
       </h2>
 
@@ -49,13 +49,13 @@ export function FailedScans(): React.JSX.Element | null {
             className="rounded-md border border-line bg-white p-2"
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[13px] font-medium">{scan.type}</span>
-              <span className="text-[11px] tabular-nums text-muted">
+              <span className="text-body-sm font-medium">{scan.type}</span>
+              <span className="text-micro tabular-nums text-muted">
                 {new Date(scan.clientTimestamp).toLocaleTimeString()}
               </span>
             </div>
-            <p className="mt-1 text-[12px] text-danger">{scan.lastError ?? 'Rejected'}</p>
-            <p className="mt-1 text-[11px] text-muted">
+            <p className="mt-1 text-caption text-danger">{scan.lastError ?? 'Rejected'}</p>
+            <p className="mt-1 text-micro text-muted">
               {String(scan.payload.barcodeRaw ?? '')} ×{' '}
               {String(scan.payload.quantity ?? '')}
             </p>
@@ -64,7 +64,7 @@ export function FailedScans(): React.JSX.Element | null {
               <Button
                 type="button"
                 variant="default"
-                className="text-[12px]"
+                className="text-caption"
                 onClick={() => {
                   // Back to pending: the operator has fixed the underlying
                   // problem (raised the order quantity, registered the barcode)
@@ -80,7 +80,7 @@ export function FailedScans(): React.JSX.Element | null {
               <Button
                 type="button"
                 variant="ghost"
-                className="text-[12px] text-muted"
+                className="text-caption text-muted"
                 onClick={() => {
                   void scanQueue.remove(scan.clientUuid).then(load);
                 }}

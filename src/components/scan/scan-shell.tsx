@@ -45,23 +45,25 @@ export function ScanShell({ children }: { children: ReactNode }): React.JSX.Elem
   const atRoot = !segment;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-paper">
+    // Capped and centred: the scanner is a handheld layout, and on a desktop
+    // browser its full-bleed buttons stretched a metre wide.
+    <div className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col bg-paper sm:border-x sm:border-line">
       <header className="sticky top-0 z-10 border-b border-line bg-white pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2 px-3 py-3">
           {atRoot ? (
-            <span className="text-[15px] font-semibold">Scanner</span>
+            <span className="text-h3 font-semibold">Scanner</span>
           ) : (
             <>
               <button
                 type="button"
                 aria-label="Back"
                 // A 44px target: this is pressed with gloves on.
-                className="-ml-1 h-11 w-11 text-[20px] text-muted hover:text-ink"
+                className="-ml-1 h-11 w-11 text-h2 text-muted hover:text-ink"
                 onClick={() => router.push('/scan')}
               >
                 ‹
               </button>
-              <span className="text-[15px] font-semibold">{title}</span>
+              <span className="text-h3 font-semibold">{title}</span>
             </>
           )}
         </div>
@@ -77,7 +79,7 @@ export function ScanShell({ children }: { children: ReactNode }): React.JSX.Elem
 
       {!atRoot ? (
         <footer className="border-t border-line bg-white px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
-          <Link href="/scan" className="block py-2 text-center text-[13px] text-muted">
+          <Link href="/scan" className="block py-2 text-center text-body-sm text-muted">
             All tasks
           </Link>
         </footer>
@@ -133,7 +135,7 @@ function AccountBar(): React.JSX.Element | null {
   if (!user) return null;
 
   return (
-    <div className="flex items-center justify-between gap-2 text-[12px]">
+    <div className="flex items-center justify-between gap-2 text-caption">
       <span className="text-muted truncate">
         Signed in as <span className="text-ink font-medium">{user.name || user.email}</span>
       </span>

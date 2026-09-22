@@ -66,7 +66,7 @@ export function KpiCard({
       )}
     >
       <div className="flex items-center gap-1.5">
-        <span className="text-faint text-[11px] font-medium uppercase tracking-wide">
+        <span className="text-faint text-micro font-medium ">
           {label}
         </span>
         {help && (
@@ -74,7 +74,7 @@ export function KpiCard({
             <button
               type="button"
               aria-label={`How ${label} is calculated`}
-              className="border-line text-faint hover:text-ink duration-hover flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border text-[9px] font-semibold transition-colors"
+              className="border-line text-faint hover:text-ink duration-hover flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border text-micro font-semibold transition-colors"
             >
               ?
             </button>
@@ -87,7 +87,7 @@ export function KpiCard({
       ) : (
         <div
           className={cn(
-            'text-ink mt-1.5 text-[24px] leading-none',
+            'text-ink mt-1.5 text-h1 leading-none',
             numeric ? 'font-numeric font-semibold' : 'font-display tracking-display',
           )}
         >
@@ -100,7 +100,7 @@ export function KpiCard({
           {delta && !isLoading && (
             <span
               className={cn(
-                'inline-flex items-center gap-0.5 text-[11px] font-medium',
+                'inline-flex items-center gap-0.5 text-micro font-medium',
                 sentiment === 'good' && 'text-accent',
                 sentiment === 'bad' && 'text-danger',
                 sentiment === 'neutral' && 'text-muted',
@@ -110,7 +110,7 @@ export function KpiCard({
               {delta}
             </span>
           )}
-          {footnote && <span className="text-faint text-[11px]">{footnote}</span>}
+          {footnote && <span className="text-faint text-micro">{footnote}</span>}
         </div>
       )}
     </div>

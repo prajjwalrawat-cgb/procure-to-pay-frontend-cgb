@@ -1,10 +1,7 @@
 'use client';
 
-import {
-  Button,
-  Input,
-  PageHeader,
-} from '@/components/ui';
+import { Button, Input, PageHeader, controlClass } from '@/components/ui';
+import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { EvaluationCriterionInput, RfqLineInput, RfqType } from '@/lib/shared';
@@ -75,15 +72,15 @@ function RequisitionPicker({
 
   if (selected) {
     return (
-      <div className="bg-panel flex items-center justify-between rounded-md border border-line px-3 py-2">
-        <span className="text-[13px]">
+      <div className="flex items-center justify-between rounded-md border border-line bg-panel px-3 py-2">
+        <span className="text-body-sm">
           <span className="font-numeric text-ink">{selected.number}</span>{' '}
           <span className="text-muted">{selected.title}</span>
         </span>
         <button
           type="button"
           onClick={() => onChange('')}
-          className="text-[12px] text-muted hover:text-danger"
+          className="text-caption text-muted hover:text-danger"
         >
           Clear
         </button>
@@ -108,7 +105,7 @@ function RequisitionPicker({
       {open && (
         <div className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-line bg-panel shadow-lg">
           {matches.length === 0 ? (
-            <p className="px-3 py-2 text-[12px] text-muted">
+            <p className="px-3 py-2 text-caption text-muted">
               No approved requisition matches. Leave this blank to raise a standalone RFQ.
             </p>
           ) : (
@@ -122,14 +119,14 @@ function RequisitionPicker({
                   setQuery('');
                   setOpen(false);
                 }}
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[12px] hover:bg-canvas"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-caption hover:bg-canvas"
               >
                 <span className="truncate">
                   <span className="font-numeric text-faint">{r.number}</span>{' '}
                   <span className="text-text">{r.title}</span>
                 </span>
                 <span className="shrink-0 text-muted">
-                  {r.costCenter.code} · {inr(r.totalAmount)}
+                  {r.costCenter.code}, {inr(r.totalAmount)}
                 </span>
               </button>
             ))
@@ -209,13 +206,14 @@ export default function NewRfqPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[900px]">
+    <div className="mx-auto w-full max-w-4xl">
       <PageHeader
+        breadcrumbs={[{ label: 'Sourcing', href: '/sourcing' }, { label: 'New RFQ' }]}
         title="New RFQ"
         description="Define the lines, invite vendors and set the evaluation weights."
       />
 
-      <Section title="1 · Basics">
+      <Section title="Basics">
         <Field label="Title">
           <Input
             value={title}
@@ -229,7 +227,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="RFQ type">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass + ' pr-8'}
               value={rfqType}
               onChange={(e) => setRfqType(e.target.value as RfqType)}
             >
@@ -238,9 +236,9 @@ export default function NewRfqPage(): React.JSX.Element {
               <option value="REVERSE_AUCTION">Reverse auction</option>
             </select>
           </Field>
-          <Field label="INCOTERM">
+          <Field label="Incoterm">
             <select
-              className="h-9 w-full rounded-md border border-line bg-panel px-2 text-[13px]"
+              className={controlClass + ' pr-8'}
               value={incoterm}
               onChange={(e) => setIncoterm(e.target.value)}
             >
@@ -263,7 +261,7 @@ export default function NewRfqPage(): React.JSX.Element {
           </Field>
           <Field label="Link PR (optional)">
             <RequisitionPicker value={requisitionId} onChange={setRequisitionId} />
-            <p className="mt-1 text-[12px] text-muted">
+            <p className="mt-1 text-caption text-muted">
               {requisitionId
                 ? 'The award will raise a PO against this requisition and draw down its quantities.'
                 : 'Leave blank only for a buy with no requisition behind it — the award then creates a standalone spot-buy PO.'}
@@ -272,52 +270,85 @@ export default function NewRfqPage(): React.JSX.Element {
         </div>
       </Section>
 
-      <Section title="2 · Lines">
+      <Section title="Lines">
         {lines.map((l, i) => (
-          <div key={i} className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            <Input
-              placeholder="Item"
-              value={l.itemDesc}
-              onChange={(e) => updateLine(setLines, i, 'itemDesc', e.target.value)}
-            />
-            <Input
-              placeholder="UOM"
-              value={l.uom}
-              onChange={(e) => updateLine(setLines, i, 'uom', e.target.value)}
-            />
-            <Input
-              placeholder="Qty"
-              value={l.qtyRequired}
-              onChange={(e) => updateLine(setLines, i, 'qtyRequired', e.target.value)}
-            />
-            <Input
-              placeholder="Min split"
-              value={l.qtyMinSplit}
-              onChange={(e) => updateLine(setLines, i, 'qtyMinSplit', e.target.value)}
-            />
-            <Input
-              placeholder="HSN"
-              value={l.hsnCode}
-              onChange={(e) => updateLine(setLines, i, 'hsnCode', e.target.value)}
-            />
-            <Input
-              placeholder="kg/unit"
-              value={l.unitWeightKg}
-              onChange={(e) => updateLine(setLines, i, 'unitWeightKg', e.target.value)}
-            />
+          <div
+            key={i}
+            className="mb-3 rounded-md border border-line p-3 lg:border-0 lg:p-0"
+          >
+            <div className="mb-1.5 flex items-center justify-between lg:hidden">
+              <span className="text-caption font-medium text-muted">Line {i + 1}</span>
+              {lines.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLines((p) => p.filter((_, j) => j !== i))}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <Input
+                placeholder="Item"
+                aria-label={`Line ${i + 1} item`}
+                className="col-span-2 sm:col-span-3 lg:col-span-1"
+                value={l.itemDesc}
+                onChange={(e) => updateLine(setLines, i, 'itemDesc', e.target.value)}
+              />
+              <Input
+                placeholder="UOM"
+                aria-label={`Line ${i + 1} unit of measure`}
+                value={l.uom}
+                onChange={(e) => updateLine(setLines, i, 'uom', e.target.value)}
+              />
+              <Input
+                placeholder="Qty"
+                inputMode="decimal"
+                aria-label={`Line ${i + 1} quantity`}
+                value={l.qtyRequired}
+                onChange={(e) => updateLine(setLines, i, 'qtyRequired', e.target.value)}
+              />
+              <Input
+                placeholder="Min split"
+                inputMode="decimal"
+                aria-label={`Line ${i + 1} minimum split quantity`}
+                value={l.qtyMinSplit}
+                onChange={(e) => updateLine(setLines, i, 'qtyMinSplit', e.target.value)}
+              />
+              <Input
+                placeholder="HSN"
+                aria-label={`Line ${i + 1} HSN code`}
+                value={l.hsnCode}
+                onChange={(e) => updateLine(setLines, i, 'hsnCode', e.target.value)}
+              />
+              <Input
+                placeholder="kg/unit"
+                inputMode="decimal"
+                aria-label={`Line ${i + 1} weight per unit in kg`}
+                value={l.unitWeightKg}
+                onChange={(e) => updateLine(setLines, i, 'unitWeightKg', e.target.value)}
+              />
+            </div>
           </div>
         ))}
-        <Button variant="ghost" onClick={() => setLines((p) => [...p, { ...emptyLine }])}>
-          + Add line
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setLines((p) => [...p, { ...emptyLine }])}
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden /> Add line
         </Button>
       </Section>
 
-      <Section title="3 · Evaluation criteria">
+      <Section title="Evaluation criteria">
         <div className="space-y-2">
           {criteria.map((c, i) => (
-            <div key={c.key} className="flex items-center gap-2 text-[13px]">
-              <span className="w-40">{c.label}</span>
+            <div key={c.key} className="flex flex-wrap items-center gap-2 text-body-sm">
+              <span className="w-40 min-w-0">{c.label}</span>
               <Input
+                aria-label={`${c.label} weight, percent`}
+                inputMode="numeric"
                 className="w-20"
                 value={String(c.weight)}
                 onChange={(e) =>
@@ -329,12 +360,12 @@ export default function NewRfqPage(): React.JSX.Element {
                 }
               />
               <span className="text-muted">%</span>
-              {c.auto && <span className="text-[11px] text-accent-2">auto-scored</span>}
+              {c.auto && <span className="text-caption text-muted">auto-scored</span>}
             </div>
           ))}
           <p
             className={
-              weightSum === 100 ? 'text-[12px] text-accent-2' : 'text-[12px] text-danger'
+              weightSum === 100 ? 'text-caption text-success' : 'text-caption text-danger'
             }
           >
             Weights sum: {weightSum}% {weightSum === 100 ? '✓' : '(must equal 100)'}
@@ -342,7 +373,7 @@ export default function NewRfqPage(): React.JSX.Element {
         </div>
       </Section>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => router.push('/sourcing')}>
           Cancel
         </Button>
@@ -351,7 +382,7 @@ export default function NewRfqPage(): React.JSX.Element {
           disabled={weightSum !== 100 || !title || create.isPending}
           onClick={submit}
         >
-          {create.isPending ? 'Creating…' : 'Create draft → invitations'}
+          {create.isPending ? 'Creating…' : 'Create draft and invite vendors'}
         </Button>
       </div>
     </div>
@@ -376,7 +407,7 @@ function Section({
 }): React.JSX.Element {
   return (
     <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-      <h2 className="mb-3 text-[14px] font-semibold text-ink">{title}</h2>
+      <h2 className="mb-3 text-h3 font-semibold text-ink">{title}</h2>
       {children}
     </div>
   );
@@ -391,7 +422,7 @@ function Field({
 }): React.JSX.Element {
   return (
     <label className="mb-3 block">
-      <span className="mb-1 block text-[12px] text-muted">{label}</span>
+      <span className="mb-1 block text-caption font-medium text-text">{label}</span>
       {children}
     </label>
   );

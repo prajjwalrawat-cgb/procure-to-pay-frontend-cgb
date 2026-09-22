@@ -1,86 +1,73 @@
-import type { NavGroup } from '@/components/ui';
-import {
-  BarChart3,
-  Boxes,
-  ClipboardList,
-  FileCheck2,
-  FileText,
-  Gavel,
-  LayoutDashboard,
-  Package,
-  PackageCheck,
-  Plug,
-  ReceiptText,
-  RotateCcw,
-  ScanLine,
-  ScrollText,
-  Settings,
-  ShieldCheck,
-  Truck,
-  Users,
-  Wallet,
-  Warehouse,
-} from 'lucide-react';
+import type { TopNavEntry } from '@/components/ui';
 
 /**
- * The 15 buyer-portal nav items grouped as in the v6 mockup (Master Context §6).
- * Only Home ('/') is live in Slice 0; every other route renders <ComingInSlice>.
+ * Buyer-portal navigation.
+ *
+ * The flat row of ten tabs plus a "More" menu had outgrown the bar, and the
+ * split between them was by frequency, which is a guess a user cannot see.
+ * The row is now grouped by the stage of the procure-to-pay cycle each section
+ * belongs to: each group is a hover dropdown, and only Home and Vendors — one
+ * destination, nothing to group — stay as direct tabs.
+ *
+ * Sentence case throughout. A nav is a set of labels, not a set of shouts.
  */
-export const NAV_GROUPS: NavGroup[] = [
+export const PRIMARY_NAV: TopNavEntry[] = [
+  { label: 'Home', href: '/' },
   {
-    heading: 'Overview',
-    items: [{ label: 'Home', href: '/', icon: LayoutDashboard }],
-  },
-  {
-    heading: 'Procure',
+    label: 'Procurement',
     items: [
-      { label: 'Requisitions', href: '/requisitions', icon: ClipboardList, slice: 4 },
-      { label: 'Sourcing', href: '/sourcing', icon: Gavel, slice: 6 },
-      { label: 'Purchase Orders', href: '/purchase-orders', icon: FileText, slice: 4 },
-      { label: 'Goods Receipt', href: '/goods-receipt', icon: PackageCheck },
-      { label: 'Returns (RMA)', href: '/rma', icon: RotateCcw },
-      { label: 'Inventory', href: '/inventory', icon: Warehouse },
-      // Leaves the desktop shell for the phone-sized scanner UI (Slice 13).
-      // Listed here rather than hidden behind Inventory because a stores
-      // officer opening this app on a handset has no other way to find it.
-      { label: 'Scanner', href: '/scan', icon: ScanLine },
+      { label: 'Requisitions', href: '/requisitions' },
+      { label: 'Sourcing', href: '/sourcing' },
+      { label: 'Purchase orders', href: '/purchase-orders' },
+      { label: 'Contracts', href: '/contracts' },
     ],
   },
   {
-    heading: 'Pay',
+    label: 'Warehouse',
     items: [
-      { label: 'Invoices', href: '/invoices', icon: ReceiptText, slice: 1 },
-      { label: 'Inbox', href: '/inbox', icon: FileCheck2 },
-      { label: 'Payment Runs', href: '/payment-runs', icon: Wallet, slice: 3 },
+      { label: 'Goods receipt', href: '/goods-receipt' },
+      { label: 'Inventory', href: '/inventory' },
+      { label: 'Item master', href: '/items' },
+      { label: 'Returns (RMA)', href: '/rma' },
+      // Leaves the desktop shell for the phone-sized scanner UI. Listed
+      // because a stores officer opening this app on a handset has no other
+      // way to find it.
+      { label: 'Scanner', href: '/scan' },
     ],
   },
   {
-    heading: 'Manage',
+    label: 'Finance',
     items: [
-      { label: 'Vendors', href: '/vendors', icon: Truck, slice: 7 },
-      { label: 'Item Master', href: '/items', icon: Package },
-      { label: 'Contracts', href: '/contracts', icon: ScrollText },
-      { label: 'Approval Matrix', href: '/approvals', icon: ShieldCheck },
+      { label: 'Invoices', href: '/invoices' },
+      { label: 'Payment runs', href: '/payment-runs' },
+    ],
+  },
+  { label: 'Vendors', href: '/vendors' },
+  {
+    label: 'Approvals',
+    items: [
+      { label: 'Inbox', href: '/inbox' },
+      { label: 'Approval matrix', href: '/approvals' },
     ],
   },
   {
-    heading: 'Insights',
+    label: 'Insights',
     items: [
-      { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-      { label: 'Audit Log', href: '/audit', icon: Boxes },
+      { label: 'Analytics', href: '/analytics' },
+      { label: 'Audit log', href: '/audit' },
     ],
   },
   {
-    heading: 'System',
+    label: 'Administration',
     items: [
-      { label: 'Team', href: '/team', icon: Users },
-      { label: 'Integrations', href: '/integrations', icon: Plug },
-      { label: 'Settings', href: '/settings', icon: Settings, slice: 11 },
+      { label: 'Team', href: '/team' },
+      { label: 'Integrations', href: '/integrations' },
+      { label: 'Settings', href: '/settings' },
     ],
   },
 ];
 
-/** Flat list of live command routes + actions. */
+/** Flat list of live command-palette routes + actions. */
 export const LIVE_ROUTES = [
   { label: 'Home', href: '/', keywords: 'dashboard overview' },
   {
@@ -93,14 +80,14 @@ export const LIVE_ROUTES = [
     href: '/requisitions/new',
     keywords: 'create pr new requisition',
   },
-  { label: 'Purchase Orders', href: '/purchase-orders', keywords: 'po orders purchase' },
+  { label: 'Purchase orders', href: '/purchase-orders', keywords: 'po orders purchase' },
   {
     label: 'New purchase order',
     href: '/purchase-orders/new',
     keywords: 'spot buy direct po without pr requisition quote offline vendor quotation',
   },
   {
-    label: 'Goods Receipt',
+    label: 'Goods receipt',
     href: '/goods-receipt',
     keywords: 'grn receipt receive gate qc quality inspection stores',
   },
@@ -152,7 +139,7 @@ export const LIVE_ROUTES = [
     keywords: 'dispatch amazon shopify order courier tracking fulfilment',
   },
   {
-    label: 'Item Master',
+    label: 'Item master',
     href: '/items',
     keywords: 'item master catalogue catalog sku hsn gst uom material product code',
   },
@@ -168,18 +155,18 @@ export const LIVE_ROUTES = [
     keywords: 'integrations gsp ocr credentials usage cost gstr2b',
   },
   {
-    label: 'Payment Runs',
+    label: 'Payment runs',
     href: '/payment-runs',
     keywords: 'payments bank neft batch run',
   },
   { label: 'Inbox', href: '/inbox', keywords: 'approvals my queue waiting' },
-  { label: 'Approval Matrix', href: '/approvals', keywords: 'rules routing matrix' },
+  { label: 'Approval matrix', href: '/approvals', keywords: 'rules routing matrix' },
   {
     label: 'Analytics',
     href: '/analytics',
     keywords: 'analytics spend savings msme concentration ap performance',
   },
-  { label: 'Audit Log', href: '/audit', keywords: 'audit trail hash chain' },
+  { label: 'Audit log', href: '/audit', keywords: 'audit trail hash chain' },
   {
     label: 'Contracts',
     href: '/contracts',
@@ -200,4 +187,7 @@ export const LIVE_ROUTES = [
     href: '/contracts/clause-library',
     keywords: 'clause library standard terms legal contract',
   },
+  { label: 'Vendors', href: '/vendors', keywords: 'supplier vendor master msme' },
+  { label: 'Team', href: '/team', keywords: 'users roles people team members' },
+  { label: 'Settings', href: '/settings', keywords: 'settings organisation plant gstin' },
 ];

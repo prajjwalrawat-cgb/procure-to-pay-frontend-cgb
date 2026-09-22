@@ -155,20 +155,20 @@ export function BarcodeScanner({
       </div>
 
       {cameraError ? (
-        <p className="text-[13px] text-danger" role="alert">
+        <p className="text-body-sm text-danger" role="alert">
           {cameraError}
         </p>
       ) : null}
 
       {/* Always visible — see the component note on damaged labels. */}
       <div className="space-y-1">
-        <label className="block text-[12px] text-muted" htmlFor="scan-manual-entry">
+        <label className="block text-caption text-muted" htmlFor="scan-manual-entry">
           Or type the {label}
         </label>
         <div className="flex gap-2">
           <input
             id="scan-manual-entry"
-            className="min-w-0 flex-1 rounded-md border border-line px-3 py-3 text-[16px] outline-none focus:border-accent"
+            className="min-w-0 flex-1 rounded-md border border-line px-3 py-3 text-h3 outline-none focus:border-accent"
             // 16px and inputMode keep iOS from zooming the viewport on focus,
             // which otherwise leaves the operator scrolled sideways mid-scan.
             inputMode="text"

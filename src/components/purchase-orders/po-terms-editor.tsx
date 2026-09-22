@@ -1,6 +1,9 @@
 'use client';
 
-import { Pill } from '@/components/ui';
+import {
+  Pill,
+  controlClass,
+} from '@/components/ui';
 import type { ClauseLibraryItem, PoTermInput } from '@/lib/shared';
 import { Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -72,8 +75,9 @@ export function toTermInputs(
   }));
 }
 
-const inputCls =
-  'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-2.5 py-1.5 text-[13px] outline-none';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 export function PoTermsEditor({
   libraryTerms,
@@ -88,14 +92,14 @@ export function PoTermsEditor({
 }): React.JSX.Element {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-[13px] text-muted">
+      <p className="text-body-sm text-muted">
         Tick the standard conditions to print on the PO. These come from the clause
         library legal maintains; anything specific to this order goes in as a special
         condition below.
       </p>
 
       {libraryTerms.length === 0 && (
-        <p className="text-[12px] text-muted">
+        <p className="text-caption text-muted">
           The clause library is empty — add clauses under{' '}
           <Link href="/contracts/clause-library" className="text-accent-2 underline">
             Contracts → Clause library
@@ -124,29 +128,29 @@ export function PoTermsEditor({
           />
           <span className="min-w-0">
             <span className="flex items-center gap-1.5">
-              <span className="text-[13px] font-medium text-text">{t.title}</span>
+              <span className="text-body-sm font-medium text-text">{t.title}</span>
               <Pill variant="gray">{t.clauseType.replace(/_/g, ' ')}</Pill>
             </span>
-            <span className="block text-[12px] text-muted">{t.contentText}</span>
+            <span className="block text-caption text-muted">{t.contentText}</span>
           </span>
         </label>
       ))}
 
       <div className="mt-2 rounded-lg border border-line p-3">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+          <span className="text-micro font-semibold text-faint">
             Special conditions
           </span>
           <button
             type="button"
             onClick={() => onSpecialChange([...special, blankSpecialTerm()])}
-            className="flex items-center gap-1 text-[12px] font-medium text-accent-2"
+            className="flex items-center gap-1 text-caption font-medium text-accent-2"
           >
             <Plus className="h-3.5 w-3.5" /> Add
           </button>
         </div>
         {special.length === 0 && (
-          <p className="text-[12px] text-muted">None for this order.</p>
+          <p className="text-caption text-muted">None for this order.</p>
         )}
         {special.map((s) => (
           <div key={s.key} className="mb-2 flex items-start gap-2">

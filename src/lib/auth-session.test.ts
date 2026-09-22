@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createRefresher, safeNextPath } from './auth-session';
+import { SESSION_ENDED_PARAM } from './session-ended';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -96,5 +97,96 @@ describe('safeNextPath — bounce loops', () => {
 
   it('still refuses an off-site destination', () => {
     expect(safeNextPath('%2F%2Fevil.example', '/')).toBe('/');
+  });
+});
+
+/**
+ * `endSession` keeps module state (a one-shot redirect guard), so each case
+ * imports a fresh copy. `window.location.replace` is stubbed to record the
+ * destination rather than navigate.
+ */
+async function endSessionOn(
+  href: string,
+  loginPath = '/login',
+): Promise<{ replaced: string | null; cleared: boolean }> {
+  vi.resetModules();
+  const url = new URL(href, 'https://portal.example');
+  let replaced: string | null = null;
+  vi.stubGlobal('window', {
+    location: {
+      pathname: url.pathname,
+      search: url.search,
+      replace: (to: string) => {
+        replaced = to;
+      },
+    },
+  });
+  let cleared = false;
+  const { endSession } = await import('./auth-session');
+  endSession(loginPath, () => {
+    cleared = true;
+  });
+  return { replaced, cleared };
+}
+
+describe('endSession', () => {
+  it('clears the session and bounces to the login page, remembering where they were', async () => {
+    const { replaced, cleared } = await endSessionOn('/invoices/inv_1');
+    expect(cleared).toBe(true);
+    expect(replaced).toBe(`/login?next=%2Finvoices%2Finv_1&${SESSION_ENDED_PARAM}=1`);
+  });
+
+  it('flags the bounce so the middleware does not send them back into the portal', async () => {
+    /*
+     * Without the flag the middleware sees the still-present (but dead) refresh
+     * cookie, treats it as a live session and redirects to `/` — where the app
+     * fails to refresh and bounces here again. That was the loop that left the
+     * URL stuck on `/?next=%2F` and reloaded the page endlessly.
+     */
+    const { replaced } = await endSessionOn('/');
+    expect(replaced).toContain(`${SESSION_ENDED_PARAM}=1`);
+  });
+
+  it('does not nest `next` inside itself when bouncing a page that carries one', async () => {
+    const { replaced } = await endSessionOn('/invoices?next=%2Fold&tab=open');
+    expect(replaced).toBe(
+      `/login?next=%2Finvoices%3Ftab%3Dopen&${SESSION_ENDED_PARAM}=1`,
+    );
+  });
+
+  it('does not carry the flag into the destination it captures', async () => {
+    // It belongs to the hop, not to the page the user is being returned to.
+    const { replaced } = await endSessionOn(`/invoices?${SESSION_ENDED_PARAM}=1`);
+    expect(replaced).toBe(`/login?next=%2Finvoices&${SESSION_ENDED_PARAM}=1`);
+  });
+
+  it('clears the session but does not navigate when already on the login page', async () => {
+    const { replaced, cleared } = await endSessionOn('/login?next=%2F');
+    expect(cleared).toBe(true);
+    expect(replaced).toBeNull();
+  });
+
+  it('redirects only once when several failures land together', async () => {
+    vi.resetModules();
+    const replaced: string[] = [];
+    vi.stubGlobal('window', {
+      location: {
+        pathname: '/invoices',
+        search: '',
+        replace: (to: string) => replaced.push(to),
+      },
+    });
+    const { endSession } = await import('./auth-session');
+    endSession('/login', () => undefined);
+    endSession('/login', () => undefined);
+    endSession('/login', () => undefined);
+    expect(replaced).toHaveLength(1);
+  });
+
+  it('sends a vendor to the vendor login', async () => {
+    const { replaced } = await endSessionOn('/vendor/invoices', '/vendor/login');
+    expect(replaced).toBe(
+      `/vendor/login?next=%2Fvendor%2Finvoices&${SESSION_ENDED_PARAM}=1`,
+    );
   });
 });

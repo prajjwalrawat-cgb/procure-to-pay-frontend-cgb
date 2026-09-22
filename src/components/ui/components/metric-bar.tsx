@@ -32,6 +32,14 @@ import { cn } from '../lib/cn';
 export interface MetricBarProps {
   label: string;
   value: number | null;
+  /**
+   * Why there is no value yet. Shown instead of the bar when `value` is null.
+   *
+   * A metric with no data used to render a dash above an empty track, and an
+   * empty track is indistinguishable from a zero — so a supplier you have
+   * never traded with looked like a supplier scoring nought on every measure.
+   */
+  emptyReason?: string;
   /** Appended to the value, e.g. '%', 'h', 'd'. */
   suffix?: string;
   /** Render the 0-100 bar. Omit for unbounded values like hours or days. */
@@ -60,15 +68,16 @@ function band(pct: number, inverse: boolean): 'good' | 'warn' | 'bad' {
 }
 
 const FILL: Record<'good' | 'warn' | 'bad' | 'neutral', string> = {
-  good: 'bg-accent',
-  warn: 'bg-warn',
-  bad: 'bg-danger',
-  neutral: 'bg-navy-3',
+  good: 'bg-success-solid',
+  warn: 'bg-warn-solid',
+  bad: 'bg-danger-solid',
+  neutral: 'bg-faint-line',
 };
 
 export function MetricBar({
   label,
   value,
+  emptyReason = 'Not enough transaction history yet',
   suffix = '',
   scale,
   inverse = false,
@@ -82,23 +91,22 @@ export function MetricBar({
 
   return (
     <div className={cn('py-1', className)}>
-      <div className="flex items-baseline justify-between gap-3 text-[13px]">
+      <div className="flex items-baseline justify-between gap-3 text-body-sm">
         <span className="text-muted" title={typeof help === 'string' ? help : undefined}>
           {label}
         </span>
-        <span className="font-numeric text-ink">
-          {hasValue ? `${value}${suffix}` : '—'}
-        </span>
+        {hasValue ? (
+          <span className="font-numeric text-ink">{`${value}${suffix}`}</span>
+        ) : null}
       </div>
-      {scale && (
+      {!hasValue && <p className="text-faint mt-0.5 text-caption">{emptyReason}</p>}
+      {scale && hasValue && (
         <div
           className="bg-canvas border-line mt-1 h-1.5 w-full overflow-hidden rounded-full border"
           role="img"
-          aria-label={
-            hasValue ? `${label}: ${value}${suffix} of 100` : `${label}: not measured`
-          }
+          aria-label={`${label}: ${value}${suffix} of 100`}
         >
-          {hasValue && fill && (
+          {fill && (
             <span
               className={cn('block h-full rounded-full', FILL[fill])}
               style={{ width: `${pct}%` }}

@@ -1,14 +1,20 @@
 'use client';
 
-import { Button, PageHeader } from '@/components/ui';
+import {
+  Button,
+  Combobox,
+  DateInput,
+  PageHeader,
+  StepIndicator,
+  controlClass,
+} from '@/components/ui';
 import type {
   PaymentTermKind,
   PoCreateInput,
   PoSpotBuyLineInput,
   VendorRef,
 } from '@/lib/shared';
-import { ArrowLeft, FileText, Paperclip, Plus, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { FileText, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -91,8 +97,9 @@ function lineTotal(l: DraftLine): number {
   return base * (1 - num(l.discountPct) / 100) * (1 + num(l.taxRate) / 100);
 }
 
-const inputCls =
-  'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-2.5 py-1.5 text-[13px] outline-none';
+// One definition for every text field, select and date input on this page —
+// see components/ui/components/input.tsx.
+const inputCls = controlClass;
 
 export default function NewSpotBuyPage(): React.JSX.Element {
   const router = useRouter();
@@ -237,76 +244,50 @@ export default function NewSpotBuyPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-4xl pb-8">
-      <Link
-        href="/purchase-orders"
-        className="mb-3 inline-flex items-center gap-1 text-[12px] text-muted"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
-      </Link>
+    <div className="mx-auto w-full max-w-4xl pb-8">
       <PageHeader
+        breadcrumbs={[
+          { label: 'Purchase orders', href: '/purchase-orders' },
+          { label: 'New' },
+        ]}
         title="New purchase order"
         description="Raised directly against a vendor quote — no requisition required. It still goes through the normal PO approval before it can be issued."
       />
 
-      <ol className="mb-5 flex flex-wrap items-center gap-2">
-        {STEPS.map((s, i) => (
-          <li key={s} className="flex items-center gap-2">
-            <span
-              className={
-                'flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ' +
-                (i === step
-                  ? 'bg-ink text-white'
-                  : i < step
-                    ? 'bg-accent-wash text-accent-2'
-                    : 'bg-canvas text-faint')
-              }
-            >
-              {i + 1}
-            </span>
-            <span
-              className={
-                'text-[13px] ' + (i === step ? 'font-medium text-ink' : 'text-muted')
-              }
-            >
-              {s}
-            </span>
-            {i < STEPS.length - 1 && <span className="text-faint">·</span>}
-          </li>
-        ))}
-      </ol>
+      <StepIndicator steps={STEPS} current={step} className="mb-5" />
 
       <div className="rounded-lg border border-line bg-panel p-4">
         {step === 0 && (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Both of these are searchable rather than native dropdowns. A
+                tenant's vendor master runs to hundreds of rows and its cost
+                centres to dozens; a native <select> there means scrolling a
+                wall with no way to type, and no way to find a vendor by code. */}
             <Labelled label="Vendor" required>
-              <select
+              <Combobox
+                options={vendors.map((v: VendorRef) => ({
+                  value: v.id,
+                  label: v.name,
+                  detail: v.isMsme ? 'MSME' : undefined,
+                }))}
                 value={vendorId}
-                onChange={(e) => setVendorId(e.target.value)}
-                className={inputCls}
-              >
-                <option value="">Select a registered vendor…</option>
-                {vendors.map((v: VendorRef) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name}
-                    {v.isMsme ? ' (MSME)' : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={setVendorId}
+                placeholder="Search registered vendors…"
+                emptyText="No registered vendor matches that search"
+              />
             </Labelled>
             <Labelled label="Cost centre" required>
-              <select
+              <Combobox
+                options={costCenters.map((c) => ({
+                  value: c.id,
+                  label: c.name,
+                  detail: c.code,
+                }))}
                 value={costCenterId}
-                onChange={(e) => setCostCenterId(e.target.value)}
-                className={inputCls}
-              >
-                <option value="">Select…</option>
-                {costCenters.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} · {c.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setCostCenterId}
+                placeholder="Search cost centres…"
+                emptyText="No cost centre matches that search"
+              />
             </Labelled>
             {/* Only worth asking when the tenant holds more than one
                 registration; with one branch there is nothing to choose. */}
@@ -315,25 +296,24 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                 <select
                   value={billToPlantId}
                   onChange={(e) => setBillToPlantId(e.target.value)}
-                  className={inputCls}
+                  className={inputCls + ' pr-8'}
                 >
                   {plants.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
-                      {p.gstin ? ` · ${p.gstin}` : ''}
+                      {p.gstin ? ` — ${p.gstin}` : ''}
                       {p.isDefault ? ' (default)' : ''}
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-faint">
+                <p className="mt-1 text-micro text-faint">
                   Decides the GSTIN on the PO and the place of supply — CGST+SGST vs IGST
                   — even when the goods ship elsewhere.
                 </p>
               </Labelled>
             )}
             <Labelled label="Expected delivery" required>
-              <input
-                type="date"
+              <DateInput
                 value={expectedDeliveryDate}
                 onChange={(e) => setExpectedDeliveryDate(e.target.value)}
                 className={inputCls}
@@ -343,7 +323,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               <select
                 value={deliveryTerms}
                 onChange={(e) => setDeliveryTerms(e.target.value)}
-                className={inputCls}
+                className={inputCls + ' pr-8'}
               >
                 {INCOTERM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -356,7 +336,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               <select
                 value={paymentKind}
                 onChange={(e) => setPaymentKind(e.target.value)}
-                className={inputCls}
+                className={inputCls + ' pr-8'}
               >
                 {PAYMENT_TERM_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -381,7 +361,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             {lines.map((l, i) => (
               <div key={l.key} className="rounded-lg border border-line bg-canvas/40 p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+                  <span className="text-micro font-semibold text-faint">
                     Line {i + 1}
                   </span>
                   {lines.length > 1 && (
@@ -403,7 +383,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                   placeholder="Description as quoted"
                   className={inputCls}
                 />
-                <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-6">
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   <Small label="Qty">
                     <input
                       value={l.qtyOrdered}
@@ -451,12 +431,12 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                     />
                   </Small>
                 </div>
-                <div className="font-numeric mt-2 text-right text-[13px] font-semibold text-ink">
+                <div className="font-numeric mt-2 text-right text-body-sm font-semibold text-ink">
                   {inr(lineTotal(l).toFixed(2))}
                 </div>
               </div>
             ))}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="default"
                 size="sm"
@@ -464,7 +444,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               >
                 <Plus className="h-3.5 w-3.5" /> Add line
               </Button>
-              <span className="font-numeric ml-auto text-[14px] font-semibold text-ink">
+              <span className="font-numeric ml-auto text-body font-semibold text-ink">
                 PO total {inr(total.toFixed(2))}
               </span>
             </div>
@@ -473,7 +453,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
 
         {step === 2 && (
           <div className="flex flex-col gap-3">
-            <p className="text-[13px] text-muted">
+            <p className="text-body-sm text-muted">
               Attach the vendor&rsquo;s written quote. With no requisition behind this
               order, it is the only evidence an approver has for the price — and it is
               never shown to the vendor portal.
@@ -481,10 +461,10 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             {!quote ? (
               <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-line py-10 text-center hover:bg-canvas">
                 <Paperclip className="h-6 w-6 text-faint" />
-                <span className="text-[13px] font-medium text-text">
+                <span className="text-body-sm font-medium text-text">
                   Choose the quote file
                 </span>
-                <span className="text-[11px] text-faint">PDF, image or spreadsheet</span>
+                <span className="text-micro text-faint">PDF, image or spreadsheet</span>
                 <input
                   type="file"
                   className="hidden"
@@ -511,13 +491,13 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-medium text-ink">
+                      <div className="truncate text-body-sm font-medium text-ink">
                         {quote.name}
                       </div>
-                      <div className="font-numeric text-[11px] text-faint">
-                        {fileSize(quote.size)} · {quote.type || 'unknown type'}
+                      <div className="font-numeric text-micro text-faint">
+                        {fileSize(quote.size)}, {quote.type || 'unknown type'}
                       </div>
-                      <div className="mt-2 flex items-center gap-3 text-[12px]">
+                      <div className="mt-2 flex items-center gap-3 text-caption">
                         {quoteUrl && (
                           <a
                             href={quoteUrl}
@@ -553,7 +533,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
                       className="mt-3 h-80 w-full rounded-md border border-line"
                       aria-label={`Preview of ${quote.name}`}
                     >
-                      <p className="p-3 text-[12px] text-muted">
+                      <p className="p-3 text-caption text-muted">
                         This browser cannot preview PDFs inline — use{' '}
                         <a
                           href={quoteUrl}
@@ -597,7 +577,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         )}
 
         {step === 4 && (
-          <div className="flex flex-col gap-3 text-[13px]">
+          <div className="flex flex-col gap-3 text-body-sm">
             <Row
               label="Vendor"
               value={vendors.find((v) => v.id === vendorId)?.name ?? '—'}
@@ -606,15 +586,15 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               label="Cost centre"
               value={
                 costCenters.find((c) => c.id === costCenterId)
-                  ? `${costCenters.find((c) => c.id === costCenterId)?.code} · ${costCenters.find((c) => c.id === costCenterId)?.name}`
+                  ? `${costCenters.find((c) => c.id === costCenterId)?.code}, ${costCenters.find((c) => c.id === costCenterId)?.name}`
                   : '—'
               }
             />
             <Row label="Lines" value={String(lines.length)} />
             <Row label="PO total" value={inr(total.toFixed(2))} />
-            <div className="flex items-center justify-between border-b border-line pb-2">
+            <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
               <span className="text-muted">Quote</span>
-              <span className="flex items-center gap-2 font-medium text-ink">
+              <span className="flex min-w-0 items-center gap-2 font-medium text-ink">
                 {quote ? (
                   <>
                     <span className="truncate">{quote.name}</span>
@@ -642,7 +622,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
               value={`${chosen.length} (${chosen.filter((t) => !t.isFromLibrary).length} special)`}
             />
             {!quote && (
-              <p className="text-[12px] text-warn">
+              <p className="text-caption text-warn">
                 No quote attached. The approver will have nothing to check this price
                 against — you can still add it on the PO afterwards.
               </p>
@@ -662,7 +642,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
         </Button>
         {step < STEPS.length - 1 ? (
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!canAdvance}
             onClick={() => setStep((s) => s + 1)}
@@ -670,7 +650,7 @@ export default function NewSpotBuyPage(): React.JSX.Element {
             Next
           </Button>
         ) : (
-          <Button variant="accent" size="sm" disabled={saving} onClick={onSubmit}>
+          <Button variant="primary" size="sm" disabled={saving} onClick={onSubmit}>
             {saving ? 'Creating…' : 'Create draft PO'}
           </Button>
         )}
@@ -690,7 +670,7 @@ function Labelled({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[12px] font-medium text-muted">
+      <span className="text-caption font-medium text-muted">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
@@ -708,7 +688,7 @@ function Small({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-0.5">
-      <span className="text-[11px] text-faint">{label}</span>
+      <span className="text-micro text-faint">{label}</span>
       {children}
     </label>
   );
@@ -716,9 +696,9 @@ function Small({
 
 function Row({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <div className="flex items-center justify-between border-b border-line pb-2">
-      <span className="text-muted">{label}</span>
-      <span className="font-medium text-ink">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-line pb-2">
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-ink">{value}</span>
     </div>
   );
 }

@@ -1,23 +1,44 @@
 'use client';
 
 import {
+  Badge,
+  BulkActionBar,
   Button,
+  Checkbox,
+  ExpandToggle,
+  FilterBar,
   Input,
   NotShipped,
   PageHeader,
   Pill,
+  SortableHead,
+  SubNav,
   TableState,
+  matchesFilters,
+  optionsFrom,
+  useFilters,
+  useSelection,
+  useSort,
+  type FilterDef,
 } from '@/components/ui';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Download } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useMemo, useState } from 'react';
-import type { InvoiceTab } from '@/lib/shared';
+import { PERMISSIONS, type InvoiceListItem, type InvoiceTab } from '@/lib/shared';
 
 import { EntityRef } from '@/components/entity-ref';
+import {
+  BulkAssignDialog,
+  BulkHoldDialog,
+  summarise,
+  type BulkResult,
+} from '@/components/invoices/bulk-actions';
 import { RowDetail } from '@/components/invoices/row-detail';
 import { useInvoiceCounts, useInvoices } from '@/lib/api/invoices';
+import { downloadCsv } from '@/lib/csv';
 import { inr, msmeVariant, statusLabel, statusVariant } from '@/lib/format';
-import { tenantSuffix, useTenantName } from '@/store/session-store';
+import { useHasPermission } from '@/lib/permissions';
+import { useInitialTab } from '@/lib/use-initial-tab';
 import { useToastStore } from '@/store/toast-store';
 
 const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
@@ -41,51 +62,145 @@ type CountShape = {
   proforma: number;
 };
 
+type SortKey = 'number' | 'supplier' | 'status' | 'aging' | 'amount';
+const SORT: Record<SortKey, (i: InvoiceListItem) => string | number> = {
+  number: (i) => i.number,
+  supplier: (i) => i.vendor.name,
+  status: (i) => statusLabel(i.status),
+  aging: (i) => i.agingDays,
+  amount: (i) => Number(i.grossAmount),
+};
+
+// Cost centre, approver and invoice date are not in the list payload
+// (InvoiceListItem), so they are not offered as filters rather than faked.
+function filterValue(i: InvoiceListItem, key: string): string | number | null {
+  switch (key) {
+    case 'vendor':
+      return i.vendor.id;
+    case 'status':
+      return i.status;
+    case 'assignee':
+      return i.assignedTo?.id ?? 'none';
+    case 'msme':
+      return i.vendor.isMsme ? 'yes' : 'no';
+    case 'amount':
+      return Number(i.grossAmount);
+    case 'aging':
+      return i.agingDays;
+    default:
+      return null;
+  }
+}
+
 export default function InvoicesInboxPage(): React.JSX.Element {
-  const tenantName = useTenantName();
   const [tab, setTab] = useState<InvoiceTab>('all');
+  useInitialTab(TABS.map((t) => t.key), setTab);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
+  const [dialog, setDialog] = useState<'assign' | 'hold' | null>(null);
+  const filters = useFilters();
   const { data: counts } = useInvoiceCounts();
   const { data, isLoading, error, refetch } = useInvoices(tab);
   const toast = useToastStore((s) => s.push);
+  // Assign and hold are gated on INVOICE_OPERATE_SCOPES server-side.
+  const canIntake = useHasPermission(PERMISSIONS.INVOICE_INTAKE_MANAGE);
+  const canResolve = useHasPermission(PERMISSIONS.INVOICE_RESOLVE_EXCEPTION);
+  const canOperate = canIntake || canResolve;
 
-  const rows = useMemo(() => {
-    const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data]);
+
+  const defs = useMemo<FilterDef[]>(
+    () => [
+      {
+        key: 'vendor',
+        label: 'Supplier',
+        type: 'select',
+        options: optionsFrom(items, (i) => ({ value: i.vendor.id, label: i.vendor.name })),
+      },
+      {
+        key: 'status',
+        label: 'Status',
+        type: 'select',
+        options: optionsFrom(items, (i) => ({ value: i.status, label: statusLabel(i.status) })),
+      },
+      {
+        key: 'assignee',
+        label: 'Assignee',
+        type: 'select',
+        options: [
+          { value: 'none', label: 'Unassigned' },
+          ...optionsFrom(items, (i) =>
+            i.assignedTo ? { value: i.assignedTo.id, label: i.assignedTo.name } : null,
+          ),
+        ],
+      },
+      {
+        key: 'msme',
+        label: 'MSME supplier',
+        type: 'select',
+        options: [
+          { value: 'yes', label: 'MSME only' },
+          { value: 'no', label: 'Non-MSME only' },
+        ],
+      },
+      { key: 'amount', label: 'Amount', type: 'amount' },
+      { key: 'aging', label: 'Aging', type: 'number', unit: 'd' },
+    ],
+    [items],
+  );
+
+  const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
     return items.filter(
       (i) =>
-        i.number.toLowerCase().includes(q) || i.vendor.name.toLowerCase().includes(q),
+        (!q ||
+          i.number.toLowerCase().includes(q) ||
+          i.vendor.name.toLowerCase().includes(q) ||
+          (i.vendorInvoiceRef ?? '').toLowerCase().includes(q)) &&
+        matchesFilters(i, defs, filters.values, filterValue),
     );
-  }, [data, search]);
+  }, [items, search, defs, filters.values]);
 
-  const toggleSel = (id: string): void =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const { sorted: rows, sort, toggle: toggleSort } = useSort(filtered, SORT);
+  const selection = useSelection(rows.map((r) => r.id));
+  const selectedRows = rows.filter((r) => selection.isSelected(r.id));
+  const narrowed = search.trim() !== '' || filters.activeCount > 0;
+
+  const onBulkDone = (verb: string) => (r: BulkResult) => {
+    toast(summarise(verb, r), r.failed.length ? 'error' : 'success');
+    if (r.failed.length === 0) selection.clear();
+  };
+
+  const exportSelected = (): void =>
+    downloadCsv(`invoices-${tab}`, selectedRows, [
+      { header: 'Invoice', value: (i) => i.number },
+      { header: 'Supplier ref', value: (i) => i.vendorInvoiceRef },
+      { header: 'Supplier', value: (i) => i.vendor.name },
+      { header: 'MSME', value: (i) => (i.vendor.isMsme ? 'Yes' : 'No') },
+      { header: 'PO', value: (i) => i.poNumber },
+      { header: 'GRN', value: (i) => i.grnNumber },
+      { header: 'Status', value: (i) => statusLabel(i.status) },
+      { header: 'Exceptions', value: (i) => i.exceptionCount },
+      { header: 'Aging (days)', value: (i) => i.agingDays },
+      { header: 'Amount', value: (i) => i.grossAmount },
+      { header: 'Currency', value: (i) => i.currency },
+      { header: 'Assignee', value: (i) => i.assignedTo?.name },
+    ]);
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="pb-20">
       <PageHeader
         title="Invoices"
-        description={`Accounts payable inbox${tenantSuffix(tenantName)}`}
+        description="Accounts payable inbox"
         actions={
           <>
-            {/* Both of these were live-looking buttons whose only behaviour was
-                a "coming soon" toast. Marked rather than removed so the roadmap
-                stays visible without pretending the capability is here. */}
-            <NotShipped reason="Bulk invoice import arrives in a later slice.">
-              <Button variant="default" size="sm" disabled>
+            <NotShipped reason="Bulk invoice import is not available yet. Invoices arrive by email intake or vendor submission.">
+              <Button variant="secondary" size="sm" disabled>
                 Import
               </Button>
             </NotShipped>
-            <NotShipped reason="Manual invoice entry arrives in a later slice. Invoices currently arrive by email intake or vendor submission.">
-              <Button variant="default" size="sm" disabled>
+            <NotShipped reason="Manual invoice entry is not available yet. Invoices arrive by email intake or vendor submission.">
+              <Button variant="secondary" size="sm" disabled>
                 New invoice
               </Button>
             </NotShipped>
@@ -93,75 +208,66 @@ export default function InvoicesInboxPage(): React.JSX.Element {
         }
       />
 
-      <div className="border-line mb-3 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => {
-              setTab(t.key);
-              setExpanded(null);
-            }}
-            className={
-              'duration-hover flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors ' +
-              (tab === t.key
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
-            <span className="font-numeric text-faint text-[11px]">
-              {counts?.[t.countKey] ?? 0}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SubNav
+        className="mb-4"
+        items={TABS.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: counts?.[t.countKey] ?? 0,
+        }))}
+        value={tab}
+        onChange={(k) => {
+          setTab(k as (typeof TABS)[number]['key']);
+          // Collapse any open row detail: the expanded invoice belongs to the
+          // view you just left and would render against the wrong list.
+          setExpanded(null);
+        }}
+      />
 
-      <div className="mb-3 flex items-center gap-2">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search invoice or supplier…"
-          className="h-8 max-w-xs"
-        />
-        <span className="text-muted text-[12px]">{rows.length} shown</span>
-      </div>
+      <FilterBar
+        defs={defs}
+        filters={filters}
+        search={
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search invoice, supplier or reference…"
+            aria-label="Search invoices"
+          />
+        }
+        summary={
+          isLoading
+            ? null
+            : `${rows.length} shown${data?.truncated ? ' — first 2,000 loaded' : ''}`
+        }
+      />
 
-      {selected.size > 0 && (
-        <div className="bg-accent-wash mb-3 flex items-center gap-2 rounded-sm px-3 py-2 text-[13px]">
-          <span className="text-accent-2 font-medium">{selected.size} selected</span>
-          {/* These reported success and did nothing. A user who selected five
-              invoices, clicked Hold and saw "Held" would reasonably believe
-              those invoices were on hold — a false success is worse than a
-              dead button, so both are disabled and marked. */}
-          <NotShipped reason="Bulk assignment arrives in a later slice. Assign an invoice from its detail page.">
-            <Button size="sm" variant="default" disabled>
-              Assign
-            </Button>
-          </NotShipped>
-          <NotShipped reason="Bulk hold arrives in a later slice. Put an invoice on hold from its detail page.">
-            <Button size="sm" variant="default" disabled>
-              Hold
-            </Button>
-          </NotShipped>
-          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
-            Clear
-          </Button>
-        </div>
-      )}
-
-      <div className="border-line bg-panel overflow-x-auto rounded-lg border">
-        <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-faint text-left text-[11px] uppercase tracking-wide">
+      <div className="overflow-x-auto">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-line border-b text-left text-muted">
             <tr>
-              <th className="w-8 px-3 py-2" />
-              <th className="w-8 px-1 py-2" />
-              <th className="px-3 py-2 font-medium">Invoice</th>
-              <th className="px-3 py-2 font-medium">Supplier</th>
-              <th className="px-3 py-2 font-medium">PO / GRN</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Aging</th>
-              <th className="px-3 py-2 text-right font-medium">Amount</th>
+              <th className="w-10 px-3 py-2.5">
+                <Checkbox
+                  aria-label="Select all shown invoices"
+                  checked={selection.allSelected}
+                  indeterminate={selection.someSelected}
+                  onChange={selection.toggleAll}
+                  disabled={rows.length === 0}
+                />
+              </th>
+              <th className="w-8 px-1 py-2.5" />
+              <SortableHead label="Invoice" sortKey="number" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Supplier" sortKey="supplier" sort={sort} onSort={toggleSort} />
+              <th className="px-3 py-2.5 text-caption font-medium">PO / GRN</th>
+              <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Aging" sortKey="aging" sort={sort} onSort={toggleSort} />
+              <SortableHead
+                label="Amount"
+                sortKey="amount"
+                sort={sort}
+                onSort={toggleSort}
+                numeric
+              />
             </tr>
           </thead>
           <tbody>
@@ -171,99 +277,123 @@ export default function InvoicesInboxPage(): React.JSX.Element {
               error={error}
               isEmpty={rows.length === 0}
               onRetry={() => void refetch()}
-              empty={{
-                title: search
-                  ? 'No invoices match that search'
-                  : 'No invoices in this view',
-                detail: search
-                  ? 'Try a different invoice number or supplier name.'
-                  : 'Invoices arrive here from email intake, vendor submission, or import.',
-              }}
+              empty={
+                narrowed
+                  ? {
+                      title: 'No invoices match these filters',
+                      detail: 'Clear a filter or change the search to see more.',
+                      action: (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            filters.clear();
+                            setSearch('');
+                          }}
+                        >
+                          Clear filters
+                        </Button>
+                      ),
+                    }
+                  : tab === 'all'
+                    ? {
+                        title: 'No open invoices',
+                        detail:
+                          'Invoices land here from email intake and vendor submissions. Set up an intake mailbox to start receiving them.',
+                        action: (
+                          <Button asChild variant="secondary" size="sm">
+                            <Link href="/invoices/intake">Open email intake</Link>
+                          </Button>
+                        ),
+                      }
+                    : {
+                        title: 'Nothing in this view',
+                        detail: 'No invoices are in this state right now.',
+                      }
+              }
             />
             {rows.map((inv) => {
               const isOpen = expanded === inv.id;
+              const isSel = selection.isSelected(inv.id);
               return (
-                // Keyed on the fragment, not the inner rows: each iteration
-                // renders a row pair (summary + expanded detail), so the key
-                // has to sit on the wrapper or React cannot reconcile them.
+                // Keyed on the fragment: each iteration renders a row pair
+                // (summary + expanded detail).
                 <Fragment key={inv.id}>
                   <tr
                     className={
-                      'border-line border-t ' +
-                      (isOpen ? 'bg-canvas' : 'hover:bg-canvas/60')
+                      'border-line border-b transition-colors duration-hover ' +
+                      (isSel ? 'bg-accent-wash/60' : isOpen ? 'bg-canvas' : 'hover:bg-canvas/60')
                     }
                   >
-                    <td className="px-3 py-2">
-                      <input
-                        type="checkbox"
+                    <td className="px-3 py-3.5">
+                      <Checkbox
                         aria-label={`Select ${inv.number}`}
-                        checked={selected.has(inv.id)}
-                        onChange={() => toggleSel(inv.id)}
+                        checked={isSel}
+                        onChange={() => selection.toggle(inv.id)}
                       />
                     </td>
-                    <td className="px-1 py-2">
-                      <button
-                        type="button"
-                        aria-label={`Expand ${inv.number}`}
-                        onClick={() => setExpanded(isOpen ? null : inv.id)}
-                        className="text-muted hover:bg-line rounded-sm p-1"
-                      >
-                        {isOpen ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </button>
+                    <td className="px-1 py-3.5">
+                      <ExpandToggle
+                        open={isOpen}
+                        label={inv.number}
+                        onToggle={() => setExpanded(isOpen ? null : inv.id)}
+                      />
                     </td>
-                    <td className="px-3 py-2">
-                      <Link
-                        href={`/invoices/${inv.id}`}
-                        className="font-numeric text-ink font-medium"
-                      >
-                        {inv.number}
-                      </Link>
-                      <div className="font-numeric text-faint text-[11px]">
-                        {inv.vendorInvoiceRef}
+                    <td className="px-3 py-3.5">
+                      <div>
+                        <Link
+                          href={`/invoices/${inv.id}`}
+                          className="font-numeric text-ink hover:text-accent font-medium"
+                        >
+                          {inv.number}
+                        </Link>
+                        <div className="font-numeric text-faint text-micro">
+                          {inv.vendorInvoiceRef}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-3 py-2">
-                      <EntityRef kind="vendor" id={inv.vendor.id}>
-                        {inv.vendor.name}
-                      </EntityRef>
-                      {inv.vendor.isMsme && (
-                        <Pill variant="violet" className="ml-1.5">
-                          MSME
-                        </Pill>
-                      )}
+                    <td className="px-3 py-3.5">
+                      <span>
+                        <EntityRef kind="vendor" id={inv.vendor.id}>
+                          {inv.vendor.name}
+                        </EntityRef>
+                        {inv.vendor.isMsme && (
+                          <Badge variant="classification" className="ml-1.5">
+                            MSME
+                          </Badge>
+                        )}
+                      </span>
                     </td>
-                    <td className="font-numeric text-muted px-3 py-2 text-[12px]">
+                    <td className="font-numeric text-muted px-3 py-3.5 text-caption">
                       {inv.poNumber ?? '—'}
-                      {inv.grnNumber ? ` · ${inv.grnNumber}` : ''}
+                      {inv.grnNumber ? ` / ${inv.grnNumber}` : ''}
                     </td>
-                    <td className="px-3 py-2">
-                      <Pill variant={statusVariant(inv.status)} dot>
-                        {statusLabel(inv.status)}
-                      </Pill>
-                      {inv.documentKind === 'PROFORMA' && (
-                        <Pill variant="warn" className="ml-1.5">
-                          PI
+                    <td className="px-3 py-3.5">
+                      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                        <Pill variant={statusVariant(inv.status)} dot>
+                          {statusLabel(inv.status)}
                         </Pill>
-                      )}
-                      {inv.exceptionCount > 0 && (
-                        <span className="font-numeric text-danger ml-1.5 text-[11px]">
-                          {inv.exceptionCount} exc
-                        </span>
-                      )}
+                        {inv.documentKind === 'PROFORMA' && <Pill variant="warn">PI</Pill>}
+                        {inv.exceptionCount > 0 && (
+                          <span className="text-danger text-caption">
+                            {inv.exceptionCount === 1
+                              ? '1 exception'
+                              : `${inv.exceptionCount} exceptions`}
+                          </span>
+                        )}
+                      </span>
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="font-numeric text-text">{inv.agingDays}d</span>
-                      {inv.msme && (
-                        <Pill variant={msmeVariant(inv.msme.bucket)} className="ml-1.5">
-                          {inv.msme.daysRemaining}d
-                        </Pill>
-                      )}
+                    <td className="px-3 py-3.5">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-numeric text-text">{inv.agingDays}d</span>
+                        {inv.msme && (
+                          <Pill variant={msmeVariant(inv.msme.bucket)}>
+                            {inv.msme.daysRemaining}d
+                          </Pill>
+                        )}
+                      </span>
                     </td>
-                    <td className="font-numeric text-ink px-3 py-2 text-right font-medium">
+                    <td className="font-numeric text-ink px-3 py-3.5 text-right font-medium">
                       {inr(inv.grossAmount)}
                     </td>
                   </tr>
@@ -280,6 +410,46 @@ export default function InvoicesInboxPage(): React.JSX.Element {
           </tbody>
         </table>
       </div>
+
+      <BulkActionBar
+        count={selection.count}
+        noun="invoice"
+        onClear={selection.clear}
+        note={
+          // Approve/reject need each invoice's approval id, which the list
+          // does not carry — the Approvals queue is where they happen in bulk.
+          <Link href="/inbox" className="underline underline-offset-2 hover:text-white">
+            Approve or reject in your Approvals inbox
+          </Link>
+        }
+      >
+        {canOperate && (
+          <>
+            <Button size="sm" variant="secondary" onClick={() => setDialog('assign')}>
+              Assign
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setDialog('hold')}>
+              Hold
+            </Button>
+          </>
+        )}
+        <Button size="sm" variant="secondary" onClick={exportSelected}>
+          <Download className="h-3.5 w-3.5" aria-hidden /> Export CSV
+        </Button>
+      </BulkActionBar>
+
+      <BulkAssignDialog
+        ids={selectedRows.map((r) => r.id)}
+        open={dialog === 'assign'}
+        onOpenChange={(o) => setDialog(o ? 'assign' : null)}
+        onDone={onBulkDone('Assigned')}
+      />
+      <BulkHoldDialog
+        ids={selectedRows.map((r) => r.id)}
+        open={dialog === 'hold'}
+        onOpenChange={(o) => setDialog(o ? 'hold' : null)}
+        onDone={onBulkDone('Held')}
+      />
     </div>
   );
 }

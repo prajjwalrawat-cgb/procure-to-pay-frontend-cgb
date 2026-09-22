@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Button, ErrorState, Pill, Skeleton } from '@/components/ui';
 import {
   ItemCreateInputSchema,
   type ItemCreateInput,
@@ -130,7 +130,7 @@ function Drawer({
   onClose: () => void;
 }): React.JSX.Element {
   const editingId = target.mode === 'edit' ? target.id : null;
-  const { data, isLoading } = useItem(editingId);
+  const { data, isLoading, error, refetch } = useItem(editingId);
 
   return (
     <>
@@ -143,29 +143,41 @@ function Drawer({
       <aside className="fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col overflow-y-auto border-l border-line bg-panel shadow-xl">
         <header className="sticky top-0 z-10 flex items-start justify-between border-b border-line bg-panel px-5 py-4">
           <div className="min-w-0">
-            <h2 className="truncate text-[16px] font-semibold tracking-heading text-ink">
-              {target.mode === 'create' ? 'New item' : (data?.name ?? 'Loading…')}
+            <h2 className="truncate text-h3 font-semibold tracking-heading text-ink">
+              {target.mode === 'create' ? (
+                'New item'
+              ) : data ? (
+                data.name
+              ) : (
+                <Skeleton className="h-5 w-48" />
+              )}
             </h2>
-            <p className="font-numeric text-[12px] text-muted">
+            <p className="font-numeric text-caption text-muted">
               {target.mode === 'create'
                 ? 'Adds a SKU to the catalogue used by requisition lines'
                 : (data?.skuCode ?? '')}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {data && !data.isActive && <Pill variant="danger">Inactive</Pill>}
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-[13px] text-muted hover:text-ink"
-            >
+            {data && !data.isActive && <Pill variant="neutral">Inactive</Pill>}
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               Close
-            </button>
+            </Button>
           </div>
         </header>
 
         {target.mode === 'edit' && isLoading && (
-          <p className="px-5 py-8 text-[13px] text-muted">Loading…</p>
+          <div aria-busy="true" className="flex flex-col gap-4 px-5 py-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-1.5">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ))}
+          </div>
+        )}
+        {target.mode === 'edit' && error && !isLoading && (
+          <ErrorState error={error} onRetry={() => void refetch()} />
         )}
         {target.mode === 'create' && (
           <ItemForm
@@ -389,7 +401,7 @@ function ItemForm({
               placeholder="5100-CONSUMABLES"
             />
           </Field>
-          <label className="mt-6 flex items-center gap-2 text-[13px]">
+          <label className="flex items-center gap-2 text-body-sm sm:mt-6">
             <input
               type="checkbox"
               checked={form.isCapex}
@@ -403,7 +415,7 @@ function ItemForm({
         {/* ── UoM conversions ── */}
         <div className="rounded-lg border border-line p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+            <span className="text-body-sm font-semibold text-ink">
               UoM conversions
             </span>
             {!readOnly && itemId === null && (
@@ -418,21 +430,21 @@ function ItemForm({
                     ],
                   }))
                 }
-                className="flex items-center gap-1 text-[12px] font-medium text-accent-2"
+                className="flex items-center gap-1 text-caption font-medium text-accent-2"
               >
                 <Plus className="h-3.5 w-3.5" /> Add
               </button>
             )}
           </div>
-          <p className="mb-2 text-[11px] text-faint">
+          <p className="mb-2 text-caption text-muted">
             Used when goods are received in a different unit from the PO. Without a
             conversion the GRN treats the two units as 1:1.
           </p>
           {form.uomConversions.length === 0 && (
-            <p className="text-[12px] text-muted">None.</p>
+            <p className="text-caption text-muted">None.</p>
           )}
           {form.uomConversions.map((c) => (
-            <div key={c.key} className="mb-1.5 grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+            <div key={c.key} className="mb-1.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2">
               <TextInput
                 value={c.fromUom}
                 disabled={readOnly || itemId !== null}
@@ -472,7 +484,7 @@ function ItemForm({
             </div>
           ))}
           {itemId !== null && form.uomConversions.length > 0 && (
-            <p className="mt-1 text-[11px] text-faint">
+            <p className="mt-1 text-caption text-muted">
               Conversions are set at creation time and cannot be edited here.
             </p>
           )}
@@ -481,16 +493,16 @@ function ItemForm({
         {/* ── Vendor pricing (read-only; maintained by sourcing/contracts) ── */}
         {detail && (
           <div className="rounded-lg border border-line p-3">
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-faint">
+            <div className="mb-2 text-body-sm font-semibold text-ink">
               Vendor pricing
             </div>
             {detail.vendorPricing.length === 0 ? (
-              <p className="text-[12px] text-muted">
+              <p className="text-caption text-muted">
                 No vendor prices yet — the requisition picker will show no preferred
                 vendor or last-paid price for this item.
               </p>
             ) : (
-              <table className="w-full text-[12px]">
+              <table className="w-full text-caption">
                 <tbody>
                   {detail.vendorPricing.map((p) => (
                     <tr key={p.id} className="border-t border-line first:border-t-0">
@@ -527,7 +539,7 @@ function ItemForm({
             <Button variant="default" size="sm" disabled={busy} onClick={onDone}>
               Cancel
             </Button>
-            <Button variant="accent" size="sm" disabled={busy} onClick={submit}>
+            <Button variant="primary" size="sm" disabled={busy} onClick={submit}>
               {busy ? 'Saving…' : itemId === null ? 'Create item' : 'Save changes'}
             </Button>
           </div>

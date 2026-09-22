@@ -1,61 +1,119 @@
-/* ProcureFlow base layer — "Midnight Executive".
+/* ProcureFlow base layer — warm canvas, SAP-blue accent, Geist.
    Tokens mirrored as CSS variables; derived from components/ui/tokens.ts,
-   which is the single source of truth. Keep the two in sync. */
+   which is the single source of truth. Keep the two in sync.
+
+   Both naming schemes are published: the brief's semantic names (--accent,
+   --text-muted, --state-success) for new work, and the --pf-* names the
+   existing screens already reference. They point at the same values. */
 :root {
-  /* Ice surfaces */
-  --pf-paper: #f4f7fb;
-  --pf-canvas: #e9eff7;
-  --pf-panel: #ffffff;
+  /* surfaces */
+  --page-bg: #f6f4ee;
+  --card-bg: #ffffff;
+  --line: #e4dfd1;
 
-  /* Navy chrome */
-  --pf-navy: #0a1424;
-  --pf-navy-2: #142338;
-  --pf-navy-3: #1c2f49;
-  --pf-on-navy: #e6edf7;
-  --pf-on-navy-muted: #9fb0c8;
+  /* accent — one colour, interactive/active elements only */
+  --accent: #0a6ed1;
+  --accent-2: #0854a0;
+  --accent-bg: #eff6ff;
 
-  /* Ink & text */
-  --pf-ink: #0a1424;
-  --pf-text: #1f2c40;
-  --pf-muted: #55647c;
-  --pf-faint: #5d6b80;
-  --pf-line: #d4deec;
+  /* text */
+  --text-primary: #1c1b18;
+  --text-muted: #66625a;
+  --text-faint: #75716a;
 
-  /* Gold — consequence only */
-  --pf-gold: #c89b2c;
-  --pf-gold-ink: #8a6a12;
-  --pf-gold-wash: #fbf4e2;
+  /* semantic state — status only, never decoration */
+  --state-success: #15803d;
+  --state-success-solid: #16a34a;
+  --state-success-bg: #eaf6ee;
+  --state-warning: #8a5a0b;
+  --state-warning-solid: #f59e0b;
+  --state-warning-bg: #fbf3e3;
+  --state-error: #b42318;
+  --state-error-solid: #dc2626;
+  --state-error-bg: #fdecea;
+  --state-info: #5f5c52;
+  --state-info-solid: #8a8778;
+  --state-info-bg: #f1efe8;
 
-  /* Semantic */
-  --pf-accent: #0f7a52;
-  --pf-accent-2: #0b6141;
-  --pf-accent-wash: #e8f5ef;
-  --pf-danger: #c2183f;
-  --pf-warn: #9a5b02;
-  --pf-info: #1d5fa8;
-  --pf-violet: #6d3bc7;
+  /* typography */
+  /* next/font puts --font-geist-sans on <html> (the same element as :root). */
+  --font-ui:
+    var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', ui-sans-serif,
+    sans-serif;
+  --font-size-meta: 12px;
+  --font-size-body: 14px;
+  --font-size-heading: 22px;
+
+  /* radius / spacing */
+  --radius: 12px;
+  --radius-control: 5px;
+  --radius-pill: 16px;
+  --space-unit: 4px;
+
+  /* ── --pf-* aliases (existing call sites) ──────────────────────────────── */
+  --pf-paper: var(--page-bg);
+  --pf-canvas: #efece3;
+  --pf-panel: var(--card-bg);
+  --pf-line: var(--line);
+
+  --pf-ink: var(--text-primary);
+  --pf-text: var(--text-primary);
+  --pf-muted: var(--text-muted);
+  --pf-faint: var(--text-faint);
+
+  --pf-accent: var(--accent);
+  --pf-accent-2: var(--accent-2);
+  --pf-accent-wash: var(--accent-bg);
+
+  --pf-success: var(--state-success);
+  --pf-warn: var(--state-warning);
+  --pf-danger: var(--state-error);
+
+  /* Chrome is white now; the navy names resolve to the light treatment so
+     any un-migrated `bg-navy` surface still renders legibly. */
+  --pf-navy: #ffffff;
+  --pf-navy-2: #ffffff;
+  --pf-navy-3: #efece3;
+  --pf-on-navy: var(--text-primary);
+  --pf-on-navy-muted: var(--text-muted);
+
+  /* Legacy hues, remapped to the single accent. */
+  --pf-gold: var(--accent);
+  --pf-gold-ink: var(--accent);
+  --pf-gold-wash: var(--accent-bg);
+  --pf-info: var(--state-info);
+  --pf-violet: var(--accent);
 
   /* Focus ring — one definition, used by every interactive element. */
-  --pf-focus: #1d5fa8;
+  --pf-focus: var(--accent);
 }
 
 html {
-  font-size: 13.5px;
+  /*
+   * The root stays at the browser default. Setting it to the body text size —
+   * as this file did, at 13px — rescales every rem in Tailwind: `max-w-6xl`
+   * rendered 936px instead of 1152px, and every `gap-*`, `p-*` and `space-*`
+   * shrank to 81% with it. That is what squeezed two-column layouts until
+   * their content clipped.
+   *
+   * Body text size is set on <body> instead, where it belongs: it cascades to
+   * the text without touching the layout scale.
+   */
   line-height: 1.5;
   /*
    * The app shell is a full-height flex column that scrolls its own <main>, so
    * the document itself has nothing left to scroll. Without this it still found
-   * about 20px — enough to drag the whole chrome, sidebar and topbar included,
-   * up out of view while the reader thought they were scrolling the page.
+   * about 20px — enough to drag the whole chrome and nav up out of view while
+   * the reader thought they were scrolling the page.
    */
   overflow: hidden;
 }
 
 body {
-  background-color: var(--pf-paper);
-  color: var(--pf-text);
-  letter-spacing: -0.005em;
-  font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-body);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -63,24 +121,82 @@ h1,
 h2,
 h3,
 h4 {
-  letter-spacing: -0.02em;
-}
-
-/* IDs, amounts, hashes, timestamps always use the mono face + tabular figures
-   so columns of ₹ amounts align down the page. */
-.font-numeric {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
 
-/* The display (serif) face. Deliberately gated: it is authoritative at module
-   headers and KPI values and dated at table sizes, so it is never used below
-   18px. Anything smaller stays on the sans face. */
+/* ── Numerals ──────────────────────────────────────────────────────────────
+   Every ₹ amount, quantity, date and document number carries this so columns
+   of figures align down the page. It is the UI face with tabular figures, not
+   a separate mono face: a monospace column beside a proportional column reads as two
+   different tables. `font-mono` is still available for hash chains in the
+   audit log, which is the one place character-level distinction matters. */
+.font-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Any table cell in the app gets tabular figures for free, so a numeric column
+   cannot silently misalign because someone forgot the class. */
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The heading treatment. Same family as the body — see tokens.ts. It is a
+   weight and tracking step, not a second typeface. */
 .font-display {
-  font-family: var(--font-display), ui-serif, Georgia, serif;
-  letter-spacing: -0.02em;
+  font-family: var(--font-ui);
   font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ── Native controls ───────────────────────────────────────────────────────
+   Un-migrated <select> and <input type="date"> elements pick up the system
+   look here rather than the browser default, so a screen that has not yet been
+   moved onto <Select> / <DateInput> still reads as part of the app. New work
+   should use the components — they also give a searchable combobox above ~10
+   options, which raw <select> cannot. */
+select,
+input[type='date'],
+input[type='datetime-local'],
+input[type='month'],
+input[type='time'] {
+  font: inherit;
+  color: var(--text-primary);
+  background-color: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 9px 10px;
+  line-height: 1.2;
+}
+
+select {
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2366625A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+/* The chevron's room survives a utility class. A <select> styled with
+   controlClass (`px-2.5`) otherwise loses the 28px above to the utility, and the
+   chevron runs into the text. The attribute selector out-ranks a single class;
+   an explicit wider `pr-*` on the element still reads as intent and is kept. */
+select[class]:not([multiple]):not([class*='pr-']) {
+  padding-right: 28px;
+}
+
+select:focus,
+input[type='date']:focus,
+input[type='datetime-local']:focus,
+input[type='month']:focus,
+input[type='time']:focus {
+  border-color: var(--accent);
+}
+
+select:disabled,
+input[type='date']:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ── Keyboard focus ────────────────────────────────────────────────────────
@@ -91,12 +207,6 @@ h4 {
   outline: 2px solid var(--pf-focus);
   outline-offset: 2px;
   border-radius: 3px;
-}
-
-/* On navy chrome the info-blue ring disappears into the ground; gold reads. */
-.on-navy :focus-visible,
-.pf-navy-surface :focus-visible {
-  outline-color: var(--pf-gold);
 }
 
 /* Skip link — first tab stop, visually hidden until focused. */
@@ -110,11 +220,45 @@ h4 {
   left: 0.5rem;
   top: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: var(--pf-panel);
-  color: var(--pf-ink);
-  border: 1px solid var(--pf-line);
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(10, 20, 36, 0.12);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: 0 4px 10px rgba(28, 27, 24, 0.12);
+}
+
+/* ── The content column ───────────────────────────────────────────────────
+   One centred column shared by the nav rows and <main>, so the brand, the
+   section tabs and every page title start on the same vertical line. Before
+   this the shell was left-aligned and most pages capped their own width, which
+   left detail pages and forms hugging the left edge with a void on the right.
+   Pages fill this column; only forms cap themselves narrower, centred. */
+.pf-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+@media (min-width: 640px) {
+  .pf-container {
+    padding-inline: 20px;
+  }
+}
+@media (min-width: 1024px) {
+  .pf-container {
+    padding-inline: 32px;
+  }
+}
+
+/* Horizontal nav rows scroll rather than wrap on narrow viewports; the bar is
+   a single line of tabs and a wrapped second line reads as a second nav level
+   that does not exist. */
+.pf-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pf-scroll-x::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── Reduced motion ───────────────────────────────────────────────────────
@@ -128,5 +272,144 @@ h4 {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ── Tables → stacked cards below tablet width ────────────────────────────
+   Opt in with `pf-stack` on the <table>. Each row becomes a card; each cell a
+   "label … value" line, labelled from its column header by
+   useTableStackLabels (data-table.tsx). Cells with an empty header — the
+   checkbox and expand columns — sit inline at the top of the card. Full-width
+   rows (loading, empty, expanded detail) span the card as blocks. */
+@media (max-width: 767px) {
+  table.pf-stack,
+  table.pf-stack > tbody {
+    display: block;
+    width: 100%;
+  }
+  table.pf-stack > thead {
+    display: none;
+  }
+  table.pf-stack > tbody > tr {
+    display: block;
+    position: relative;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--card-bg);
+  }
+  table.pf-stack > tbody > tr > td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0 !important;
+    border: 0;
+    text-align: right;
+    min-width: 0;
+  }
+  table.pf-stack > tbody > tr > td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-align: left;
+  }
+  /* Controls with no header: inline, top of the card. */
+  table.pf-stack > tbody > tr > td[data-label=''] {
+    display: inline-flex;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  table.pf-stack > tbody > tr > td[data-label='']::before {
+    content: none;
+  }
+  /* The first labelled cell is the record's identity: give it the top line. */
+  table.pf-stack > tbody > tr > td[data-first] {
+    display: block;
+    text-align: left;
+    font-weight: 500;
+    padding-bottom: 8px !important;
+  }
+  table.pf-stack > tbody > tr > td[data-first]::before {
+    content: none;
+  }
+  /* A cell with nothing in it (an action column with no action on this row)
+     would otherwise still take a line in the card. */
+  table.pf-stack > tbody > tr > td:empty {
+    display: none;
+  }
+  table.pf-stack > tbody > tr > td[colspan] {
+    display: block;
+    text-align: left;
+  }
+  table.pf-stack > tbody > tr > td[colspan]::before {
+    content: none;
+  }
+  /* Rows that exist only to hold a full-width child (skeleton, empty state,
+     expanded detail) should not draw a second card border. */
+  table.pf-stack > tbody > tr:has(> td[colspan]) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+}
+
+/* ── List tables: the data-grid surface (768px and up) ────────────────────
+   Every read-only list table (`pf-stack`) sits on a card: white panel,
+   hairline border, 12px radius, a tinted header band and inset first/last
+   columns. Styled here, on the table's wrapper, so ~47 list screens get it
+   without each re-implementing it. A table that already lives inside a card
+   (`.bg-panel` ancestor — detail pages) is left alone, or it would draw a
+   frame inside a frame. Below 768px the stacked-card rules above take over.
+
+   Cells carry the row dividers: in the `separate` border model a <tr> border
+   does not render, and `separate` is what lets the corners round. */
+@media (min-width: 768px) {
+  div:has(> table.pf-stack):not(.bg-panel *) {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > thead > tr > th {
+    background: #f8f6f0;
+    border-bottom: 1px solid var(--line);
+    padding-top: 11px;
+    padding-bottom: 11px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr > td {
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr:last-child > td {
+    border-bottom: 0;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr {
+    border: 0;
+    transition: background-color 100ms;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > * > tr > :first-child {
+    padding-left: 20px;
+  }
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > * > tr > :last-child {
+    padding-right: 20px;
+  }
+  /* Full-width rows (skeleton, empty state, expanded detail) keep their own
+     insets — the detail panels bring their padding with them. */
+  div:has(> table.pf-stack):not(.bg-panel *) > table.pf-stack > tbody > tr > td[colspan] {
+    padding-left: 0;
+    padding-right: 0;
   }
 }

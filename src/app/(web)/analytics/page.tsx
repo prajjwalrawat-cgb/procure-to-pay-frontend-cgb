@@ -1,407 +1,165 @@
 'use client';
 
-import type { AnalyticsPeriodKey, TopVendorRow } from '@/lib/shared';
-import {
-  CHART_CHROME,
-  CHART_SERIES,
-  CHART_TICK,
-  PageHeader,
-  Pill,
-} from '@/components/ui';
-import Link from 'next/link';
-import { useState } from 'react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { PERMISSIONS } from '@/lib/shared';
+import { PageHeader } from '@/components/ui';
 
+import { CommandBar } from '@/components/analytics/command-bar';
+import { exportAnalytics } from '@/components/analytics/export';
+import { MsmeComplianceSection } from '@/components/analytics/msme-compliance';
+import { OverviewStrip } from '@/components/analytics/overview-strip';
+import { PENDING } from '@/components/analytics/primitives';
+import { isComplete, toApiRange, useAnalyticsRange, type UrlRange } from '@/components/analytics/range';
+import { SpendSavingsSection } from '@/components/analytics/spend-savings';
+import { VelocitySection } from '@/components/analytics/velocity';
 import {
-  useConcentration,
-  useContractCoverage,
-  useMsmeDashboard,
+  useAnalyticsOverview,
+  useMsmeCompliance,
   useRefreshAnalytics,
-  useSavingsSummary,
-  useSpendByCategory,
-  useSpendTrend,
-  useTopVendors,
-  useTotalSpend,
+  useSpendByCategoryRange,
+  useSpendSavings,
+  useVelocity,
 } from '@/lib/api/analytics';
-import { inr, inrCompact } from '@/lib/format';
+import { useHasPermission } from '@/lib/permissions';
 
-import { AsOfBadge, MSME_BUCKET, PeriodPicker, TOOLTIP_STYLE } from './_lib';
+import { AnalyticsTabs, AsOfBadge } from './_lib';
 
-const TABS = [
-  { label: 'Overview', href: '/analytics' },
-  { label: 'Savings', href: '/analytics/savings' },
-  { label: 'MSME', href: '/analytics/msme' },
-  { label: 'AP Performance', href: '/analytics/ap-performance' },
-];
-
+/**
+ * Analytics overview: one volumetric strip, then three co-equal sections.
+ *
+ * The monthly spend trend chart that used to lead this page is gone on
+ * purpose — every panel here is a total or a distribution for the chosen
+ * range, and the sections share one layout so none of them outweighs the
+ * others.
+ */
 export default function AnalyticsPage(): React.JSX.Element {
-  const [period, setPeriod] = useState<AnalyticsPeriodKey>('LAST_12M');
-  const [compare, setCompare] = useState(false);
-  const [drill, setDrill] = useState<TopVendorRow[] | null>(null);
-
-  const total = useTotalSpend(period);
-  const trend = useSpendTrend(period, compare);
-  const category = useSpendByCategory(period);
-  const topVendors = useTopVendors(period);
-  const concentration = useConcentration(period);
-  const coverage = useContractCoverage(period);
-  const msme = useMsmeDashboard();
-  const savings = useSavingsSummary(period);
-  const refresh = useRefreshAnalytics();
-
-  const asOf = total.data?.refreshedAt ?? null;
-  const breach = msme.data?.buckets.find((b) => b.bucket === 'BREACH_45_PLUS');
+  const { range, setRange, ready } = useAnalyticsRange();
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div>
       <PageHeader
         title="Analytics"
-        description="Spend, savings, concentration and MSME exposure, computed from posted documents."
+        description="Spend, operational velocity and MSME compliance, computed from posted documents."
       />
-
-      {/* Filters sit in one row above the charts and apply to all of them. */}
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <PeriodPicker value={period} onChange={setPeriod} />
-        <label className="text-muted flex items-center gap-1.5 text-[12px]">
-          <input
-            type="checkbox"
-            checked={compare}
-            onChange={(e) => setCompare(e.target.checked)}
-          />
-          Compare prior FY
-        </label>
-        <span className="ml-auto">
-          <AsOfBadge
-            refreshedAt={asOf}
-            onRefresh={() => refresh.mutate()}
-            refreshing={refresh.isPending}
-          />
-        </span>
-      </div>
-
-      <div className="border-line mb-4 flex items-center gap-1 overflow-x-auto border-b">
-        {TABS.map((t) => (
-          <Link
-            key={t.href}
-            href={t.href}
-            className={
-              'shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium ' +
-              (t.href === '/analytics'
-                ? 'border-accent text-ink'
-                : 'text-muted hover:text-text border-transparent')
-            }
-          >
-            {t.label}
-          </Link>
-        ))}
-      </div>
-
-      {/* KPI strip */}
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <Kpi
-          label="Total spend"
-          value={total.data ? inrCompact(total.data.netSpend) : '—'}
+      <AnalyticsTabs active="/analytics" />
+      {/* Until the URL is read the sections render as skeletons and fetch
+          nothing, so a shared ?period=LAST_24M link never flashes 12-month
+          figures first. */}
+      {ready ? (
+        <AnalyticsBody range={range} setRange={setRange} />
+      ) : (
+        <Layout
+          range={range}
+          setRange={setRange}
+          asOf={null}
+          exportDisabled
+          onExport={() => undefined}
+          overview={PENDING}
+          savings={PENDING}
+          category={PENDING}
+          velocity={PENDING}
+          msme={PENDING}
         />
-        <Kpi
-          label="Hard savings"
-          value={savings.data ? inrCompact(savings.data.hardSavingsTotal) : '—'}
-          accent
-        />
-        <button
-          onClick={() => setDrill(concentration.data?.vendors ?? [])}
-          className="text-left"
-        >
-          <Kpi
-            label="Top-10 concentration"
-            value={concentration.data ? `${concentration.data.concentrationPct}%` : '—'}
-            hint="Click to drill down"
-          />
-        </button>
-        <Kpi
-          label="Contract coverage"
-          value={coverage.data ? `${coverage.data.coveragePct}%` : '—'}
-          hint={coverage.data?.note ?? undefined}
-        />
-        <Kpi label="MSME spend" value={msme.data ? `${msme.data.msmeSpendPct}%` : '—'} />
-        <Link href="/analytics/msme">
-          <Kpi
-            label="MSME 45-day exposure"
-            value={breach ? inrCompact(breach.totalExposure) : '—'}
-            danger={!!breach && breach.invoiceCount > 0}
-            hint={breach ? `${breach.invoiceCount} invoice(s) in breach` : undefined}
-          />
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Trend */}
-        <Card title="Monthly spend trend" asOf={asOf} className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart
-              data={trend.data?.points ?? []}
-              margin={{ left: 8, right: 8, top: 8 }}
-            >
-              <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
-              <XAxis dataKey="month" tick={CHART_TICK} />
-              <YAxis
-                tickFormatter={(v) => inrCompact(String(v))}
-                tick={CHART_TICK}
-                width={70}
-              />
-              <Tooltip formatter={(v: number) => inr(String(v))} />
-              <Line
-                type="monotone"
-                dataKey="netSpend"
-                stroke={CHART_SERIES[0]}
-                strokeWidth={2}
-                dot={false}
-                name="This FY"
-              />
-              {compare && (
-                <Line
-                  type="monotone"
-                  dataKey="priorYearNetSpend"
-                  stroke={CHART_CHROME.comparison}
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  dot={false}
-                  name="Prior FY"
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        {/* Spend by category.
-            Was a donut. A donut is the wrong form for comparing close values —
-            adjacent-slice angles are near-impossible to rank by eye, and with
-            seven categories the palette also exceeds what validates for a form
-            where every pair is co-visible. A ranked horizontal bar answers the
-            actual question ("which categories cost most, in order") and carries
-            its own labels. */}
-        <Card title="Spend by category" asOf={category.data?.refreshedAt ?? null}>
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart
-              data={[...(category.data?.slices ?? [])].sort(
-                (a, b) => Number(b.netSpend) - Number(a.netSpend),
-              )}
-              layout="vertical"
-              margin={{ left: 6, right: 12 }}
-            >
-              <CartesianGrid stroke={CHART_CHROME.grid} horizontal={false} />
-              <XAxis
-                type="number"
-                tickFormatter={(v) => inrCompact(String(v))}
-                tick={CHART_TICK}
-              />
-              <YAxis
-                type="category"
-                dataKey="category"
-                width={110}
-                tick={{ fontSize: 11, fill: CHART_CHROME.label }}
-              />
-              <Tooltip
-                formatter={(v: number) => [inr(String(v)), 'Net spend']}
-                contentStyle={TOOLTIP_STYLE}
-              />
-              <Bar
-                dataKey={(s: { netSpend: string }) => Number(s.netSpend)}
-                fill={CHART_SERIES[0]}
-                name="Net spend"
-                radius={[0, 4, 4, 0]}
-                maxBarSize={18}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Top vendors */}
-        <Card title="Top vendors by spend" asOf={topVendors.data?.refreshedAt ?? null}>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart
-              data={topVendors.data?.vendors ?? []}
-              layout="vertical"
-              margin={{ left: 10, right: 10 }}
-            >
-              <XAxis
-                type="number"
-                tickFormatter={(v) => inrCompact(String(v))}
-                tick={CHART_TICK}
-              />
-              <YAxis
-                type="category"
-                dataKey={(v: TopVendorRow) => (v.isMsme ? `${v.vendorName} · MSME` : v.vendorName)}
-                width={150}
-                tick={{ fontSize: 11, fill: CHART_CHROME.label }}
-              />
-              <Tooltip formatter={(v: number) => inr(String(v))} />
-              <Bar
-                dataKey={(v: TopVendorRow) => Number(v.netSpend)}
-                fill={CHART_SERIES[0]}
-                radius={[0, 4, 4, 0]}
-                name="Net spend"
-                maxBarSize={18}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-          <p className="text-faint mt-1 text-[11px]">
-            MSME suppliers are marked in the label. One series, so the bars carry no
-            separate identity colour.
-          </p>
-        </Card>
-
-        {/* MSME Section 15 widget */}
-        <Card title="MSME Section 15 — aging" asOf={null}>
-          <div className="grid grid-cols-3 gap-2">
-            {(msme.data?.buckets ?? []).map((b) => (
-              <Link
-                key={b.bucket}
-                href="/analytics/msme"
-                className="border-line hover:bg-canvas rounded-md border p-3"
-              >
-                <div className="text-faint text-[10px] uppercase">
-                  {MSME_BUCKET[b.bucket].short}
-                </div>
-                <div className="text-faint text-[10px]">
-                  {MSME_BUCKET[b.bucket].days}
-                </div>
-                <div className="font-numeric text-ink mt-1 text-[18px] font-semibold">
-                  {b.invoiceCount}
-                </div>
-                <div className="text-muted font-numeric text-[11px]">
-                  {inrCompact(b.totalExposure)}
-                </div>
-              </Link>
-            ))}
-          </div>
-          <p className="text-faint mt-2 text-[11px]">
-            Live · click a bucket to see at-risk invoices.
-          </p>
-        </Card>
-      </div>
-
-      {drill && <ConcentrationDrawer vendors={drill} onClose={() => setDrill(null)} />}
+      )}
     </div>
   );
 }
 
-function Kpi({
-  label,
-  value,
-  accent,
-  danger,
-  hint,
+function AnalyticsBody({
+  range,
+  setRange,
 }: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  danger?: boolean;
-  hint?: string;
+  range: UrlRange;
+  setRange: (r: UrlRange) => void;
 }): React.JSX.Element {
+  // A custom range is only complete once both dates are valid; the command
+  // bar never pushes an incomplete one, but a hand-edited URL could.
+  const api = toApiRange(isComplete(range) ? range : { period: 'LAST_12M' });
+  const overview = useAnalyticsOverview(api);
+  const savings = useSpendSavings(api);
+  const category = useSpendByCategoryRange(api);
+  const velocity = useVelocity(api);
+  const msme = useMsmeCompliance(api);
+
+  const all = [overview, savings, category, velocity, msme];
+  const anyLoading = all.some((q) => q.isLoading);
+  const anyData = all.some((q) => q.data !== undefined);
+
   return (
-    <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px] uppercase">{label}</div>
-      <div
-        className={
-          'font-numeric tracking-display mt-1 text-[20px] font-semibold ' +
-          (danger ? 'text-danger' : accent ? 'text-accent-2' : 'text-ink')
-        }
-      >
-        {value}
-      </div>
-      {hint && <div className="text-faint mt-0.5 text-[10px]">{hint}</div>}
-    </div>
+    <Layout
+      range={range}
+      setRange={setRange}
+      asOf={overview.data?.asOf ?? null}
+      exportDisabled={anyLoading || !anyData}
+      onExport={() =>
+        exportAnalytics(range, {
+          overview: overview.data,
+          savings: savings.data,
+          category: category.data,
+          velocity: velocity.data,
+          msme: msme.data,
+        })
+      }
+      overview={overview}
+      savings={savings}
+      category={category}
+      velocity={velocity}
+      msme={msme}
+    />
   );
 }
 
-function Card({
-  title,
+function Layout({
+  range,
+  setRange,
   asOf,
-  className,
-  children,
+  exportDisabled,
+  onExport,
+  overview,
+  savings,
+  category,
+  velocity,
+  msme,
 }: {
-  title: string;
+  range: UrlRange;
+  setRange: (r: UrlRange) => void;
   asOf: string | null;
-  className?: string;
-  children: React.ReactNode;
+  exportDisabled: boolean;
+  onExport: () => void;
+  overview: React.ComponentProps<typeof OverviewStrip>['query'];
+  savings: React.ComponentProps<typeof SpendSavingsSection>['savings'];
+  category: React.ComponentProps<typeof SpendSavingsSection>['category'];
+  velocity: React.ComponentProps<typeof VelocitySection>['query'];
+  msme: React.ComponentProps<typeof MsmeComplianceSection>['query'];
 }): React.JSX.Element {
-  return (
-    <div className={'border-line bg-panel rounded-lg border p-4 ' + (className ?? '')}>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-ink text-[14px] font-semibold">{title}</h3>
-        <AsOfBadge refreshedAt={asOf} />
-      </div>
-      {children}
-    </div>
-  );
-}
+  const canManage = useHasPermission(PERMISSIONS.ANALYTICS_MANAGE);
+  const refresh = useRefreshAnalytics();
 
-function ConcentrationDrawer({
-  vendors,
-  onClose,
-}: {
-  vendors: TopVendorRow[];
-  onClose: () => void;
-}): React.JSX.Element {
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/30"
-      role="presentation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-panel border-line h-full w-full max-w-lg overflow-y-auto border-l p-5"
-        role="presentation"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-ink text-[15px] font-semibold">
-            Top-10 vendor concentration
-          </h3>
-          <button onClick={onClose} className="text-muted hover:text-ink text-[13px]">
-            Close
-          </button>
-        </div>
-        <table className="w-full text-[13px]">
-          <tbody>
-            {vendors.map((v) => (
-              <tr key={v.vendorId} className="border-line border-b last:border-0">
-                <td className="py-2">
-                  <Link
-                    href={`/vendors/${v.vendorId}`}
-                    className="text-accent-2 hover:underline"
-                  >
-                    {v.vendorName}
-                  </Link>
-                  {v.isMsme && (
-                    <Pill variant="success" className="ml-1">
-                      MSME
-                    </Pill>
-                  )}
-                </td>
-                <td className="font-numeric py-2 text-right tabular-nums">
-                  {inr(v.netSpend)}
-                </td>
-                <td className="text-muted font-numeric py-2 text-right tabular-nums">
-                  {v.pctOfTotal}%
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <CommandBar
+        range={range}
+        onRange={setRange}
+        onExport={onExport}
+        exportDisabled={exportDisabled}
+        trailing={
+          // A manual recompute is an analytics:manage action; everyone else
+          // just sees how fresh the figures are. Hidden until there is an
+          // `asOf`, since the badge reads a null stamp as "Live".
+          asOf ? (
+            <AsOfBadge
+              refreshedAt={asOf}
+              onRefresh={canManage ? () => refresh.mutate() : undefined}
+              refreshing={refresh.isPending}
+            />
+          ) : null
+        }
+      />
+      <div className="flex flex-col gap-8">
+        <OverviewStrip query={overview} />
+        <SpendSavingsSection savings={savings} category={category} />
+        <VelocitySection query={velocity} />
+        <MsmeComplianceSection query={msme} />
       </div>
-    </div>
+    </>
   );
 }

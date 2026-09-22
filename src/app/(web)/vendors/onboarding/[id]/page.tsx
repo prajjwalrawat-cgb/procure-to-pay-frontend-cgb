@@ -6,16 +6,22 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  DataState,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
+  Field,
   Input,
   PageHeader,
   Pill,
   SandboxBanner,
+  Skeleton,
+  StatusText,
+  Textarea,
   VerificationResult,
 } from '@/components/ui';
+import { CheckCircle2, Circle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
@@ -26,6 +32,7 @@ import type {
   OnboardingReviewDecision,
 } from '@/lib/shared';
 
+import { MsmeBadge, useCategoryLabel } from '@/components/vendors/vendor-badges';
 import { useProviderLiveness } from '@/lib/integration-status';
 import {
   useOnboardingDecision,
@@ -39,6 +46,7 @@ import {
 import { useHasPermission } from '@/lib/permissions';
 import { PERMISSIONS } from '@/lib/shared';
 import { useToastStore } from '@/store/toast-store';
+import { formatDate, humanise, statusLabel, statusVariant } from '@/lib/format';
 
 const LIGHT_VARIANT: Record<'green' | 'amber' | 'red', 'success' | 'warn' | 'danger'> = {
   green: 'success',
@@ -89,7 +97,7 @@ const CHAIN_DOT: Record<OnboardingApprovalStep['decision'], string> = {
   PENDING: 'text-faint',
 };
 
-const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString();
+const fmtDate = (iso: string): string => formatDate(iso);
 
 /** The approval chain, so "who has it now" and "who already signed" are visible
  *  rather than inferred. Rendered under every non-actionable panel state. */
@@ -109,19 +117,19 @@ function ChainTrail({
   if (chain.length === 0) return null;
   return (
     <div className="mt-3 border-t border-line pt-3">
-      {caption && <p className="mb-1 text-[12px] text-muted">{caption}</p>}
+      {caption && <p className="mb-1 text-caption text-muted">{caption}</p>}
       <ul className="space-y-1">
         {chain.map((step) => (
-          <li key={`${step.stepNo}-${step.name}`} className="text-[12px]">
+          <li key={`${step.stepNo}-${step.name}`} className="text-caption">
             <span className={CHAIN_DOT[step.decision]}>●</span>{' '}
             <span className="text-ink">
-              {step.approverName ?? step.role.replace(/_/g, ' ')}
+              {step.approverName ?? humanise(step.role)}
             </span>{' '}
             <span className="text-muted">
               —{' '}
               {step.decision === 'PENDING'
                 ? (pendingLabel ?? (step.isCurrent ? 'with them now' : 'not yet reached'))
-                : step.decision.replace(/_/g, ' ').toLowerCase()}
+                : humanise(step.decision).toLowerCase()}
               {step.decidedAt && ` ${fmtDate(step.decidedAt)}`}
             </span>
             {step.comment && <p className="pl-4 italic text-muted">“{step.comment}”</p>}
@@ -145,8 +153,8 @@ function AskedFor({
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-[12px] text-muted">{heading}</p>
-      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] text-ink">
+      <p className="text-caption text-muted">{heading}</p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-4 text-caption text-ink">
         {items.map((item) => (
           <li key={item}>{item}</li>
         ))}
@@ -178,9 +186,9 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
   // this panel used to do) reads as though a decision is still expected here.
   if (data.reviewDecision === 'RETURNED_FOR_INFO') {
     return (
-      <div className="space-y-2 text-[13px]">
+      <div className="space-y-2 text-body-sm">
         <Pill variant="warn" dot>
-          Returned for info{data.decisionAt && ` · ${fmtDate(data.decisionAt)}`}
+          Returned for info{data.decisionAt && `, ${fmtDate(data.decisionAt)}`}
         </Pill>
         <p className="text-muted">
           It is with the vendor now — they can change their answers and upload new
@@ -200,10 +208,10 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
   if (data.reviewDecision) {
     const copy = DECISION_COPY[data.reviewDecision];
     return (
-      <div className="space-y-2 text-[13px]">
+      <div className="space-y-2 text-body-sm">
         <Pill variant={copy.variant} dot>
           {copy.label}
-          {data.decisionAt && ` · ${fmtDate(data.decisionAt)}`}
+          {data.decisionAt && `, ${fmtDate(data.decisionAt)}`}
         </Pill>
         <p className="text-muted">{copy.blurb}</p>
         <ChainTrail chain={chain} />
@@ -216,9 +224,9 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
     // the officer's next move is to chase a person, and this says which one.
     const current = chain.find((s) => s.isCurrent && s.decision === 'PENDING');
     const holder =
-      current && (current.approverName ?? current.role.replace(/_/g, ' ').toLowerCase());
+      current && (current.approverName ?? humanise(current.role).toLowerCase());
     return (
-      <div className="space-y-2 text-[13px]">
+      <div className="space-y-2 text-body-sm">
         <p className="text-muted">
           Submitted on {fmtDate(data.submittedAt)} —{' '}
           {holder
@@ -232,17 +240,17 @@ function NotYourTurn({ data }: { data: OnboardingDetailResponse }): React.JSX.El
 
   const outstanding = data.steps.filter((s) => !s.done);
   return (
-    <div className="space-y-2 text-[13px]">
+    <div className="space-y-2 text-body-sm">
       <p className="text-muted">
         The vendor has not submitted yet ({data.completionPct}% complete), so there is
         nothing to approve. They can still change everything below.
       </p>
       {outstanding.length > 0 && (
         <div>
-          <p className="text-[12px] text-muted">Still to complete:</p>
+          <p className="text-caption text-muted">Still to complete:</p>
           <ul className="mt-1 space-y-0.5">
             {outstanding.map((s) => (
-              <li key={s.step} className="text-[12px] text-ink">
+              <li key={s.step} className="text-caption text-ink">
                 {s.step}. {s.name}
               </li>
             ))}
@@ -311,25 +319,20 @@ function RenameVendorDialog({
           log.
         </DialogDescription>
         <div className="mt-4 space-y-3">
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-muted">
-              Display name
-            </label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-[12px] font-medium text-muted">
-              Legal entity name
-            </label>
+          <Field label="Display name" htmlFor="rename-display">
+            <Input id="rename-display" value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+          <Field label="Legal entity name" htmlFor="rename-legal">
             <Input
+              id="rename-legal"
               value={legalEntityName}
               onChange={(e) => setLegalEntityName(e.target.value)}
               placeholder="Lohith Material Pvt Ltd"
             />
-          </div>
+          </Field>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="default" onClick={onClose}>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           <Button
@@ -348,7 +351,8 @@ function RenameVendorDialog({
 export default function OnboardingReviewPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const { data, isLoading } = useOnboardingDetail(id);
+  const { data, isLoading, error, refetch } = useOnboardingDetail(id);
+  const categoryLabel = useCategoryLabel();
   const decide = useOnboardingDecision(id);
   const returnForInfo = useReturnForInfo(id);
   const verifyDoc = useVerifyDocument(id);
@@ -377,7 +381,39 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   // straight off the provider registry.
   const pennyDropSimulated = isSimulated('PENNY_DROP');
 
-  if (isLoading || !data) return <p className="p-6 text-[13px] text-muted">Loading…</p>;
+  if (isLoading) return <ReviewSkeleton />;
+  if (error || !data) {
+    return (
+      <div>
+        <PageHeader
+          title="Onboarding"
+          breadcrumbs={[
+            { label: 'Vendors', href: '/vendors' },
+            { label: 'Onboarding queue', href: '/vendors/onboarding' },
+            { label: 'Onboarding' },
+          ]}
+        />
+        <div className="rounded-lg border border-line bg-panel">
+          <DataState
+            error={error}
+            isEmpty={!data}
+            onRetry={() => void refetch()}
+            empty={{
+              title: 'Onboarding not found',
+              detail: 'It may have been cancelled, or the link is wrong.',
+              action: (
+                <Button asChild variant="secondary" size="sm">
+                  <Link href="/vendors/onboarding">Back to the queue</Link>
+                </Button>
+              ),
+            }}
+          >
+            {null}
+          </DataState>
+        </div>
+      </div>
+    );
+  }
 
   const act = (decision: 'APPROVE' | 'REJECT'): void => {
     if (!data.myApprovalId) return;
@@ -410,7 +446,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div>
       <PageHeader
         title={data.vendorName}
         breadcrumbs={[
@@ -420,29 +456,29 @@ export default function OnboardingReviewPage(): React.JSX.Element {
         ]}
         meta={
           <>
-            {data.isMsme && <Pill variant="info">MSME</Pill>}
-            <Pill variant="gray">{data.lifecycleStatus.replace(/_/g, ' ')}</Pill>
-            {canRename && (
-              <button
-                type="button"
-                onClick={() => setRenaming(true)}
-                className="text-[12px] font-medium text-muted underline transition-colors duration-hover hover:text-ink"
-              >
-                Edit name
-              </button>
-            )}
+            <StatusText variant={statusVariant(data.lifecycleStatus)}>
+              {statusLabel(data.lifecycleStatus)}
+            </StatusText>
+            {data.isMsme && <MsmeBadge />}
           </>
         }
         description={
-          // legalEntityName is nullable; joining unconditionally printed "null · ".
+          // legalEntityName is nullable; joining unconditionally printed "null, ".
           [
             data.legalEntityName,
-            data.category,
+            categoryLabel(data.category),
             `${data.completionPct}% complete`,
             `open ${data.daysOpen}d`,
           ]
             .filter(Boolean)
             .join(' · ')
+        }
+        actions={
+          canRename ? (
+            <Button variant="secondary" size="sm" onClick={() => setRenaming(true)}>
+              Edit name
+            </Button>
+          ) : undefined
         }
       />
 
@@ -464,8 +500,8 @@ export default function OnboardingReviewPage(): React.JSX.Element {
         </SandboxBanner>
       )}
 
-      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="min-w-0 space-y-4 lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-4">
           {/* Risk traffic-lights */}
           <Card>
             <CardHeader>
@@ -488,12 +524,14 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               <CardTitle>Wizard progress</CardTitle>
             </CardHeader>
             <CardContent>
-              <ol className="space-y-1">
+              <ol className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
                 {data.steps.map((s) => (
-                  <li key={s.step} className="flex items-center gap-2 text-[13px]">
-                    <span className={s.done ? 'text-accent-2' : 'text-faint'}>
-                      {s.done ? '●' : '○'}
-                    </span>
+                  <li key={s.step} className="flex items-center gap-2 text-body-sm">
+                    {s.done ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-success" aria-label="Done" />
+                    ) : (
+                      <Circle className="h-4 w-4 shrink-0 text-faint" aria-label="Not done" />
+                    )}
                     <span className={s.done ? 'text-ink' : 'text-muted'}>
                       {s.step}. {s.name}
                     </span>
@@ -510,12 +548,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {!data.bank ? (
-                <p className="text-[13px] text-muted">No bank account submitted yet.</p>
+                <p className="text-body-sm text-muted">No bank account submitted yet.</p>
               ) : (
-                <div className="space-y-2 text-[13px]">
+                <div className="space-y-2 text-body-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-ink">
-                      {data.bank.bankName} · ••••{data.bank.accountNoLast4} ·{' '}
+                      {data.bank.bankName} ••••{data.bank.accountNoLast4},{' '}
                       {data.bank.ifsc}
                     </span>
                     <VerificationResult
@@ -545,24 +583,24 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                     <span className="text-ink">{data.bank.holderName}</span>
                     {data.bank.pennyDropNameReturned && (
                       <>
-                        {' · '}bank returned:{' '}
+                        {', '}bank returned:{' '}
                         <span className="text-ink">
                           {data.bank.pennyDropNameReturned}
                         </span>
                       </>
                     )}
                     {data.bank.nameMatchScore !== null && (
-                      <> · match {Math.round(data.bank.nameMatchScore * 100)}%</>
+                      <>, match {Math.round(data.bank.nameMatchScore * 100)}%</>
                     )}
                   </p>
                   {data.bank.manualOverrideReason && (
-                    <p className="text-[12px] text-muted">
+                    <p className="text-caption text-muted">
                       Accepted: {data.bank.manualOverrideReason}
                     </p>
                   )}
                   {!data.bank.isVerified && !data.bank.manualOverrideReason && (
                     <div className="space-y-2 rounded-md border border-warn/40 bg-warn-wash p-3">
-                      <p className="text-[12px]">
+                      <p className="text-caption">
                         The bank did not confirm this name holds this account. Check it
                         against the cancelled cheque before activation — this vendor
                         cannot be activated until you accept it or send it back.
@@ -575,7 +613,8 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             placeholder="What did you check? (recorded against your name)"
                           />
                           <Button
-                            variant="default"
+                            variant="secondary"
+                            size="sm"
                             disabled={
                               overrideBank.isPending || bankReason.trim().length < 10
                             }
@@ -610,24 +649,24 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {data.documents.length === 0 ? (
-                <p className="text-[13px] text-muted">No documents uploaded yet.</p>
+                <p className="text-body-sm text-muted">No documents uploaded yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.documents.map((d) => (
                     <li
                       key={d.id}
-                      className="flex items-center justify-between text-[13px]"
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-line pb-2 text-body-sm last:border-b-0 last:pb-0"
                     >
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span className="font-medium text-ink">
-                          {d.docType.replace(/_/g, ' ')}
+                          {humanise(d.docType)}
                         </span>
                         {d.url ? (
                           <a
                             href={d.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand ml-2 font-medium hover:underline"
+                            className="text-accent ml-2 font-medium hover:underline"
                           >
                             {d.filename}
                           </a>
@@ -637,13 +676,13 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {d.url && (
                           <a
                             href={d.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-brand text-[12px] font-medium hover:underline"
+                            className="text-accent text-caption font-medium hover:underline"
                           >
                             View
                           </a>
@@ -654,8 +693,8 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             like any other simulated verdict. MANUALLY VERIFIED
                             was a human and keeps its colour either way. */}
                         <VerificationResult
-                          status={d.verificationStatus.replace(/_/g, ' ')}
-                          variant={DOC_VARIANT[d.verificationStatus] ?? 'gray'}
+                          status={humanise(d.verificationStatus)}
+                          variant={DOC_VARIANT[d.verificationStatus] ?? 'neutral'}
                           dot={false}
                           simulated={
                             d.verificationStatus === 'AUTO_VERIFIED' &&
@@ -666,7 +705,8 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                         {d.verificationStatus === 'PENDING' && canVerifyDocs && (
                           <>
                             <Button
-                              variant="default"
+                              variant="secondary"
+                              size="sm"
                               onClick={() =>
                                 verifyDoc.mutate(
                                   { docId: d.id, decision: 'VERIFIED' },
@@ -681,6 +721,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                             </Button>
                             <Button
                               variant="ghost"
+                              size="sm"
                               onClick={() =>
                                 verifyDoc.mutate(
                                   {
@@ -714,16 +755,16 @@ export default function OnboardingReviewPage(): React.JSX.Element {
             </CardHeader>
             <CardContent>
               {data.screenings.length === 0 ? (
-                <p className="text-[13px] text-muted">No screenings run yet.</p>
+                <p className="text-body-sm text-muted">No screenings run yet.</p>
               ) : (
                 <ul className="space-y-2">
                   {data.screenings.map((s) => (
                     <li
                       key={s.id}
-                      className="flex flex-wrap items-center justify-between gap-2 text-[13px]"
+                      className="flex flex-wrap items-center justify-between gap-2 text-body-sm"
                     >
                       <span className="text-ink">
-                        {s.screeningType.replace(/_/g, ' ')}
+                        {humanise(s.screeningType)}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
                         {/* A green CLEAR from a sandbox screener is the most
@@ -743,11 +784,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                           }
                           dot={false}
                           simulated={isSimulated(s.provider as IntegrationProvider)}
-                          label={`${s.screeningType.replace(/_/g, ' ').toLowerCase()} screening`}
+                          label={`${humanise(s.screeningType).toLowerCase()} screening`}
                         />
                         {s.status === 'FLAGGED' && canReviewScreening && (
                           <Button
-                            variant="default"
+                            variant="secondary"
+                            size="sm"
                             onClick={() =>
                               reviewScreening.mutate(
                                 {
@@ -777,14 +819,14 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                 <CardTitle>Beneficial owners</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-1 text-[13px]">
+                <ul className="space-y-1 text-body-sm">
                   {data.beneficialOwners.map((o) => (
-                    <li key={o.id} className="flex justify-between">
+                    <li key={o.id} className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-ink">
                         {o.ownerName}{' '}
                         <span className="text-muted">({o.ownershipPct}%)</span>
                       </span>
-                      {o.isPep && <Pill variant="warn">PEP</Pill>}
+                      {o.isPep && <StatusText variant="warn">Politically exposed</StatusText>}
                     </li>
                   ))}
                 </ul>
@@ -793,8 +835,9 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           )}
         </div>
 
-        {/* Decision panel */}
-        <div className="space-y-4">
+        {/* Decision panel — sticks beside the dossier on wide screens so the
+            reviewer can read and decide without scrolling back up. */}
+        <div className="min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
           <Card>
             <CardHeader>
               <CardTitle>Decision</CardTitle>
@@ -816,11 +859,12 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                       />
                     </div>
                   )}
-                  <textarea
+                  <Textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Comment / reason (required to return or reject)…"
-                    className="mb-3 w-full rounded-md border border-line bg-panel px-3 py-2 text-[13px] text-ink"
+                    placeholder="Comment or reason (required to return or reject)…"
+                    aria-label="Decision comment"
+                    className="mb-3"
                     rows={4}
                   />
                   <div className="space-y-2">
@@ -833,7 +877,7 @@ export default function OnboardingReviewPage(): React.JSX.Element {
                       Approve & activate
                     </Button>
                     <Button
-                      variant="default"
+                      variant="secondary"
                       className="w-full"
                       disabled={returnForInfo.isPending}
                       onClick={sendBack}
@@ -853,9 +897,10 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               ) : (
                 <NotYourTurn data={data} />
               )}
-              <div className="mt-4 text-[12px] text-muted">
-                SLA target: {data.slaTargetHours}h
-              </div>
+              <p className="mt-4 border-t border-line pt-3 text-caption text-muted">
+                Review SLA: {data.slaTargetHours}h
+                {data.slaBreachAt && `, due ${fmtDate(data.slaBreachAt)}`}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -872,6 +917,35 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           onClose={() => setRenaming(false)}
         />
       )}
+    </div>
+  );
+}
+
+/** Shaped like the review page, so nothing jumps when the dossier lands. */
+function ReviewSkeleton(): React.JSX.Element {
+  return (
+    <div aria-busy="true" aria-live="polite">
+      <div className="mb-6 space-y-2">
+        <Skeleton className="h-3 w-48" />
+        <Skeleton className="h-6 w-72" />
+        <Skeleton className="h-3.5 w-56" />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="space-y-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-3 rounded-lg border border-line bg-panel p-4">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3 rounded-lg border border-line bg-panel p-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </div>
+      </div>
     </div>
   );
 }

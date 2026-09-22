@@ -10,9 +10,12 @@ import {
   KpiCard,
   PageHeader,
   Pill,
+  SortableHead,
   TableState,
+  useSort,
 } from '@/components/ui';
 import { AlertTriangle, Download } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 import {
   Bar,
@@ -32,7 +35,13 @@ import {
 import { openAuthedAsset } from '@/lib/api-client';
 import { inr, inrCompact } from '@/lib/format';
 
-import { AsOfBadge, MSME_BUCKET as BUCKET, MSME_BUCKET_ORDER as BUCKET_ORDER } from '../_lib';
+import {
+  AnalyticsTabs,
+  AsOfBadge,
+  MSME_BUCKET as BUCKET,
+  MSME_BUCKET_ORDER as BUCKET_ORDER,
+  TOOLTIP_STYLE,
+} from '../_lib';
 
 const PILL: Record<keyof typeof CHART_STATUS, 'success' | 'warn' | 'danger'> = {
   good: 'success',
@@ -49,6 +58,13 @@ export default function MsmePage(): React.JSX.Element {
   // so the page opened with its most important table hidden.
   const [bucket, setBucket] = useState<MsmeBucketKey>('BREACH_45_PLUS');
   const exposure = useMsmeExposure(bucket);
+  const { sorted, sort, toggle: toggleSort } = useSort(exposure.data?.rows ?? [], {
+    invoice: (r) => r.invoiceNumber,
+    vendor: (r) => r.vendorName,
+    days: (r) => Number(r.daysOutstanding),
+    net: (r) => Number(r.netAmount),
+    interest: (r) => Number(r.interestIfBreached),
+  });
 
   const trendPoints = trend.data?.points ?? [];
   const trendIsEmpty =
@@ -64,7 +80,7 @@ export default function MsmePage(): React.JSX.Element {
   const breaching = (breach?.invoiceCount ?? 0) > 0;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="MSME §15 compliance"
         breadcrumbs={[{ label: 'Analytics', href: '/analytics' }, { label: 'MSME §15' }]}
@@ -82,7 +98,7 @@ export default function MsmePage(): React.JSX.Element {
         }
         actions={
           <Button
-            variant="default"
+            variant="secondary"
             size="sm"
             onClick={() => void openAuthedAsset('/analytics/msme/report.pdf')}
           >
@@ -90,6 +106,8 @@ export default function MsmePage(): React.JSX.Element {
           </Button>
         }
       />
+
+      <AnalyticsTabs active="/analytics/msme" />
 
       {/* The three figures a finance head is accountable for. */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -122,7 +140,7 @@ export default function MsmePage(): React.JSX.Element {
           each with its own label — never colour alone. */}
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-ink text-[14px] font-semibold">
+          <h2 className="text-ink text-h3 font-semibold">
             MSME payable against the 45-day cap
           </h2>
           <AsOfBadge refreshedAt={dash.data?.asOfDate ?? null} />
@@ -140,8 +158,7 @@ export default function MsmePage(): React.JSX.Element {
           }}
         >
           <>
-            <div
-              className="flex h-8 w-full overflow-hidden rounded-sm"
+            <div className="flex h-8 w-full overflow-hidden rounded-sm"
               role="img"
               aria-label={buckets
                 .map(
@@ -192,16 +209,16 @@ export default function MsmePage(): React.JSX.Element {
                         className="h-2 w-2 shrink-0 rounded-sm"
                         style={{ backgroundColor: CHART_STATUS[meta.tone] }}
                       />
-                      <span className="text-text text-[12px] font-medium">
+                      <span className="text-text text-caption font-medium">
                         {meta.short}
                       </span>
-                      <span className="text-faint text-[11px]">{meta.days}</span>
+                      <span className="text-faint text-micro">{meta.days}</span>
                     </span>
-                    <span className="font-numeric text-ink mt-1 block text-[15px] font-semibold">
+                    <span className="font-numeric text-ink mt-1 block text-h3 font-semibold">
                       {inr(b.totalExposure)}
                     </span>
-                    <span className="text-muted text-[11px]">
-                      {b.invoiceCount} invoice{b.invoiceCount === 1 ? '' : 's'} · avg{' '}
+                    <span className="text-muted text-micro">
+                      {b.invoiceCount} invoice{b.invoiceCount === 1 ? '' : 's'}, avg{' '}
                       {b.avgDays} days
                     </span>
                   </button>
@@ -210,7 +227,7 @@ export default function MsmePage(): React.JSX.Element {
             </div>
 
             {breaching && (
-              <p className="text-danger mt-3 flex items-start gap-1.5 text-[12px]">
+              <p className="text-danger mt-3 flex items-start gap-1.5 text-caption">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                 <span>
                   Interest is already accruing on the breached invoices. §16 liability is
@@ -225,7 +242,7 @@ export default function MsmePage(): React.JSX.Element {
       {/* Trend. Single series, so no legend — the title names it. */}
       <section className="border-line bg-panel mb-4 rounded-lg border p-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-ink text-[14px] font-semibold">
+          <h2 className="text-ink text-h3 font-semibold">
             Interest exposure, last 12 months
           </h2>
           <AsOfBadge refreshedAt={trend.data?.refreshedAt ?? null} />
@@ -256,11 +273,7 @@ export default function MsmePage(): React.JSX.Element {
               />
               <Tooltip
                 formatter={(v: number) => [inr(String(v)), 'Interest exposure']}
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 6,
-                  border: `1px solid ${CHART_CHROME.grid}`,
-                }}
+                contentStyle={TOOLTIP_STYLE}
               />
               <Bar
                 dataKey={(p: { breachExposure: string }) => Number(p.breachExposure)}
@@ -275,9 +288,9 @@ export default function MsmePage(): React.JSX.Element {
       </section>
 
       {/* Exposure detail — always rendered, defaulting to the breach bucket. */}
-      <section className="border-line bg-panel overflow-x-auto rounded-lg border">
+      <section className="border-line bg-panel overflow-hidden rounded-lg border">
         <div className="border-line flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-ink text-[14px] font-semibold">
+          <h2 className="text-ink text-h3 font-semibold">
             {BUCKET[bucket].label}
             <span className="text-faint ml-1.5 font-normal">{BUCKET[bucket].days}</span>
           </h2>
@@ -287,14 +300,20 @@ export default function MsmePage(): React.JSX.Element {
           </Pill>
         </div>
 
-        <table className="w-full min-w-[640px] text-[13px]">
-          <thead className="bg-canvas text-faint border-line border-b text-left text-[11px] uppercase tracking-wide">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-line border-b text-left">
             <tr>
-              <th className="px-3 py-2 font-medium">Invoice</th>
-              <th className="px-3 py-2 font-medium">Vendor</th>
-              <th className="px-3 py-2 text-right font-medium">Days</th>
-              <th className="px-3 py-2 text-right font-medium">Net</th>
-              <th className="px-3 py-2 text-right font-medium">Interest if unpaid</th>
+              <SortableHead label="Invoice" sortKey="invoice" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Vendor" sortKey="vendor" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Days" sortKey="days" sort={sort} onSort={toggleSort} numeric />
+              <SortableHead label="Net" sortKey="net" sort={sort} onSort={toggleSort} numeric />
+              <SortableHead
+                label="Interest if unpaid"
+                sortKey="interest"
+                sort={sort}
+                onSort={toggleSort}
+                numeric
+              />
             </tr>
           </thead>
           <tbody>
@@ -315,24 +334,29 @@ export default function MsmePage(): React.JSX.Element {
                     : undefined,
               }}
             />
-            {(exposure.data?.rows ?? []).map((r) => (
-              <tr key={r.invoiceId} className="border-line hover:bg-canvas/50 border-b last:border-0">
-                <td className="font-numeric px-3 py-2">{r.invoiceNumber}</td>
-                <td className="text-text px-3 py-2">{r.vendorName}</td>
-                <td className="font-numeric px-3 py-2 text-right">
-                  {r.daysOutstanding}
-                </td>
-                <td className="font-numeric px-3 py-2 text-right">{inr(r.netAmount)}</td>
-                <td className="font-numeric text-danger px-3 py-2 text-right font-medium">
-                  {inr(r.interestIfBreached)}
-                </td>
-              </tr>
-            ))}
+            {!exposure.isLoading &&
+              sorted.map((r) => (
+                <tr key={r.invoiceId} className="border-line hover:bg-canvas/50 border-b last:border-0">
+                  <td className="font-numeric px-3 py-3">
+                    <Link href={`/invoices/${r.invoiceId}`} className="text-ink hover:text-accent">
+                      {r.invoiceNumber}
+                    </Link>
+                  </td>
+                  <td className="text-text px-3 py-3">{r.vendorName}</td>
+                  <td className="font-numeric px-3 py-3 text-right">
+                    {r.daysOutstanding}
+                  </td>
+                  <td className="font-numeric px-3 py-3 text-right">{inr(r.netAmount)}</td>
+                  <td className="font-numeric text-danger px-3 py-3 text-right font-medium">
+                    {inr(r.interestIfBreached)}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
 
         {exposure.data && (exposure.data.rows.length > 0) && (
-          <p className="text-faint border-line border-t px-4 py-2.5 text-[11px]">
+          <p className="text-faint border-line border-t px-4 py-2.5 text-micro">
             Interest = net × RBI reference rate ({exposure.data.rbiReferenceRatePct}%) ×{' '}
             {exposure.data.interestMultiplier} × days late ÷ 365. An estimate for
             planning — not a posted liability.

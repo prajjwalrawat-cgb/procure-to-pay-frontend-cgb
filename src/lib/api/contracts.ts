@@ -18,6 +18,7 @@ import type {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages } from '@/lib/api/paginate';
 
 export const contractKeys = {
   all: ['contracts'] as const,
@@ -32,6 +33,13 @@ export const useContracts = (tab: ContractTab) =>
   useQuery({
     queryKey: contractKeys.list(tab),
     queryFn: () => apiFetch<ContractListResponse>(`/contracts?tab=${tab}`),
+  });
+
+/** Every contract in a tab (the list sorts and filters client-side). */
+export const useAllContracts = (tab: ContractTab) =>
+  useQuery({
+    queryKey: [...contractKeys.list(tab), 'all-pages'],
+    queryFn: () => fetchAllPages<ContractListResponse>(`/contracts?tab=${tab}`),
   });
 
 export const useContract = (id: string) =>

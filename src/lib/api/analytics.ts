@@ -1,7 +1,11 @@
 'use client';
 
 import type {
+  AnalyticsOverviewResponse,
   AnalyticsPeriodKey,
+  MsmeComplianceResponse,
+  SpendSavingsResponse,
+  VelocityResponse,
   ApPerformanceResponse,
   BuyerLeaderboardResponse,
   CategoryPerformanceResponse,
@@ -135,3 +139,42 @@ export function useLogAvoidedCost() {
 }
 
 export const msmeReportUrl = (): string => `${API_URL}/analytics/msme/report.pdf`;
+
+// ── Rebuilt Analytics page (overview + three sections) ──────────────────────
+
+/** Period filter as it appears in the URL: a preset, or CUSTOM with from/to (YYYY-MM-DD). */
+export interface AnalyticsRange {
+  period: AnalyticsPeriodKey;
+  from?: string;
+  to?: string;
+}
+
+function rangeQuery(r: AnalyticsRange): string {
+  const p = new URLSearchParams({ period: r.period });
+  if (r.period === 'CUSTOM') {
+    if (r.from) p.set('from', r.from);
+    if (r.to) p.set('to', r.to);
+  }
+  return p.toString();
+}
+
+function useRangeAnalytics<T>(name: string, path: string, r: AnalyticsRange): UseQueryResult<T> {
+  const qs = rangeQuery(r);
+  return useQuery({
+    queryKey: ['analytics', name, qs],
+    queryFn: () => apiFetch<T>(`/analytics/${path}?${qs}`),
+    staleTime: 60_000,
+  });
+}
+
+export const useAnalyticsOverview = (r: AnalyticsRange) =>
+  useRangeAnalytics<AnalyticsOverviewResponse>('overview', 'overview', r);
+export const useSpendSavings = (r: AnalyticsRange) =>
+  useRangeAnalytics<SpendSavingsResponse>('spend-savings', 'spend-savings', r);
+export const useVelocity = (r: AnalyticsRange) =>
+  useRangeAnalytics<VelocityResponse>('velocity', 'velocity', r);
+export const useMsmeCompliance = (r: AnalyticsRange) =>
+  useRangeAnalytics<MsmeComplianceResponse>('msme-compliance', 'msme/compliance', r);
+/** Spend by category over a range (the existing endpoint, range-aware). */
+export const useSpendByCategoryRange = (r: AnalyticsRange) =>
+  useRangeAnalytics<SpendByCategoryResponse>('spend-category-range', 'spend/by-category', r);

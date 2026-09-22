@@ -72,7 +72,7 @@ export function StageStrip({
             <div className="flex w-[68px] shrink-0 flex-col items-center gap-1 px-1 sm:w-auto sm:min-w-[72px]">
               <span
                 className={cn(
-                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-semibold',
+                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-micro font-semibold',
                   done && 'border-accent bg-accent text-white',
                   active && !isFail && 'border-gold bg-gold-wash text-gold-ink',
                   isFail && 'border-danger bg-danger text-white',
@@ -89,7 +89,7 @@ export function StageStrip({
               </span>
               <span
                 className={cn(
-                  'text-center text-[11px] leading-tight',
+                  'text-center text-micro leading-tight',
                   active ? 'text-ink font-semibold' : done ? 'text-text' : 'text-faint',
                 )}
                 title={isFail ? (failedLabel ?? stage.label) : stage.label}
@@ -97,7 +97,7 @@ export function StageStrip({
                 {isFail ? (failedLabel ?? stage.label) : stage.label}
               </span>
               {stage.at && (
-                <span className="font-numeric text-faint text-[10px]">{stage.at}</span>
+                <span className="font-numeric text-faint text-micro">{stage.at}</span>
               )}
             </div>
 

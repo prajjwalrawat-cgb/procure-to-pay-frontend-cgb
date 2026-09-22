@@ -78,24 +78,20 @@ export default function FulfillPage(): React.JSX.Element {
     productId && locationId && Number(qty) > 0 && (!short || allowNegativeStock);
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto w-full max-w-4xl">
       <PageHeader
         title="Order fulfilment"
-        description="Stock-checked customer dispatch"
+        description="Dispatch a customer order, checked against stock at the pick location."
         actions={
-          <>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
-                Stock overview
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory">Stock overview</Link>
+          </Button>
         }
       />
 
       <div className="rounded-lg border border-line bg-panel p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <Field label="Product" required>
               <ProductSelect
                 value={productId}
@@ -168,7 +164,7 @@ export default function FulfillPage(): React.JSX.Element {
               onChange={(e) => setOrderValue(e.target.value)}
             />
           </Field>
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <Field label="Remark">
               <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
             </Field>
@@ -176,12 +172,12 @@ export default function FulfillPage(): React.JSX.Element {
         </div>
 
         {short && Number(qty) > 0 && (
-          <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-            <p className="text-[12px] text-amber-800">
+          <div className="mt-3 rounded-md border border-warn/40 bg-warn-bg px-3 py-2">
+            <p className="text-caption text-warn">
               Only {atLocation} on hand at this location — {Number(qty) - atLocation}{' '}
               short.
             </p>
-            <label className="mt-1.5 flex items-center gap-2 text-[12px] text-amber-900">
+            <label className="mt-1.5 flex items-center gap-2 text-caption text-warn">
               <input
                 type="checkbox"
                 checked={allowNegativeStock}
@@ -192,10 +188,10 @@ export default function FulfillPage(): React.JSX.Element {
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!ready || fulfill.isPending}
             onClick={() => void submit()}

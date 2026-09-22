@@ -7,8 +7,10 @@
  * instead of only in a toast.
  */
 
-const INPUT_CLASS =
-  'border-line bg-panel text-text placeholder:text-faint focus:border-accent w-full rounded-md border px-3 py-1.5 text-[13px] outline-none';
+import { controlClass } from '@/components/ui';
+
+// The shared control definition — see components/ui/components/input.tsx.
+const INPUT_CLASS = controlClass;
 const ERROR_CLASS = 'border-danger focus:border-danger';
 
 export function Field({
@@ -26,15 +28,15 @@ export function Field({
 }): React.JSX.Element {
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-[12px] font-medium text-muted">
+      <span className="text-caption font-medium text-muted">
         {label}
         {required && <span className="text-danger"> *</span>}
       </span>
       {children}
       {error ? (
-        <span className="text-[11px] text-danger">{error}</span>
+        <span className="text-caption text-danger">{error}</span>
       ) : hint ? (
-        <span className="text-[11px] text-faint">{hint}</span>
+        <span className="text-caption text-muted">{hint}</span>
       ) : null}
     </label>
   );
@@ -55,7 +57,10 @@ export function SelectInput({
 }: React.SelectHTMLAttributes<HTMLSelectElement> & {
   invalid?: boolean;
 }): React.JSX.Element {
-  return <select {...props} className={`${INPUT_CLASS} ${invalid ? ERROR_CLASS : ''}`} />;
+  // pr-8 clears the chevron the global select style draws on the right.
+  return (
+    <select {...props} className={`${INPUT_CLASS} pr-8 ${invalid ? ERROR_CLASS : ''}`} />
+  );
 }
 
 export function TextArea({

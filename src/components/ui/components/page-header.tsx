@@ -2,14 +2,22 @@
 
 /**
  * The one page-title pattern. Every list and detail screen opens with this, so
- * heading size, the display face, breadcrumb behaviour and action placement are
- * decided once instead of drifting across 86 pages.
+ * heading size, breadcrumb behaviour and action placement are decided once
+ * instead of drifting across 90 pages.
  *
- * The display (serif) face appears here and in KpiCard, and nowhere else — it
- * is authoritative at 20px+ and dated in a table, so the gate is structural.
+ * Two rules the props enforce:
+ *
+ *  - Context goes in `breadcrumbs`, never appended to `description`. The old
+ *    dot-joined "Purchase requests / Artbox Solutions" pattern put the section, a
+ *    separator and the tenant name into one grey string that read as neither a
+ *    sentence nor a path. The organisation is already named in the top nav; on
+ *    a sub-page the breadcrumb says where you are.
+ *  - `actions` holds at most one primary button. Anything else is secondary —
+ *    see button.tsx.
  */
 
 import { ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import * as React from 'react';
 
 import { cn } from '../lib/cn';
@@ -21,14 +29,14 @@ export interface Crumb {
 
 export interface PageHeaderProps {
   title: React.ReactNode;
-  /** One line under the title. Keep it factual — this is not marketing copy. */
+  /** One line under the title. Factual — this is not marketing copy. */
   description?: React.ReactNode;
-  /** Status pills, sandbox chips, SLA markers — sits inline after the title. */
+  /** Status text, SLA markers — sits inline after the title. */
   meta?: React.ReactNode;
-  /** Primary/secondary actions, right-aligned on desktop, wrapped on mobile. */
+  /** At most one primary action; the rest secondary. Right-aligned. */
   actions?: React.ReactNode;
   breadcrumbs?: Crumb[];
-  /** Renders the title in the mono face — for document numbers like PO-2026-0041. */
+  /** Renders the title with tabular figures — for document numbers. */
   numeric?: boolean;
   className?: string;
 }
@@ -43,22 +51,28 @@ export function PageHeader({
   className,
 }: PageHeaderProps): React.JSX.Element {
   return (
-    <header className={cn('mb-5', className)}>
+    <header className={cn('mb-6', className)}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav aria-label="Breadcrumb" className="mb-1.5">
-          <ol className="text-faint flex flex-wrap items-center gap-1 text-[11px]">
+          <ol className="text-muted flex flex-wrap items-center gap-1 text-caption">
             {breadcrumbs.map((c, i) => (
               <li key={`${c.label}-${i}`} className="flex items-center gap-1">
-                {i > 0 && <ChevronRight className="h-3 w-3 shrink-0" aria-hidden />}
+                {i > 0 && (
+                  <ChevronRight className="text-faint h-3 w-3 shrink-0" aria-hidden />
+                )}
                 {c.href ? (
-                  <a
+                  // next/link, not <a>: a full page load drops the in-memory
+                  // access token and bounces through the session refresh.
+                  <Link
                     href={c.href}
-                    className="hover:text-ink duration-hover transition-colors"
+                    className="hover:text-accent duration-hover transition-colors"
                   >
                     {c.label}
-                  </a>
+                  </Link>
                 ) : (
-                  <span aria-current="page">{c.label}</span>
+                  <span className="text-text" aria-current="page">
+                    {c.label}
+                  </span>
                 )}
               </li>
             ))}
@@ -71,10 +85,8 @@ export function PageHeader({
           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
             <h1
               className={cn(
-                'text-ink text-[20px] leading-tight sm:text-[22px]',
-                numeric
-                  ? 'font-numeric font-semibold'
-                  : 'font-display tracking-display',
+                'text-ink text-h1 font-semibold',
+                numeric && 'font-numeric',
               )}
             >
               {title}
@@ -82,7 +94,7 @@ export function PageHeader({
             {meta}
           </div>
           {description && (
-            <p className="text-muted mt-1 text-[13px] leading-relaxed">{description}</p>
+            <p className="text-muted mt-1 text-body">{description}</p>
           )}
         </div>
 

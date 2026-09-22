@@ -6,9 +6,12 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  EmptyState,
+  ErrorState,
   Input,
   PageHeader,
   Pill,
+  Skeleton,
 } from '@/components/ui';
 import {
   LEGAL_ENTITY_TYPE,
@@ -47,6 +50,7 @@ import {
   type UploadedDocResult,
 } from '@/vendor/lib/onboarding';
 import { useToastStore } from '@/vendor/store/toast-store';
+import { formatDate } from '@/lib/format';
 
 /** Mirrors the API's MIME allow-list (upload-options.ts) so the picker only
  *  offers file types the server will accept. */
@@ -123,13 +127,13 @@ function ExtractionNotes({
       {relevant.map((r) => (
         <div key={r.docType}>
           {r.errors.map((e) => (
-            <p key={e} className="mt-2 text-[12px] text-danger">
+            <p key={e} className="mt-2 text-caption text-danger">
               <span className="capitalize">{prefix(r)}</span>
               {e}
             </p>
           ))}
           {r.warnings.map((w) => (
-            <p key={w} className="mt-2 text-[12px] text-warn">
+            <p key={w} className="mt-2 text-caption text-warn">
               <span className="capitalize">{prefix(r)}</span>
               {w}
             </p>
@@ -166,7 +170,7 @@ function Field({
   return (
     <div>
       <div className="mb-1 flex items-center gap-2">
-        <label className="block text-[12px] font-medium text-muted">{label}</label>
+        <label className="block text-caption font-medium text-muted">{label}</label>
         {provenance && <SourceBadge field={provenance} />}
       </div>
       <Input
@@ -179,14 +183,14 @@ function Field({
         className={locked ? 'cursor-not-allowed bg-canvas text-muted' : undefined}
       />
       {error ? (
-        <p className="mt-1 text-[12px] text-danger">{error}</p>
+        <p className="mt-1 text-caption text-danger">{error}</p>
       ) : locked ? (
-        <p className="mt-1 text-[12px] text-faint">
+        <p className="mt-1 text-caption text-faint">
           Taken from your documents and verified — to change it, upload a corrected
           document or ask your buyer to raise a change request.
         </p>
       ) : (
-        hint && <p className="mt-1 text-[12px] text-faint">{hint}</p>
+        hint && <p className="mt-1 text-caption text-faint">{hint}</p>
       )}
     </div>
   );
@@ -220,7 +224,7 @@ function StateCodeField({
   return (
     <div>
       <div className="mb-1 flex items-center gap-2">
-        <label className="block text-[12px] font-medium text-muted">State</label>
+        <label className="block text-caption font-medium text-muted">State</label>
         {provenance && <SourceBadge field={provenance} />}
       </div>
       <select
@@ -228,7 +232,7 @@ function StateCodeField({
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
         disabled={locked}
-        className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-[13px] text-text ${
+        className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-body-sm text-text ${
           error ? 'border-danger' : ''
         } ${locked ? 'cursor-not-allowed bg-canvas text-muted' : ''}`}
       >
@@ -244,7 +248,7 @@ function StateCodeField({
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-[12px] text-danger">{error}</p>}
+      {error && <p className="mt-1 text-caption text-danger">{error}</p>}
     </div>
   );
 }
@@ -267,7 +271,7 @@ function EntityTypeField({
   return (
     <div>
       <div className="mb-1 flex items-center gap-2">
-        <label className="block text-[12px] font-medium text-muted">Type of entity</label>
+        <label className="block text-caption font-medium text-muted">Type of entity</label>
         {provenance && <SourceBadge field={provenance} />}
       </div>
       <select
@@ -275,7 +279,7 @@ function EntityTypeField({
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
         disabled={locked}
-        className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-[13px] text-text ${
+        className={`h-9 w-full rounded-sm border border-line bg-panel px-2 text-body-sm text-text ${
           error ? 'border-danger' : ''
         } ${locked ? 'cursor-not-allowed bg-canvas text-muted' : ''}`}
       >
@@ -286,7 +290,7 @@ function EntityTypeField({
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-[12px] text-danger">{error}</p>}
+      {error && <p className="mt-1 text-caption text-danger">{error}</p>}
     </div>
   );
 }
@@ -344,7 +348,7 @@ function onboardingStatus(data: ResumeResponse): {
     };
   }
   if (data.submittedAt) {
-    const on = new Date(data.submittedAt).toLocaleDateString('en-IN');
+    const on = formatDate(data.submittedAt);
     return {
       pill: 'Under review',
       title: `Submitted on ${on} — awaiting your buyer's review`,
@@ -358,7 +362,7 @@ function onboardingStatus(data: ResumeResponse): {
 }
 
 export default function OnboardingWizardPage(): React.JSX.Element {
-  const { data, isLoading, error } = useOnboarding();
+  const { data, isLoading, error, refetch } = useOnboarding();
   // The buyer's own category list — what documents this vendor's category
   // expects is their configuration, not a constant.
   const { data: categoryOptions } = useCategoryOptions();
@@ -492,13 +496,35 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     };
   }, [f.ifsc]);
 
-  if (isLoading) return <p className="p-6 text-[13px] text-muted">Loading…</p>;
+  if (isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-3xl" aria-busy="true" aria-live="polite">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="mt-2 h-4 w-full max-w-md" />
+        <div className="mt-5 flex gap-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-28" />
+          ))}
+        </div>
+        <Skeleton className="mt-4 h-80 rounded-lg" />
+      </div>
+    );
+  }
   if (error || !data)
     return (
-      <div className="p-6">
-        <p className="text-[13px] text-muted">
-          No onboarding in progress for this account.
-        </p>
+      <div className="mx-auto w-full max-w-3xl">
+        <PageHeader title="Vendor onboarding" />
+        <div className="border-line bg-panel rounded-lg border">
+          {/* A 404 is the normal "nothing to onboard" answer, not a fault. */}
+          {error && (error as { status?: number }).status !== 404 ? (
+            <ErrorState error={error} onRetry={() => void refetch()} />
+          ) : (
+            <EmptyState
+              title="No onboarding in progress"
+              detail="This account has no onboarding to complete. If you expected one, ask your buyer to re-send the invitation."
+            />
+          )}
+        </div>
       </div>
     );
 
@@ -721,8 +747,8 @@ export default function OnboardingWizardPage(): React.JSX.Element {
     return (
       <div
         key={d}
-        className={`border-border flex items-center gap-2 rounded-md border px-3 py-2 text-[13px] transition-colors ${
-          done ? 'border-brand/40 bg-brand/5' : ''
+        className={`border-border flex items-center gap-2 rounded-md border px-3 py-2 text-body-sm transition-colors ${
+          done ? 'border-accent/40 bg-accent-wash' : ''
         } ${busy ? 'opacity-60' : ''}`}
       >
         <label className={busy ? 'pointer-events-none' : 'cursor-pointer'}>
@@ -750,15 +776,15 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         )}
         {done && (
           <>
-            <span className="max-w-[180px] truncate text-[12px] text-muted">
-              {done.filename} · {formatBytes(done.sizeBytes)}
+            <span className="max-w-44 truncate text-caption text-muted">
+              {done.filename}, {formatBytes(done.sizeBytes)}
             </span>
             {done.url && (
               <a
                 href={done.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-brand text-[12px] font-medium hover:underline"
+                className="text-accent text-caption font-medium hover:underline"
               >
                 View
               </a>
@@ -810,7 +836,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
   };
 
   return (
-    <div className="mx-auto max-w-[760px]">
+    <div className="mx-auto w-full max-w-3xl">
       <div className="mb-4">
         <PageHeader
           title="Vendor onboarding"
@@ -825,9 +851,9 @@ export default function OnboardingWizardPage(): React.JSX.Element {
         {editable && (
           <div className="mt-3 flex items-center gap-2">
             <div className="h-1.5 w-48 overflow-hidden rounded-full bg-canvas">
-              <div className="bg-brand h-full" style={{ width: `${completionPct}%` }} />
+              <div className="bg-accent h-full" style={{ width: `${completionPct}%` }} />
             </div>
-            <span className="text-[12px] tabular-nums text-muted">
+            <span className="text-caption tabular-nums text-muted">
               {completionPct}% complete
             </span>
           </div>
@@ -846,14 +872,14 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             <Pill variant={status.tone === 'success' ? 'success' : 'info'}>
               {status.pill}
             </Pill>
-            <span className="text-[14px] font-semibold text-ink">{status.title}</span>
+            <span className="text-body font-semibold text-ink">{status.title}</span>
           </div>
-          <p className="mt-1.5 text-[13px] text-muted">{status.body}</p>
+          <p className="mt-1.5 text-body-sm text-muted">{status.body}</p>
           {/* Only while the note is still something to act on. Once the vendor
               has sent it back, repeating "reviewer note" under "under review"
               reads as a fresh request rather than the one they just answered. */}
           {data.reviewNotes && data.reviewDecision === 'RETURNED_FOR_INFO' && (
-            <p className="mt-1.5 text-[13px] text-muted">
+            <p className="mt-1.5 text-body-sm text-muted">
               Reviewer note: {data.reviewNotes}
             </p>
           )}
@@ -868,11 +894,13 @@ export default function OnboardingWizardPage(): React.JSX.Element {
           return (
             <button
               key={n}
+              type="button"
+              aria-current={step === n ? 'step' : undefined}
               onClick={() => {
                 setStep(n);
                 setFieldErrors({});
               }}
-              className={`rounded-md px-2.5 py-1 text-[12px] ${
+              className={`rounded-md px-2.5 py-1 text-caption ${
                 step === n ? 'bg-ink text-white' : done ? 'text-accent-2' : 'text-muted'
               }`}
             >
@@ -902,10 +930,10 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             {step === 1 && (
               <>
                 <div className="rounded-md border border-line bg-canvas/60 p-3">
-                  <p className="text-[13px] font-medium text-ink">
+                  <p className="text-body-sm font-medium text-ink">
                     Start with your documents
                   </p>
-                  <p className="mt-0.5 text-[12px] text-muted">
+                  <p className="mt-0.5 text-caption text-muted">
                     Upload your GST registration certificate and PAN card (PDF or image, max
                     10 MB). We read them and fill in the fields below — your GSTIN is
                     checked against GSTN, and your PAN and state are taken from it rather
@@ -920,7 +948,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   />
 
                   {missingStatutoryDocs.length > 0 && (
-                    <p className="mt-2 text-[12px] text-warn">
+                    <p className="mt-2 text-caption text-warn">
                       The fields below stay empty until we have your{' '}
                       {missingStatutoryDocs.map(vendorDocumentLabel).join(' and ')} — they
                       are read off them, and they are required to submit either way.
@@ -966,7 +994,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   error={fieldErrors.addressLine1}
                   provenance={provenance('addressLine1')}
                 />
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid gap-2 sm:grid-cols-3">
                   <Field
                     label="City"
                     value={f.city ?? ''}
@@ -1023,7 +1051,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   hint="15 characters: state code + PAN + 3 more"
                   provenance={provenance('gstin')}
                 />
-                <label className="flex items-center gap-2 text-[13px]">
+                <label className="flex items-center gap-2 text-body-sm">
                   <input
                     type="checkbox"
                     checked={isMsme}
@@ -1039,7 +1067,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                     error={fieldErrors.udyamNumber}
                   />
                 )}
-                <p className="text-[12px] text-muted">
+                <p className="text-caption text-muted">
                   GSTIN & PAN are re-checked against the statutory registries on save, and
                   the two must describe the same entity — characters 3–12 of a GSTIN are the
                   PAN.
@@ -1050,10 +1078,10 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             {step === 3 && (
               <>
                 <div className="rounded-md border border-line bg-canvas/60 p-3">
-                  <p className="text-[13px] font-medium text-ink">
+                  <p className="text-body-sm font-medium text-ink">
                     Upload a cancelled cheque
                   </p>
-                  <p className="mt-0.5 text-[12px] text-muted">
+                  <p className="mt-0.5 text-caption text-muted">
                     We read the IFSC and account number off it. The IFSC tells us which bank
                     and branch the account is at, so you never type a bank name.
                   </p>
@@ -1080,7 +1108,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 {bankFromIfsc ? (
                   <div>
                     <div className="mb-1 flex items-center gap-2">
-                      <label className="block text-[12px] font-medium text-muted">
+                      <label className="block text-caption font-medium text-muted">
                         Bank
                       </label>
                       <Pill variant="success" dot>
@@ -1124,7 +1152,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   error={fieldErrors.holderName}
                   hint="Exactly as the bank has it — a penny drop checks this name against the account"
                 />
-                <p className="text-[12px] text-muted">
+                <p className="text-caption text-muted">
                   On save we credit a rupee to the account and compare the name the bank
                   returns with the one above. A mismatch does not stop you here, but your
                   buyer has to clear it before your account goes live.
@@ -1135,7 +1163,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
             {step === 4 && (
               <div className="space-y-4">
                 <div>
-                  <p className="mb-2 text-[13px] text-muted">
+                  <p className="mb-2 text-body-sm text-muted">
                     Two documents are required here (PDF or image, max 10 MB). The cancelled
                     cheque is the one you were asked for on the banking step.
                   </p>
@@ -1149,7 +1177,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                     has a catalogue should be invited to attach it — and one who has
                     none is never held up by it. */}
                 <div>
-                  <p className="mb-2 text-[12px] text-muted">
+                  <p className="mb-2 text-caption text-muted">
                     Optional — attach your product or price catalogue if you have one. Your
                     buyer can browse it when sourcing.
                   </p>
@@ -1169,7 +1197,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                       : 'border-line bg-canvas/60'
                   }`}
                 >
-                  <p className="text-[12px] text-muted">
+                  <p className="text-caption text-muted">
                     {missingStatutoryDocs.length > 0
                       ? 'Still required — asked for in step 1, where they fill the form in for you:'
                       : 'Collected in step 1:'}
@@ -1191,7 +1219,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   <button
                     type="button"
                     onClick={() => setShowOtherDocs((v) => !v)}
-                    className="text-brand text-[12px] font-medium hover:underline"
+                    className="text-accent text-caption font-medium hover:underline"
                   >
                     {showOtherDocs ? '− Hide other documents' : '+ Add other documents'}
                   </button>
@@ -1199,7 +1227,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                     <div className="mt-2 space-y-3">
                       {suggestedDocs.length > 0 && (
                         <div>
-                          <p className="mb-2 text-[12px] text-muted">
+                          <p className="mb-2 text-caption text-muted">
                             {categoryCfg
                               ? `Commonly asked for in ${categoryCfg.displayName}`
                               : 'Commonly asked for'}
@@ -1213,7 +1241,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                       {otherDocs.length > 0 && (
                         <div>
                           {suggestedDocs.length > 0 && (
-                            <p className="mb-2 text-[12px] text-muted">Anything else:</p>
+                            <p className="mb-2 text-caption text-muted">Anything else:</p>
                           )}
                           <div className="flex flex-wrap gap-2">
                             {otherDocs.map((d) => renderDocButton(d))}
@@ -1224,7 +1252,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                   )}
                 </div>
 
-                <p className="border-t border-line pt-4 text-[12px] text-muted">
+                <p className="border-t border-line pt-4 text-caption text-muted">
                   By submitting you self-declare no sanctions exposure. Sanctions screening
                   runs automatically on submission.
                 </p>
@@ -1251,7 +1279,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
                 </Button>
                 {step === ONBOARDING_STEP_COUNT && (
                   <Button
-                    variant="accent"
+                    variant="primary"
                     onClick={() => void doSubmit()}
                     disabled={submit.isPending || saveStep.isPending}
                   >
@@ -1265,7 +1293,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       </Card>
 
       {editable && dirtySteps.length > 0 ? (
-        <p className="mt-3 text-[13px] text-warn">
+        <p className="mt-3 text-body-sm text-warn">
           <Pill variant="warn">Unsaved</Pill> Your changes on{' '}
           {dirtySteps.map((n) => `step ${n}`).join(' and ')} are not saved yet — use Save
           step, or submit for review and we will save them first.
@@ -1273,7 +1301,7 @@ export default function OnboardingWizardPage(): React.JSX.Element {
       ) : (
         editable &&
         completionPct === 100 && (
-          <p className="mt-3 text-[13px] text-accent-2">
+          <p className="mt-3 text-body-sm text-accent-2">
             <Pill variant="success">Ready</Pill> All steps complete — submit for review.
           </p>
         )

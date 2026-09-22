@@ -40,7 +40,7 @@ export function ProductThumb({
     return (
       <span
         style={style}
-        className={`${box} text-faint flex items-center justify-center text-[9px]`}
+        className={`${box} text-faint flex items-center justify-center text-micro`}
         title={url ? 'Image could not be loaded' : 'No image'}
       >
         {url ? 'IMG' : ''}

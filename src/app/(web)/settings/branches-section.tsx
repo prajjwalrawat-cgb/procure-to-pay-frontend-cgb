@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input, Pill } from '@/components/ui';
+import { Badge, Button, Input, Pill } from '@/components/ui';
 import { SELECTABLE_GST_STATES, type Branch, type BranchInput } from '@/lib/shared';
 import { useState } from 'react';
 
@@ -12,7 +12,7 @@ import {
 } from '@/lib/api/settings';
 import { ApiError } from '@/lib/api-error';
 import { useToastStore } from '@/store/toast-store';
-import { Field, Panel, selectCls, textareaCls } from './ui';
+import { Field, Panel, SectionLoading, selectCls, textareaCls } from './ui';
 
 const EMPTY: BranchInput = {
   name: '',
@@ -29,7 +29,7 @@ const EMPTY: BranchInput = {
  * bills to when it names none.
  */
 export function BranchesSection(): React.JSX.Element {
-  const { data, isLoading } = useOrganisationSettings();
+  const { data, isLoading, error, refetch } = useOrganisationSettings();
   const create = useCreateBranch();
   const update = useUpdateBranch();
   const setDefault = useSetDefaultBranch();
@@ -40,7 +40,7 @@ export function BranchesSection(): React.JSX.Element {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const startNew = (): void => {
@@ -104,14 +104,14 @@ export function BranchesSection(): React.JSX.Element {
       hint="One branch per state you are registered in. The default is used when an order does not name a registration — it decides the GSTIN printed on the PO, the place of supply (CGST+SGST vs IGST) and the jurisdiction clause."
       action={
         editing === null ? (
-          <Button size="sm" variant="default" onClick={startNew}>
+          <Button size="sm" variant="secondary" onClick={startNew}>
             Add registration
           </Button>
         ) : undefined
       }
     >
       {data.branches.length === 0 && editing === null && (
-        <p className="text-[12px] text-muted">
+        <p className="text-caption text-muted">
           No registrations yet. Add the branch that raises purchase orders.
         </p>
       )}
@@ -120,14 +120,14 @@ export function BranchesSection(): React.JSX.Element {
         {data.branches.map((b) => (
           <div
             key={b.id}
-            className="flex items-center justify-between gap-3 rounded-sm border border-line px-3 py-2"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-line px-3 py-2"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-text">{b.name}</span>
-                {b.isDefault && <Pill variant="success">Default</Pill>}
+                <span className="text-body-sm font-medium text-text">{b.name}</span>
+                {b.isDefault && <Badge variant="classification">Default</Badge>}
               </div>
-              <div className="font-numeric truncate text-[11px] text-muted">
+              <div className="font-numeric truncate text-micro text-muted">
                 {b.gstin ?? 'No GSTIN'} ·{' '}
                 {SELECTABLE_GST_STATES.find((s) => s.code === b.stateCode)?.name ??
                   b.stateCode}
@@ -138,7 +138,7 @@ export function BranchesSection(): React.JSX.Element {
               {!b.isDefault && (
                 <button
                   type="button"
-                  className="text-[12px] text-muted hover:text-text"
+                  className="text-caption text-muted hover:text-text"
                   disabled={setDefault.isPending}
                   onClick={() =>
                     setDefault.mutate(b.id, {
@@ -153,7 +153,7 @@ export function BranchesSection(): React.JSX.Element {
               )}
               <button
                 type="button"
-                className="text-[12px] font-medium text-accent-2"
+                className="text-caption font-medium text-accent-2"
                 onClick={() => startEdit(b)}
               >
                 Edit
@@ -165,7 +165,7 @@ export function BranchesSection(): React.JSX.Element {
 
       {editing !== null && (
         <div className="mt-2 rounded-sm border border-line bg-canvas p-3">
-          <div className="mb-2 text-[13px] font-medium text-ink">
+          <div className="mb-2 text-body-sm font-medium text-ink">
             {editing === 'new' ? 'New registration' : 'Edit registration'}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -210,7 +210,7 @@ export function BranchesSection(): React.JSX.Element {
             </Field>
           </div>
           <div className="mt-3">
-            <Field label="Address" error={errors.address}>
+            <Field label="Address" error={errors.address} wide>
               <textarea
                 value={form.address ?? ''}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -220,7 +220,7 @@ export function BranchesSection(): React.JSX.Element {
               />
             </Field>
           </div>
-          <label className="mt-3 flex items-center gap-2 text-[12px]">
+          <label className="mt-3 flex items-center gap-2 text-caption">
             <input
               type="checkbox"
               checked={!!form.isDefault}
@@ -229,7 +229,7 @@ export function BranchesSection(): React.JSX.Element {
             <span className="text-muted">Use as the default registration</span>
           </label>
           <div className="mt-3 flex items-center gap-2">
-            <Button size="sm" variant="accent" disabled={pending} onClick={onSave}>
+            <Button size="sm" variant="primary" disabled={pending} onClick={onSave}>
               {pending ? 'Saving…' : 'Save'}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>

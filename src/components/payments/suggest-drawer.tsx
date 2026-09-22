@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Pill } from '@/components/ui';
+import { Badge, Button, Pill } from '@/components/ui';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { SuggestedInvoice } from '@/lib/shared';
@@ -78,7 +78,7 @@ export function SuggestDrawer({
       <div className="bg-ink/20 absolute inset-0" onClick={onClose} aria-hidden />
       <div className="bg-panel border-line relative flex h-full w-full max-w-md flex-col border-l">
         <div className="border-line flex items-center justify-between border-b px-4 py-3">
-          <h2 className="text-ink text-[14px] font-semibold">Add invoices</h2>
+          <h2 className="text-ink text-body font-semibold">Add invoices</h2>
           <button
             type="button"
             aria-label="Close"
@@ -94,7 +94,7 @@ export function SuggestDrawer({
             type="button"
             onClick={() => setMsmeOnly((v) => !v)}
             className={
-              'rounded-full border px-2.5 py-1 text-[12px] ' +
+              'rounded-full border px-2.5 py-1 text-caption ' +
               (msmeOnly
                 ? 'border-accent bg-accent-wash text-accent-2'
                 : 'border-line text-muted')
@@ -106,7 +106,7 @@ export function SuggestDrawer({
             type="button"
             onClick={() => setDueWithin((v) => (v === 15 ? null : 15))}
             className={
-              'rounded-full border px-2.5 py-1 text-[12px] ' +
+              'rounded-full border px-2.5 py-1 text-caption ' +
               (dueWithin === 15
                 ? 'border-accent bg-accent-wash text-accent-2'
                 : 'border-line text-muted')
@@ -117,7 +117,7 @@ export function SuggestDrawer({
         </div>
 
         {autoCount > 0 && (
-          <div className="bg-warn-wash text-warn border-warn/20 border-b px-4 py-2 text-[12px]">
+          <div className="bg-warn-wash text-warn border-warn/20 border-b px-4 py-2 text-caption">
             {autoCount} MSME invoice{autoCount === 1 ? '' : 's'} approaching the 45-day
             cap were auto-selected.
           </div>
@@ -125,10 +125,10 @@ export function SuggestDrawer({
 
         <div className="flex-1 overflow-y-auto">
           {suggest.isPending && (
-            <div className="text-muted p-4 text-[13px]">Loading…</div>
+            <div className="text-muted p-4 text-body-sm">Loading…</div>
           )}
           {!suggest.isPending && rows.length === 0 && (
-            <div className="text-muted p-4 text-[13px]">No matching invoices.</div>
+            <div className="text-muted p-4 text-body-sm">No matching invoices.</div>
           )}
           <ul className="divide-line divide-y">
             {rows.map((r) => (
@@ -141,28 +141,28 @@ export function SuggestDrawer({
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-numeric text-ink text-[13px] font-medium">
+                    <span className="font-numeric text-ink text-body-sm font-medium">
                       {r.number}
                     </span>
-                    {r.isMsme && <Pill variant="violet">MSME</Pill>}
+                    {r.isMsme && <Badge variant="classification">MSME</Badge>}
                     {!r.bankVerified && <Pill variant="danger">bank unverified</Pill>}
                   </div>
-                  <div className="text-muted truncate text-[12px]">{r.vendorName}</div>
+                  <div className="text-muted truncate text-caption">{r.vendorName}</div>
                 </div>
                 <div className="text-right">
                   {/* A part-paid invoice joins the run for only what is left. */}
                   {Number(r.paidAmount) > 0 ? (
                     <>
-                      <div className="font-numeric text-[13px] text-ink">
+                      <div className="font-numeric text-body-sm text-ink">
                         {inr(r.outstanding)}
                       </div>
-                      <div className="text-[11px] text-info">left of {inr(r.gross)}</div>
+                      <div className="text-micro text-info">left of {inr(r.gross)}</div>
                     </>
                   ) : (
-                    <div className="font-numeric text-ink text-[13px]">{inr(r.net)}</div>
+                    <div className="font-numeric text-ink text-body-sm">{inr(r.net)}</div>
                   )}
                   {r.msmeDaysRemaining != null && (
-                    <div className="text-faint font-numeric text-[11px]">
+                    <div className="text-faint font-numeric text-micro">
                       {r.msmeDaysRemaining}d left
                     </div>
                   )}
@@ -173,9 +173,9 @@ export function SuggestDrawer({
         </div>
 
         <div className="border-line flex items-center justify-between border-t px-4 py-3">
-          <span className="text-muted text-[12px]">{selected.size} selected</span>
+          <span className="text-muted text-caption">{selected.size} selected</span>
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={selected.size === 0 || addItem.isPending}
             onClick={() => void addSelected()}

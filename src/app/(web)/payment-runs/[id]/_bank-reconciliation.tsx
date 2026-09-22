@@ -1,13 +1,13 @@
 'use client';
 
-import { Pill, SandboxChip } from '@/components/ui';
+import { Button, Pill, SandboxChip } from '@/components/ui';
 
 import {
   useConfirmBank,
   useReconciliation,
   useRetryFailedItems,
 } from '@/lib/api/payments';
-import { inr } from '@/lib/format';
+import { formatDateTime, inr, statusLabel } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 const SHOW_FOR = [
@@ -17,14 +17,14 @@ const SHOW_FOR = [
   'FAILED',
 ];
 
-const bankVariant = (s: string): 'success' | 'danger' | 'warn' | 'gray' =>
+const bankVariant = (s: string): 'success' | 'danger' | 'info' | 'neutral' =>
   s === 'CONFIRMED'
     ? 'success'
     : s === 'FAILED'
       ? 'danger'
       : s === 'SUBMITTED'
-        ? 'warn'
-        : 'gray';
+        ? 'info'
+        : 'neutral';
 
 export function BankReconciliationPanel({
   runId,
@@ -41,19 +41,21 @@ export function BankReconciliationPanel({
   if (!SHOW_FOR.includes(status) || !data) return null;
 
   return (
-    <section className="border-line bg-panel mb-4 rounded-lg border p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-ink text-[14px] font-semibold">Bank reconciliation</h2>
+    <section className="border-line bg-panel rounded-lg border p-4 sm:p-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="text-ink text-h3 font-semibold">Bank reconciliation</h2>
           {/* A grey "sandbox simulator" pill read as ordinary metadata next to
               real UTRs. This is money movement — it gets the standard marker. */}
           <SandboxChip simulated={data.simulated} label="bank reconciliation" />
-          <span className="text-muted text-[12px]">attempt #{data.attemptNo}</span>
+          <span className="text-muted text-caption">attempt #{data.attemptNo}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {data.canConfirm && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={confirm.isPending}
               onClick={async () => {
                 try {
                   const r = await confirm.mutateAsync();
@@ -65,14 +67,15 @@ export function BankReconciliationPanel({
                   push(e instanceof Error ? e.message : 'Confirm failed', 'error');
                 }
               }}
-              className="bg-ink rounded-md px-3 py-1.5 text-[12px] font-medium text-white"
             >
               Poll bank confirmation
-            </button>
+            </Button>
           )}
           {data.canRetry && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={retry.isPending}
               onClick={async () => {
                 try {
                   const r = await retry.mutateAsync();
@@ -81,52 +84,51 @@ export function BankReconciliationPanel({
                   push(e instanceof Error ? e.message : 'Retry failed', 'error');
                 }
               }}
-              className="border-line text-text hover:bg-canvas rounded-md border px-3 py-1.5 text-[12px]"
             >
               Retry failed items
-            </button>
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="text-muted mb-3 flex gap-4 text-[12px]">
+      <div className="text-muted mb-3 flex flex-wrap gap-x-4 gap-y-1 text-caption">
         <span>{data.acceptedCount} accepted</span>
         <span>{data.failedCount} failed</span>
         {data.submittedAt && (
-          <span>submitted {data.submittedAt.slice(0, 16).replace('T', ' ')}</span>
+          <span>Submitted {formatDateTime(data.submittedAt)}</span>
         )}
         {data.confirmedAt && (
-          <span>confirmed {data.confirmedAt.slice(0, 16).replace('T', ' ')}</span>
+          <span>Confirmed {formatDateTime(data.confirmedAt)}</span>
         )}
       </div>
 
-      <table className="w-full text-[13px]">
-        <thead className="text-muted border-line border-b text-left text-[12px]">
+      <table className="pf-stack w-full text-body-sm">
+        <thead className="border-line border-b text-left text-caption text-muted">
           <tr>
-            <th className="py-1.5 font-medium">Invoice</th>
-            <th className="py-1.5 font-medium">Vendor</th>
-            <th className="py-1.5 text-right font-medium">Net</th>
-            <th className="py-1.5 font-medium">Bank status</th>
-            <th className="py-1.5 font-medium">UTR</th>
+            <th className="px-3 py-2.5 font-medium">Invoice</th>
+            <th className="px-3 py-2.5 font-medium">Vendor</th>
+            <th className="px-3 py-2.5 text-right font-medium">Net</th>
+            <th className="px-3 py-2.5 font-medium">Bank status</th>
+            <th className="px-3 py-2.5 font-medium">UTR</th>
           </tr>
         </thead>
         <tbody>
           {data.items.map((it) => (
             <tr key={it.invoiceId} className="border-line border-b last:border-0">
-              <td className="font-numeric py-1.5">{it.invoiceNumber}</td>
-              <td className="text-text py-1.5">{it.vendorName}</td>
-              <td className="font-numeric py-1.5 text-right">{inr(it.net)}</td>
-              <td className="py-1.5">
+              <td className="font-numeric px-3 py-3">{it.invoiceNumber}</td>
+              <td className="text-text px-3 py-3">{it.vendorName}</td>
+              <td className="font-numeric px-3 py-3 text-right">{inr(it.net)}</td>
+              <td className="px-3 py-3">
                 <Pill variant={bankVariant(it.bankStatus)} dot>
-                  {it.bankStatus}
+                  {statusLabel(it.bankStatus)}
                 </Pill>
                 {it.bankErrorMessage && (
-                  <span className="text-danger ml-1 text-[11px]">
+                  <span className="text-danger ml-1 text-micro">
                     {it.bankErrorMessage}
                   </span>
                 )}
               </td>
-              <td className="font-numeric text-muted py-1.5 text-[12px]">
+              <td className="font-numeric text-muted px-3 py-3 text-caption">
                 {it.bankUtr ?? '—'}
               </td>
             </tr>
@@ -136,17 +138,17 @@ export function BankReconciliationPanel({
 
       {data.records.length > 0 && (
         <div className="border-line mt-3 border-t pt-2">
-          <p className="text-muted mb-1 text-[12px]">Posted payment records</p>
+          <p className="text-muted mb-1 text-caption">Posted payment records</p>
           {data.records.map((r) => (
             <div
               key={r.invoiceId + r.utr}
-              className="flex items-center gap-2 py-0.5 text-[12px]"
+              className="flex flex-wrap items-center gap-2 py-0.5 text-caption"
             >
               <span className="font-numeric">{r.utr}</span>
               {r.isStub ? (
-                <Pill variant="warn">stub (pre-10b)</Pill>
+                <Pill variant="warn">Stub UTR</Pill>
               ) : (
-                <Pill variant="success">real UTR</Pill>
+                <Pill variant="success">Bank UTR</Pill>
               )}
               <span className="font-numeric text-muted">{inr(r.net)}</span>
             </div>

@@ -86,8 +86,8 @@ function describeIssue(issue: ProblemIssue): string {
  */
 export function summarizeIssues(issues: ProblemIssue[], fallback: string): string {
   if (issues.length === 0) return fallback;
-  if (issues.length <= 2) return issues.map(describeIssue).join(' · ');
-  return `${issues.slice(0, 2).map(describeIssue).join(' · ')} (+${issues.length - 2} more)`;
+  if (issues.length <= 2) return issues.map(describeIssue).join(', ');
+  return `${issues.slice(0, 2).map(describeIssue).join(', ')} (+${issues.length - 2} more)`;
 }
 
 export class ApiError extends Error {

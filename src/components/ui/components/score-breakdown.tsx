@@ -118,15 +118,15 @@ export function ScoreBreakdown({
               ),
             )}
           </div>
-          <div className="text-faint mt-1 flex justify-between text-[10px]">
+          <div className="text-faint mt-1 flex justify-between text-micro">
             <span>0</span>
             <span>out of 100</span>
           </div>
         </div>
       )}
 
-      <table className="w-full text-[11px]">
-        <thead className="text-faint text-left">
+      <table className="w-full text-micro">
+        <thead className="border-line border-b text-left text-caption text-muted">
           <tr>
             <th className="py-0.5 font-medium">Criterion</th>
             <th className="py-0.5 text-right font-medium">Weight</th>
@@ -169,7 +169,7 @@ export function ScoreBreakdown({
       </table>
 
       {!anyScored && (
-        <p className="text-faint text-[11px]">
+        <p className="text-faint text-micro">
           Not scored yet — run auto-scoring, then enter the manual criteria.
         </p>
       )}

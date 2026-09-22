@@ -1,5 +1,6 @@
 'use client';
 
+import { Skeleton } from '@/components/ui';
 import { BellOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -10,8 +11,8 @@ import {
 } from '@/lib/api/notifications';
 import { useUiStore } from '@/store/ui-store';
 
-/** Notifications tray (Slice 2) — live in-app notifications from the approval
- *  engine and other events. Email delivery lands in Slice 10. */
+/** Notifications tray — live in-app notifications from the approval engine and
+ *  other events. */
 export function NotificationsTray(): React.JSX.Element | null {
   const { trayOpen, setTrayOpen } = useUiStore();
   const router = useRouter();
@@ -37,11 +38,11 @@ export function NotificationsTray(): React.JSX.Element | null {
         className="fixed inset-0 z-40 cursor-default"
         onClick={() => setTrayOpen(false)}
       />
-      <aside className="border-line bg-panel fixed right-4 top-16 z-50 max-h-[70vh] w-96 overflow-hidden rounded-lg border shadow-xl">
+      <aside className="border-line bg-panel fixed inset-x-4 top-16 z-50 max-h-[70vh] overflow-hidden rounded-lg border shadow-xl sm:left-auto sm:right-4 sm:w-96">
         <div className="border-line flex items-center justify-between border-b px-4 py-3">
-          <span className="text-ink text-[13px] font-semibold">Notifications</span>
+          <span className="text-ink text-body-sm font-semibold">Notifications</span>
           {unread > 0 && (
-            <span className="bg-accent-wash text-accent-2 rounded-full px-2 py-0.5 text-[11px] font-medium">
+            <span className="bg-accent-wash text-accent rounded-full px-2 py-0.5 text-micro font-medium">
               {unread} unread
             </span>
           )}
@@ -49,13 +50,20 @@ export function NotificationsTray(): React.JSX.Element | null {
 
         <div className="max-h-[calc(70vh-48px)] overflow-y-auto">
           {isLoading && (
-            <div className="text-muted px-4 py-8 text-center text-[12px]">Loading…</div>
+            <div className="flex flex-col gap-4 px-4 py-4" aria-busy="true">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-1.5">
+                  <Skeleton className="h-3.5 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
           )}
 
           {!isLoading && items.length === 0 && (
             <div className="text-muted flex flex-col items-center gap-2 py-10 text-center">
-              <BellOff className="text-faint h-6 w-6" />
-              <p className="text-[12px]">You&apos;re all caught up.</p>
+              <BellOff className="text-faint h-6 w-6" aria-hidden />
+              <p className="text-caption">You&apos;re all caught up.</p>
             </div>
           )}
 
@@ -72,14 +80,14 @@ export function NotificationsTray(): React.JSX.Element | null {
                 {!n.readAt && (
                   <span className="bg-accent h-1.5 w-1.5 shrink-0 rounded-full" />
                 )}
-                <span className="text-ink flex-1 text-[13px] font-medium">{n.title}</span>
-                <span className="text-faint shrink-0 text-[11px]">
+                <span className="text-ink flex-1 text-body-sm font-medium">{n.title}</span>
+                <span className="text-faint shrink-0 text-micro">
                   {timeAgo(n.createdAt)}
                 </span>
               </div>
-              {n.body && <span className="text-muted pl-3.5 text-[12px]">{n.body}</span>}
-              <span className="text-faint pl-3.5 text-[10px] uppercase tracking-wide">
-                {n.type.replace(/_/g, ' ').toLowerCase()}
+              {n.body && <span className="text-muted pl-3.5 text-caption">{n.body}</span>}
+              <span className="text-faint pl-3.5 text-micro">
+                {typeLabel(n.type)}
               </span>
             </button>
           ))}
@@ -87,6 +95,12 @@ export function NotificationsTray(): React.JSX.Element | null {
       </aside>
     </>
   );
+}
+
+/** `APPROVAL_REQUESTED` → "Approval requested". */
+function typeLabel(type: string): string {
+  const words = type.replace(/[._]+/g, ' ').trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function timeAgo(iso: string): string {

@@ -1,9 +1,8 @@
 'use client';
 
-import { PageHeader } from '@/components/ui';
+import { KpiCard, PageHeader } from '@/components/ui';
 
 import type { AnalyticsPeriodKey } from '@/lib/shared';
-import Link from 'next/link';
 import {
   Bar,
   BarChart,
@@ -24,6 +23,8 @@ import {
   CHART_SERIES,
   CHART_STATUS,
   CHART_TICK,
+  AnalyticsTabs,
+  ChartCard,
   TOOLTIP_STYLE,
   humanise,
 } from '../_lib';
@@ -34,7 +35,7 @@ export default function ApPerformancePage(): React.JSX.Element {
   const d = ap.data;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="AP performance"
         breadcrumbs={[
@@ -44,25 +45,36 @@ export default function ApPerformancePage(): React.JSX.Element {
         description="Cycle time, first-pass yield, exception rate and straight-through processing, computed from posted invoices."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
-        <Kpi label="Avg cycle (days)" value={d ? String(d.avgCycleDays) : '—'} />
-        <Kpi
+      <AnalyticsTabs active="/analytics/ap-performance" />
+
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <KpiCard
+          label="Avg cycle (days)"
+          isLoading={ap.isLoading}
+          value={d ? String(d.avgCycleDays) : '—'}
+        />
+        <KpiCard
           label="First-pass yield"
+          isLoading={ap.isLoading}
           value={d ? `${d.firstPassYieldPct}%` : '—'}
-          accent
         />
-        <Kpi label="Exception rate" value={d ? `${d.exceptionRatePct}%` : '—'} />
-        <Kpi
+        <KpiCard
+          label="Exception rate"
+          isLoading={ap.isLoading}
+          value={d ? `${d.exceptionRatePct}%` : '—'}
+        />
+        <KpiCard
           label="Straight-through"
+          isLoading={ap.isLoading}
           value={d ? `${d.straightThroughPct}%` : '—'}
-          accent
         />
-        <Kpi
+        <KpiCard
+          isLoading={ap.isLoading}
           label="Discount capture"
           value={
             d ? (d.discountCapturePct == null ? 'n/a' : `${d.discountCapturePct}%`) : '—'
           }
-          hint={
+          footnote={
             d && d.discountCapturePct == null
               ? 'No early-payment discount terms in use'
               : undefined
@@ -71,7 +83,12 @@ export default function ApPerformancePage(): React.JSX.Element {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card title="Cycle time — with exception vs clean match">
+        <ChartCard
+          title="Cycle time, with exception vs clean match"
+          query={ap}
+          isEmpty={(d?.cycleTrend ?? []).length === 0}
+          height={240}
+        >
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={d?.cycleTrend ?? []}>
               <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
@@ -105,17 +122,27 @@ export default function ApPerformancePage(): React.JSX.Element {
               />
             </LineChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartCard>
 
-        <Card title="Exception rate by type">
+        <ChartCard
+          title="Exception rate by type"
+          query={ap}
+          isEmpty={(d?.exceptionBreakdown ?? []).length === 0}
+          height={240}
+          empty={{ title: 'No exceptions raised in this period' }}
+        >
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={d?.exceptionBreakdown ?? []}>
               <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
               <XAxis
                 dataKey={(e: { exceptionType: string }) => humanise(e.exceptionType)}
+                // Eight type names do not fit side by side at half width; flat
+                // labels ran into each other ("Amount mismatchDocument…").
                 tick={{ ...CHART_TICK, fontSize: 10 }}
                 interval={0}
-                height={44}
+                angle={-30}
+                textAnchor="end"
+                height={72}
               />
               <YAxis tick={CHART_TICK} width={30} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
@@ -128,9 +155,14 @@ export default function ApPerformancePage(): React.JSX.Element {
               />
             </BarChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartCard>
 
-        <Card title="First-pass yield trend">
+        <ChartCard
+          title="First-pass yield trend"
+          query={ap}
+          isEmpty={(d?.fpyTrend ?? []).length === 0}
+          height={220}
+        >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={d?.fpyTrend ?? []}>
               <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
@@ -151,9 +183,14 @@ export default function ApPerformancePage(): React.JSX.Element {
               />
             </LineChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartCard>
 
-        <Card title="Straight-through processing trend">
+        <ChartCard
+          title="Straight-through processing trend"
+          query={ap}
+          isEmpty={(d?.stpTrend ?? []).length === 0}
+          height={220}
+        >
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={d?.stpTrend ?? []}>
               <CartesianGrid stroke={CHART_CHROME.grid} vertical={false} />
@@ -174,50 +211,8 @@ export default function ApPerformancePage(): React.JSX.Element {
               />
             </LineChart>
           </ResponsiveContainer>
-        </Card>
+        </ChartCard>
       </div>
-    </div>
-  );
-}
-
-function Kpi({
-  label,
-  value,
-  accent,
-  hint,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  hint?: string;
-}): React.JSX.Element {
-  return (
-    <div className="border-line bg-panel rounded-lg border p-3">
-      <div className="text-faint text-[11px] uppercase">{label}</div>
-      <div
-        className={
-          'font-numeric mt-1 text-[20px] font-semibold ' +
-          (accent ? 'text-accent-2' : 'text-ink')
-        }
-      >
-        {value}
-      </div>
-      {hint && <div className="text-faint mt-0.5 text-[10px]">{hint}</div>}
-    </div>
-  );
-}
-
-function Card({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <div className="border-line bg-panel rounded-lg border p-4">
-      <h3 className="text-ink mb-2 text-[14px] font-semibold">{title}</h3>
-      {children}
     </div>
   );
 }

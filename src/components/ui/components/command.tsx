@@ -28,7 +28,7 @@ export function CommandInput({
       <Search className="text-faint h-4 w-4 shrink-0" />
       <CommandPrimitive.Input
         className={cn(
-          'text-text placeholder:text-faint flex h-11 w-full bg-transparent text-[13px] outline-none',
+          'text-text placeholder:text-faint flex h-11 w-full bg-transparent text-body-sm outline-none',
           className,
         )}
         {...props}
@@ -49,7 +49,7 @@ export const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      'text-text flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-[13px] outline-none',
+      'text-text flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-body-sm outline-none',
       'data-[selected=true]:bg-canvas data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50',
       className,
     )}

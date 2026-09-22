@@ -13,7 +13,8 @@ test('login lands on the shell and navigation works', async ({ page }) => {
 
   // Landed on the shell home.
   await expect(page).toHaveURL('/');
-  await expect(page.getByText('Welcome to ProcureFlow')).toBeVisible();
+  // Home greets the signed-in user ("Good morning, Harpreet").
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(/^Good (morning|afternoon|evening)/);
 
   // Command palette opens with ⌘K / Ctrl-K and closes with Escape.
   await page.keyboard.press('Control+k');

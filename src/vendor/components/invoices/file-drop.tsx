@@ -53,7 +53,7 @@ export function FileDrop({
       >
         <div className="flex items-center gap-2">
           <UploadCloud className="text-muted h-4 w-4" />
-          <span className="text-muted text-[12px]">
+          <span className="text-muted text-caption">
             Drag &amp; drop {label.toLowerCase()} here to upload
           </span>
         </div>
@@ -81,7 +81,7 @@ export function FileDrop({
           {files.map((f) => (
             <li
               key={f.name}
-              className="border-line bg-panel flex items-center justify-between rounded-sm border px-2.5 py-1.5 text-[12px]"
+              className="border-line bg-panel flex items-center justify-between rounded-sm border px-2.5 py-1.5 text-caption"
             >
               <span className="text-text flex items-center gap-1.5 truncate">
                 <FileText className="text-accent-2 h-3.5 w-3.5 shrink-0" />

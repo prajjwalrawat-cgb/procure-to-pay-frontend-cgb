@@ -16,14 +16,17 @@ export * from './components/tooltip';
 export * from './components/avatar';
 export * from './components/table';
 
-// Shell.
-export * from './components/sidebar';
-export * from './components/topbar';
+// Shell. The top nav replaced the navy sidebar + topbar in the redesign;
+// sidebar.tsx / topbar.tsx are gone rather than left as a second, divergent
+// way to build chrome.
+export * from './components/top-nav';
 export * from './components/command-palette';
 
 // Shared patterns — loading/empty/error, page framing, honesty markers.
 export * from './components/data-state';
+export * from './components/data-table';
 export * from './components/page-header';
+export * from './components/step-indicator';
 export * from './components/sandbox-chip';
 
 // Domain components.

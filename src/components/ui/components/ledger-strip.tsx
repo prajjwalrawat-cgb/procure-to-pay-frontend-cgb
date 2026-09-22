@@ -32,6 +32,7 @@ import { cn } from '../lib/cn';
 import { Button } from './button';
 import { EmptyState } from './data-state';
 import { InfoTip } from './tooltip';
+import { formatDateTime } from '@/lib/format';
 
 export interface LedgerEvent {
   id: string;
@@ -54,12 +55,7 @@ function shortHash(hash: string): string {
 }
 
 function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatDateTime(iso);
 }
 
 /** `INVOICE_APPROVED` → `Invoice approved` */
@@ -109,29 +105,29 @@ function VerdictLine({ verdict }: { verdict: LedgerVerdict }): React.JSX.Element
   switch (verdict.state) {
     case 'verifying':
       return (
-        <span className="text-muted inline-flex items-center gap-1.5 text-[11px]">
+        <span className="text-muted inline-flex items-center gap-1.5 text-micro">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
           Verifying…
         </span>
       );
     case 'intact':
       return (
-        <span className="text-gold-ink inline-flex items-center gap-1.5 text-[11px] font-semibold">
+        <span className="text-gold-ink inline-flex items-center gap-1.5 text-micro font-semibold">
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
           Chain intact
           <span className="font-numeric text-muted font-normal">
-            · {verdict.eventsChecked.toLocaleString('en-IN')} checked
+            {`, ${verdict.eventsChecked.toLocaleString('en-IN')} checked`}
           </span>
         </span>
       );
     case 'broken':
       return (
-        <span className="text-danger inline-flex items-center gap-1.5 text-[11px] font-semibold">
+        <span className="text-danger inline-flex items-center gap-1.5 text-micro font-semibold">
           <Link2Off className="h-3.5 w-3.5" aria-hidden />
           Chain broken
           {verdict.firstBreakAt && (
             <span className="font-numeric font-normal">
-              · first at {timeLabel(verdict.firstBreakAt)}
+            {`, first at ${timeLabel(verdict.firstBreakAt)}`}
             </span>
           )}
         </span>
@@ -139,7 +135,7 @@ function VerdictLine({ verdict }: { verdict: LedgerVerdict }): React.JSX.Element
     default:
       return (
         <InfoTip content="These events are recorded in a tamper-evident chain. Run a verification to cryptographically confirm nothing has been altered.">
-          <span className="text-muted inline-flex cursor-help items-center gap-1.5 text-[11px]">
+          <span className="text-muted inline-flex cursor-help items-center gap-1.5 text-micro">
             <ShieldQuestion className="h-3.5 w-3.5" aria-hidden />
             Not yet verified
           </span>
@@ -187,7 +183,7 @@ export function LedgerStrip({
     >
       <header className="border-line flex flex-wrap items-center justify-between gap-2 border-b px-3.5 py-2.5">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="text-faint text-[11px] font-medium uppercase tracking-wide">
+          <h3 className="text-faint text-micro font-medium ">
             {title}
           </h3>
           <VerdictLine verdict={verdict} />
@@ -245,7 +241,7 @@ export function LedgerStrip({
                       <span className="flex flex-col gap-0.5">
                         <span className="font-semibold">{actionLabel(e.action)}</span>
                         <span>
-                          {e.actorName ?? e.actorType} · {timeLabel(e.timestamp)}
+                          {e.actorName ?? e.actorType}, {timeLabel(e.timestamp)}
                         </span>
                         <span className="font-numeric opacity-70">
                           {shortHash(e.hashCurrent)}
@@ -274,7 +270,7 @@ export function LedgerStrip({
             {/* Selected-link detail. Shows the actual hash pair, because the
                 claim is cryptographic and the evidence should be visible. */}
             {active && (
-              <dl className="border-line bg-canvas/60 mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-sm border p-2.5 text-[11px]">
+              <dl className="border-line bg-canvas/60 mt-2.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-sm border p-2.5 text-micro">
                 <dt className="text-faint">Action</dt>
                 <dd className="text-ink font-medium">{actionLabel(active.action)}</dd>
                 <dt className="text-faint">Actor</dt>
@@ -300,7 +296,7 @@ export function LedgerStrip({
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
                 aria-expanded={expanded}
-                className="text-muted hover:text-ink duration-hover inline-flex items-center gap-1 text-[11px] transition-colors"
+                className="text-muted hover:text-ink duration-hover inline-flex items-center gap-1 text-micro transition-colors"
               >
                 <ChevronDown
                   className={cn('h-3 w-3 transition-transform', expanded && 'rotate-180')}
@@ -313,7 +309,7 @@ export function LedgerStrip({
               {auditHref && (
                 <a
                   href={auditHref}
-                  className="text-info duration-hover text-[11px] font-medium hover:underline"
+                  className="text-accent hover:text-accent-2 duration-hover text-micro font-medium hover:underline"
                 >
                   Open in audit log →
                 </a>
@@ -323,16 +319,16 @@ export function LedgerStrip({
             {expanded && (
               <ol className="border-line mt-2 flex flex-col gap-1.5 border-t pt-2">
                 {[...ordered].reverse().map((e) => (
-                  <li key={e.id} className="flex items-start gap-2 text-[11px]">
+                  <li key={e.id} className="flex items-start gap-2 text-micro">
                     <Check className="text-accent mt-[3px] h-3 w-3 shrink-0" aria-hidden />
                     <span className="min-w-0 flex-1">
                       <span className="text-ink font-medium">{actionLabel(e.action)}</span>
                       <span className="text-muted">
                         {' '}
-                        · {e.actorName ?? e.actorType}
+                      {`, ${e.actorName ?? e.actorType}`}
                       </span>
                       <span className="font-numeric text-faint block">
-                        {timeLabel(e.timestamp)} · {shortHash(e.hashCurrent)}
+                        {timeLabel(e.timestamp)}, {shortHash(e.hashCurrent)}
                       </span>
                     </span>
                   </li>

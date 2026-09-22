@@ -7,11 +7,11 @@ import { useEffect, useState } from 'react';
 import { useOrganisationSettings, useUpdateOrganisation } from '@/lib/api/settings';
 import { ApiError } from '@/lib/api-error';
 import { useToastStore } from '@/store/toast-store';
-import { Field, Panel } from './ui';
+import { Field, Panel, SectionLoading } from './ui';
 
 /** Legal identity: the name on every purchase order and across the app. */
 export function OrganisationSection(): React.JSX.Element {
-  const { data, isLoading } = useOrganisationSettings();
+  const { data, isLoading, error, refetch } = useOrganisationSettings();
   const update = useUpdateOrganisation();
   const toast = useToastStore((s) => s.push);
 
@@ -28,7 +28,7 @@ export function OrganisationSection(): React.JSX.Element {
   }, [data]);
 
   if (isLoading || !data) {
-    return <div className="text-[13px] text-muted">Loading…</div>;
+    return <SectionLoading error={error} onRetry={() => void refetch()} />;
   }
 
   const onSave = (): void => {
@@ -63,16 +63,14 @@ export function OrganisationSection(): React.JSX.Element {
         </Field>
         {/* No company-wide GSTIN: a GSTIN belongs to a state registration, so
             it lives on the branch that holds it, under GST registrations. */}
-        <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Currency" error={errors.currency}>
-            <Input
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-              aria-invalid={!!errors.currency}
-              maxLength={3}
-            />
-          </Field>
-        </div>
+        <Field label="Currency" error={errors.currency}>
+          <Input
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+            aria-invalid={!!errors.currency}
+            maxLength={3}
+          />
+        </Field>
         <Field
           label="PAN"
           error={errors.pan}
@@ -89,10 +87,10 @@ export function OrganisationSection(): React.JSX.Element {
       </Panel>
 
       <div className="flex items-center gap-3">
-        <Button variant="accent" disabled={update.isPending} onClick={onSave}>
+        <Button variant="primary" disabled={update.isPending} onClick={onSave}>
           {update.isPending ? 'Saving…' : 'Save changes'}
         </Button>
-        <span className="text-[12px] text-faint">
+        <span className="text-caption text-faint">
           Applies to documents generated from now on.
         </span>
       </div>

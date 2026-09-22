@@ -18,6 +18,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type VendorTab =
   'active' | 'onboarding' | 'suspended' | 'blacklisted' | 'archived' | 'all';
@@ -31,10 +32,10 @@ export const vendorKeys = {
   vendor360: (id: string) => ['vendors', '360', id] as const,
 };
 
-export function useVendorList(tab: VendorTab): UseQueryResult<VendorListResponse> {
+export function useVendorList(tab: VendorTab): UseQueryResult<AllPages<VendorListResponse>> {
   return useQuery({
     queryKey: vendorKeys.list(tab),
-    queryFn: () => apiFetch<VendorListResponse>(`/vendors?tab=${tab}&limit=100`),
+    queryFn: () => fetchAllPages<VendorListResponse>(`/vendors?tab=${tab}`),
   });
 }
 

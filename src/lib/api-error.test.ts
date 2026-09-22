@@ -58,7 +58,7 @@ describe('ApiError', () => {
       'Request failed',
     );
     expect(err.message).toBe(
-      'Business PAN: PAN must be 10 characters · State code: Use the 2-digit GST state code (+2 more)',
+      'Business PAN: PAN must be 10 characters, State code: Use the 2-digit GST state code (+2 more)',
     );
     expect(Object.keys(err.fieldErrors)).toHaveLength(4);
   });

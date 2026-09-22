@@ -1,5 +1,7 @@
 'use client';
 
+import { SESSION_ENDED_PARAM } from './session-ended';
+
 /**
  * Shared session plumbing for both portals' API clients.
  *
@@ -76,9 +78,12 @@ export function endSession(loginPath: string, clear: () => void): void {
    */
   const params = new URLSearchParams(search);
   params.delete('next');
+  // Never carry the marker into the destination either — it belongs to the hop,
+  // not to the page the user is being returned to.
+  params.delete(SESSION_ENDED_PARAM);
   const rest = params.toString();
   const next = encodeURIComponent(`${pathname}${rest ? `?${rest}` : ''}`);
-  window.location.replace(`${loginPath}?next=${next}`);
+  window.location.replace(`${loginPath}?next=${next}&${SESSION_ENDED_PARAM}=1`);
 }
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import { Button, PageHeader, Pill, SortableHead, TableState, useSort } from '@/components/ui';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -33,6 +33,12 @@ export default function BoxesPage(): React.JSX.Element {
   const [success, setSuccess] = useState<string | null>(null);
 
   const items = data?.items ?? [];
+  const { sorted, sort, toggle } = useSort(items, {
+    code: (b) => b.code,
+    location: (b) => b.locationName,
+    products: (b) => b.distinctProducts,
+    units: (b) => Number(b.totalQty),
+  });
   // Only sections hold boxes — a box does not sit "in a warehouse", it sits on
   // a specific shelf. Older unclassified locations stay selectable so a tenant
   // that has not labelled its tree yet is not locked out.
@@ -67,36 +73,33 @@ export default function BoxesPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       <PageHeader
         title="Boxes"
         description={
           <>
-            {isError
-              ? 'Could not reach the server'
-              : `${items.length} box${items.length === 1 ? '' : 'es'} · scan one on the handset to see what is inside`}
+            {isError || isLoading
+              ? 'Cartons stock sits in. Scan one on the handset to see what is inside.'
+              : `${items.length} box${items.length === 1 ? '' : 'es'}, scan one on the handset to see what is inside`}
           </>
         }
         actions={
-          <>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
               <Link href="/labels?type=box" target="_blank">
-                <Button variant="ghost" size="sm">
-                  Print labels
-                </Button>
+                Print labels
               </Link>
-              <Link href="/scan/box">
-                <Button variant="ghost" size="sm">
-                  Open scanner
-                </Button>
-              </Link>
-            </div>
-          </>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/scan/box">Open scanner</Link>
+            </Button>
+          </div>
         }
       />
 
       <div className="mb-6 rounded-lg border border-line bg-panel p-4">
-        <div className="grid grid-cols-3 gap-4">
+        <h2 className="mb-3 text-h3 font-semibold text-ink">Register a box</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field
             label="Barcode"
             hint="Leave blank to let the server allocate one (BOX-000123)."
@@ -128,10 +131,10 @@ export default function BoxesPage(): React.JSX.Element {
             />
           </Field>
         </div>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={creating}
             onClick={() => void submit()}
@@ -141,56 +144,45 @@ export default function BoxesPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
-        <table className="w-full text-[13px]">
-          <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+      <div className="overflow-x-auto">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-line border-b text-left text-caption text-muted">
             <tr>
-              <th className="px-3 py-2 font-medium">Box</th>
-              <th className="px-3 py-2 font-medium">Barcode</th>
-              <th className="px-3 py-2 font-medium">Sits in</th>
-              <th className="px-3 py-2 text-right font-medium">Products</th>
-              <th className="px-3 py-2 text-right font-medium">Units inside</th>
+              <SortableHead label="Box" sortKey="code" sort={sort} onSort={toggle} />
+              <th className="px-3 py-2.5 font-medium">Barcode</th>
+              <SortableHead label="Sits in" sortKey="location" sort={sort} onSort={toggle} />
+              <SortableHead label="Products" sortKey="products" sort={sort} onSort={toggle} numeric />
+              <SortableHead label="Units inside" sortKey="units" sort={sort} onSort={toggle} numeric />
             </tr>
           </thead>
           <tbody>
-            {isLoading && (
-              <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-muted">
-                  Loading…
-                </td>
-              </tr>
-            )}
             {/* A failed load must never read as "no boxes". An empty table is a
                 statement of fact about the warehouse; if the request did not
                 come back, we do not know that fact and must not imply it. */}
-            {!isLoading && isError && (
-              <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-danger">
-                  Could not load boxes:{' '}
-                  {loadError instanceof Error ? loadError.message : 'request failed'}
-                </td>
-              </tr>
-            )}
-            {!isLoading && !isError && items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-8 text-center text-muted">
-                  No boxes yet. Register one above, then fill it from the scanner.
-                </td>
-              </tr>
-            )}
-            {items.map((b) => (
+            <TableState
+              colSpan={5}
+              isLoading={isLoading}
+              error={isError ? loadError : null}
+              onRetry={() => void refetch()}
+              isEmpty={items.length === 0}
+              empty={{
+                title: 'No boxes yet',
+                detail: 'Register one above, then fill it from the scanner.',
+              }}
+            />
+            {sorted.map((b) => (
               <tr key={b.id} className="border-t border-line">
-                <td className="px-3 py-2 text-ink">{b.code}</td>
-                <td className="px-3 py-2 font-mono text-[12px] text-muted">
+                <td className="px-3 py-3.5 font-medium text-ink">{b.code}</td>
+                <td className="font-numeric px-3 py-3.5 text-caption text-muted">
                   {b.barcode}
                 </td>
-                <td className="px-3 py-2 text-muted">
-                  {b.locationName ?? <Pill variant="gray">Not placed</Pill>}
+                <td className="px-3 py-3.5 text-muted">
+                  {b.locationName ?? <Pill variant="neutral">Not placed</Pill>}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">
+                <td className="font-numeric px-3 py-3.5 text-right">
                   {b.distinctProducts}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{b.totalQty}</td>
+                <td className="font-numeric px-3 py-3.5 text-right">{b.totalQty}</td>
               </tr>
             ))}
           </tbody>

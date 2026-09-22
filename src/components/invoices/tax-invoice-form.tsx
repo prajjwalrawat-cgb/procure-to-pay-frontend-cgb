@@ -100,7 +100,7 @@ export function TaxInvoiceForm({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="mb-1.5 text-[12px] font-medium text-text">
+        <p className="mb-1.5 text-caption font-medium text-text">
           Tax invoice <span className="text-danger">*</span>
         </p>
         <FileDrop label="Tax invoice" files={files} onChange={setFiles} />
@@ -131,15 +131,15 @@ export function TaxInvoiceForm({
       </div>
 
       <div>
-        <p className="mb-1.5 text-[12px] font-medium text-text">
+        <p className="mb-1.5 text-caption font-medium text-text">
           Lines on the tax invoice
         </p>
-        <p className="mb-2 text-[11px] text-muted">
+        <p className="mb-2 text-micro text-muted">
           Copied from the proforma. Change anything the tax invoice bills differently.
         </p>
         <div className="overflow-x-auto rounded-lg border border-line">
-          <table className="w-full text-[12px]">
-            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <table className="w-full text-caption">
+            <thead className="bg-canvas text-left text-caption text-muted">
               <tr>
                 <th className="px-2.5 py-2 font-medium">Item</th>
                 <th className="w-20 px-2.5 py-2 font-medium">Qty</th>
@@ -153,7 +153,7 @@ export function TaxInvoiceForm({
                 <tr key={l.poLineId ?? l.lineNo} className="border-t border-line">
                   <td className="px-2.5 py-1.5">
                     <div className="text-text">{l.itemDesc}</div>
-                    <div className="text-[11px] text-faint">{l.uom}</div>
+                    <div className="text-micro text-faint">{l.uom}</div>
                   </td>
                   <td className="px-2.5 py-1.5">
                     <Input
@@ -190,7 +190,7 @@ export function TaxInvoiceForm({
             </tbody>
           </table>
         </div>
-        <dl className="mt-2 flex flex-col gap-0.5 rounded-sm bg-canvas px-3 py-2 text-[12px]">
+        <dl className="mt-2 flex flex-col gap-0.5 rounded-sm bg-canvas px-3 py-2 text-caption">
           <div className="flex justify-between">
             <dt className="text-muted">Proforma total</dt>
             <dd className="font-numeric text-text">{inr(proformaTotal)}</dd>
@@ -200,7 +200,7 @@ export function TaxInvoiceForm({
             <dd className="font-numeric font-semibold text-ink">{inr(total)}</dd>
           </div>
           {Math.abs(delta) > 1 && (
-            <p className="mt-1 text-[11px] text-warn">
+            <p className="mt-1 text-micro text-warn">
               {delta > 0
                 ? `${inr(delta)} more than the proforma — this will go back to the approver.`
                 : `${inr(-delta)} less than the proforma.`}
@@ -210,7 +210,7 @@ export function TaxInvoiceForm({
       </div>
 
       {error && (
-        <div className="rounded-sm bg-danger-wash px-3 py-2 text-[12px] text-danger">
+        <div className="rounded-sm bg-danger-wash px-3 py-2 text-caption text-danger">
           {error}
         </div>
       )}
@@ -219,7 +219,7 @@ export function TaxInvoiceForm({
         <Button variant="ghost" size="sm" onClick={onCancel} disabled={pending}>
           Cancel
         </Button>
-        <Button variant="accent" size="sm" onClick={submit} disabled={!ready || pending}>
+        <Button variant="primary" size="sm" onClick={submit} disabled={!ready || pending}>
           {pending ? 'Uploading…' : 'Upload tax invoice'}
         </Button>
       </div>
@@ -238,7 +238,7 @@ function Labeled({
 }): React.JSX.Element {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[12px] font-medium text-text">
+      <span className="text-caption font-medium text-text">
         {label} {required && <span className="text-danger">*</span>}
       </span>
       {children}

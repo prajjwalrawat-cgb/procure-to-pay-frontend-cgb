@@ -1,12 +1,25 @@
 'use client';
 
 import type { AuditRecordView, AuditVerifyResult } from '@/lib/shared';
-import { Button, PageHeader, Pill } from '@/components/ui';
-import { useMemo, useState } from 'react';
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  Input,
+  PageHeader,
+  SortableHead,
+  TableState,
+  useSort,
+} from '@/components/ui';
+import { X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { exportUrl, useAuditLog, verifyChain, type AuditFilters } from '@/lib/api/audit';
 import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
+import { formatDateTime } from '@/lib/format';
 
 const ACTIONS = [
   'DOCUMENT_ROUTED',
@@ -22,14 +35,31 @@ function thirtyDaysAgoIso(nowMs: number): string {
   return new Date(nowMs - 30 * 24 * 60 * 60 * 1000).toISOString();
 }
 
+/** Event keys ("invoice.created", "DOCUMENT_ROUTED") read as words. */
+function actionLabel(action: string): string {
+  const words = action.replace(/[._]+/g, ' ').trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+type SortKey = 'timestamp' | 'actor' | 'action' | 'entity';
+
 export default function AuditPage(): React.JSX.Element {
   // Computed once on mount; audit is not a live-ticking view.
   const defaultFrom = useMemo(() => thirtyDaysAgoIso(Date.now()), []);
   const [search, setSearch] = useState('');
   const [actions, setActions] = useState<string[]>([]);
   const [entityTypes, setEntityTypes] = useState<string[]>([]);
+  // Document pages link here as ?entityId=… ("Open in audit log"). Read once
+  // on mount rather than through useSearchParams, which would opt the page out
+  // of static rendering and need a Suspense boundary.
+  const [entityId, setEntityId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('entityId');
+    if (id) setEntityId(id);
+  }, []);
   const [openRow, setOpenRow] = useState<AuditRecordView | null>(null);
   const [verifyResult, setVerifyResult] = useState<AuditVerifyResult | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const token = useSessionStore((s) => s.accessToken);
   const toast = useToastStore((s) => s.push);
 
@@ -38,15 +68,32 @@ export default function AuditPage(): React.JSX.Element {
     search: search || undefined,
     action: actions.length ? actions : undefined,
     entityType: entityTypes.length ? entityTypes : undefined,
+    entityId,
   };
-  const { data, isLoading } = useAuditLog(filters);
+  const { data, isLoading, error, refetch } = useAuditLog(filters);
+  const rows = data?.items ?? [];
+  const { sorted, sort, toggle: toggleSort } = useSort<AuditRecordView, SortKey>(rows, {
+    timestamp: (r) => new Date(r.timestamp),
+    actor: (r) => r.actorName ?? r.actorType,
+    action: (r) => r.action,
+    entity: (r) => `${r.entityType} ${r.entityId}`,
+  });
+  const filtered = Boolean(search || actions.length || entityTypes.length || entityId);
 
   const toggle = (list: string[], set: (v: string[]) => void, value: string): void =>
     set(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
 
   const runVerify = async (): Promise<void> => {
-    const result = await verifyChain(filters);
-    setVerifyResult(result);
+    setVerifying(true);
+    try {
+      setVerifyResult(await verifyChain(filters));
+    } catch {
+      // A failed request is not a failed verification; say so rather than
+      // opening a modal with no verdict in it.
+      toast('Could not run chain verification', 'error');
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const download = async (kind: 'csv' | 'pdf'): Promise<void> => {
@@ -66,106 +113,160 @@ export default function AuditPage(): React.JSX.Element {
     URL.revokeObjectURL(url);
   };
 
+  const clearFilters = (): void => {
+    setSearch('');
+    setActions([]);
+    setEntityTypes([]);
+    setEntityId(undefined);
+  };
+
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <PageHeader
         title="Audit log"
-        description="Tamper-evident, hash-chained. Last 30 days."
+        description="Tamper-evident and hash-chained. Showing the last 30 days."
         actions={
           <>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => void download('csv')}>
-                Export CSV
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => void download('pdf')}>
-                Export PDF
-              </Button>
-              <Button variant="accent" size="sm" onClick={() => void runVerify()}>
-                Verify chain
-              </Button>
-            </div>
+            <Button variant="secondary" size="sm" onClick={() => void download('csv')}>
+              Export CSV
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => void download('pdf')}>
+              Export PDF
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={verifying}
+              onClick={() => void runVerify()}
+            >
+              {verifying ? 'Verifying…' : 'Verify chain'}
+            </Button>
           </>
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search actor or entity id…"
-          className="w-64 rounded-sm border border-line px-2.5 py-1.5 text-[13px] outline-none"
-        />
-        {ACTIONS.map((a) => (
-          <Chip
-            key={a}
-            label={a}
-            on={actions.includes(a)}
-            onClick={() => toggle(actions, setActions, a)}
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search actor or entity id…"
+            aria-label="Search actor or entity id"
+            className="w-full sm:w-72"
           />
-        ))}
-        {ENTITY_TYPES.map((e) => (
-          <Chip
-            key={e}
-            label={e}
-            on={entityTypes.includes(e)}
-            onClick={() => toggle(entityTypes, setEntityTypes, e)}
-          />
-        ))}
+          {entityId && (
+            <span className="border-line bg-panel text-text inline-flex items-center gap-1 rounded-pill border py-0.5 pl-2.5 pr-1 text-caption">
+              Document <span className="font-numeric">{entityId}</span>
+              <button
+                type="button"
+                aria-label="Clear document filter"
+                onClick={() => setEntityId(undefined)}
+                className="text-muted hover:bg-canvas hover:text-text rounded-full p-0.5"
+              >
+                <X className="h-3 w-3" aria-hidden />
+              </button>
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted mr-1 text-caption">Action</span>
+          {ACTIONS.map((a) => (
+            <Chip
+              key={a}
+              label={actionLabel(a)}
+              on={actions.includes(a)}
+              onClick={() => toggle(actions, setActions, a)}
+            />
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted mr-1 text-caption">Record</span>
+          {ENTITY_TYPES.map((e) => (
+            <Chip
+              key={e}
+              label={e.replace(/([a-z])([A-Z])/g, '$1 $2')}
+              on={entityTypes.includes(e)}
+              onClick={() => toggle(entityTypes, setEntityTypes, e)}
+            />
+          ))}
+        </div>
       </div>
 
-      {isLoading && <div className="text-[13px] text-muted">Loading…</div>}
-
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel">
-        <table className="w-full text-[13px]">
-          <thead className="border-b border-line text-[11px] uppercase tracking-wide text-faint">
+      <div className="border-line bg-panel overflow-hidden rounded-lg border">
+        <table className="pf-stack w-full text-body-sm">
+          <thead className="border-line border-b text-left">
             <tr>
-              <th className="p-2 text-left">Timestamp</th>
-              <th className="p-2 text-left">Actor</th>
-              <th className="p-2 text-left">Action</th>
-              <th className="p-2 text-left">Entity</th>
-              <th className="p-2 text-left">Hash</th>
-              <th className="p-2 text-left">IP</th>
+              <SortableHead label="Timestamp" sortKey="timestamp" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Actor" sortKey="actor" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Action" sortKey="action" sort={sort} onSort={toggleSort} />
+              <SortableHead label="Entity" sortKey="entity" sort={sort} onSort={toggleSort} />
+              <th className="text-muted px-3 py-2.5 text-caption font-medium">Hash</th>
+              <th className="text-muted px-3 py-2.5 text-caption font-medium">IP</th>
             </tr>
           </thead>
           <tbody>
-            {data?.items.map((r) => (
-              <tr
-                key={r.id}
-                onClick={() => setOpenRow(r)}
-                className="cursor-pointer border-b border-line last:border-0 hover:bg-canvas"
-                data-testid="audit-row"
-              >
-                <td className="font-numeric p-2 text-muted">
-                  {new Date(r.timestamp).toLocaleString('en-IN')}
-                </td>
-                <td className="p-2">{r.actorName ?? r.actorType}</td>
-                <td className="p-2">
-                  <Pill variant="gray">{r.action}</Pill>
-                </td>
-                <td className="font-numeric p-2">
-                  {r.entityType} <span className="text-faint">{r.entityId}</span>
-                </td>
-                <td className="font-numeric p-2 text-faint">
-                  {r.hashCurrent.slice(0, 10)}…
-                </td>
-                <td className="p-2 text-muted">{r.ipAddress ?? '—'}</td>
-              </tr>
-            ))}
-            {data && data.items.length === 0 && !isLoading && (
-              <tr>
-                <td colSpan={6} className="p-6 text-center text-muted">
-                  No events for these filters.
-                </td>
-              </tr>
-            )}
+            <TableState
+              colSpan={6}
+              isLoading={isLoading}
+              error={error}
+              onRetry={() => void refetch()}
+              isEmpty={rows.length === 0}
+              empty={
+                filtered
+                  ? {
+                      title: 'No events match these filters',
+                      detail: 'Try a different search, or clear the filters.',
+                      action: (
+                        <Button variant="secondary" size="sm" onClick={clearFilters}>
+                          Clear filters
+                        </Button>
+                      ),
+                    }
+                  : {
+                      title: 'No events in the last 30 days',
+                      detail: 'Approvals, routing and configuration changes are recorded here as they happen.',
+                    }
+              }
+            />
+            {!isLoading &&
+              !error &&
+              sorted.map((r) => (
+                <tr
+                  key={r.id}
+                  onClick={() => setOpenRow(r)}
+                  // The row opens the detail drawer, so it has to be reachable
+                  // without a mouse too.
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setOpenRow(r);
+                    }
+                  }}
+                  className="border-line hover:bg-canvas cursor-pointer border-b last:border-0"
+                  data-testid="audit-row"
+                >
+                  <td className="font-numeric text-muted px-3 py-3">
+                    {formatDateTime(r.timestamp)}
+                  </td>
+                  <td className="text-text px-3 py-3">{r.actorName ?? r.actorType}</td>
+                  <td className="text-text px-3 py-3">{actionLabel(r.action)}</td>
+                  <td className="px-3 py-3">
+                    <span className="text-text">{r.entityType}</span>{' '}
+                    <span className="font-numeric text-faint break-all">{r.entityId}</span>
+                  </td>
+                  <td className="font-numeric text-faint px-3 py-3">
+                    {r.hashCurrent.slice(0, 10)}…
+                  </td>
+                  <td className="font-numeric text-muted px-3 py-3">{r.ipAddress ?? '—'}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>
 
       {openRow && <AuditDrawer row={openRow} onClose={() => setOpenRow(null)} />}
-      {verifyResult && (
-        <VerifyModal result={verifyResult} onClose={() => setVerifyResult(null)} />
-      )}
+      <VerifyModal result={verifyResult} onClose={() => setVerifyResult(null)} />
     </div>
   );
 }
@@ -181,10 +282,14 @@ function Chip({
 }): React.JSX.Element {
   return (
     <button
+      type="button"
+      aria-pressed={on}
       onClick={onClick}
       className={
-        'rounded-full border px-2.5 py-0.5 text-[11px] font-medium ' +
-        (on ? 'border-accent bg-accent-wash text-accent-2' : 'border-line text-muted')
+        'duration-hover rounded-pill border px-2.5 py-0.5 text-micro font-medium transition-colors ' +
+        (on
+          ? 'border-accent bg-accent-wash text-accent'
+          : 'border-line text-muted hover:bg-canvas hover:text-text')
       }
     >
       {label}
@@ -201,29 +306,31 @@ function AuditDrawer({
 }): React.JSX.Element {
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-black/30"
+      className="bg-ink/30 fixed inset-0 z-50 flex justify-end"
       role="presentation"
       onClick={onClose}
     >
       <div
-        className="h-full w-full max-w-lg overflow-y-auto border-l border-line bg-panel p-5"
-        role="presentation"
+        className="border-line bg-panel h-full w-full max-w-lg overflow-y-auto border-l p-5"
+        role="dialog"
+        aria-modal="true"
+        aria-label={actionLabel(row.action)}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-[15px] font-semibold text-ink">{row.action}</h3>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="text-ink text-h3 font-semibold">{actionLabel(row.action)}</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
             Close
           </Button>
         </div>
-        <dl className="mb-4 flex flex-col gap-1 text-[12px]">
-          <Row k="Entity" v={`${row.entityType} · ${row.entityId}`} />
+        <dl className="mb-4 flex flex-col gap-1.5 text-caption">
+          <Row k="Entity" v={`${row.entityType}, ${row.entityId}`} />
           <Row k="Actor" v={row.actorName ?? row.actorType} />
-          <Row k="When" v={new Date(row.timestamp).toLocaleString('en-IN')} />
+          <Row k="When" v={formatDateTime(row.timestamp)} />
           <Row k="Hash" v={row.hashCurrent} mono />
           <Row k="Prev hash" v={row.hashPrevious ?? '— (chain root)'} mono />
         </dl>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <JsonBlock title="Before" value={row.before} />
           <JsonBlock title="After" value={row.after} />
         </div>
@@ -240,9 +347,9 @@ function JsonBlock({
   value: Record<string, unknown> | null;
 }): React.JSX.Element {
   return (
-    <div>
-      <div className="mb-1 text-[10px] font-semibold uppercase text-faint">{title}</div>
-      <pre className="font-numeric overflow-x-auto rounded-sm border border-line bg-canvas p-2 text-[11px]">
+    <div className="min-w-0">
+      <div className="text-faint mb-1 text-micro font-semibold">{title}</div>
+      <pre className="font-numeric border-line bg-canvas overflow-x-auto rounded-sm border p-2 text-micro">
         {value ? JSON.stringify(value, null, 2) : '—'}
       </pre>
     </div>
@@ -260,8 +367,8 @@ function Row({
 }): React.JSX.Element {
   return (
     <div className="flex justify-between gap-3">
-      <dt className="text-muted">{k}</dt>
-      <dd className={'text-right text-text ' + (mono ? 'font-numeric break-all' : '')}>
+      <dt className="text-muted shrink-0">{k}</dt>
+      <dd className={'text-text min-w-0 text-right ' + (mono ? 'font-numeric break-all' : '')}>
         {v}
       </dd>
     </div>
@@ -272,37 +379,34 @@ function VerifyModal({
   result,
   onClose,
 }: {
-  result: AuditVerifyResult;
+  result: AuditVerifyResult | null;
   onClose: () => void;
 }): React.JSX.Element {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-6"
-      role="presentation"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-xl border border-line bg-panel p-5 shadow-lg"
-        role="presentation"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {result.verified ? (
-          <div className="rounded-lg bg-accent-wash p-4 text-[13px] font-medium text-accent-2">
-            Chain verified · {result.eventsChecked} events · no tampering detected
-          </div>
-        ) : (
-          <div className="rounded-lg bg-danger-wash p-4 text-[13px] font-medium text-danger">
-            Chain BROKEN · first break at{' '}
-            <span className="font-numeric">{result.firstBreakAt}</span>. See the incident
-            runbook (docs/adr/006-audit-hash-chain.md).
-          </div>
-        )}
+    <Dialog open={result !== null} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent hideClose>
+        <DialogTitle>Chain verification</DialogTitle>
+        <DialogDescription className="sr-only">
+          Result of recomputing the audit hash chain.
+        </DialogDescription>
+        {result &&
+          (result.verified ? (
+            <div className="bg-success-bg text-success mt-3 rounded-lg p-4 text-body-sm font-medium">
+              Chain verified across {result.eventsChecked} events. No tampering detected.
+            </div>
+          ) : (
+            <div className="bg-danger-wash text-danger mt-3 rounded-lg p-4 text-body-sm font-medium">
+              Chain broken. First break at{' '}
+              <span className="font-numeric">{result.firstBreakAt}</span>. Follow the audit
+              incident runbook.
+            </div>
+          ))}
         <div className="mt-4 flex justify-end">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="secondary" size="sm" onClick={onClose}>
             Close
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

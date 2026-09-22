@@ -1,6 +1,14 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import {
+  Button,
+  PageHeader,
+  Pill,
+  Skeleton,
+  SubNav,
+  TableState,
+  controlClass,
+} from '@/components/ui';
 import Link from 'next/link';
 import { useRef, useState } from 'react';
 
@@ -92,32 +100,29 @@ export default function BulkUploadPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div>
       <PageHeader
         title="Bulk upload"
-        description="Staged, validated import · CSV or XLSX"
+        description="Staged, validated import from a CSV or XLSX sheet."
         actions={
-          <>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
-                Stock overview
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory">Stock overview</Link>
+          </Button>
         }
       />
 
       <div className="mb-4 rounded-lg border border-line bg-panel p-4">
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="What the sheet contains">
           {(['PRODUCT_MASTER', 'STOCK_LEDGER'] as ImportType[]).map((t) => (
             <button
               key={t}
               type="button"
+              aria-pressed={importType === t}
               onClick={() => setImportType(t)}
               className={
-                'rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors ' +
+                'rounded-md border px-3 py-1.5 text-body-sm font-medium transition-colors ' +
                 (importType === t
-                  ? 'border-accent bg-canvas text-ink'
+                  ? 'border-accent bg-accent-wash text-accent'
                   : 'border-line text-muted hover:text-ink')
               }
             >
@@ -145,10 +150,10 @@ export default function BulkUploadPage(): React.JSX.Element {
             (dragging ? 'border-accent bg-canvas' : 'border-line')
           }
         >
-          <span className="text-[13px] text-text">
+          <span className="text-body-sm text-text">
             {file ? file.name : 'Drop a .csv or .xlsx file here, or click to choose'}
           </span>
-          <span className="mt-1 text-[11px] text-faint">
+          <span className="mt-1 text-caption text-muted">
             Rows are staged and validated in the background — nothing posts until it
             passes.
           </span>
@@ -162,30 +167,30 @@ export default function BulkUploadPage(): React.JSX.Element {
         />
 
         <div className="mt-3">
-          <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+          <label className="flex flex-col gap-1 text-caption font-medium text-muted">
             Worksheet (optional)
             <input
               value={sheetName}
               onChange={(e) => setSheetName(e.target.value)}
               placeholder="Leave blank to detect automatically"
-              className="rounded-md border border-line bg-panel px-3 py-1.5 text-[13px] text-text outline-none placeholder:text-faint focus:border-accent"
+              className={controlClass}
             />
           </label>
-          <p className="mt-1 text-[11px] text-faint">
+          <p className="mt-1 text-caption text-muted">
             A workbook usually has several sheets and a title above the real header row;
             both are detected from the columns. Name a sheet here to override.
           </p>
         </div>
 
         {detected?.sheet && (
-          <p className="mt-2 text-[12px] text-emerald-700">
+          <p className="mt-2 text-caption text-success">
             Read worksheet &ldquo;{detected.sheet}&rdquo; using row {detected.headerRow}{' '}
             as the header.
           </p>
         )}
 
         <details className="mt-3">
-          <summary className="cursor-pointer text-[12px] text-muted">
+          <summary className="cursor-pointer text-caption text-muted">
             Column mapping preview ({EXPECTED_COLUMNS[importType].length} recognised
             columns)
           </summary>
@@ -193,23 +198,23 @@ export default function BulkUploadPage(): React.JSX.Element {
             {EXPECTED_COLUMNS[importType].map((c) => (
               <span
                 key={c}
-                className="font-numeric rounded border border-line bg-canvas px-1.5 py-0.5 text-[11px] text-muted"
+                className="font-numeric rounded border border-line bg-canvas px-1.5 py-0.5 text-micro text-muted"
               >
                 {c}
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-faint">
+          <p className="mt-2 text-caption text-muted">
             * required. Header names are matched case- and punctuation-insensitively, and
             common legacy spellings are accepted.
           </p>
         </details>
 
-        {error && <p className="mt-3 text-[12px] text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-caption text-danger">{error}</p>}
 
         <div className="mt-3 flex justify-end">
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!file || upload.isPending}
             onClick={() => void submit()}
@@ -222,62 +227,65 @@ export default function BulkUploadPage(): React.JSX.Element {
       {batchId && <BatchProgress batchId={batchId} />}
 
       <section className="mt-6">
-        <h2 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-faint">
+        <h2 className="mb-3 text-h3 font-semibold text-ink">
           Recent imports
         </h2>
-        <div className="overflow-x-auto rounded-lg border border-line bg-panel">
-          <table className="w-full text-[13px]">
-            <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+        <div className="overflow-x-auto">
+          <table className="pf-stack w-full text-body-sm">
+            <thead className="border-line border-b text-left text-caption text-muted">
               <tr>
-                <th className="px-3 py-2 font-medium">File</th>
-                <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2 text-right font-medium">Rows</th>
-                <th className="px-3 py-2 text-right font-medium">OK</th>
-                <th className="px-3 py-2 text-right font-medium">Skipped</th>
-                <th className="px-3 py-2 text-right font-medium">Errors</th>
-                <th className="w-20 px-3 py-2" />
+                <th className="px-3 py-2.5 font-medium">File</th>
+                <th className="px-3 py-2.5 font-medium">Type</th>
+                <th className="px-3 py-2.5 font-medium">Status</th>
+                <th className="px-3 py-2.5 text-right font-medium">Rows</th>
+                <th className="px-3 py-2.5 text-right font-medium">OK</th>
+                <th className="px-3 py-2.5 text-right font-medium">Skipped</th>
+                <th className="px-3 py-2.5 text-right font-medium">Errors</th>
+                <th className="w-20 px-3 py-2.5 text-right font-medium">
+                  <span className="sr-only">Open</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {(batches.data?.items ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-muted">
-                    No imports yet.
-                  </td>
-                </tr>
-              )}
+              <TableState
+                colSpan={8}
+                skeletonRows={3}
+                isLoading={batches.isLoading}
+                error={batches.error}
+                onRetry={() => void batches.refetch()}
+                isEmpty={(batches.data?.items ?? []).length === 0}
+                empty={{
+                  title: 'No imports yet',
+                  detail: 'Upload a product master or stock ledger sheet above to start.',
+                }}
+              />
               {(batches.data?.items ?? []).map((b) => (
                 <tr key={b.id} className="border-t border-line hover:bg-canvas/60">
-                  <td className="px-3 py-2 text-ink">{b.fileName}</td>
-                  <td className="px-3 py-2 text-[12px] text-muted">
+                  <td className="px-3 py-3.5 text-ink">{b.fileName}</td>
+                  <td className="px-3 py-3.5 text-caption text-muted">
                     {b.importType === 'PRODUCT_MASTER' ? 'Products' : 'Ledger'}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-3.5">
                     <Pill variant={batchVariant(b.status)} dot>
                       {batchLabel(b.status)}
                     </Pill>
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-text">
+                  <td className="font-numeric px-3 py-3.5 text-right text-text">
                     {b.totalRows}
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-emerald-700">
+                  <td className="font-numeric px-3 py-3.5 text-right text-success">
                     {b.successRows}
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-amber-700">
+                  <td className="font-numeric px-3 py-3.5 text-right text-warn">
                     {b.skippedRows}
                   </td>
-                  <td className="font-numeric px-3 py-2 text-right text-red-600">
+                  <td className="font-numeric px-3 py-3.5 text-right text-danger">
                     {b.errorRows}
                   </td>
-                  <td className="px-3 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setBatchId(b.id)}
-                      className="text-[12px] font-medium text-accent-2 hover:underline"
-                    >
-                      View →
-                    </button>
+                  <td className="px-3 py-3.5 text-right">
+                    <Button type="button" variant="link" size="sm" onClick={() => setBatchId(b.id)}>
+                      View
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -296,17 +304,24 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
   const resolve = useResolveImportRow(batchId);
   const reprocess = useReprocessImport(batchId);
 
-  if (!data) return <p className="text-[13px] text-muted">Loading batch…</p>;
+  if (!data)
+    return (
+      <div aria-busy="true" className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-4">
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-1.5 w-full" />
+        <Skeleton className="h-3.5 w-64" />
+      </div>
+    );
 
   const done = data.totalRows - data.pendingRows;
   const pct = data.totalRows === 0 ? 100 : Math.round((done / data.totalRows) * 100);
 
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <h2 className="text-[15px] font-semibold text-ink">{data.fileName}</h2>
-          <p className="font-numeric text-[12px] text-muted">{data.id}</p>
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="truncate text-h3 font-semibold text-ink">{data.fileName}</h2>
+          <p className="font-numeric text-caption text-muted">{data.id}</p>
         </div>
         <Pill variant={batchVariant(data.status)} dot>
           {batchLabel(data.status)}
@@ -316,50 +331,42 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
       <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-canvas">
         <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+      <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
         <span>
           {done} / {data.totalRows} processed
         </span>
-        <span className="text-emerald-700">{data.successRows} created/updated</span>
-        <span className="text-amber-700">{data.skippedRows} skipped</span>
-        <span className="text-red-600">{data.errorRows} errors</span>
+        <span className="text-success">{data.successRows} created/updated</span>
+        <span className="text-warn">{data.skippedRows} skipped</span>
+        <span className="text-danger">{data.errorRows} errors</span>
       </div>
 
       {data.errorMessage && (
-        <p className="mb-3 text-[12px] text-red-600">{data.errorMessage}</p>
+        <p className="mb-3 text-caption text-danger">{data.errorMessage}</p>
       )}
 
       {(data.skippedRows > 0 || data.errorRows > 0) && (
         <>
-          <div className="mb-2 flex items-center gap-1 border-b border-line">
-            {(['SKIPPED', 'ERROR'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={
-                  'border-b-2 px-3 py-1.5 text-[13px] font-medium transition-colors ' +
-                  (tab === t
-                    ? 'border-accent text-ink'
-                    : 'border-transparent text-muted hover:text-ink')
-                }
-              >
-                {t === 'SKIPPED' ? 'Quarantine' : 'Errors'}
-                <span className="font-numeric ml-1.5 text-[11px] text-faint">
-                  {t === 'SKIPPED' ? data.skippedRows : data.errorRows}
-                </span>
-              </button>
-            ))}
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <SubNav
+              className="border-b-0"
+              items={[
+                { key: 'SKIPPED', label: 'Quarantine', count: data.skippedRows },
+                { key: 'ERROR', label: 'Errors', count: data.errorRows },
+              ]}
+              value={tab ?? 'SKIPPED'}
+              onChange={(k) => setTab(k as 'SKIPPED' | 'ERROR')}
+            />
             <div className="ml-auto flex items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() =>
                   void openAuthedAsset(`/inventory/bulk-imports/${batchId}/errors.csv`)
                 }
-                className="text-[12px] font-medium text-accent-2 hover:underline"
               >
                 Download error CSV
-              </button>
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -372,54 +379,60 @@ function BatchProgress({ batchId }: { batchId: string }): React.JSX.Element {
           </div>
 
           {tab === 'SKIPPED' && (
-            <p className="mb-2 text-[11px] text-faint">
+            <p className="mb-2 text-caption text-muted">
               These rows named a product with no catalogue match. They are never
               auto-created — confirm each is a real SKU first.
             </p>
           )}
 
           <div className="max-h-80 overflow-y-auto">
-            <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+            <table className="pf-stack w-full text-body-sm">
+              <thead className="sticky top-0 z-10 border-b border-line bg-panel text-left text-caption text-muted">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Row</th>
-                  <th className="px-3 py-2 font-medium">Product</th>
-                  <th className="px-3 py-2 font-medium">Reason</th>
-                  {tab === 'SKIPPED' && <th className="w-40 px-3 py-2" />}
+                  <th className="px-3 py-2.5 font-medium">Row</th>
+                  <th className="px-3 py-2.5 font-medium">Product</th>
+                  <th className="px-3 py-2.5 font-medium">Reason</th>
+                  {tab === 'SKIPPED' && (
+                    <th className="w-40 px-3 py-2.5 text-right font-medium">
+                      <span className="sr-only">Resolve</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {data.rows.map((r) => (
                   <tr key={r.id} className="border-t border-line">
-                    <td className="font-numeric px-3 py-2 text-muted">{r.rowNumber}</td>
-                    <td className="px-3 py-2 text-ink">
+                    <td className="font-numeric px-3 py-3.5 text-muted">{r.rowNumber}</td>
+                    <td className="px-3 py-3.5 text-ink">
                       {String(r.rawData.product_name ?? r.rawData.name ?? '—')}
                     </td>
-                    <td className="px-3 py-2 text-[12px] text-muted">
+                    <td className="px-3 py-3.5 text-caption text-muted">
                       {r.errorMessage ?? '—'}
                     </td>
                     {tab === 'SKIPPED' && (
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          type="button"
-                          disabled={resolve.isPending}
-                          onClick={() =>
-                            resolve.mutate({ rowId: r.id, action: 'CREATE_PRODUCT' })
-                          }
-                          className="text-[12px] font-medium text-accent-2 hover:underline"
-                        >
-                          Create SKU
-                        </button>
-                        <button
-                          type="button"
-                          disabled={resolve.isPending}
-                          onClick={() =>
-                            resolve.mutate({ rowId: r.id, action: 'DISCARD' })
-                          }
-                          className="ml-3 text-[12px] text-muted hover:underline"
-                        >
-                          Discard
-                        </button>
+                      <td className="px-3 py-3.5 text-right">
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            disabled={resolve.isPending}
+                            onClick={() =>
+                              resolve.mutate({ rowId: r.id, action: 'CREATE_PRODUCT' })
+                            }
+                          >
+                            Create SKU
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={resolve.isPending}
+                            onClick={() => resolve.mutate({ rowId: r.id, action: 'DISCARD' })}
+                          >
+                            Discard
+                          </Button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -451,7 +464,7 @@ function batchLabel(status: string): string {
   );
 }
 
-function batchVariant(status: string): 'success' | 'danger' | 'warn' | 'info' | 'gray' {
+function batchVariant(status: string): 'success' | 'danger' | 'warn' | 'info' | 'neutral' {
   switch (status) {
     case 'COMPLETED':
       return 'success';
@@ -462,6 +475,6 @@ function batchVariant(status: string): 'success' | 'danger' | 'warn' | 'info' | 
     case 'PROCESSING':
       return 'info';
     default:
-      return 'gray';
+      return 'neutral';
   }
 }

@@ -3,81 +3,88 @@
 import {
   Avatar,
   AvatarFallback,
-  Button,
   CommandPalette,
-  Sidebar,
-  Topbar,
+  TopNav,
   type CommandRoute,
-  type NavItem,
+  isTopNavMenu,
+  type TopNavEntry,
+  type TopNavItem,
+  useTableStackLabels,
 } from '@/components/ui';
+import { Bell } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { NotificationsTray } from '@/components/notifications-tray';
-import { LIVE_ROUTES, NAV_GROUPS } from '@/config/nav';
+import { LIVE_ROUTES, PRIMARY_NAV } from '@/config/nav';
 import { useSidebarCounts } from '@/lib/api/inbox';
 import { useUnreadCount } from '@/lib/api/notifications';
 import { refreshAccessToken } from '@/lib/api-client';
+import { endSession } from '@/lib/auth-session';
 import { API_URL } from '@/lib/env';
 import { useSessionStore, type SessionUser } from '@/store/session-store';
 import { useUiStore } from '@/store/ui-store';
 
 const LOGOUT_HREF = 'action:logout';
 
+/**
+ * The buyer shell.
+ *
+ * Chrome is a white two-row top bar, not a navy rail: identity and global
+ * search on row one, section tabs on row two, and the work surface gets the
+ * full width. See components/ui/components/top-nav.tsx for why.
+ */
 export function AppShell({ children }: { children: ReactNode }): React.JSX.Element {
   const pathname = usePathname();
   const router = useRouter();
-  const {
-    sidebarCollapsed,
-    focusMode,
-    commandOpen,
-    toggleSidebar,
-    toggleFocus,
-    setTrayOpen,
-    setCommandOpen,
-  } = useUiStore();
+  const { commandOpen, setTrayOpen, setCommandOpen } = useUiStore();
   const { user, setSession, clear } = useSessionStore();
   const { data: approvalCounts } = useSidebarCounts();
   const { data: unread } = useUnreadCount();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Labels `table.pf-stack` cells so they stack as cards on narrow screens.
+  const mainRef = useRef<HTMLElement>(null);
+  useTableStackLabels(mainRef);
 
-  // Navigating from the drawer should close it; otherwise the new page renders
-  // behind an overlay that is still up.
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
+  // Pending-approval counts ride on the nav items that own the queue. Those
+  // items all sit inside dropdowns now, and each dropdown trigger sums its
+  // items' badges — an approval queue nobody can see is one nobody clears.
+  const withBadge = (item: TopNavItem): TopNavItem => {
+    if (!approvalCounts) return item;
+    if (item.href === '/inbox' && approvalCounts.total > 0) {
+      return { ...item, badge: approvalCounts.total };
+    }
+    if (item.href === '/invoices' && approvalCounts.invoices > 0) {
+      return { ...item, badge: approvalCounts.invoices };
+    }
+    if (item.href === '/payment-runs' && approvalCounts.paymentRuns > 0) {
+      return { ...item, badge: approvalCounts.paymentRuns };
+    }
+    return item;
+  };
 
-  // Inject pending-approval badges onto the Inbox + Invoices nav items.
-  const navGroups = NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.map((item) => {
-      if (!approvalCounts) return item;
-      if (item.href === '/inbox' && approvalCounts.total > 0) {
-        return { ...item, badge: approvalCounts.total };
-      }
-      if (item.href === '/invoices' && approvalCounts.invoices > 0) {
-        return { ...item, badge: approvalCounts.invoices };
-      }
-      if (item.href === '/payment-runs' && approvalCounts.paymentRuns > 0) {
-        return { ...item, badge: approvalCounts.paymentRuns };
-      }
-      return item;
-    }),
-  }));
+  const primary = PRIMARY_NAV.map(
+    (entry): TopNavEntry =>
+      isTopNavMenu(entry) ? { ...entry, items: entry.items.map(withBadge) } : withBadge(entry),
+  );
 
   /*
    * Bootstrap: exchange the httpOnly refresh cookie for an access token + load
-   * the profile, so the topbar can show who is signed in.
+   * the profile, so the nav can show who is signed in.
    *
    * Goes through the shared single-flight refresher, NOT a raw fetch. The
    * refresh token rotates on use, so two concurrent exchanges mean the second
    * presents a token the first already consumed and is told the session is
    * dead. A raw fetch here was a second caller outside the guard, racing every
    * query that mounted alongside this effect and 401'd on the empty in-memory
-   * token — which is why a hard refresh signed people out intermittently, and
-   * almost always when done straight after logging in, when the two fire
-   * closest together.
+   * token — which is why a hard refresh signed people out intermittently.
+   *
+   * A failure ends the session through `endSession`, not `router.replace`. The
+   * bare replace was a client-side nav that the middleware answered by seeing
+   * the still-present (but dead) refresh cookie and sending the user straight
+   * back here — so this effect ran again, failed again, and the page reloaded
+   * in a tight loop. `endSession` flags the bounce so the middleware lets the
+   * login page through.
    */
   useEffect(() => {
     if (user) return;
@@ -85,14 +92,14 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     void (async () => {
       const accessToken = await refreshAccessToken();
       if (!accessToken) {
-        router.replace('/login');
+        endSession('/login', clear);
         return;
       }
       const meRes = await fetch(`${API_URL}/users/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!meRes.ok) {
-        router.replace('/login');
+        endSession('/login', clear);
         return;
       }
       const me = (await meRes.json()) as SessionUser;
@@ -101,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     return () => {
       cancelled = true;
     };
-  }, [user, router, setSession]);
+  }, [user, clear, setSession]);
 
   // ⌘K / Ctrl-K opens the command palette.
   useEffect(() => {
@@ -131,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     else router.push(href);
   };
 
-  const renderLink = (item: NavItem, content: ReactNode): ReactNode => (
+  const renderLink = (item: TopNavItem, content: ReactNode): ReactNode => (
     <Link href={item.href}>{content}</Link>
   );
 
@@ -142,67 +149,70 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
     .join('')
     .toUpperCase();
 
+  const notificationCount = unread?.count ?? 0;
+
   return (
-    <div className="flex h-screen overflow-hidden bg-paper">
+    <div className="bg-paper flex h-screen flex-col overflow-hidden">
       <a href="#main-content" className="pf-skip-link">
         Skip to content
       </a>
 
-      {!focusMode && (
-        <Sidebar
-          brand={
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-sm bg-gold text-navy">
-                <span className="font-numeric text-[12px] font-bold">P</span>
-              </span>
-              {(!sidebarCollapsed || mobileNavOpen) && (
-                <span className="text-[14px] font-semibold tracking-heading text-on-navy">
-                  ProcureFlow
+      <TopNav
+        brand={
+          <Link href="/" className="flex items-center gap-2">
+            <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-sm text-white">
+              <span className="text-caption font-bold">P</span>
+            </span>
+            <span className="text-ink tracking-heading hidden text-body font-semibold sm:inline">
+              ProcureFlow
+            </span>
+          </Link>
+        }
+        primary={primary}
+        activeHref={pathname}
+        renderLink={renderLink}
+        onOpenSearch={() => setCommandOpen(true)}
+        right={
+          <>
+            <button
+              type="button"
+              onClick={() => setTrayOpen(true)}
+              className="text-muted hover:bg-canvas hover:text-text duration-hover relative rounded-sm p-1.5 transition-colors"
+              aria-label={
+                notificationCount > 0
+                  ? `Notifications, ${notificationCount} unread`
+                  : 'Notifications'
+              }
+            >
+              <Bell className="h-4 w-4" aria-hidden />
+              {notificationCount > 0 && (
+                <span className="bg-accent absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-micro font-bold text-white">
+                  {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}
-            </div>
-          }
-          groups={navGroups}
-          activeHref={pathname}
-          collapsed={sidebarCollapsed}
-          renderLink={renderLink}
-          mobileOpen={mobileNavOpen}
-          onMobileClose={() => setMobileNavOpen(false)}
-        />
-      )}
+            </button>
+            <AccountMenu
+              initials={initials}
+              user={user}
+              onLogout={logout}
+            />
+          </>
+        }
+      />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar
-          onToggleSidebar={toggleSidebar}
-          onOpenMobileNav={() => setMobileNavOpen(true)}
-          onOpenCommand={() => setCommandOpen(true)}
-          onToggleFocus={toggleFocus}
-          onOpenNotifications={() => setTrayOpen(true)}
-          notificationCount={unread?.count ?? 0}
-          right={
-            <div className="flex items-center gap-2 pl-1">
-              <AccountMenu initials={initials} user={user} onLogout={logout} />
-              <Button
-                variant="onNavy"
-                size="sm"
-                onClick={() => void logout()}
-                className="hidden sm:inline-flex"
-              >
-                Logout
-              </Button>
-            </div>
-          }
-        />
-        {/* overscroll-contain stops the chain: without it, hitting the bottom of
-          the content carried on scrolling into whatever was behind it — on a
-          laptop-height window that is the sidebar, whose own nav overflows. */}
-        <main
-          id="main-content"
-          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 lg:p-6"
-        >
-          {children}
-        </main>
-      </div>
+      {/* overscroll-contain stops the chain: without it, hitting the bottom of
+          the content carried on scrolling into whatever was behind it. */}
+      {/* One content column for the whole app — `.pf-container` in styles.css.
+       * Centred, and shared with the nav rows so the brand, the section tabs
+       * and every page title start on the same line. Pages fill it; forms cap
+       * themselves narrower and centre within it. */}
+      <main
+        ref={mainRef}
+        id="main-content"
+        className="flex-1 overflow-y-auto overscroll-contain py-4 sm:py-5 lg:py-6"
+      >
+        <div className="pf-container">{children}</div>
+      </main>
 
       <CommandPalette
         open={commandOpen}
@@ -218,15 +228,11 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
 /**
  * The avatar, as a menu.
  *
- * The topbar's Logout button is `hidden sm:inline-flex`, so below 640px it does
- * not render — and the avatar used to be decoration with no click handler. That
- * left a phone-sized window with no way to sign out at all, which is also the
- * first thing anyone taps when they want to switch user. The menu carries the
- * signed-in identity too, because on a shared handset "who am I?" is the
- * question that precedes "log me out".
- *
- * Identity and Logout only. Navigation belongs in the sidebar, and duplicating
- * destinations here would mean two places to keep in step.
+ * Identity and Logout only. Navigation belongs in the nav, and duplicating
+ * destinations here would mean two places to keep in step. The organisation
+ * name lives here too — it used to be appended to every page subheading as
+ * a dot-joined "Acme Ltd" suffix, which repeated it ninety times and told
+ * you nothing on the eighty-ninth.
  */
 function AccountMenu({
   initials,
@@ -266,7 +272,7 @@ function AccountMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account"
-        className="flex items-center rounded-full focus-visible:ring-2 focus-visible:ring-white/60"
+        className="flex items-center rounded-full"
         onClick={() => setOpen((v) => !v)}
       >
         <Avatar>
@@ -277,26 +283,29 @@ function AccountMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border border-line bg-white shadow-lg"
+          className="border-line bg-panel absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-lg border shadow-lg"
         >
-          <div className="border-b border-line px-3 py-2">
-            <p className="truncate text-[13px] font-medium text-ink">
+          <div className="border-line border-b px-3 py-2.5">
+            <p className="text-ink truncate text-body-sm font-medium">
               {user?.name ?? 'Signed in'}
             </p>
             {user?.email ? (
-              <p className="truncate text-[12px] text-muted">{user.email}</p>
+              <p className="text-muted truncate text-caption">{user.email}</p>
+            ) : null}
+            {user?.tenant?.name ? (
+              <p className="text-faint mt-1 truncate text-caption">{user.tenant.name}</p>
             ) : null}
           </div>
           <button
             type="button"
             role="menuitem"
-            className="block w-full px-3 py-2 text-left text-[13px] text-danger hover:bg-canvas"
+            className="text-text hover:bg-canvas block w-full px-3 py-2 text-left text-body-sm"
             onClick={() => {
               setOpen(false);
               void onLogout();
             }}
           >
-            Logout
+            Log out
           </button>
         </div>
       ) : null}

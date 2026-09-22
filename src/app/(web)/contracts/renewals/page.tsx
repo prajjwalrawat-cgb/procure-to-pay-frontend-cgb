@@ -1,8 +1,7 @@
 'use client';
 
-import type { RenewalAlertAction } from '@/lib/shared';
-import { PageHeader, Pill } from '@/components/ui';
-import { ArrowLeft } from 'lucide-react';
+import type { RenewalAlertAction, RenewalCalendarEntry } from '@/lib/shared';
+import { Button, DataState, PageHeader, Pill } from '@/components/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -11,79 +10,95 @@ import {
   useRenewalCalendar,
   useRenewContract,
 } from '@/lib/api/contracts';
-import { inr } from '@/lib/format';
+import { humanise, inr } from '@/lib/format';
 import { useToastStore } from '@/store/toast-store';
 
 const BUCKETS: { key: string; label: string; variant: 'danger' | 'warn' | 'info' }[] = [
+  { key: 'expired', label: 'Expired', variant: 'danger' },
   { key: '30d', label: 'Within 30 days', variant: 'danger' },
   { key: '60d', label: 'Within 60 days', variant: 'warn' },
   { key: '90d', label: 'Within 90 days', variant: 'info' },
-  { key: 'expired', label: 'Expired', variant: 'danger' },
 ];
 
 export default function RenewalsPage(): React.JSX.Element {
-  const { data } = useRenewalCalendar();
+  const { data, isLoading, error, refetch } = useRenewalCalendar();
   const ack = useAcknowledgeAlert();
   const push = useToastStore((s) => s.push);
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <Link
-        href="/contracts"
-        className="mb-3 inline-flex items-center gap-1 text-[13px] text-muted hover:text-text"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> Contracts
-      </Link>
+    <div>
       <PageHeader
+        breadcrumbs={[{ label: 'Contracts', href: '/contracts' }, { label: 'Renewals' }]}
         title="Renewal calendar"
         description="Proactive expiry warnings — acknowledge and renew before contracts lapse."
       />
 
-      {!data || data.entries.length === 0 ? (
-        <p className="py-16 text-center text-[13px] text-muted">
-          No contracts expiring within 90 days.
-        </p>
-      ) : (
-        <div className="space-y-5">
+      <DataState
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => void refetch()}
+        isEmpty={!data || data.entries.length === 0}
+        empty={{
+          title: 'Nothing up for renewal',
+          detail: 'No contracts expire within the next 90 days.',
+        }}
+      >
+        <div className="flex flex-col gap-6">
           {BUCKETS.map((b) => {
-            const rows = data.entries.filter((e) => e.bucket === b.key);
+            const rows = (data?.entries ?? []).filter((e) => e.bucket === b.key);
             if (rows.length === 0) return null;
             return (
-              <div key={b.key}>
+              <section key={b.key}>
                 <div className="mb-2 flex items-center gap-2">
                   <Pill variant={b.variant} dot>
                     {b.label}
                   </Pill>
-                  <span className="text-[12px] text-muted">{rows.length}</span>
+                  <span className="font-numeric text-caption text-muted">{rows.length}</span>
                 </div>
-                <div className="divide-y divide-line rounded-lg border border-line">
-                  {rows.map((e) => (
-                    <RenewalRow
-                      key={e.contractId}
-                      entry={e}
-                      onAck={async (action) => {
-                        if (!e.alert) {
-                          push('No active alert to acknowledge', 'info');
-                          return;
-                        }
-                        try {
-                          await ack.mutateAsync({
-                            alertId: e.alert.id,
-                            body: { actionTaken: action },
-                          });
-                          push(`Acknowledged — ${action}`, 'success');
-                        } catch (err) {
-                          push(err instanceof Error ? err.message : 'Failed', 'error');
-                        }
-                      }}
-                    />
-                  ))}
+                <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+                  <table className="pf-stack w-full text-body-sm">
+                    <thead className="border-b border-line text-left text-caption text-muted">
+                      <tr>
+                        <th className="px-3 py-2.5 font-medium">Contract</th>
+                        <th className="px-3 py-2.5 font-medium">Vendor</th>
+                        <th className="px-3 py-2.5 text-right font-medium">Value</th>
+                        <th className="px-3 py-2.5 font-medium">Expiry</th>
+                        <th className="px-3 py-2.5 font-medium">Alert</th>
+                        <th className="px-3 py-2.5 text-right font-medium">
+                          <span className="sr-only">Actions</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((e) => (
+                        <RenewalRow
+                          key={e.contractId}
+                          entry={e}
+                          onAck={async (action) => {
+                            if (!e.alert) {
+                              push('No active alert to acknowledge', 'info');
+                              return;
+                            }
+                            try {
+                              await ack.mutateAsync({
+                                alertId: e.alert.id,
+                                body: { actionTaken: action },
+                              });
+                              push(`Acknowledged — ${humanise(action).toLowerCase()}`, 'success');
+                            } catch (err) {
+                              push(err instanceof Error ? err.message : 'Failed', 'error');
+                            }
+                          }}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
-      )}
+      </DataState>
     </div>
   );
 }
@@ -92,58 +107,69 @@ function RenewalRow({
   entry,
   onAck,
 }: {
-  entry: import('@/lib/shared').RenewalCalendarEntry;
+  entry: RenewalCalendarEntry;
   onAck: (a: RenewalAlertAction) => Promise<void>;
 }): React.JSX.Element {
   const router = useRouter();
   const renew = useRenewContract(entry.contractId);
   const push = useToastStore((s) => s.push);
   return (
-    <div className="flex items-center justify-between px-4 py-3 text-[13px]">
-      <div>
+    <tr className="border-t border-line">
+      <td className="px-3 py-3.5">
         <Link
           href={`/contracts/${entry.contractId}`}
-          className="font-numeric font-medium text-accent-2"
+          className="font-numeric font-medium text-accent hover:underline"
         >
           {entry.number}
         </Link>
-        <span className="ml-2 text-ink">{entry.title}</span>
-        <span className="ml-2 text-muted">· {entry.vendorName}</span>
-        <div className="text-[12px] text-muted">
-          {inr(entry.totalValueEstimate)} ·{' '}
-          {entry.daysToExpiry >= 0 ? `${entry.daysToExpiry} days left` : 'expired'}
-          {entry.alert?.acknowledgedAt && (
-            <span className="text-accent-2">
-              {' '}
-              · acknowledged ({entry.alert.actionTaken})
-            </span>
+        <div className="text-caption text-muted">{entry.title}</div>
+      </td>
+      <td className="px-3 py-3.5 text-text">{entry.vendorName}</td>
+      <td className="font-numeric px-3 py-3.5 text-right">{inr(entry.totalValueEstimate)}</td>
+      <td className="px-3 py-3.5">
+        <span className={entry.daysToExpiry < 0 ? 'text-danger' : 'text-text'}>
+          {entry.daysToExpiry >= 0 ? `${entry.daysToExpiry} days left` : 'Expired'}
+        </span>
+      </td>
+      <td className="px-3 py-3.5">
+        {entry.alert?.acknowledgedAt ? (
+          <Pill variant="success" dot>
+            Acknowledged
+            {entry.alert.actionTaken ? `, ${humanise(entry.alert.actionTaken).toLowerCase()}` : ''}
+          </Pill>
+        ) : entry.alert ? (
+          <Pill variant="warn" dot>
+            Open
+          </Pill>
+        ) : (
+          <span className="text-faint">—</span>
+        )}
+      </td>
+      <td className="px-3 py-3.5 text-right">
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {entry.alert && !entry.alert.acknowledgedAt && (
+            <Button variant="ghost" size="sm" onClick={() => void onAck('UNDER_NEGOTIATION')}>
+              Acknowledge
+            </Button>
           )}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={renew.isPending}
+            onClick={async () => {
+              try {
+                const r = await renew.mutateAsync({});
+                push('Renewal draft created', 'success');
+                router.push(`/contracts/${r.id}`);
+              } catch (e) {
+                push(e instanceof Error ? e.message : 'Renew failed', 'error');
+              }
+            }}
+          >
+            {renew.isPending ? 'Renewing…' : 'Renew'}
+          </Button>
         </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => void onAck('UNDER_NEGOTIATION')}
-          className="rounded-md border border-line px-3 py-1.5 text-[12px] text-text hover:bg-canvas"
-        >
-          Acknowledge
-        </button>
-        <button
-          type="button"
-          onClick={async () => {
-            try {
-              const r = await renew.mutateAsync({});
-              push('Renewal draft created', 'success');
-              router.push(`/contracts/${r.id}`);
-            } catch (e) {
-              push(e instanceof Error ? e.message : 'Renew failed', 'error');
-            }
-          }}
-          className="rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-white"
-        >
-          Renew
-        </button>
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 }

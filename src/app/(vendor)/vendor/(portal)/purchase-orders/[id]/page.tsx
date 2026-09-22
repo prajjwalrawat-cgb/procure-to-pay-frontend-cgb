@@ -6,8 +6,12 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  EmptyState,
+  ErrorState,
   PageHeader,
   Pill,
+  Skeleton,
+  Textarea,
 } from '@/components/ui';
 import { Money, type DeliveryAddress, type PaymentTerms } from '@/lib/shared';
 import { ArrowLeft, Download, MessageSquarePlus } from 'lucide-react';
@@ -23,20 +27,11 @@ import {
   useVendorPo,
 } from '@/vendor/lib/api/purchase-orders';
 import { useToastStore } from '@/vendor/store/toast-store';
+import { formatDate, formatDateTime, statusLabel, statusVariant } from '@/lib/format';
 
-const STATUS_VARIANT: Record<string, 'success' | 'warn' | 'info' | 'gray'> = {
-  ISSUED: 'info',
-  ACKNOWLEDGED: 'success',
-  PARTIALLY_FULFILLED: 'warn',
-  FULFILLED: 'success',
-  CLOSED: 'success',
-  CANCELLED: 'gray',
-};
-
-const label = (status: string): string => status.replace(/_/g, ' ');
 const fmtDate = (iso: string | null): string =>
-  iso ? new Date(iso).toLocaleDateString('en-IN') : '—';
-const fmtDateTime = (iso: string): string => new Date(iso).toLocaleString('en-IN');
+  iso ? formatDate(iso) : '—';
+const fmtDateTime = (iso: string): string => formatDateTime(iso);
 const inr = (v: string): string => Money.of(v || 0).toINR();
 
 function formatAddress(addr: DeliveryAddress | null): string {
@@ -61,7 +56,7 @@ function formatPaymentTerms(terms: PaymentTerms | null): string {
 export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const { data: po, isLoading } = useVendorPo(id);
+  const { data: po, isLoading, error, refetch } = useVendorPo(id);
   const acknowledge = useAcknowledgePo(id);
   const raiseQuery = useRaisePoQuery(id);
   const pushToast = useToastStore((s) => s.push);
@@ -96,20 +91,33 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-1 py-10 text-[13px] text-muted">Loading…</div>
+      <div aria-busy="true" aria-live="polite">
+        <BackLink />
+        <Skeleton className="h-7 w-44" />
+        <Skeleton className="mt-2 h-4 w-64 max-w-full" />
+        <Skeleton className="mt-6 h-24 rounded-lg" />
+        <Skeleton className="mt-4 h-56 rounded-lg" />
+      </div>
     );
   }
-  if (!po) {
+  if (error || !po) {
     return (
-      <div className="mx-auto max-w-4xl">
+      <div>
         <BackLink />
-        <p className="mt-4 text-[13px] text-muted">Purchase order not found.</p>
+        {error ? (
+          <ErrorState error={error} onRetry={() => void refetch()} />
+        ) : (
+          <EmptyState
+            title="Purchase order not found"
+            detail="It may have been cancelled, or the link is out of date."
+          />
+        )}
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl pb-10">
+    <div className="pb-10">
       <BackLink />
 
       {/* Header */}
@@ -118,10 +126,10 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
         numeric
         meta={
           <>
-            <Pill variant={STATUS_VARIANT[po.status] ?? 'gray'} dot>
-              {label(po.status)}
+            <Pill variant={statusVariant(po.status)} dot>
+              {statusLabel(po.status)}
             </Pill>
-            {po.acknowledgedAt && (
+            {po.acknowledgedAt && po.status !== 'ACKNOWLEDGED' && (
               <Pill variant="success" dot>
                 Acknowledged
               </Pill>
@@ -130,8 +138,9 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
         }
         description={
           <>
-            Ordered {fmtDate(po.orderedDate)} · Expected{' '}
-            {fmtDate(po.expectedDeliveryDate)}
+            Ordered <span className="font-numeric">{fmtDate(po.orderedDate)}</span>
+            {' · '}Expected{' '}
+            <span className="font-numeric">{fmtDate(po.expectedDeliveryDate)}</span>
           </>
         }
         actions={
@@ -140,7 +149,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
               // A plain link cannot carry the in-memory access token, so the API
               // would 401 — fetch it authenticated and open the blob instead.
               <Button
-                variant="default"
+                variant="secondary"
                 size="sm"
                 onClick={() =>
                   openAuthedAsset(`/vendor/purchase-orders/${po.id}/pdf`).catch((e) =>
@@ -151,19 +160,17 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
                   )
                 }
               >
-                <Download className="mr-1.5 h-3.5 w-3.5" /> Download PDF
+                <Download className="h-3.5 w-3.5" aria-hidden /> Download PDF
               </Button>
             )}
-            <Button variant="default" size="sm" onClick={() => setQueryOpen(true)}>
-              <MessageSquarePlus className="mr-1.5 h-3.5 w-3.5" /> Raise query
+            <Button variant="secondary" size="sm" onClick={() => setQueryOpen(true)}>
+              <MessageSquarePlus className="h-3.5 w-3.5" aria-hidden /> Raise query
             </Button>
-            {po.acknowledgedAt ? (
-              <Button variant="ghost" size="sm" disabled>
-                Acknowledged
-              </Button>
-            ) : (
+            {/* Once acknowledged, the status and the banner below say so; a
+                disabled "Acknowledged" button beside them was a third copy. */}
+            {po.acknowledgedAt ? null : (
               <Button
-                variant="accent"
+                variant="primary"
                 size="sm"
                 onClick={onAcknowledge}
                 disabled={acknowledge.isPending}
@@ -176,15 +183,15 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
       />
 
       {po.acknowledgedAt && (
-        <div className="mb-5 rounded-sm bg-accent-wash px-3 py-2 text-[12px] text-accent-2">
+        <div className="mb-5 rounded-sm bg-success-bg px-3 py-2 text-caption text-success">
           You acknowledged this purchase order on {fmtDateTime(po.acknowledgedAt)}.
         </div>
       )}
 
       {/* Delivery & terms */}
       <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-        <h2 className="mb-3 text-[14px] font-semibold text-ink">Delivery &amp; terms</h2>
-        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-3">
+        <h2 className="mb-3 text-h3 font-semibold text-ink">Delivery &amp; terms</h2>
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Delivery address" value={formatAddress(po.deliveryAddress)} />
           <Field label="Delivery terms" value={po.deliveryTerms ?? '—'} />
           <Field label="Payment terms" value={formatPaymentTerms(po.paymentTerms)} />
@@ -193,41 +200,41 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
       {/* Line items */}
       <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-        <h2 className="mb-3 text-[14px] font-semibold text-ink">Line items</h2>
+        <h2 className="mb-3 text-h3 font-semibold text-ink">Line items</h2>
         <div className="overflow-hidden rounded-lg border border-line">
-          <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
-              <thead className="bg-canvas text-left text-[11px] uppercase tracking-wide text-faint">
+          <div>
+            <table className="pf-stack w-full text-body-sm">
+              <thead className="border-line border-b text-left text-caption text-muted">
                 <tr>
-                  <th className="px-3 py-2 font-medium">#</th>
-                  <th className="px-3 py-2 font-medium">Description</th>
-                  <th className="px-3 py-2 font-medium">HSN</th>
-                  <th className="px-3 py-2 font-medium">UOM</th>
-                  <th className="px-3 py-2 text-right font-medium">Qty</th>
-                  <th className="px-3 py-2 text-right font-medium">Unit price</th>
-                  <th className="px-3 py-2 text-right font-medium">Tax</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
+                  <th className="px-3 py-2.5 font-medium">#</th>
+                  <th className="px-3 py-2.5 font-medium">Description</th>
+                  <th className="px-3 py-2.5 font-medium">HSN</th>
+                  <th className="px-3 py-2.5 font-medium">UOM</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Qty</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Unit price</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Tax</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {po.lines.map((l) => (
                   <tr key={l.lineNo} className="border-t border-line">
-                    <td className="font-numeric px-3 py-2 text-muted">{l.lineNo}</td>
-                    <td className="px-3 py-2 text-text">{l.itemDesc}</td>
-                    <td className="font-numeric px-3 py-2 text-muted">
+                    <td className="font-numeric px-3 py-3 text-muted">{l.lineNo}</td>
+                    <td className="px-3 py-3 text-text">{l.itemDesc}</td>
+                    <td className="font-numeric px-3 py-3 text-muted">
                       {l.hsnCode ?? '—'}
                     </td>
-                    <td className="px-3 py-2 text-muted">{l.uom}</td>
-                    <td className="font-numeric px-3 py-2 text-right text-text">
+                    <td className="px-3 py-3 text-muted">{l.uom}</td>
+                    <td className="font-numeric px-3 py-3 text-right text-text">
                       {l.qtyOrdered}
                     </td>
-                    <td className="font-numeric px-3 py-2 text-right text-text">
+                    <td className="font-numeric px-3 py-3 text-right text-text">
                       {inr(l.unitPrice)}
                     </td>
-                    <td className="font-numeric px-3 py-2 text-right text-muted">
+                    <td className="font-numeric px-3 py-3 text-right text-muted">
                       {rateToPercent(l.taxRate)}%
                     </td>
-                    <td className="font-numeric px-3 py-2 text-right text-ink">
+                    <td className="font-numeric px-3 py-3 text-right text-ink">
                       {inr(l.lineTotal)}
                     </td>
                   </tr>
@@ -239,7 +246,7 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
         {/* Totals */}
         <div className="mt-3 flex justify-end">
-          <dl className="w-full max-w-xs space-y-1.5 text-[13px]">
+          <dl className="w-full max-w-xs space-y-1.5 text-body-sm">
             <div className="flex justify-between">
               <dt className="text-muted">Subtotal</dt>
               <dd className="font-numeric text-text">{inr(po.amounts.subtotal)}</dd>
@@ -265,16 +272,14 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
           should not have to open an attachment to find out what they are. */}
       {po.terms.length > 0 && (
         <section className="mb-4 rounded-lg border border-line bg-panel p-4">
-          <h2 className="mb-3 text-[14px] font-semibold text-ink">
-            Terms &amp; conditions
-          </h2>
-          <ol className="flex flex-col gap-2 text-[13px]">
+          <h2 className="mb-3 text-h3 font-semibold text-ink">Terms &amp; conditions</h2>
+          <ol className="flex flex-col gap-2 text-body-sm">
             {po.terms.map((t, i) => (
               <li key={t.id}>
                 <span className="font-medium text-text">
                   {i + 1}. {t.title}
                 </span>
-                <p className="pl-4 text-[12px] text-muted">{t.contentText}</p>
+                <p className="pl-4 text-caption text-muted">{t.contentText}</p>
               </li>
             ))}
           </ol>
@@ -283,18 +288,20 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
 
       {/* Queries */}
       <section className="rounded-lg border border-line bg-panel p-4">
-        <h2 className="mb-3 text-[14px] font-semibold text-ink">Your queries</h2>
+        <h2 className="mb-3 text-h3 font-semibold text-ink">Your queries</h2>
         {po.queries.length === 0 ? (
-          <p className="text-[13px] text-muted">
-            No queries raised on this purchase order.
-          </p>
+          <EmptyState
+            compact
+            title="No queries yet"
+            detail="Questions you raise with the buyer about this order are kept here."
+          />
         ) : (
           <ul className="flex flex-col gap-2.5">
             {po.queries.map((q) => (
               <li key={q.id} className="rounded-sm border border-line bg-canvas/50 p-3">
-                <p className="whitespace-pre-wrap text-[13px] text-text">{q.body}</p>
-                <p className="mt-1.5 text-[11px] text-faint">
-                  {q.source} · {fmtDateTime(q.createdAt)}
+                <p className="whitespace-pre-wrap text-body-sm text-text">{q.body}</p>
+                <p className="mt-1.5 text-micro text-faint">
+                  {statusLabel(q.source)} · {fmtDateTime(q.createdAt)}
                 </p>
               </li>
             ))}
@@ -310,19 +317,20 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
             Ask the buyer a question about {po.number}. They will see it against this
             purchase order.
           </DialogDescription>
-          <textarea
+          <Textarea
             value={queryBody}
             onChange={(e) => setQueryBody(e.target.value)}
             rows={5}
+            aria-label="Your query"
             placeholder="Type your message…"
-            className="mt-4 w-full resize-none rounded-sm border border-line bg-canvas px-3 py-2 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mt-4 resize-none"
           />
-          <div className="mt-4 flex items-center justify-end gap-2">
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setQueryOpen(false)}>
               Cancel
             </Button>
             <Button
-              variant="accent"
+              variant="primary"
               size="sm"
               onClick={onSubmitQuery}
               disabled={queryBody.trim().length === 0 || raiseQuery.isPending}
@@ -340,9 +348,9 @@ function BackLink(): React.JSX.Element {
   return (
     <Link
       href="/vendor/purchase-orders"
-      className="inline-flex items-center gap-1 text-[12px] text-muted"
+      className="mb-3 inline-flex items-center gap-1 text-caption text-muted hover:text-text"
     >
-      <ArrowLeft className="h-3.5 w-3.5" /> Back to purchase orders
+      <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back to purchase orders
     </Link>
   );
 }
@@ -350,8 +358,8 @@ function BackLink(): React.JSX.Element {
 function Field({ label: l, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wide text-faint">{l}</dt>
-      <dd className="mt-0.5 text-[13px] text-text">{value}</dd>
+      <dt className="text-micro text-faint">{l}</dt>
+      <dd className="mt-0.5 text-body-sm text-text">{value}</dd>
     </div>
   );
 }

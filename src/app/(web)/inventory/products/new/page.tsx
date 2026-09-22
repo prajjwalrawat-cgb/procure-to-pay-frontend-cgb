@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, PageHeader, Pill } from '@/components/ui';
+import { Button, PageHeader } from '@/components/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -81,24 +81,20 @@ export default function NewProductPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto w-full max-w-3xl">
       <PageHeader
         title="New product"
-        description="Add one SKU by hand · use Bulk upload for a whole sheet"
+        description="Add one SKU by hand, use Bulk upload for a whole sheet"
         actions={
-          <>
-            <Link href="/inventory">
-              <Button variant="ghost" size="sm">
-                Cancel
-              </Button>
-            </Link>
-          </>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/inventory">Cancel</Link>
+          </Button>
         }
       />
 
       <div className="rounded-lg border border-line bg-panel p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <Field label="Product name" required>
               <TextInput
                 value={name}
@@ -156,7 +152,7 @@ export default function NewProductPage(): React.JSX.Element {
             label="Batch tracked"
             hint="Receipts must then carry a batch number and expiry; picking uses oldest-first."
           >
-            <label className="flex items-center gap-2 py-2 text-[13px]">
+            <label className="flex items-center gap-2 py-2 text-body-sm">
               <input
                 type="checkbox"
                 className="h-4 w-4"
@@ -178,7 +174,7 @@ export default function NewProductPage(): React.JSX.Element {
             />
           </Field>
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <Field label="Image link">
               <TextInput
                 value={imageUrl}
@@ -197,7 +193,7 @@ export default function NewProductPage(): React.JSX.Element {
           </Field>
           <div />
 
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <Field label="Remark">
               <TextArea value={remark} onChange={(e) => setRemark(e.target.value)} />
             </Field>
@@ -205,10 +201,10 @@ export default function NewProductPage(): React.JSX.Element {
         </div>
 
         <div className="mt-5 border-t border-line pt-4">
-          <h2 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-faint">
-            Opening stock (optional)
+          <h2 className="mb-3 text-h3 font-semibold text-ink">
+            Opening stock <span className="text-body-sm font-normal text-muted">(optional)</span>
           </h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Quantity on hand">
               <TextInput
                 type="number"
@@ -222,7 +218,7 @@ export default function NewProductPage(): React.JSX.Element {
             </Field>
           </div>
           {(locations.data?.items ?? []).length === 0 && (
-            <p className="mt-2 text-[12px] text-amber-700">
+            <p className="mt-2 text-caption text-warn">
               No locations exist yet.{' '}
               <Link href="/inventory/locations" className="underline">
                 Create one first
@@ -230,16 +226,16 @@ export default function NewProductPage(): React.JSX.Element {
               if you want to record opening stock.
             </p>
           )}
-          <p className="mt-2 text-[11px] text-faint">
-            Recorded as an ADJUSTMENT ledger entry, so it stays visible in history and can
+          <p className="mt-2 text-caption text-muted">
+            Recorded as an adjustment ledger entry, so it stays visible in history and can
             never drift from the ledger.
           </p>
         </div>
 
-        <div className="mt-5 flex items-center justify-between">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
           <FormResult error={error} success={success} />
           <Button
-            variant="accent"
+            variant="primary"
             size="sm"
             disabled={!ready || create.isPending || adjust.isPending}
             onClick={() => void submit()}
@@ -249,11 +245,9 @@ export default function NewProductPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="mt-3">
-        <Pill variant="gray">
-          The product code is generated automatically — you never type it
-        </Pill>
-      </div>
+      <p className="mt-3 text-caption text-muted">
+        The product code is generated automatically — you never type it.
+      </p>
     </div>
   );
 }

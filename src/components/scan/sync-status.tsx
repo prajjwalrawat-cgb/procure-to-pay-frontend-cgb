@@ -37,7 +37,7 @@ export function SyncStatus(): React.JSX.Element {
   return (
     <button
       type="button"
-      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-[13px] ${tone}`}
+      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-body-sm ${tone}`}
       disabled={syncing || !online}
       onClick={() => {
         setSyncing(true);
@@ -49,8 +49,8 @@ export function SyncStatus(): React.JSX.Element {
       </span>
       <span className="tabular-nums">
         {pending > 0 ? `${pending} pending` : 'all synced'}
-        {failed > 0 ? ` · ${failed} failed` : ''}
-        <span className="opacity-70"> · {ago(lastSyncedAt)}</span>
+        {failed > 0 ? `, ${failed} failed` : ''}
+        <span className="opacity-70"> {ago(lastSyncedAt)}</span>
       </span>
     </button>
   );

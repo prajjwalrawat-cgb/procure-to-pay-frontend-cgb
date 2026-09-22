@@ -15,6 +15,7 @@ import type {
 } from '@/lib/shared';
 
 import { apiFetch } from '@/lib/api-client';
+import { fetchAllPages, type AllPages } from '@/lib/api/paginate';
 
 export type RmaTab =
   'draft' | 'issued' | 'awaiting_pickup' | 'awaiting_credit_note' | 'closed' | 'all';
@@ -29,6 +30,18 @@ export function useRmas(tab: RmaTab): UseQueryResult<RmaListResponse> {
   return useQuery({
     queryKey: rmaKeys.list(tab),
     queryFn: () => apiFetch<RmaListResponse>(`/rma?tab=${tab}`),
+  });
+}
+
+/**
+ * Every RMA in a tab, following the cursor. The list screen sorts and filters
+ * client-side, which is only honest over the whole set, not the first page.
+ * Keyed under rmaKeys.list(tab) so the existing invalidations cover it.
+ */
+export function useAllRmas(tab: RmaTab): UseQueryResult<AllPages<RmaListResponse>> {
+  return useQuery({
+    queryKey: [...rmaKeys.list(tab), 'all-pages'],
+    queryFn: () => fetchAllPages<RmaListResponse>(`/rma?tab=${tab}`),
   });
 }
 

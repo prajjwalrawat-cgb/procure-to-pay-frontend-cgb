@@ -5,15 +5,22 @@ import { cn } from '../lib/cn';
 /**
  * Table primitives for a product that lives in tables.
  *
- * Two things are structural rather than left to each page:
+ * Tables are the pattern for transactional lists — purchase orders, invoices,
+ * goods receipt, inventory, payment runs. Anything you scan *down*. Comparison
+ * views (vendors, sourcing responses, contracts) use the card grid instead.
  *
+ * Four things are structural rather than left to each page:
+ *
+ *  - No card wrapper. A table is separated from the page by its own hairline
+ *    row dividers; boxing it as well draws a second frame around a thing that
+ *    already has one.
+ *  - Column headers are sentence case. ALL-CAPS micro-labels were the single
+ *    loudest piece of chrome in the old UI and they compete with the data.
  *  - `numeric` on a head/cell right-aligns it and switches to tabular figures.
  *    Money and quantity columns were being aligned by hand page by page, which
- *    is why ₹ columns drifted out of alignment. Passing the prop is now the
- *    easy path and hand-rolling the classes is the hard one.
+ *    is why ₹ columns drifted. Passing the prop is now the easy path.
  *  - The scroll container is on the wrapper with `overflow-x-auto`, so a wide
- *    table scrolls inside itself on a narrow viewport instead of pushing the
- *    page sideways. This is what makes the tables usable on mobile at all.
+ *    table scrolls inside itself instead of pushing the page sideways.
  */
 
 export const Table = React.forwardRef<
@@ -23,7 +30,7 @@ export const Table = React.forwardRef<
   <div className="w-full overflow-x-auto">
     <table
       ref={ref}
-      className={cn('w-full border-collapse text-[13px]', className)}
+      className={cn('pf-stack w-full border-collapse text-body-sm', className)}
       {...props}
     />
   </div>
@@ -37,7 +44,9 @@ export const TableHeader = React.forwardRef<
   <thead
     ref={ref}
     className={cn(
-      'bg-canvas text-faint border-line sticky top-0 z-10 border-b text-left',
+      // No fill: the header is separated from the rows by its hairline, and a
+      // grey band across the top of every list re-introduces the boxed look.
+      'bg-panel text-muted border-line sticky top-0 z-10 border-b text-left',
       className,
     )}
     {...props}
@@ -57,7 +66,10 @@ export const TableRow = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <tr
     ref={ref}
-    className={cn('border-line hover:bg-canvas/50 duration-hover border-b transition-colors', className)}
+    className={cn(
+      'border-line hover:bg-canvas/60 duration-hover border-b transition-colors',
+      className,
+    )}
     {...props}
   />
 ));
@@ -76,7 +88,7 @@ export const TableHead = React.forwardRef<
     ref={ref}
     scope="col"
     className={cn(
-      'px-3 py-2 text-[11px] font-medium uppercase tracking-wide',
+      'px-3 py-2.5 text-caption font-medium',
       numeric && 'text-right',
       className,
     )}
@@ -91,7 +103,7 @@ export const TableCell = React.forwardRef<
 >(({ className, numeric, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn('px-3 py-2', numeric && 'font-numeric text-right', className)}
+    className={cn('px-3 py-3.5', numeric && 'font-numeric text-right', className)}
     {...props}
   />
 ));

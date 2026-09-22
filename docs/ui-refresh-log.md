@@ -1,466 +1,136 @@
-# ProcureFlow UI refresh — design system & conversion log
+# ProcureFlow design system — "Clear Ledger"
 
-Living document. Update the table at the bottom as pages are converted so the
-work can be picked up cleanly across sessions.
+Living document. This describes the system as it stands after the 2026 redesign,
+which replaced the previous "Midnight Executive" direction (navy chrome / gold
+consequence / ice surfaces) with a light, single-accent system modelled on
+Coupa's sourcing UI.
+
+The old direction is not documented here beyond the migration notes: it is gone
+from the codebase, and a design doc describing two systems is a doc nobody
+trusts. Its reasoning is in git history.
 
 ---
 
-## 1. The design system
+## 1. Why the direction changed
 
-### Direction: Midnight Executive — navy / gold / ice
+The previous system carried five colours that competed for meaning: navy chrome,
+gold for "consequence", violet for classification, blue for "in flight", and
+emerald as the interactive accent. Two consequences:
 
-**One deliberate deviation from the brief, stated up front.** The brief asks for
-navy/gold/ice and could be read as "make the app dark". It is not built that
-way, and the reasoning matters:
+- **Colour stopped meaning anything.** A list of forty invoices rendered in five
+  hues, none of which the reader could decode without a legend. Filled status
+  pills on every row competed with the navigation, which was also pill-shaped.
+- **Chrome differed per screen.** Ninety pages each brought their own centred
+  container at one of nine widths, their own tab-row class string, their own
+  `inputCls`, their own table header treatment. Moving between two screens felt
+  like moving between two applications.
 
-- This app lives in dense financial tables at a 13.5px base size, with long
-  columns of ₹ amounts. Those are materially harder to scan on a dark ground.
-- The existing palette carried deliberate WCAG 2.1 AA work (there are contrast
-  ratios annotated in the old `tokens.ts`). Inverting to a dark surface would
-  have thrown all of it away and required re-deriving every semantic colour.
+The redesign fixes both at the system layer rather than screen by screen.
 
-So the three registers are split by **role**, not by mode:
+---
 
-| Register | Where it lives | Why |
-|---|---|---|
-| **Navy** | Chrome — sidebar, topbar, table header seams | The institutional frame *around* the data, never the data surface |
-| **Ice** | Page canvas, panels, wells | Cool near-whites so the navy reads as a deliberate frame, not an accident |
-| **Gold** | Consequence only | Approve, award, issue, release a payment run |
-
-A true dark mode is now a token swap rather than a rewrite: every colour is a
-CSS variable in `src/components/ui/styles.css`, derived from
-`src/components/ui/tokens.ts`.
-
-### Colour tokens
+## 2. Tokens
 
 Source of truth: [`src/components/ui/tokens.ts`](../src/components/ui/tokens.ts).
-Every foreground value was recomputed against the surface it actually sits on
-and meets AA (4.5:1) as body text.
+Mirrored as CSS variables in
+[`src/components/ui/styles.css`](../src/components/ui/styles.css) and as Tailwind
+utilities via [`tailwind-preset.ts`](../src/components/ui/tailwind-preset.ts).
 
-| Token | Hex | Contrast |
-|---|---|---|
-| `paper` / `canvas` / `panel` | `#F4F7FB` / `#E9EFF7` / `#FFFFFF` | surfaces |
-| `navy` / `navy-2` / `navy-3` | `#0A1424` / `#142338` / `#1C2F49` | chrome |
-| `on-navy` / `on-navy-muted` | `#E6EDF7` / `#9FB0C8` | 8.4:1 / 8.38:1 on navy |
-| `ink` / `text` | `#0A1424` / `#1F2C40` | primary / body |
-| `muted` / `faint` | `#55647C` / `#5D6B80` | 5.19:1 / 4.73:1 on canvas |
-| `gold` | `#C89B2C` | 7.20:1 **on navy** |
-| `gold-ink` | `#8A6A12` | 5.09:1 on panel — gold *as text* |
-| `accent` (emerald) | `#0F7A52` | 5.34:1 |
-| `danger` / `warn` / `info` | `#C2183F` / `#9A5B02` / `#1D5FA8` | 5.99 / 5.35 / 6.38:1 |
+### One accent
 
-**Two golds, not one.** A gold bright enough to read on navy (7.2:1) is ~1.9:1
-on white and illegible as text. `gold` is for on-navy fills and seams;
-`gold-ink` is for gold-as-text on light surfaces.
+`--accent` (`#1B4CE0`) is the only non-semantic colour in the system, and it
+means **interactive or active**: the current nav pill, a primary button, a
+focused input, a link, the current wizard step. Nothing else.
 
-### Type — three faces, three jobs
+### Semantic state — status only, never decoration
 
-- **Display** — Source Serif 4, **≥18px only**, via the `.font-display` class.
-  Used in exactly two places: `PageHeader` and `KpiCard`. A serif at table sizes
-  reads dated, so the gate is structural rather than a convention.
-- **Body** — Geist Sans, 13.5px base, for dense table rows.
-- **Mono** — Geist Mono with `font-variant-numeric: tabular-nums`, via
-  `.font-numeric`, for money, dates, IDs and hashes so ₹ columns align.
-
-Numeric alignment is now structural too: `<TableHead numeric>` / `<TableCell
-numeric>` right-align and switch to tabular figures, so passing the prop is the
-easy path and hand-rolling the classes is the hard one.
-
-### Layout concept — "the ledger frame"
-
-- **Navy rail** — collapsible to an icon rail; off-canvas drawer below `lg`.
-  Active item marked with a gold seam.
-- **Ice work surface** — white panels on an ice canvas.
-- **Document detail pages** share one three-zone frame: `PageHeader` →
-  `StageStrip` → content, with a **ledger rail** on the right that always ends
-  in the audit ledger. Same position on every document.
-- **List pages**: `PageHeader` → filters → table with the three shared states.
-
-### Signature element — the Ledger Strip
-
-Every action is written to a tamper-evident hash chain, and that was buried
-behind an audit tab nobody opens. `LedgerStrip` renders it as a physical chain
-of links on every document detail page, with a live **Verify** action that calls
-the real `/audit/verify` cryptographic pass.
-
-**The constraint that shaped it:** the hash chain is *global*, not per-document.
-Record N links to record N-1 in the whole tenant log, not to the previous event
-on this invoice. A client-side link check over a document-filtered list would
-therefore report false breaks. So the component **never computes integrity
-itself** — it renders the document's events and takes the verdict from the
-server. Until a verification has been run it says "Not yet verified" rather than
-showing a reassuring green. An unverified chain must never look verified.
-
-### Self-critique pass
-
-What the critique changed, honestly recorded:
-
-1. **"Navy rail + light content + one accent" is the most common enterprise SaaS
-   layout there is.** Largely true, and the layout skeleton is deliberately
-   familiar — novelty in enterprise navigation is a liability. What is *not*
-   generic has to carry the identity: the gold discipline, the ledger rail as a
-   fixed trust column, and a serif display face that almost no SaaS dashboard
-   uses.
-2. **Gold discipline is easy to state and impossible to police across 86 pages.**
-   → Changed the API: the gold button variant is named `commit`, not `gold`.
-   `variant="commit"` on a filter dropdown reads wrong at the call site where
-   `variant="gold"` would not. There is deliberately no gold escape hatch.
-3. **The Ledger Strip risks being blockchain-flavoured ornament.**
-   → It must be functional or it is decoration: links are clickable and reveal
-   the real hash pair, Verify hits the real endpoint, and an empty history says
-   so instead of drawing a fake chain.
-4. **A serif could look dated in a dense app.** → Gated to ≥18px, two components.
-5. **Was the AA work being regressed?** → Every token recomputed and annotated;
-   the muted/faint hierarchy is preserved under the 4.5:1 floor.
-
----
-
-## 2. UI honesty fixes
-
-These were treated as functional bugs, not polish.
-
-### Sandbox marking
-
-`<SandboxChip>`, `<VerificationResult>` and `<SandboxBanner>` in
-[`sandbox-chip.tsx`](../src/components/ui/components/sandbox-chip.tsx). Two rules
-are encoded in the components rather than left to reviewers:
-
-1. A simulated result always carries a visible chip.
-2. **A simulated result never keeps its semantic colour.** A green pill beside a
-   small grey chip still reads as "pass" at a glance, so `VerificationResult`
-   downgrades the pill to neutral *and* adds the chip.
-
-### The dangerous one: configured ≠ live
-
-The obvious inference — "credential configured means real provider" — is wrong
-in the dangerous direction, and the seeded tenant proves it: **GSP shows
-`configured` with the label "Star Cement GSP (sandbox)" while every recorded GSP
-call comes back simulated.** The first version of this work trusted `configured`
-and rendered a green `MATCHED` for a mock GSTR-2B reconciliation — exactly the
-bug the brief asked to eliminate.
-
-[`src/lib/integration-status.ts`](../src/lib/integration-status.ts) now infers
-liveness *behaviourally* from `/integrations/usage`: a provider is live only if
-it has recorded calls this month **and** not all of them were simulated.
-`configured && isActive` is a necessary precondition, not a sufficient one. It
-**fails closed** — loading, unknown provider, or zero calls all report sandbox.
-
-### Pre-Phase-2 honesty sweep
-
-Run across all remaining pages before starting Phase 2, rather than folding it
-into the styling work — the sanctions violation was only found by looking for
-it, so the rest of the app was searched the same way instead of assumed clean.
-
-Found and fixed:
-
-- **`AUTO VERIFIED` document pills rendered green** on vendor onboarding.
-  Documents are auto-verified against the PAN and GSTN registries; when those
-  answer from a sandbox the badge is unearned. Now chipped via
-  `VerificationResult`. `MANUALLY_VERIFIED` was a human and keeps its colour.
-- **"Assign" and "Hold" on the invoices bulk bar reported success and did
-  nothing** — `onClick={() => toast('Held', 'success')}`. A false success is
-  worse than a dead button: a user who selected five invoices and saw "Held"
-  would reasonably believe those invoices were on hold. Both disabled and
-  marked `NotShipped`.
-
-Checked and found clean:
-
-- No other controls whose only behaviour is a toast.
-- `/vendor/documents` and `/vendor/profile` already use the honest
-  `ComingInSlice` placeholder.
-- Vendor 360 shows a computed risk grade/score, not a provider verdict badge —
-  a different category from a "CLEAR"/"ACTIVE" claim, so left as is.
-
-### Unshipped controls
-
-`<NotShipped>` renders a visible **SOON** chip beside a disabled control and
-keeps the explanation reachable by assistive tech.
-
-- PO **Amend** was `<span title="Coming in Slice 5.5">` — hover-only, invisible
-  on touch and to keyboard users.
-- Invoices **Import** / **New invoice** were live-looking buttons whose only
-  behaviour was a "coming soon" toast.
-
-### Other bugs found and fixed en route
-
-| Bug | Where | Fix |
-|---|---|---|
-| Missing React `key` on a fragment wrapping each row pair | invoices list | `<Fragment key={inv.id}>` |
-| `aria-pressed` on `role="listitem"` (invalid) | LedgerStrip | group of toggle buttons |
-| Failed fetch rendered as an empty table — "you have no invoices" vs "we couldn't load them" | every list | `TableState` treats `error` as a first-class branch |
-| Stage labels collapsed into unreadable mush on mobile | StageStrip | scrolls instead of squeezing |
-| Detail pages scrolled horizontally on mobile | 4 detail pages | `grid-cols-1` (`minmax(0,1fr)`) + tables scroll in their own container |
-| `STANDARD` priority painted a loud blue badge on every row and card | `refs.ts` + board | default reads quiet; only exceptions get colour |
-| **Every detail page showed no active nav item** — exact-match `activeHref` meant `/invoices/inv_4408` lit nothing in an 18-module rail | Sidebar | `isActiveHref()`: a section owns its subtree; `/` stays exact |
-| A `<button>` with no `onClick` in every PO row | PO list | dead control removed |
-| `SUBMITTED_PENDING_BANK_CONFIRMATION` rendered raw in a status pill | `format.ts` | added the missing payment-run labels + variants |
-| Empty `<ul>` under a heading read as a broken panel | GRN detail activity | shared `EmptyState` |
-| 404 copy said "this record may have been deleted" on collection endpoints | `DataState` | reworded for both cases, made retryable |
-
----
-
-## 3. API gaps (flagged, not worked around in the backend)
-
-| Gap | Impact | Suggested fix |
-|---|---|---|
-| **`GET /invoices/:id` is registered before `GET /invoices/inbound-emails`** | 🔴 **Live bug.** Express matches `:id = "inbound-emails"`, the invoices controller throws "not found", and the endpoint 404s. The intake page's *Pending vendor match* and *Dead letter* queues have therefore **never worked** — the old lying empty state ("No emails awaiting vendor attribution") hid it completely. Now visible as an error state. | Register `IntakeController` before `InvoicesController`, or move the literal route above the `:id` route |
-| `invoice.compliance` has no `simulated` flag — `gstinStatus` / `gstr2bStatus` are bare strings with no provenance | Provenance is *inferred* client-side from usage data. It is an inference, not ground truth. | Add `simulated: boolean` per compliance field, as `Gstr2bReconResult` and `IrnValidationResult` already have |
-| `CredentialStatusItem` cannot distinguish a sandbox key from a live one | Drove the false-green bug above | Add `isSandbox: boolean` |
-| `VendorScreeningView` has no `simulated` flag | Sanctions/GSTIN/PAN verdicts infer provenance from `provider` + usage data | Add `simulated: boolean` |
-| **`GET /rfq/:id/comparison` 500s: `TypeError: criteria.map is not a function`** | 🔴 **Live bug.** `quote-evaluation.service.ts:157` expects `evaluation_criteria` to be an array. Seeded RFQ-9001 / RFQ-8001 store it as an object (`{"price": 100}`), so evaluation and award are unreachable for them. RFQ-2026-0001 has the correct array shape and works. | Migrate the legacy object shape, or accept both in the service |
-| **Upstash Redis request quota exhausted** | ⚠️ Infra. `max requests limit exceeded. Limit: 500000, Usage: 500005` — the `ocr` and `inventory-import` workers are erroring on every tick. Background jobs are silently dead. | Raise the Upstash plan or point local dev at a local Redis |
-| Audit `entityType` is the PascalCase Prisma model name | A mismatched filter silently returns an empty ledger — the failure mode that makes the component lie. `DocumentLedger` filters by `entityId` alone to avoid it. | Document the enum, or accept a domain alias |
-
-The route-shadowing bug is the only one that is a live defect rather than a
-missing field. It was found because the shared error state stopped a failed
-fetch from masquerading as an empty result — which is the whole argument for
-treating `error` as a first-class branch.
-
----
-
-## 4. Shared components added
-
-| Component | File | Purpose |
-|---|---|---|
-| `DataState`, `TableState`, `EmptyState`, `ErrorState`, `Skeleton` | `ui/components/data-state.tsx` | The three states, block and table-row shapes |
-| `PageHeader` | `ui/components/page-header.tsx` | Title, breadcrumbs, meta, actions |
-| `SandboxChip`, `VerificationResult`, `SandboxBanner` | `ui/components/sandbox-chip.tsx` | Honesty markers |
-| `NotShipped` | `ui/components/coming-in-slice.tsx` | Unshipped control marker |
-| `LedgerStrip` | `ui/components/ledger-strip.tsx` | **Signature element** |
-| `DocumentLedger` | `components/document-ledger.tsx` | LedgerStrip wired to the audit API |
-| `ApprovalChain` | `ui/components/approval-chain.tsx` | Real routing topology (was a stub) |
-| `KpiCard` | `ui/components/kpi-card.tsx` | Real KPI tile (was a stub) |
-| `StageStrip` | `ui/components/stage-strip.tsx` | Real lifecycle track (was a stub) |
-| `InfoTip` | `ui/components/tooltip.tsx` | Bundles the Radix compound API |
-
-`KpiCard`, `StageStrip` and `ApprovalChainStep` were **typed stubs** with TODO
-comments and no call sites — the components the signature work needed most.
-
-Cross-cutting, in `styles.css`: one global `:focus-visible` outline (gold on
-navy chrome), a skip link, and a global `prefers-reduced-motion` block so new
-work cannot reintroduce unguarded animation.
-
----
-
-## 5. Conversion log
-
-**Legend** — Resp: responsive verified at 390px · States: uses shared
-loading/empty/error · Ledger: has the audit ledger rail
-
-### Phase 1 — core transactional spine
-
-| Page | Resp | States | Ledger | Notes |
-|---|---|---|---|---|
-| `/requisitions` | ✓ | ✓ | n/a | PageHeader, board skeletons, `TableState` per tab |
-| `/requisitions/[id]` | ✓ | — | ✓ | StageStrip, ApprovalChain, Approve + Create PO → `commit` |
-| `/purchase-orders/[id]` | ✓ | — | ✓ | StageStrip, ApprovalChain, **Amend** marked, Approve + Issue → `commit` |
-| `/invoices` | ✓ | ✓ | n/a | Import + New invoice marked; fragment-key bug fixed |
-| `/invoices/[id]` | ✓ | — | ✓ | GSTIN / GSTR-2B / IRN via `VerificationResult` |
-| `/payment-runs/[id]` | ✓ | — | ✓ | ApprovalChain w/ composer + bank bookends, Approve → `commit`, bank recon chip |
-| `/inbox` | ✓ | ✓ | n/a | `TableState`, bulk approve → `commit` |
-| `/goods-receipt` | ✓ | ✓ | n/a | PageHeader + `TableState` on both tables |
-| `/integrations` | ✓ | — | n/a | False-green fix, `SandboxBanner`, per-row chips |
-| `/purchase-orders` | ✓ | ✓ | n/a | PageHeader, `TableState`, dead "More" control removed |
-| `/payment-runs` | ✓ | ✓ | n/a | PageHeader, `TableState`, status labels fixed |
-| `/goods-receipt/[id]` | ✓ | ✓ | ✓ | StageStrip, ledger rail, activity empty state, table scrolls |
-| `/goods-receipt/[id]/qc` | ✓ | — | n/a | PageHeader; 3-up parameter grids stack on mobile |
-| `/invoices/intake` | ✓ | ✓ | n/a | OCR `SandboxBanner`; `DataState` on all three queues — **surfaced the route-shadowing 404** |
-| `/vendors/onboarding/[id]` | ✓ | — | n/a | **Sanctions CLEAR violation fixed**; `SandboxBanner` for derived risk lights |
-| `/requisitions/new` | ✓ | — | n/a | PageHeader (grids already had `md:` breakpoints) |
-| `/purchase-orders/new` | ✓ | — | n/a | PageHeader |
-| `/payment-runs/new` | ✓ | — | n/a | PageHeader |
-
-**Phase 1 is complete.** The core transactional spine — requisition → PO → GRN →
-invoice → 3-way match → approval → payment run — is converted end to end, plus
-the intake and vendor-onboarding screens the honesty requirements reached into.
-
-`States: —` on detail pages means the page has a single top-level record fetch
-rather than a list; those still use the page-level loading guard. Converting
-those to `DataState` is worthwhile but is not a list-view gap.
-
-### Phase 2 — sourcing & vendor
-
-All 13 pages converted. They started with **zero** responsive coverage and zero
-shared states between them.
-
-| Page | Resp | States | Notes |
+| Role | Text value | Fill value | Background |
 |---|---|---|---|
-| `/sourcing` | ✓ | ✓ | Fixed a `Date.now()`-in-render hydration mismatch in the deadline countdown |
-| `/sourcing/new` | ✓ | ✓ | PageHeader; 2-up and 6-up wizard grids now stack |
-| `/sourcing/[id]` | ✓ | ✓ | PageHeader, `StageStrip`, DataState |
-| `/sourcing/[id]/publish` | ✓ | ✓ | PageHeader + breadcrumbs |
-| `/sourcing/[id]/open` | ✓ | ✓ | PageHeader + breadcrumbs |
-| `/sourcing/[id]/evaluate` | ✓ | ✓ | **`ScoreBreakdown`** on every row; empty state for an unquoted RFQ |
-| `/sourcing/[id]/award` | ✓ | ✓ | Rebuilt — see below |
-| `/sourcing/[id]/reverse-auction` | ✓ | ✓ | Stale-ladder warning when the SSE stream is offline |
-| `/vendors` | ✓ | ✓ | PageHeader, DataState (403 stays distinct from empty) |
-| `/vendors/[id]` | ✓ | ✓ | **Scorecard rebuilt** — see below |
-| `/vendors/[id]/suspend` | ✓ | ✓ | PageHeader |
-| `/vendors/onboarding` | ✓ | ✓ | PageHeader, DataState |
-| `/vendors/onboarding/[id]` | ✓ | ✓ | PageHeader + breadcrumbs |
+| success | `#147A52` | `#1E9E6B` | `#E9F7EF` |
+| warn | `#8A5E0E` | `#B07A12` | `#FBF2E2` |
+| danger | `#B23A31` | `#C4453B` | `#FBEAE8` |
 
-**Making the scoring maths visible** (the brief's named differentiator).
-`ScoreBreakdown` decomposes a quote's weighted total into `raw × weight =
-points` per criterion, with a bar scaled to 100 possible points. Every figure
-comes from the API's `weightedScore`; nothing is recomputed client-side, so the
-breakdown cannot drift from the total the engine persisted. The total itself is
-the expander — the number people act on is the way into the maths behind it.
-Colour is a monochrome navy ramp ordered by weight, not a categorical palette:
-criteria are not states, and "quality: green" would read as a pass.
+Two values per state because one cannot serve both jobs: the brief's `#1E9E6B`,
+`#B07A12` and `#C4453B` are 2.9:1, 3.4:1 and 4.2:1 as text on white and cannot
+carry a status label. The `-solid` values are used for dots, bars and fills,
+where contrast is not a text obligation. Same reasoning darkened `--text-faint`
+one step from the brief's `#8A8F98` (3.15:1) to `#767C85` (4.52:1).
 
-**The award page was rebuilt, not restyled.** Allocation was two free-text boxes
-asking for `quoteId` and `rfqLineId` — both ULIDs nobody can type. They are now
-pickers over the actual quotes and lines. The 500-character variance
-justification was described in prose and enforced only server-side, so a buyer
-could write a paragraph and be rejected on submit; it is now a live gate that
-only applies when the allocation actually moves away from L1.
+### Legacy names, remapped
 
-**Vendor scorecard.** Seven metrics that were a column of bare numbers now show
-against the scale they are measured on — but only where a scale exists:
+Ninety screens referenced `gold`, `violet`, `info` and `navy`. Rather than
+rewrite every className, those names survive and now resolve to the accent (or,
+for `navy`, to white chrome with dark text). That is what let the redesign land
+everywhere at once. **New work should use `accent`, `success`, `warn`, `danger`
+and nothing else.**
 
-- OTIF, quality and dispute rate are banded good/watch/problem (dispute rate
-  inverted, since lower is better).
-- Win rate and RFQ participation render **neutral**. They have no target: a 45%
-  RFQ win rate is a healthy supplier, and my first cut coloured it red by
-  applying OTIF-shaped thresholds — inventing a judgement the data does not
-  support.
-- Response time (hours) and payment cycle (days) get no bar at all. They are
-  unbounded with no target in the API, so a bar would need an invented
-  denominator. A fake scale is worse than no scale.
+### Type
 
-**Another honesty fix, same family as the sandbox chips.** `insufficientData`
-rendered "Cold start — under 3 transactions" *next to a confident green grade
-pill*. The caveat was there; the colour still said "good". The grade now goes
-neutral and gains a **Provisional** chip.
+One face: **Inter**, at three sizes — 12px meta, 13px body, 19px heading. The
+display serif is gone; a serif header above a 13px data grid read as two
+products stapled together. `.font-display` survives as a weight/tracking step
+within Inter so page headers did not all need rewriting. `font-mono` (Geist
+Mono) is kept for one job: hash chains in the audit log.
 
-**Bugs found and fixed en route**
-
-| Bug | Where | Fix |
-|---|---|---|
-| `bg-surface` / `bg-surface-2` were never tokens in this system — 14 dead classes across 8 files, so those inputs and table headers rendered with **no background at all** | vendors, sourcing, team, vendor portal | Mapped onto the real tokens (`bg-panel` / `bg-canvas`) |
-| `Date.now()` during render — hydration mismatch | sourcing list countdown | Mounted guard, refreshed each minute |
-| Nullable `legalEntityName` stringified into "null · CATEGORY" | vendor 360, onboarding detail | Filtered join |
-| Raw `font-mono` instead of the system's `.font-numeric` (no tabular figures) | sourcing list, evaluate | Swapped |
-
-### Phase 3 — analytics & compliance
-
-**Chart colour is now computed, not chosen.** The old analytics palette was raw
-hex against the pre-refresh tokens (`#05835C` emerald, `#E8E8E1` grid,
-`#65655E` axis) and had never been checked for colour-vision separation. The
-replacement lives in [`components/ui/chart-tokens.ts`](../src/components/ui/chart-tokens.ts)
-and was run through the validator, not eyeballed:
-
-| Gate | Result |
-|---|---|
-| adjacent pairs (bar / line / stacked) | all 6 slots **PASS** — worst CVD ΔE 9.3, normal-vision 16.6 |
-| all pairs (pie / scatter) | first 4 PASS with a CVD **WARN** (6.8 deutan); slot 5 **FAILS** (ΔE 2.4) |
-
-Slot ordering is the safety mechanism: teal beside rose fails deutan at ΔE 0.7,
-which is why they sit apart. A palette built only from navy/gold/ice cannot
-clear the gate — those hues are too close — so the categorical set is
-deliberately wider than the brand. Status colours are excluded from it and
-always ship with a label.
-
-**Forms changed on the evidence, not taste:**
-
-- **Spend by category was a donut → now a ranked horizontal bar.** A donut is
-  the wrong form for comparing close values, and with seven categories it also
-  exceeded what the palette validates for a form where every pair is co-visible.
-- **Top vendors encoded MSME by bar colour** — identity by colour alone, in a
-  reserved status colour, explained by a caption ("MSME vendors shown in
-  emerald"). One series now, with MSME in the axis label.
-- **The cycle-time chart had two series and no legend.** Added.
-- **AP charts used two different hues for single series** for no reason, one of
-  them orange, which read as a warning state. All single series use slot 1.
-
-**The MSME §15 page** got the signature treatment the brief asked for: a single
-strip showing the whole MSME payable against the 45-day statutory cliff, since
-the three buckets are parts of one payable and the question is how much is
-drifting toward the cap. Three separate stat cards could not show that
-proportion. Plus the CFO-facing figures as KPIs, and the exposure table now
-defaults to the breach bucket rather than opening with its most important table
-hidden.
-
-**Bugs found by rendering, which typecheck and lint both passed:**
-
-| Bug | Where | Note |
-|---|---|---|
-| `'use client'` pushed below an import | savings, AP performance | Next-only build error; my own edit caused it |
-| Twelve months of zeroes rendered as an empty grid | MSME trend | `points.length === 0` never fires; an all-zero series is an empty state |
-| Raw enums on screen — `BREACH 45 PLUS`, `RFQ_AWARD`, `GRN_MISSING` | 3 pages | shared acronym-aware `humanise()`; naive title-case gives "Grn" |
-| Bucket vocabulary duplicated | overview vs MSME page | one shared map |
-
-Local `.env` also had `API_INTERNAL_URL` on port 3011 while the API listens on
-3001, so every server-side auth proxy call failed with ECONNREFUSED. Corrected
-to 3001 (gitignored, local only).
-
-### Phase 4 — the long tail
-
-Consistency work, not invention: `PageHeader` across every remaining shell page,
-so heading size, the display face, breadcrumbs and action placement stop
-drifting. **74 of 96 pages** now use it. The 22 that do not are standalone
-screens with no app shell — auth, the handheld scanner routes and the label
-print view — where a page header would be wrong.
-
-Done as three passes rather than one regex, because the headers were not
-uniform:
-
-1. **Simple shape** (h1 + muted paragraph, no actions) — 18 pages, scripted.
-2. **Flex-with-actions shape** — 16 pages, scripted with a balance-matching
-   `<div>` counter rather than a regex, since a nested div in the actions block
-   would otherwise swallow the closing tag.
-3. **Document-detail headers** (number as title, status pills as meta) — 7
-   pages by hand: contracts, invoices, RMA, the two vendor detail views, plus
-   team and the second header inside settings.
-
-Prettier was run on the changed files only, never repo-wide — the tree has a
-CRLF/LF mix and a bulk reformat would bury the real diff.
-
-**Two mistakes worth recording**, both mine, both caught by verification rather
-than review:
-
-- The first scripted pass left the description paragraph orphaned as
-  `/><p …>` glued to the closing tag on 14 pages. It typechecked and linted
-  clean; only reading the output caught it. Fixed with a second pass that folds
-  the paragraph into `description`.
-- A hand-edit on the vendor PO detail sliced one line short, keeping the
-  actions wrapper's `</div>` without its opening tag. Typecheck caught that one.
-
-**Consistency fix:** "New product" and "Add rule" were emerald while the other
-six page-level create actions were navy `primary`. Normalised. The two
-accent-variant buttons left alone are in-form submits — a different role.
-
-**Honesty sweep re-run across the newly converted pages:** no toast-only
-controls, no dead buttons, no unmarked provider verdicts. The only matches were
-existing code already routed through `VerificationResult`.
-
-### Remaining
-
-| Phase | Scope | Status |
-|---|---|---|
-| 3 | Analytics, MSME §15 aging/compliance | **done** — 4 pages, validated chart palette |
-| 4 | Contracts, inventory, items, settings, team, vendor portal, audit | **done** — 41 pages; 74/96 on `PageHeader` |
-
-Everything not yet converted still renders correctly — the token layer is
-global, so unconverted pages picked up the new palette automatically. What they
-lack is `PageHeader`, the shared states, and a verified mobile pass.
-
-**Before starting Phase 2**, sweep the remaining pages for the same honesty
-violations rather than assuming they are confined to Phase 1: any page rendering
-a provider verdict (vendor 360 risk, contract compliance) needs
-`VerificationResult`, and any page with a control that only toasts needs
-`NotShipped`.
+`.font-numeric` switches on tabular figures. Every `<table>` in the app gets
+them for free via a base rule, so a numeric column cannot silently misalign
+because someone forgot the class.
 
 ---
 
-## 6. Verification
+## 3. Components
 
-- `pnpm typecheck` — clean
-- `pnpm lint --max-warnings 0` — clean
-- `pnpm build` — 72 static pages generated, all 86 routes compile
-- Screenshots taken at 1440px and 390px for every converted page and reviewed
-  against the token system before moving on
+Build screens out of these. **No screen-specific CSS for chrome.**
 
-**Note for whoever picks this up:** do not run `next build` while `pnpm dev` is
-running in the same working tree. They share `.next`, and the production build
-leaves the dev server serving 404s for its JS chunks until it is restarted.
+| Component | File | Rule |
+|---|---|---|
+| `TopNav` | `components/top-nav.tsx` | Two rows: identity + global search, then section tabs. Active tab is a filled accent pill. |
+| `SubNav` | `components/top-nav.tsx` | Per-screen tab row. Accent text + 2px accent underline, **no fill** — deliberately lighter than the nav pill so the two levels are never confused. |
+| `Card` / `CardGrid` | `components/card.tsx` | Comparison views only (vendors, sourcing, contracts, kanban). Hairline border, no shadow. Header takes **one** badge; footer takes one metadata string and one action. |
+| `Table` | `components/table.tsx` | Transactional lists (POs, invoices, receipts, inventory). No card wrapper — hairline row dividers only. Sentence-case heads. `numeric` prop right-aligns and switches to tabular figures. |
+| `StatusText` (alias `Pill`) | `components/pill.tsx` | Status as **coloured text with a dot**, never a filled pill. |
+| `Badge` | `components/badge.tsx` | Trust/classification only (MSME, Verified, risk grade). Two variants: `classification` (accent tint) or a semantic state. There is no way to add a seventh hue. |
+| `Button` | `components/button.tsx` | `primary` (filled accent) — **one per screen or per card**. Everything else `secondary`. `danger` is the confirm step of a destructive action only. |
+| `Input` / `Select` / `DateInput` / `Textarea` / `Combobox` / `Field` | `components/input.tsx` | One control definition, exported as `controlClass` for screens that still style raw elements inline. **Above ~10 options use `Combobox`**, not a native `<select>`. |
+| `StepIndicator` | `components/step-indicator.tsx` | Wizard steps. Accent for current, tick for done, faint for future, a rule (not a dot) as the connector. |
+| `EmptyState` / `DataState` / `TableState` | `components/data-state.tsx` | No floating icon. One line explaining what will appear here and why it is empty, plus one action. Error stays distinct from empty. |
+| `SandboxChip` / `VerificationResult` | `components/sandbox-chip.tsx` | A simulated provider result reads "Awaiting <check>" in muted text and loses its semantic colour. Never "SANDBOX". |
+
+### Layout
+
+The shell owns the outer container: one centred `max-w-[1400px]` in
+`app-shell.tsx` / `vendor-shell.tsx`. Pages that want a narrow measure (forms,
+wizards) cap their own width but **do not** re-centre — so every screen starts
+at the same left edge.
+
+---
+
+## 4. Anti-patterns — do not reintroduce
+
+- ALL-CAPS labels anywhere. Sentence case only; `tracking-wide` goes with them.
+- Middle-dot-joined meta strings (`Purchase requests · Acme Ltd`). Use a
+  breadcrumb, or drop the redundant context.
+- A colour per category. Every badge is neutral classification or semantic state.
+- Native unstyled `<select>` / `<input type="date">`, or a fresh `inputCls`.
+- Raw enums in front of a user (`EXPIRING_SOON`, `NOT_CHECKED`, `SPOT_BUY`).
+  `statusLabel()` and `humanise()` in `lib/format.ts` exist for this.
+- Dev/test state labels (`SANDBOX`) on user-facing screens.
+- Dead progress bars, or a `0%` / `N/A` with no explanation. Say why in words.
+- More than one filled button visible at once.
+- `toLocaleDateString`. One format, `dd/mm/yyyy`, via `formatDate()`.
+- Raw Tailwind palette classes (`text-red-600`, `border-gray-300`). Use tokens.
+
+---
+
+## 5. Acceptance checklist
+
+Before calling a screen done:
+
+- [ ] Uses only the shared nav, card, table, status, badge and button components.
+- [ ] All ₹ and quantity columns are right-aligned with tabular figures.
+- [ ] All dates go through `formatDate` / `formatDateTime`.
+- [ ] Only `--accent` appears outside the semantic state colours.
+- [ ] No ALL-CAPS labels, no middle-dot strings, no raw enums, no dev-state labels.
+- [ ] Every empty state has an explanation and one action.
+- [ ] Every badge is neutral classification or semantic state.
+- [ ] At most one primary button visible.

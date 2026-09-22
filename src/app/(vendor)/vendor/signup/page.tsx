@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import { Button, Input, Select } from '@/components/ui';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -76,83 +76,108 @@ export default function VendorSignupPage(): React.JSX.Element {
     }
   }
 
-  if (done) {
-    return (
-      <div className="mx-auto mt-24 max-w-[440px] px-4 text-center">
-        <h1 className="text-ink text-[20px] font-semibold">Registration received</h1>
-        <p className="text-muted mt-2 text-[13px]">
-          We&apos;ve created your vendor account. A temporary password (
-          <code>Slice0!Vendor</code>) has been set — sign in and complete your onboarding
-          profile.
-        </p>
-        <Link
-          href="/vendor/login"
-          className="text-brand mt-4 inline-block text-[13px] hover:underline"
-        >
-          Go to sign in →
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto mt-16 max-w-[440px] px-4">
-      <h1 className="text-ink text-[20px] font-semibold">Become a vendor</h1>
-      <p className="text-muted mt-1 text-[13px]">
-        Register your business to start supplying. You&apos;ll complete a short onboarding
-        wizard after signing in.
-      </p>
-      <form onSubmit={submit} className="mt-6 space-y-3">
-        <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">
-            Legal entity name
-          </label>
-          <Input
-            value={legalEntityName}
-            onChange={(e) => setLegalEntityName(e.target.value)}
-            required
-          />
+    <main className="flex min-h-screen items-center justify-center bg-canvas px-4 py-10">
+      <div className="w-full max-w-sm rounded-xl border border-line bg-panel p-8 shadow-lg">
+        <div className="mb-6 flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-sm bg-accent text-white">
+            <span className="font-numeric text-body-sm font-bold">P</span>
+          </span>
+          <span className="text-h3 font-semibold tracking-heading text-ink">
+            Supplier Portal
+          </span>
         </div>
-        <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">Email</label>
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">Phone</label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} required />
-        </div>
-        <div>
-          <label className="text-muted mb-1 block text-[12px] font-medium">
-            Category
-          </label>
-          <select
-            value={categoryKey}
-            onChange={(e) => setCategoryKey(e.target.value)}
-            className="border-line bg-panel text-ink w-full rounded-md border px-3 py-2 text-[13px]"
-          >
-            {categories.map((c) => (
-              <option key={c.key} value={c.key}>
-                {c.displayName}
-              </option>
-            ))}
-          </select>
-        </div>
-        {error && <p className="text-danger text-[12px]">{error}</p>}
-        <Button type="submit" variant="primary" disabled={loading} className="w-full">
-          {loading ? 'Registering…' : 'Register'}
-        </Button>
-      </form>
-      <Link
-        href="/vendor/login"
-        className="text-muted mt-4 inline-block text-[12px] hover:underline"
-      >
-        Already registered? Sign in
-      </Link>
-    </div>
+
+        {done ? (
+          <div>
+            <h2 className="text-h3 font-semibold text-ink">Registration received</h2>
+            {/* The API really does set this temporary password on self-registration
+                (vendor-onboarding.service), so the supplier has to be told it. */}
+            <p className="mt-2 text-body-sm text-muted">
+              We&apos;ve created your vendor account with the temporary password{' '}
+              <code className="font-numeric text-text">Slice0!Vendor</code>. Sign in and
+              complete your onboarding profile.
+            </p>
+            <Link
+              href="/vendor/login"
+              className="text-accent mt-4 inline-block text-body-sm hover:underline"
+            >
+              Go to sign in →
+            </Link>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-h3 font-semibold text-ink">Become a vendor</h2>
+            <p className="mt-1 text-body-sm text-muted">
+              Register your business to start supplying. You&apos;ll complete a short
+              onboarding wizard after signing in.
+            </p>
+            <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
+                Legal entity name
+                <Input
+                  value={legalEntityName}
+                  onChange={(e) => setLegalEntityName(e.target.value)}
+                  autoComplete="organization"
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
+                Email
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
+                Phone
+                <Input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  autoComplete="tel"
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-caption font-medium text-text">
+                Category
+                <Select value={categoryKey} onChange={(e) => setCategoryKey(e.target.value)}>
+                  {categories.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.displayName}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+              {error && (
+                <p
+                  role="alert"
+                  className="rounded-sm bg-danger-wash px-2.5 py-2 text-caption text-danger"
+                >
+                  {error}
+                </p>
+              )}
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={loading}
+                className="mt-1 w-full"
+              >
+                {loading ? 'Registering…' : 'Register'}
+              </Button>
+            </form>
+            <Link
+              href="/vendor/login"
+              className="mt-4 inline-block text-caption text-muted hover:underline"
+            >
+              Already registered? Sign in
+            </Link>
+          </>
+        )}
+      </div>
+    </main>
   );
 }
