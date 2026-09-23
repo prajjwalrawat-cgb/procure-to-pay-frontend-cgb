@@ -12,11 +12,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 
-import {
-  VENDOR_LIVE_ROUTES,
-  VENDOR_OVERFLOW_NAV,
-  VENDOR_PRIMARY_NAV,
-} from '@/vendor/config/nav';
+import { VENDOR_LIVE_ROUTES, VENDOR_PRIMARY_NAV } from '@/vendor/config/nav';
 import { endSession } from '@/lib/auth-session';
 import { refreshAccessToken } from '@/vendor/lib/api-client';
 import { useSessionStore } from '@/vendor/store/session-store';
@@ -94,7 +90,7 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
   useTableStackLabels(mainRef);
 
   return (
-    <div className="bg-paper flex h-screen flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden bg-paper">
       <a href="#vendor-main" className="pf-skip-link">
         Skip to content
       </a>
@@ -102,23 +98,22 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
       <TopNav
         brand={
           <Link href="/vendor" className="flex items-center gap-2">
-            <span className="bg-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-white">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-accent text-white">
               <span className="text-caption font-bold">P</span>
             </span>
-            <span className="text-ink tracking-heading hidden text-body font-semibold sm:inline">
+            <span className="hidden text-body font-semibold tracking-heading text-ink sm:inline">
               Supplier
             </span>
           </Link>
         }
         primary={VENDOR_PRIMARY_NAV}
-        overflow={VENDOR_OVERFLOW_NAV}
         activeHref={pathname}
         renderLink={renderLink}
         onOpenSearch={() => setCommandOpen(true)}
         searchPlaceholder="Search orders, invoices, RFQs…"
         right={
           <>
-            <span className="text-muted hidden text-caption sm:inline">
+            <span className="hidden text-caption text-muted sm:inline">
               {user?.name ?? 'Vendor'}
             </span>
             <Button variant="secondary" size="sm" onClick={() => void logout()}>

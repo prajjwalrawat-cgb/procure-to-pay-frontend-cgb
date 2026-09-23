@@ -1,11 +1,14 @@
-import type { TopNavGroup, TopNavItem } from '@/components/ui';
+import type { TopNavItem } from '@/components/ui';
 
 /**
  * Vendor-portal navigation.
  *
- * The seven destinations a supplier works in daily are tabs, and the
- * account-shaped one (Onboarding) sits under "More". Same two-row top bar,
- * same pill for the current section — a
+ * The eight destinations a supplier works in are all tabs. The buyer bar
+ * groups its sections into dropdowns because twenty destinations no longer fit
+ * a row; eight do, and a menu here would only cost a hover and hide the label
+ * a supplier navigates by. Onboarding is account-shaped rather than daily
+ * work, so it sits last — but it is still one click, not a "More" menu holding
+ * a single item. Same two-row top bar, same pill for the current section — a
  * supplier who also buys should not have to learn two products.
  */
 export const VENDOR_PRIMARY_NAV: TopNavItem[] = [
@@ -16,16 +19,10 @@ export const VENDOR_PRIMARY_NAV: TopNavItem[] = [
   { label: 'Invoices', href: '/vendor/invoices' },
   { label: 'Contracts', href: '/vendor/contracts' },
   { label: 'Returns', href: '/vendor/rma' },
-];
-
-// Profile and Documents are not separate screens yet (their routes point the
-// supplier to Onboarding, which holds both), so they are left out of the menu
-// rather than offered as destinations that lead nowhere new.
-export const VENDOR_OVERFLOW_NAV: TopNavGroup[] = [
-  {
-    heading: 'Your account',
-    items: [{ label: 'Onboarding', href: '/vendor/onboarding' }],
-  },
+  // Profile and Documents are not separate screens yet — their routes point
+  // the supplier back here, which holds both — so they are not offered as
+  // destinations of their own.
+  { label: 'Onboarding', href: '/vendor/onboarding' },
 ];
 
 /**
