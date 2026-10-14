@@ -28,6 +28,7 @@ import {
 import { DocumentLedger } from '@/components/document-ledger';
 import { EntityRef } from '@/components/entity-ref';
 import { RecordPaymentModal } from '@/components/invoices/record-payment-modal';
+import { RejectInvoiceModal } from '@/components/invoices/reject-invoice-modal';
 import { ResolveModal } from '@/components/invoices/resolve-modal';
 import { TaxInvoiceForm } from '@/components/invoices/tax-invoice-form';
 import { useDecide } from '@/lib/api/inbox';
@@ -70,6 +71,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const canIntake = useHasPermission(PERMISSIONS.INVOICE_INTAKE_MANAGE);
   const [recording, setRecording] = useState(false);
   const [attachingTax, setAttachingTax] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const setKind = useSetDocumentKind(id);
   const attachTax = useAttachTaxInvoice(id);
 
@@ -120,6 +122,10 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // Routing belongs to the pre-approval pipeline. Past it the button only ever
   // failed; it used to show on paid invoices too.
   const routable = PRE_APPROVAL.includes(data.status);
+  // A duplicate or wrong document can be refused without routing it to an
+  // approver first. Mirrors REJECTABLE on the server; paid or in-run invoices
+  // are refused there with the reason.
+  const rejectable = canResolve && REJECTABLE.includes(data.status) && !partlyPaid;
   const remainingTds = Math.max(
     Number(data.amounts.tdsAmount) -
       data.payments.reduce((sum, p) => sum + Number(p.tds), 0),
@@ -170,7 +176,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // The bottom bar only exists when it has something to offer; an empty
   // frosted strip along the viewport edge read as a rendering glitch.
   const awaiting = data.status === 'AWAITING_APPROVAL';
-  const showActionBar = awaiting || routable;
+  const showActionBar = awaiting || routable || rejectable;
 
   return (
     <div className={showActionBar ? 'pb-28' : 'pb-8'}>
@@ -210,6 +216,16 @@ export default function InvoiceDetailPage(): React.JSX.Element {
           </>
         }
       />
+
+      {data.status === 'REJECTED' && data.rejectionReason && (
+        <div
+          role="status"
+          className="mb-5 rounded-sm bg-danger-wash px-4 py-3 text-body-sm text-danger"
+        >
+          <span className="font-semibold">Rejected before approval:</span>{' '}
+          {data.rejectionReason}
+        </div>
+      )}
 
       {/* Stage strip */}
       <div className="mb-5 flex items-center gap-1 overflow-x-auto">
@@ -988,23 +1004,37 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                     'the current approver'}
                 </div>
               )
-            ) : routable ? (
-              <Button
-                variant="primary"
-                className="ml-auto"
-                onClick={onRoute}
-                disabled={route.isPending || openExceptions.length > 0 || !matched}
-                title={
-                  matched ? undefined : 'The 3-way match has not run on this invoice yet'
-                }
-              >
-                {data.priorApproval ? 'Confirm tax invoice' : 'Resolve & route for approval'}
-              </Button>
-            ) : null}
+            ) : (
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                {rejectable && (
+                  <Button variant="ghost" size="sm" onClick={() => setRejecting(true)}>
+                    Reject invoice
+                  </Button>
+                )}
+                {routable && (
+                  <Button
+                    variant="primary"
+                    onClick={onRoute}
+                    disabled={route.isPending || openExceptions.length > 0 || !matched}
+                    title={
+                      matched ? undefined : 'The 3-way match has not run on this invoice yet'
+                    }
+                  >
+                    {data.priorApproval ? 'Confirm tax invoice' : 'Resolve & route for approval'}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
+      <RejectInvoiceModal
+        invoiceId={id}
+        invoiceNumber={data.number}
+        open={rejecting}
+        onClose={() => setRejecting(false)}
+      />
       <ResolveModal
         invoiceId={id}
         exception={resolving}
@@ -1216,6 +1246,18 @@ const PRE_MATCH = [
 
 /** Statuses before approval, where routing (or confirming a tax invoice) applies. */
 const PRE_APPROVAL = ['RECEIVED', 'OCR_DONE', 'MATCH_EXCEPTION'];
+
+/** Where a buyer can still reject outright. Mirrors REJECTABLE on the API. */
+const REJECTABLE = [
+  'RECEIVED',
+  'OCR_PENDING',
+  'OCR_DONE',
+  'OCR_LOW_CONFIDENCE',
+  'OCR_FAILED',
+  'PENDING_VENDOR_MATCH',
+  'MATCH_EXCEPTION',
+  'HELD',
+];
 
 /** Where a proforma cannot take its tax invoice yet. Mirrors the API. */
 const TAX_INVOICE_WAIT: Record<string, string> = {

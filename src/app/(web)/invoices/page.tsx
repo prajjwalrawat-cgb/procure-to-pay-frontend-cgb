@@ -50,6 +50,7 @@ const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
   { key: 'paid', label: 'Paid', countKey: 'paid' },
   { key: 'msme', label: 'MSME risk', countKey: 'msme' },
   { key: 'proforma', label: 'Awaiting tax invoice', countKey: 'proforma' },
+  { key: 'rejected', label: 'Rejected', countKey: 'rejected' },
 ];
 type CountShape = {
   all: number;
@@ -60,6 +61,7 @@ type CountShape = {
   paid: number;
   msme: number;
   proforma: number;
+  rejected: number;
 };
 
 type SortKey = 'number' | 'supplier' | 'status' | 'aging' | 'amount';

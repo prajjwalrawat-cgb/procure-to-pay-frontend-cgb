@@ -25,6 +25,10 @@ export interface VendorInvoiceSummary {
   documentKind: InvoiceDocumentKind;
   /** The PI this invoice started as, once its tax invoice replaced it. */
   proformaRef: string | null;
+  /** Why the buyer rejected it, so the vendor knows what to fix. */
+  rejectionReason: string | null;
+  /** The order it bills — after a rejection, the one to resubmit against. */
+  po: { id: string; number: string } | null;
 }
 
 export interface VendorInvoiceDetail extends VendorInvoiceSummary {

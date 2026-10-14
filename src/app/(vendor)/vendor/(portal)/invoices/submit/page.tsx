@@ -5,7 +5,7 @@ import { Money, type InvoiceDocumentKind, type VendorPoOption } from '@/lib/shar
 import { percentToRate, rateToPercent } from '@/lib/rate';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { FileDrop } from '@/vendor/components/invoices/file-drop';
 import { PoSelectModal } from '@/vendor/components/invoices/po-select-modal';
@@ -82,6 +82,9 @@ export default function SubmitInvoicePage(): React.JSX.Element {
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // `uploading` / `isPending` only disable the button on the next render, so a
+  // fast double-click entered onSubmit twice and filed the invoice twice.
+  const submitting = useRef(false);
 
   const backToList = (): void => router.push('/vendor/invoices');
 
@@ -128,6 +131,20 @@ export default function SubmitInvoicePage(): React.JSX.Element {
     }
     setPo(selected);
   };
+
+  // `?po=<id>` — the "Resubmit" link on a rejected invoice and in the rejection
+  // email. Read from location rather than useSearchParams, which would need a
+  // Suspense boundary to build. A PO no longer open falls through to the picker.
+  const preselected = useRef(false);
+  useEffect(() => {
+    if (preselected.current || !pos || po) return;
+    preselected.current = true;
+    const wanted = new URLSearchParams(window.location.search).get('po');
+    const match = wanted ? pos.find((p) => p.id === wanted) : undefined;
+    if (match) pickPo(match);
+    // pickPo is recreated each render; this runs once, when the POs first load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pos, po]);
 
   const updateLine = (i: number, patch: Partial<LineDraft>): void =>
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
@@ -181,6 +198,8 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       );
       return;
     }
+    if (submitting.current) return;
+    submitting.current = true;
     setError(null);
     // The document has to reach storage before the invoice references it — the
     // API rejects a key it cannot find, so a failed upload stops the submission
@@ -191,6 +210,7 @@ export default function SubmitInvoicePage(): React.JSX.Element {
       s3Key = await uploadInvoiceFile(taxFiles[0]!);
     } catch (e) {
       setUploading(false);
+      submitting.current = false;
       setError((e as Error).message || 'Could not upload the document.');
       return;
     }
@@ -200,8 +220,10 @@ export default function SubmitInvoicePage(): React.JSX.Element {
         localStorage.removeItem(DRAFT_KEY(po.id));
         router.push('/vendor/invoices');
       },
-      onError: (e) =>
-        setError((e as Error).message || 'Submission failed. Please try again.'),
+      onError: (e) => {
+        submitting.current = false;
+        setError((e as Error).message || 'Submission failed. Please try again.');
+      },
     });
   };
 
