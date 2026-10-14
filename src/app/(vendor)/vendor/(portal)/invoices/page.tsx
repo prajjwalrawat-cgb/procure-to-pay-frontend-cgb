@@ -23,7 +23,7 @@ import { formatDate, statusLabel, statusVariant } from '@/lib/format';
 const fmtDate = (iso: string): string => formatDate(iso);
 const inr = (v: string): string => Money.of(v || 0).toINR();
 
-type SortKey = 'number' | 'ref' | 'date' | 'status' | 'amount';
+type SortKey = 'number' | 'ref' | 'po' | 'date' | 'status' | 'amount';
 
 export default function VendorInvoicesPage(): React.JSX.Element {
   const { data, isLoading, error, refetch } = useMyInvoices();
@@ -41,13 +41,16 @@ export default function VendorInvoicesPage(): React.JSX.Element {
       if (status !== 'all' && i.status !== status) return false;
       if (!q) return true;
       return (
-        i.number.toLowerCase().includes(q) || i.vendorInvoiceRef.toLowerCase().includes(q)
+        i.number.toLowerCase().includes(q) ||
+        i.vendorInvoiceRef.toLowerCase().includes(q) ||
+        (i.po?.number.toLowerCase().includes(q) ?? false)
       );
     });
   }, [data, search, status]);
   const { sorted, sort, toggle } = useSort<VendorInvoiceSummary, SortKey>(rows, {
     number: (i) => i.number,
     ref: (i) => i.vendorInvoiceRef,
+    po: (i) => i.po?.number ?? '',
     date: (i) => new Date(i.invoiceDate),
     status: (i) => statusLabel(i.status),
     amount: (i) => Number(i.grossAmount),
@@ -63,8 +66,10 @@ export default function VendorInvoicesPage(): React.JSX.Element {
     downloadCsv('my-invoices', sorted, [
       { header: 'Invoice', value: (r) => r.number },
       { header: 'Reference', value: (r) => r.vendorInvoiceRef },
+      { header: 'PO', value: (r) => r.po?.number ?? '' },
       { header: 'Invoice date', value: (r) => fmtDate(r.invoiceDate) },
       { header: 'Status', value: (r) => statusLabel(r.status) },
+      { header: 'Rejection reason', value: (r) => r.rejectionReason ?? '' },
       { header: 'Amount', value: (r) => r.grossAmount },
     ]);
 
@@ -100,7 +105,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search invoice or reference…"
+            placeholder="Search invoice, reference or PO…"
             aria-label="Search invoices"
             className="w-full pl-8"
           />
@@ -131,6 +136,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
             <tr>
               <SortableHead label="Invoice" sortKey="number" sort={sort} onSort={toggle} />
               <SortableHead label="Reference" sortKey="ref" sort={sort} onSort={toggle} />
+              <SortableHead label="PO" sortKey="po" sort={sort} onSort={toggle} />
               <SortableHead label="Invoice date" sortKey="date" sort={sort} onSort={toggle} />
               <SortableHead label="Status" sortKey="status" sort={sort} onSort={toggle} />
               <SortableHead label="Amount" sortKey="amount" sort={sort} onSort={toggle} numeric />
@@ -138,7 +144,7 @@ export default function VendorInvoicesPage(): React.JSX.Element {
           </thead>
           <tbody>
             <TableState
-              colSpan={5}
+              colSpan={6}
               isLoading={isLoading}
               error={error}
               onRetry={() => void refetch()}
@@ -184,12 +190,31 @@ export default function VendorInvoicesPage(): React.JSX.Element {
                     )}
                   </td>
                   <td className="font-numeric text-text px-3 py-3">
+                    {inv.po?.number ?? '—'}
+                  </td>
+                  <td className="font-numeric text-text px-3 py-3">
                     {fmtDate(inv.invoiceDate)}
                   </td>
                   <td className="px-3 py-3">
                     <Pill variant={statusVariant(inv.status)} dot>
                       {statusLabel(inv.status)}
                     </Pill>
+                    {inv.status === 'REJECTED' && (
+                      <div className="mt-1 max-w-xs">
+                        {inv.rejectionReason && (
+                          <div className="text-danger text-caption">{inv.rejectionReason}</div>
+                        )}
+                        {/* Rejection frees the PO quantity and the invoice number. */}
+                        {inv.po && (
+                          <Link
+                            href={`/vendor/invoices/submit?po=${encodeURIComponent(inv.po.id)}`}
+                            className="text-accent text-caption font-medium hover:underline"
+                          >
+                            Resubmit for {inv.po.number}
+                          </Link>
+                        )}
+                      </div>
+                    )}
                     {inv.documentKind === 'PROFORMA' && (
                       <div className="mt-1 flex flex-wrap items-center gap-2">
                         <Badge variant="caution">Proforma</Badge>

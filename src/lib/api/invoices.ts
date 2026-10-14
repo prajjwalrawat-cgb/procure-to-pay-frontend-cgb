@@ -134,6 +134,21 @@ export function useRetryOcr(invoiceId: string) {
  * Exceptions are reconciled rather than duplicated, and resolved ones stay
  * resolved, so running it again is safe.
  */
+/** Reject before approval — a duplicate or the wrong document. */
+export function useRejectInvoice(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason: string) =>
+      apiFetch(`/invoices/${invoiceId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
 export function useRunMatch(invoiceId: string) {
   const qc = useQueryClient();
   return useMutation({
