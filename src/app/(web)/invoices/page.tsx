@@ -51,8 +51,10 @@ const TABS: { key: InvoiceTab; label: string; countKey: keyof CountShape }[] = [
   { key: 'msme', label: 'MSME risk', countKey: 'msme' },
   { key: 'proforma', label: 'Awaiting tax invoice', countKey: 'proforma' },
   { key: 'rejected', label: 'Rejected', countKey: 'rejected' },
+  { key: 'everything', label: 'All invoices', countKey: 'everything' },
 ];
 type CountShape = {
+  everything: number;
   all: number;
   exceptions: number;
   approval: number;
@@ -238,9 +240,30 @@ export default function InvoicesInboxPage(): React.JSX.Element {
           />
         }
         summary={
-          isLoading
-            ? null
-            : `${rows.length} shown${data?.truncated ? ' — first 2,000 loaded' : ''}`
+          isLoading ? null : (
+            <>
+              {`${rows.length} shown${data?.truncated ? ' — first 2,000 loaded' : ''}`}
+              {/* Filters only narrow the tab you are on; a supplier's paid or
+                  rejected bills live in other tabs. One click widens the
+                  search to every invoice, keeping the filters. */}
+              {narrowed && tab !== 'everything' && (
+                <>
+                  {' · '}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-caption"
+                    onClick={() => {
+                      setTab('everything');
+                      setExpanded(null);
+                    }}
+                  >
+                    Search all invoices
+                  </Button>
+                </>
+              )}
+            </>
+          )
         }
       />
 
@@ -283,18 +306,35 @@ export default function InvoicesInboxPage(): React.JSX.Element {
                 narrowed
                   ? {
                       title: 'No invoices match these filters',
-                      detail: 'Clear a filter or change the search to see more.',
+                      detail:
+                        tab === 'everything'
+                          ? 'Clear a filter or change the search to see more.'
+                          : 'This tab only holds some invoices. Search every status, or clear a filter.',
                       action: (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            filters.clear();
-                            setSearch('');
-                          }}
-                        >
-                          Clear filters
-                        </Button>
+                        <span className="inline-flex gap-2">
+                          {tab !== 'everything' && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setTab('everything');
+                                setExpanded(null);
+                              }}
+                            >
+                              Search all invoices
+                            </Button>
+                          )}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              filters.clear();
+                              setSearch('');
+                            }}
+                          >
+                            Clear filters
+                          </Button>
+                        </span>
                       ),
                     }
                   : tab === 'all'
