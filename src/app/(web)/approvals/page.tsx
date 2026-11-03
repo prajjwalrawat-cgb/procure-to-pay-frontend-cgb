@@ -40,6 +40,7 @@ import { roleLabel } from '@/lib/api/users';
 const TABS: { key: string; label: string; docType: DocumentType }[] = [
   { key: 'requisitions', label: 'Requisitions', docType: 'REQUISITION' },
   { key: 'purchase-orders', label: 'Purchase orders', docType: 'PURCHASE_ORDER' },
+  { key: 'po-amendments', label: 'PO amendments', docType: 'PO_AMENDMENT' },
   { key: 'invoices', label: 'Invoices', docType: 'INVOICE' },
   { key: 'payment-runs', label: 'Payment runs', docType: 'PAYMENT_RUN' },
   { key: 'awards', label: 'Sourcing awards', docType: 'RFQ_AWARD' },
