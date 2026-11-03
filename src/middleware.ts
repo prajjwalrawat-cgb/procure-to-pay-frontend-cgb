@@ -55,11 +55,18 @@ export function middleware(request: NextRequest): NextResponse {
     isBuyerLogin ||
     pathname === '/accept-invite' ||
     pathname === '/forgot-password' ||
-    pathname === '/reset-password';
+    pathname === '/reset-password' ||
+    // Signing in from AskMira: the page hands its one-time link to the server.
+    pathname === '/sso/askmira';
 
   if (!hasBuyerSession && !isBuyerPublic) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    // AskMira's Allow link carries everything in its query: come back to it
+    // after signing in.
+    if (pathname === '/connect/askmira') {
+      url.search = `?next=${encodeURIComponent(`${pathname}${request.nextUrl.search}`)}`;
+    }
     return NextResponse.redirect(url);
   }
   if (hasBuyerSession && isBuyerLogin) {
