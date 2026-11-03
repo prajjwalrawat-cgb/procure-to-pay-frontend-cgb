@@ -7,6 +7,7 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 import type {
+  PoAmendInput,
   PoAttachmentType,
   PoAttachmentView,
   PoCreateInput,
@@ -129,6 +130,30 @@ export function useHoldPo(id: string) {
         body: JSON.stringify({ reason }),
       }),
     onSuccess: () => invalidate(qc, id),
+  });
+}
+
+/** Propose new line prices/quantities; the PO changes only once approved. */
+export function useAmendPo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PoAmendInput) =>
+      apiFetch<{ id: string }>(`/purchase-orders/${id}/amendments`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => invalidate(qc, id),
+  });
+}
+
+/** The PO an amendment belongs to (approval links carry the amendment id). */
+export function usePoAmendmentTarget(
+  amendmentId: string,
+): UseQueryResult<{ poId: string }> {
+  return useQuery({
+    queryKey: ['purchase-orders', 'amendment', amendmentId],
+    queryFn: () =>
+      apiFetch<{ poId: string }>(`/purchase-orders/amendments/${amendmentId}`),
   });
 }
 

@@ -11,7 +11,6 @@ import {
   ErrorState,
   Field,
   Input,
-  NotShipped,
   PageHeader,
   Pill,
   Select,
@@ -26,6 +25,8 @@ import { useState } from 'react';
 import type { PoDetailResponse, PoFulfilment, PoLineView } from '@/lib/shared';
 
 import { DocumentLedger } from '@/components/document-ledger';
+
+import { AmendDialog, AmendmentsSection } from './amendments';
 
 import {
   useAddPoComment,
@@ -76,6 +77,7 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
   // Cancel and hold both put a reason on the record. Asked for in a dialog so
   // the destructive step is a deliberate second click, not a browser prompt.
   const [reasonFor, setReasonFor] = useState<'cancel' | 'hold' | null>(null);
+  const [amending, setAmending] = useState(false);
 
   const onAttach = (file: File): void => {
     setUploading(true);
@@ -272,6 +274,8 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               </table>
             </div>
           </section>
+
+          <AmendmentsSection po={data} />
 
           {/* Approval chain */}
           <section>
@@ -633,11 +637,23 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
               >
                 <Download className="h-3.5 w-3.5" /> Download PDF
               </Button>
-              <NotShipped reason="PO amendments aren't available yet. To change this order today, cancel it and raise a replacement.">
-                <Button variant="ghost" size="sm" disabled>
+              {['APPROVED', 'ISSUED', 'ACKNOWLEDGED'].includes(data.status) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={!data.canAmend}
+                  title={
+                    data.canAmend
+                      ? 'Change prices or quantities — needs approval'
+                      : data.amendments.some((a) => a.status === 'AWAITING_APPROVAL')
+                        ? 'An amendment is already awaiting approval'
+                        : 'Goods or invoices are booked against this PO — cancel and raise a replacement'
+                  }
+                  onClick={() => setAmending(true)}
+                >
                   Amend
                 </Button>
-              </NotShipped>
+              )}
               {data.canHold && (
                 <Button
                   variant="ghost"
@@ -682,6 +698,8 @@ export default function PurchaseOrderDetailPage(): React.JSX.Element {
           )}
         </div>
       </div>
+
+      <AmendDialog po={data} open={amending} onClose={() => setAmending(false)} />
 
       <ReasonDialog
         kind={reasonFor}
