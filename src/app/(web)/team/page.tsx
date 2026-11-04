@@ -15,7 +15,6 @@ import {
   Field,
   Input,
   PageHeader,
-  Select,
   SkeletonRows,
   SortableHead,
   StatusText,
@@ -25,15 +24,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  cn,
-  controlClass,
   useSort,
 } from '@/components/ui';
 import { Send, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import {
-  ASSIGNABLE_ROLES,
   roleLabel,
   useInviteMember,
   usePendingInvites,
@@ -46,6 +42,8 @@ import {
 import { useSessionStore } from '@/store/session-store';
 import { useToastStore } from '@/store/toast-store';
 import { formatDate } from '@/lib/format';
+
+import { InviteRolePicker, MemberRolesEditor, rolesSummary } from './role-picker';
 
 function initials(name: string, email: string): string {
   const src = name?.trim() || email;
@@ -65,7 +63,7 @@ export default function TeamPage(): React.JSX.Element {
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState(ASSIGNABLE_ROLES[0]?.value ?? 'REQUESTER');
+  const [roles, setRoles] = useState<string[]>(['REQUESTER']);
   // Removing a member and revoking an invite both cut someone's access, so
   // each goes through the same confirm step rather than a browser dialog.
   const [confirm, setConfirm] = useState<
@@ -85,8 +83,12 @@ export default function TeamPage(): React.JSX.Element {
 
   const onInvite = (e: React.FormEvent): void => {
     e.preventDefault();
+    if (roles.length === 0) {
+      toast('Choose at least one role', 'error');
+      return;
+    }
     invite.mutate(
-      { email: email.trim(), name: name.trim(), roles: [role] },
+      { email: email.trim(), name: name.trim(), roles },
       {
         onSuccess: () => {
           toast(`Invitation sent to ${email.trim()}`, 'success');
@@ -99,13 +101,14 @@ export default function TeamPage(): React.JSX.Element {
     );
   };
 
-  const onRoleChange = (m: TeamMember, newRole: string): void => {
-    if (m.roles[0] === newRole && m.roles.length === 1) return;
+  const onRolesSave = (m: TeamMember, newRoles: string[], done: () => void): void => {
     updateRole.mutate(
-      { id: m.id, roles: [newRole] },
+      { id: m.id, roles: newRoles },
       {
-        onSuccess: () =>
-          toast(`${m.name || m.email} is now ${roleLabel(newRole)}`, 'success'),
+        onSuccess: () => {
+          done();
+          toast(`${m.name || m.email} is now ${rolesSummary(newRoles)}`, 'success');
+        },
         onError: (err) =>
           toast(err instanceof Error ? err.message : 'Failed to change role', 'error'),
       },
@@ -209,29 +212,15 @@ export default function TeamPage(): React.JSX.Element {
                         // your own admin rights mid-session is not undoable from
                         // inside the app.
                         <span className="text-text">
-                          {m.roles.map(roleLabel).join(', ') || '—'}
+                          {rolesSummary(m.roles)}
                         </span>
                       ) : (
-                        <Select
-                          value={m.roles[0] ?? ''}
-                          onChange={(e) => onRoleChange(m, e.target.value)}
-                          disabled={updateRole.isPending}
-                          // `w-auto` sizes to content, but an `appearance-none`
-                          // select does not reserve room for the chevron we
-                          // draw ourselves — so the longest role names were
-                          // clipped under it. The min-width buys that room.
-                          className={cn(
-                            controlClass,
-                            'w-auto min-w-44 py-1.5 text-caption',
-                          )}
-                          aria-label={`Role for ${m.name || m.email}`}
-                        >
-                          {ASSIGNABLE_ROLES.map((r) => (
-                            <option key={r.value} value={r.value}>
-                              {r.label}
-                            </option>
-                          ))}
-                        </Select>
+                        <MemberRolesEditor
+                          memberName={m.name || m.email}
+                          roles={m.roles}
+                          saving={updateRole.isPending}
+                          onSave={(next, done) => onRolesSave(m, next, done)}
+                        />
                       )}
                     </TableCell>
 
@@ -295,21 +284,11 @@ export default function TeamPage(): React.JSX.Element {
               />
             </Field>
             <Field
-              label="Role"
+              label="Roles"
               htmlFor="invite-role"
-              hint={ASSIGNABLE_ROLES.find((r) => r.value === role)?.description}
+              hint="Pick every role they need — e.g. Requester and Procurement Officer."
             >
-              <Select
-                id="invite-role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-              >
-                {ASSIGNABLE_ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </Select>
+              <InviteRolePicker id="invite-role" value={roles} onChange={setRoles} />
             </Field>
             <Button
               type="submit"
