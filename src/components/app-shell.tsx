@@ -17,6 +17,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { NotificationsTray } from '@/components/notifications-tray';
+import { WorkspaceSwitcher } from '@/components/workspace-switcher';
 import { LIVE_ROUTES, PRIMARY_NAV } from '@/config/nav';
 import { useSidebarCounts } from '@/lib/api/inbox';
 import { useUnreadCount } from '@/lib/api/notifications';
@@ -191,6 +192,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
                 </span>
               )}
             </button>
+            <WorkspaceSwitcher />
             <AccountMenu
               initials={initials}
               user={user}
