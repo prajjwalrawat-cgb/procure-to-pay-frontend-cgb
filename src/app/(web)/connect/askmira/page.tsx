@@ -23,13 +23,13 @@ interface Ask {
   challenge: string;
 }
 
-/** What AskMira will be able to do once allowed. */
+/** What AskMiraa will be able to do once allowed. */
 const GRANTS = [
-  'Open ProcureFlow for your people from AskMira, without a second password.',
-  'Show each person their requisitions, approvals and, where their role allows, purchase orders, invoices and budgets in AskMira.',
+  'Open ProcureFlow for your people from AskMiraa, without a second password.',
+  'Show each person their requisitions, approvals and, where their role allows, purchase orders, invoices and budgets in AskMiraa.',
   'Let a person approve or reject what waits on them, with their own ProcureFlow permissions.',
-  'Switch off an account AskMira linked when that person leaves the company in AskMira.',
-  'AskMira never adds anyone here and never changes a role: your admins still decide both.',
+  'Switch off an account AskMiraa linked when that person leaves the company in AskMiraa.',
+  'AskMiraa never adds anyone here and never changes a role: your admins still decide both.',
 ];
 
 function readAsk(): Ask | null {
@@ -58,8 +58,8 @@ function originOf(uri: string): string | null {
 }
 
 /**
- * /connect/askmira — an AskMira workspace (the company's HRMS) asks to connect
- * to this company. A ProcureFlow admin presses Allow; AskMira then gets a key
+ * /connect/askmira — an AskMiraa workspace (the company's HRMS) asks to connect
+ * to this company. A ProcureFlow admin presses Allow; AskMiraa then gets a key
  * that reaches this company only. Either side can disconnect.
  */
 export default function ConnectAskMiraPage(): React.JSX.Element {
@@ -111,8 +111,8 @@ export default function ConnectAskMiraPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <PageHeader
-        title="Connect AskMira"
-        description="AskMira is your company's HR system. Connecting lets your people use ProcureFlow from it."
+        title="Connect AskMiraa"
+        description="AskMiraa is your company's HR system. Connecting lets your people use ProcureFlow from it."
       />
       <Card className="space-y-4 p-6">
         {ask === undefined || (!current && !error) ? (
@@ -122,17 +122,17 @@ export default function ConnectAskMiraPage(): React.JSX.Element {
             <p className="text-body text-text">
               {ask ? (
                 <>
-                  The AskMira workspace <strong>{ask.tenant_name}</strong>
+                  The AskMiraa workspace <strong>{ask.tenant_name}</strong>
                   {originOf(ask.redirect_uri) ? <> at {originOf(ask.redirect_uri)}</> : null} wants to
                   connect to <strong>{current?.workspace.name ?? 'this company'}</strong>.
                 </>
               ) : current?.connected ? (
                 <>
-                  <strong>{current.workspace.name}</strong> is connected to the AskMira workspace{' '}
+                  <strong>{current.workspace.name}</strong> is connected to the AskMiraa workspace{' '}
                   {current.askmira_workspace}.
                 </>
               ) : (
-                <>Not connected to AskMira. Start from Settings → Connectors in AskMira.</>
+                <>Not connected to AskMiraa. Start from Settings → Connectors in AskMiraa.</>
               )}
             </p>
             {ask ? (
@@ -144,12 +144,12 @@ export default function ConnectAskMiraPage(): React.JSX.Element {
             ) : null}
             {current && !current.can_connect ? (
               <p role="alert" className="text-body-sm text-danger">
-                This ProcureFlow is not set up to connect to AskMira yet. Ask the person who runs it.
+                This ProcureFlow is not set up to connect to AskMiraa yet. Ask the person who runs it.
               </p>
             ) : null}
             {elsewhere ? (
               <p role="alert" className="text-body-sm text-danger">
-                This company is already connected to the AskMira workspace {current?.askmira_workspace}.
+                This company is already connected to the AskMiraa workspace {current?.askmira_workspace}.
                 Disconnect it first to connect another.
               </p>
             ) : null}
@@ -161,12 +161,12 @@ export default function ConnectAskMiraPage(): React.JSX.Element {
             <div className="flex flex-wrap gap-2">
               {ask && !elsewhere && current?.can_connect ? (
                 <Button variant="primary" onClick={allow} disabled={busy}>
-                  {busy ? 'Please wait…' : 'Allow AskMira to connect'}
+                  {busy ? 'Please wait…' : 'Allow AskMiraa to connect'}
                 </Button>
               ) : null}
               {current?.connected ? (
                 <Button variant="secondary" onClick={disconnect} disabled={busy}>
-                  Disconnect AskMira
+                  Disconnect AskMiraa
                 </Button>
               ) : null}
             </div>

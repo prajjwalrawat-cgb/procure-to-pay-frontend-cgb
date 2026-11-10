@@ -1,7 +1,7 @@
-// The AskMira type pairing (see components/ui/tokens.ts → typography):
+// The AskMiraa type pairing (see components/ui/tokens.ts → typography):
 //   ui      — Inter. Everything: nav, dense tables, ₹ columns. Its tabular
 //             figures are what the `.font-numeric` helper switches on.
-//   display — Fraunces. Page titles only, as in AskMira.
+//   display — Fraunces. Page titles only, as in AskMiraa.
 //   mono    — Geist Mono. Hash chains and machine identifiers in the audit log.
 import { Fraunces, Inter } from 'next/font/google';
 

@@ -5,7 +5,7 @@
  * variable layer (components/ui/styles.css) are both derived from it.
  *
  * ── The rule the palette enforces ──────────────────────────────────────────
- * ONE accent. `accent` (AskMira maroon, #7D0712) is the only non-semantic colour in the system
+ * ONE accent. `accent` (AskMiraa maroon, #7D0712) is the only non-semantic colour in the system
  * and it means "interactive or active" — the current nav pill, a primary
  * button, a focused input, a link. Everything else is either a neutral surface
  * or a semantic state.
@@ -53,8 +53,8 @@ export const colors = {
   'on-navy-muted': '#645853',
 
   // ── Text — warm neutrals ─────────────────────────────────────────────────
-  // The nav bar: the AskMira maroon (a gradient from rail-top to rail-bottom),
-  // with the Marigold pill on the active section — the same chrome as AskMira.
+  // The nav bar: the AskMiraa maroon (a gradient from rail-top to rail-bottom),
+  // with the Marigold pill on the active section — the same chrome as AskMiraa.
   rail: '#5C0A11',
   'rail-top': '#6B0A13',
   'rail-bottom': '#34040A',

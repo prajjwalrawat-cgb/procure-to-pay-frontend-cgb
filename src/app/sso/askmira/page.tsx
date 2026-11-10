@@ -7,7 +7,7 @@ import { safeNextPath } from '@/lib/auth-session';
 import { useSessionStore } from '@/store/session-store';
 
 /**
- * /sso/askmira#token=… — someone opened ProcureFlow from AskMira. The one-time
+ * /sso/askmira#token=… — someone opened ProcureFlow from AskMiraa. The one-time
  * link rides in the fragment, which never reaches a server log; this page hands
  * it to /api/askmira/launch, which opens a normal session.
  */
@@ -23,7 +23,7 @@ export default function AskMiraSignInPage(): React.JSX.Element {
     // The link works once; take it out of the address bar and history.
     window.history.replaceState(null, '', window.location.pathname);
     if (!token) {
-      setError('This AskMira link is not complete. Open ProcureFlow again from AskMira.');
+      setError('This AskMiraa link is not complete. Open ProcureFlow again from AskMiraa.');
       return;
     }
     fetch('/api/askmira/launch', {
@@ -34,7 +34,7 @@ export default function AskMiraSignInPage(): React.JSX.Element {
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.accessToken) {
-          setError(data.detail ?? 'Could not sign you in. Open ProcureFlow again from AskMira.');
+          setError(data.detail ?? 'Could not sign you in. Open ProcureFlow again from AskMiraa.');
           return;
         }
         setSession(data.accessToken, data.user);
@@ -52,7 +52,7 @@ export default function AskMiraSignInPage(): React.JSX.Element {
             {error}
           </p>
         ) : (
-          <p className="text-body-sm text-muted mt-3">Signing you in from AskMira…</p>
+          <p className="text-body-sm text-muted mt-3">Signing you in from AskMiraa…</p>
         )}
       </div>
     </main>

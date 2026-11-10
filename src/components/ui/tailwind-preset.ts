@@ -32,7 +32,7 @@ const preset: Partial<Config> = {
           muted: colors['on-navy-muted'],
         },
 
-        // The AskMira nav chrome: maroon bar, Marigold active pill.
+        // The AskMiraa nav chrome: maroon bar, Marigold active pill.
         rail: {
           DEFAULT: colors.rail,
           top: colors['rail-top'],

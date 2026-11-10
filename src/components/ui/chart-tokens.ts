@@ -1,7 +1,7 @@
 /**
  * Chart tokens — the ProcureFlow instance of the data-viz parameter set.
  *
- * Re-themed to AskMira (Nov 2026): slot 1 is the maroon #7D0712, slot 2 marigold.
+ * Re-themed to AskMiraa (Nov 2026): slot 1 is the maroon #7D0712, slot 2 marigold.
  * The validation figures below were for the earlier blue set — re-run the
  * validator before relying on them.
  *
@@ -40,7 +40,7 @@
  * blues cannot clear the colour-vision gate.
  */
 export const CHART_SERIES = [
-  '#7D0712', // 1 AskMira maroon — matches the UI accent
+  '#7D0712', // 1 AskMiraa maroon — matches the UI accent
   '#DF840B', // 2 marigold
   '#0F8A6A', // 3 teal
   '#9D3FBF', // 4 violet

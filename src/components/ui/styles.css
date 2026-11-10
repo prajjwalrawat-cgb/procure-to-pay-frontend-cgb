@@ -1,4 +1,4 @@
-/* ProcureFlow base layer — AskMira's cream canvas, maroon accent, Inter + Fraunces.
+/* ProcureFlow base layer — AskMiraa's cream canvas, maroon accent, Inter + Fraunces.
    Tokens mirrored as CSS variables; derived from components/ui/tokens.ts,
    which is the single source of truth. Keep the two in sync.
 
@@ -149,7 +149,7 @@ table {
   letter-spacing: -0.01em;
 }
 
-/* Page titles use Fraunces, AskMira's display face; the UI stays Inter. */
+/* Page titles use Fraunces, AskMiraa's display face; the UI stays Inter. */
 :root {
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 }

@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { API_INTERNAL_URL, REFRESH_COOKIE } from '@/lib/env';
 
 /**
- * Sign-in from AskMira. The /sso/askmira page posts AskMira's one-time link
+ * Sign-in from AskMiraa. The /sso/askmira page posts AskMiraa's one-time link
  * here; the API checks it and opens a session, and — exactly as the login
  * proxy does — the refresh token goes into the httpOnly cookie and only the
  * access token and the user go back to the page.
@@ -17,7 +17,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     token = '';
   }
   if (!token || token.length > 4000) {
-    return NextResponse.json({ detail: 'This AskMira link is not valid.' }, { status: 401 });
+    return NextResponse.json({ detail: 'This AskMiraa link is not valid.' }, { status: 401 });
   }
 
   const upstream = await fetch(`${API_INTERNAL_URL}/integrations/askmira/launch`, {
@@ -31,7 +31,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const data = await upstream.json().catch(() => ({}));
   if (!upstream.ok) {
     return NextResponse.json(
-      { detail: data.detail ?? 'Could not sign you in from AskMira.' },
+      { detail: data.detail ?? 'Could not sign you in from AskMiraa.' },
       { status: upstream.status },
     );
   }
