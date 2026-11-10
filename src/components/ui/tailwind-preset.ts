@@ -32,6 +32,23 @@ const preset: Partial<Config> = {
           muted: colors['on-navy-muted'],
         },
 
+        // The AskMira nav chrome: maroon bar, Marigold active pill.
+        rail: {
+          DEFAULT: colors.rail,
+          top: colors['rail-top'],
+          bottom: colors['rail-bottom'],
+          hover: colors['rail-hover'],
+          line: colors['rail-line'],
+        },
+        'on-rail': {
+          DEFAULT: colors['on-rail'],
+          muted: colors['on-rail-muted'],
+        },
+        marigold: {
+          DEFAULT: colors.marigold,
+          on: colors['on-marigold'],
+        },
+
         ink: colors.ink,
         text: colors.text,
         muted: colors.muted,

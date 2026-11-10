@@ -160,10 +160,10 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
       <TopNav
         brand={
           <Link href="/" className="flex items-center gap-2">
-            <span className="bg-accent flex h-6 w-6 items-center justify-center rounded-sm text-white">
+            <span className="bg-marigold text-marigold-on flex h-7 w-7 items-center justify-center rounded-md">
               <span className="text-caption font-bold">P</span>
             </span>
-            <span className="text-ink tracking-heading hidden text-body font-semibold sm:inline">
+            <span className="text-on-rail tracking-heading hidden text-body font-semibold sm:inline">
               ProcureFlow
             </span>
           </Link>
@@ -177,7 +177,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
             <button
               type="button"
               onClick={() => setTrayOpen(true)}
-              className="text-muted hover:bg-canvas hover:text-text duration-hover relative rounded-sm p-1.5 transition-colors"
+              className="text-on-rail-muted hover:bg-rail-hover hover:text-on-rail duration-hover relative rounded-sm p-1.5 transition-colors"
               aria-label={
                 notificationCount > 0
                   ? `Notifications, ${notificationCount} unread`
@@ -186,7 +186,7 @@ export function AppShell({ children }: { children: ReactNode }): React.JSX.Eleme
             >
               <Bell className="h-4 w-4" aria-hidden />
               {notificationCount > 0 && (
-                <span className="bg-accent absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-micro font-bold text-white">
+                <span className="bg-marigold text-marigold-on absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-micro font-bold">
                   {notificationCount > 9 ? '9+' : notificationCount}
                 </span>
               )}

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 import { PwaRegister } from '@/components/pwa-register';
-import { geistMono, geistUi } from '@/lib/fonts';
+import { displayFont, geistMono, geistUi } from '@/lib/fonts';
 
 import './globals.css';
 import { Providers } from './providers';
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#FFFFFF',
+  themeColor: '#5C0A11',
   width: 'device-width',
   initialScale: 1,
 };
@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistUi.variable} ${geistMono.variable}`}
+      className={`${geistUi.variable} ${geistMono.variable} ${displayFont.variable}`}
     >
       <body className="bg-paper text-text min-h-screen antialiased">
         <Providers>{children}</Providers>

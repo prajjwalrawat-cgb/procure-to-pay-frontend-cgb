@@ -1,7 +1,11 @@
 /**
  * Chart tokens — the ProcureFlow instance of the data-viz parameter set.
  *
- * Anchored on the SAP-blue accent: slot 1 is #0A6ED1 so a single-series chart
+ * Re-themed to AskMira (Nov 2026): slot 1 is the maroon #7D0712, slot 2 marigold.
+ * The validation figures below were for the earlier blue set — re-run the
+ * validator before relying on them.
+ *
+ * Anchored on the accent: slot 1 so a single-series chart
  * matches the interface around it, the sequential ramp is the accent's own
  * tint scale, and grid/axis pick up the warm `line` and `muted` values.
  *
@@ -36,12 +40,12 @@
  * blues cannot clear the colour-vision gate.
  */
 export const CHART_SERIES = [
-  '#0A6ED1', // 1 SAP blue — matches the UI accent
-  '#C7622A', // 2 ochre
+  '#7D0712', // 1 AskMira maroon — matches the UI accent
+  '#DF840B', // 2 marigold
   '#0F8A6A', // 3 teal
   '#9D3FBF', // 4 violet
-  '#A8850F', // 5 brass
-  '#B4436C', // 6 rose
+  '#2D6A8A', // 5 slate blue
+  '#645853', // 6 warm grey
 ] as const;
 
 /** Co-visible-pair forms (pie, scatter) may not exceed this many series. */
@@ -53,7 +57,7 @@ export const CATEGORICAL_MAX_ALL_PAIRS = 3;
  */
 export const CHART_STATUS = {
   good: '#15803D',
-  warn: '#F59E0B',
+  warn: '#F8A01A',
   serious: '#DC2626',
   critical: '#7A1A12',
 } as const;
@@ -63,12 +67,12 @@ export const CHART_STATUS = {
  * intensity). Never a rainbow.
  */
 export const CHART_SEQUENTIAL = [
-  '#EFF6FF',
-  '#D1E8FF',
-  '#89C4F4',
-  '#4098D7',
-  '#0A6ED1',
-  '#0854A0',
+  '#F6ECEB',
+  '#EEDCDA',
+  '#C4908C',
+  '#A3585B',
+  '#7D0712',
+  '#5C0A11',
 ] as const;
 
 /** Chart chrome, pulled from the app tokens so charts age with the palette. */
@@ -76,13 +80,13 @@ export const CHART_CHROME = {
   /** Chart sits on `panel`. The validator was run against this surface. */
   surface: '#FFFFFF',
   /** `line` — recessive gridlines, horizontal only. */
-  grid: '#E4DFD1',
+  grid: '#F0E2D8',
   /** `muted` — axis tick labels. */
-  axis: '#66625A',
+  axis: '#645853',
   /** `text` — value labels that must stay readable. */
-  label: '#1C1B18',
+  label: '#1A1110',
   /** A prior-period or benchmark series: neutral, never a categorical slot. */
-  comparison: '#8A8778',
+  comparison: '#A89C98',
 } as const;
 
 /** Axis/tick typography. Charts use the UI face at all sizes. */

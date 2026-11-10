@@ -5,7 +5,7 @@
  * variable layer (components/ui/styles.css) are both derived from it.
  *
  * ── The rule the palette enforces ──────────────────────────────────────────
- * ONE accent. `accent` (SAP Fiori blue, #0A6ED1) is the only non-semantic colour in the system
+ * ONE accent. `accent` (AskMira maroon, #7D0712) is the only non-semantic colour in the system
  * and it means "interactive or active" — the current nav pill, a primary
  * button, a focused input, a link. Everything else is either a neutral surface
  * or a semantic state.
@@ -37,10 +37,10 @@
 
 export const colors = {
   // ── Surfaces — warm, not blue-grey ───────────────────────────────────────
-  paper: '#F6F4EE', // page background — warm canvas
-  canvas: '#EFECE3', // hover fill, inset wells, table zebra
+  paper: '#FEF8F4', // page background — warm canvas
+  canvas: '#F9EFE8', // hover fill, inset wells, table zebra
   panel: '#FFFFFF', // cards, chrome, any raised surface
-  line: '#E4DFD1', // every hairline and card border in the app
+  line: '#F0E2D8', // every hairline and card border in the app
 
   // ── Chrome (formerly the navy rail) ──────────────────────────────────────
   // Chrome is white: the nav is a hairline-bordered bar, not a dark frame.
@@ -48,24 +48,36 @@ export const colors = {
   // rendering correctly.
   navy: '#FFFFFF',
   'navy-2': '#FFFFFF',
-  'navy-3': '#EFECE3', // hover inside chrome
-  'on-navy': '#1C1B18',
-  'on-navy-muted': '#66625A',
+  'navy-3': '#F9EFE8', // hover inside chrome
+  'on-navy': '#1A1110',
+  'on-navy-muted': '#645853',
 
   // ── Text — warm neutrals ─────────────────────────────────────────────────
-  ink: '#1C1B18', // headings and primary labels
-  text: '#1C1B18', // body copy
-  muted: '#66625A', // secondary text — 5.9:1 on panel
-  faint: '#75716A', // tertiary micro-labels — 4.8:1 on panel
-  'faint-line': '#8A8778', // non-text only: neutral severity dot, dividers, placeholder bars
+  // The nav bar: the AskMira maroon (a gradient from rail-top to rail-bottom),
+  // with the Marigold pill on the active section — the same chrome as AskMira.
+  rail: '#5C0A11',
+  'rail-top': '#6B0A13',
+  'rail-bottom': '#34040A',
+  'rail-hover': '#74161E',
+  'rail-line': '#6E1219',
+  'on-rail': '#FFFFFF',
+  'on-rail-muted': '#D6BCBA',
+  marigold: '#F8A01A',
+  'on-marigold': '#100404',
+
+  ink: '#1A1110', // headings and primary labels
+  text: '#1A1110', // body copy
+  muted: '#645853', // secondary text — 5.9:1 on panel
+  faint: '#7A6E68', // tertiary micro-labels — 4.8:1 on panel
+  'faint-line': '#A89C98', // non-text only: neutral severity dot, dividers, placeholder bars
 
   // ── Accent — SAP Fiori blue; interactive / active + positive charts ─────
-  accent: '#0A6ED1', // 4.8:1 on panel — holds AA as link text
-  'accent-2': '#0854A0', // hover / pressed, and small link text on the canvas
-  'accent-wash': '#EFF6FF', // selected row, badge + hover tint
-  'accent-tint': '#D1E8FF', // stronger tint: chart fills, active chips
-  'accent-mid': '#4098D7', // chart mid-tones
-  'accent-soft': '#89C4F4', // chart light-tones, gradient stops
+  accent: '#7D0712', // 4.8:1 on panel — holds AA as link text
+  'accent-2': '#5C0A11', // hover / pressed, and small link text on the canvas
+  'accent-wash': '#F6ECEB', // selected row, badge + hover tint
+  'accent-tint': '#EEDCDA', // stronger tint: chart fills, active chips
+  'accent-mid': '#A3585B', // chart mid-tones
+  'accent-soft': '#C4908C', // chart light-tones, gradient stops
 
   // ── Semantic state — status only, never decoration ──────────────────────
   success: '#15803D', // status text — 5.0:1 on panel
@@ -73,7 +85,7 @@ export const colors = {
   'success-bg': '#EAF6EE',
 
   warn: '#8A5A0B', // status text — 5.6:1 on panel
-  'warn-solid': '#F59E0B', // amber severity dot — medium
+  'warn-solid': '#F8A01A', // amber severity dot — medium
   'warn-bg': '#FBF3E3',
 
   danger: '#B42318', // status text — 6.2:1 on panel
@@ -83,18 +95,18 @@ export const colors = {
   // In flight: submitted, scheduled, being read, partly paid. Blue is the accent
   // now, so "moving, nothing for you to do yet" wears the neutral grey
   // severity dot — the product has one severity system: red, amber, grey.
-  info: '#5F5C52', // status text — 6.6:1 on panel
-  'info-solid': '#8A8778',
-  'info-bg': '#F1EFE8',
-  'info-wash': '#F1EFE8',
+  info: '#645853', // status text — 6.6:1 on panel
+  'info-solid': '#A89C98',
+  'info-bg': '#F3F0EF',
+  'info-wash': '#F3F0EF',
 
   // ── Legacy aliases — remapped, not re-invented ───────────────────────────
-  gold: '#0A6ED1',
-  'gold-ink': '#0A6ED1',
-  'gold-wash': '#EFF6FF',
-  violet: '#0A6ED1',
-  'violet-bg': '#EFF6FF',
-  'violet-wash': '#EFF6FF',
+  gold: '#7D0712',
+  'gold-ink': '#7D0712',
+  'gold-wash': '#F6ECEB',
+  violet: '#7D0712',
+  'violet-bg': '#F6ECEB',
+  'violet-wash': '#F6ECEB',
   'danger-wash': '#FDECEA',
   'warn-wash': '#FBF3E3',
 } as const;

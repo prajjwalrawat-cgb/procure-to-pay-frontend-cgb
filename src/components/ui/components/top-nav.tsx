@@ -158,8 +158,8 @@ export function TopNav({
         className={cn(
           'duration-hover flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-body-sm font-medium transition-colors',
           active
-            ? 'bg-accent rounded-pill text-white'
-            : 'text-muted hover:text-text rounded-pill',
+            ? 'bg-marigold text-marigold-on rounded-pill'
+            : 'text-on-rail-muted hover:bg-rail-hover hover:text-on-rail rounded-pill',
         )}
         aria-current={active ? 'page' : undefined}
       >
@@ -168,7 +168,7 @@ export function TopNav({
           <span
             className={cn(
               'font-numeric rounded-pill px-1.5 text-micro font-semibold leading-[16px]',
-              active ? 'bg-white/20 text-white' : 'bg-accent-wash text-accent',
+              active ? 'bg-black/10 text-marigold-on' : 'bg-white/15 text-on-rail',
             )}
           >
             {item.badge > 99 ? '99+' : item.badge}
@@ -184,13 +184,13 @@ export function TopNav({
     // menu's own `z-50` cannot rescue it, because that only orders children
     // *within* the header. Without this the "More" menu opened invisibly
     // behind the page content.
-    <header className="bg-panel border-line relative z-30 shrink-0 border-b">
+    <header className="border-rail-bottom from-rail-top via-rail to-rail-bottom text-on-rail relative z-30 shrink-0 border-b bg-gradient-to-r">
       {/* Row 1 — identity, global search, account. */}
       <div className="pf-container flex h-14 items-center gap-3">
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="text-muted hover:bg-canvas hover:text-text rounded-sm p-1.5 lg:hidden"
+          className="text-on-rail-muted hover:bg-rail-hover hover:text-on-rail rounded-sm p-1.5 lg:hidden"
           aria-label="Open navigation"
         >
           <Menu className="h-4 w-4" aria-hidden />
@@ -202,11 +202,11 @@ export function TopNav({
           <button
             type="button"
             onClick={onOpenSearch}
-            className="border-line text-faint hover:border-accent/50 duration-hover mx-auto hidden h-9 w-full max-w-md items-center gap-2 rounded-sm border px-2.5 text-left text-body-sm transition-colors md:flex"
+            className="text-on-rail-muted duration-hover mx-auto hidden h-9 w-full max-w-md items-center gap-2 rounded-sm border border-white/15 bg-white/10 px-2.5 text-left text-body-sm transition-colors hover:border-white/30 md:flex"
           >
             <Search className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span className="truncate">{searchPlaceholder}</span>
-            <kbd className="font-numeric text-faint ml-auto shrink-0 text-micro">⌘K</kbd>
+            <kbd className="font-numeric text-on-rail-muted ml-auto shrink-0 text-micro">⌘K</kbd>
           </button>
         ) : (
           <div className="mx-auto" />
@@ -216,7 +216,7 @@ export function TopNav({
           <button
             type="button"
             onClick={onOpenSearch}
-            className="text-muted hover:bg-canvas hover:text-text ml-auto rounded-sm p-1.5 md:hidden"
+            className="text-on-rail-muted hover:bg-rail-hover hover:text-on-rail ml-auto rounded-sm p-1.5 md:hidden"
             aria-label="Search"
           >
             <Search className="h-4 w-4" aria-hidden />
@@ -260,7 +260,9 @@ export function TopNav({
               onClick={() => setMenuOpen((v) => !v)}
               className={cn(
                 'rounded-pill duration-hover flex items-center gap-1 px-3 py-1.5 text-body-sm font-medium transition-colors',
-                overflowActive ? 'bg-accent text-white' : 'text-muted hover:text-text',
+                overflowActive
+                  ? 'bg-marigold text-marigold-on'
+                  : 'text-on-rail-muted hover:bg-rail-hover hover:text-on-rail',
               )}
             >
               {overflowLabel}
@@ -318,13 +320,13 @@ export function TopNav({
             onClick={() => setDrawerOpen(false)}
             aria-hidden
           />
-          <div className="bg-panel absolute inset-y-0 left-0 flex w-72 flex-col">
-            <div className="border-line flex h-14 shrink-0 items-center justify-between border-b px-3">
+          <div className="from-rail-top via-rail to-rail-bottom text-on-rail absolute inset-y-0 left-0 flex w-72 flex-col bg-gradient-to-b">
+            <div className="border-rail-line flex h-14 shrink-0 items-center justify-between border-b px-3">
               {brand}
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                className="text-muted hover:bg-canvas rounded-sm p-1.5"
+                className="text-on-rail-muted hover:bg-rail-hover rounded-sm p-1.5"
                 aria-label="Close navigation"
               >
                 <X className="h-4 w-4" aria-hidden />
@@ -334,7 +336,7 @@ export function TopNav({
               {drawerGroups.map((group, gi) => (
                 <div key={gi} className="py-1">
                   {group.heading ? (
-                    <p className="text-faint px-2 py-1 text-micro">{group.heading}</p>
+                    <p className="text-on-rail-muted px-2 py-1 text-micro">{group.heading}</p>
                   ) : null}
                   {group.items.map((item) => {
                     const active = isActiveHref(item.href, activeHref, item.exact);
@@ -346,8 +348,8 @@ export function TopNav({
                             className={cn(
                               'flex items-center justify-between rounded-sm px-2.5 py-2 text-body-sm',
                               active
-                                ? 'bg-accent font-medium text-white'
-                                : 'text-text hover:bg-canvas',
+                                ? 'bg-marigold text-marigold-on font-medium'
+                                : 'text-on-rail hover:bg-rail-hover',
                             )}
                           >
                             {item.label}
@@ -355,7 +357,7 @@ export function TopNav({
                               <span
                                 className={cn(
                                   'font-numeric text-micro font-semibold',
-                                  active ? 'text-white' : 'text-accent',
+                                  active ? 'text-marigold-on' : 'text-marigold',
                                 )}
                               >
                                 {item.badge}
@@ -451,8 +453,10 @@ function NavMenu({
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'rounded-pill duration-hover flex items-center gap-1 whitespace-nowrap px-3 py-1.5 text-body-sm font-medium transition-colors',
-          active ? 'bg-accent text-white' : 'text-muted hover:text-text',
-          open && !active && 'text-text',
+          active
+            ? 'bg-marigold text-marigold-on'
+            : 'text-on-rail-muted hover:bg-rail-hover hover:text-on-rail',
+          open && !active && 'bg-rail-hover text-on-rail',
         )}
       >
         {menu.label}
@@ -460,7 +464,7 @@ function NavMenu({
           <span
             className={cn(
               'font-numeric rounded-pill px-1.5 text-micro font-semibold leading-[16px]',
-              active ? 'bg-white/20 text-white' : 'bg-accent-wash text-accent',
+              active ? 'bg-black/10 text-marigold-on' : 'bg-white/15 text-on-rail',
             )}
           >
             {badge > 99 ? '99+' : badge}
