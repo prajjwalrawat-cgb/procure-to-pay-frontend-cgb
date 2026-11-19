@@ -239,7 +239,9 @@ export default function OnboardingQueuePage(): React.JSX.Element {
     const q = search.trim().toLowerCase();
     return items.filter(
       (o) =>
-        (!q || o.vendorName.toLowerCase().includes(q)) &&
+        (!q ||
+          o.vendorName.toLowerCase().includes(q) ||
+          (o.contactEmail ?? '').toLowerCase().includes(q)) &&
         matchesFilters(o, defs, filters.values, filterValue),
     );
   }, [items, search, defs, filters.values]);
@@ -286,7 +288,7 @@ export default function OnboardingQueuePage(): React.JSX.Element {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search vendor…"
+            placeholder="Search vendor or email…"
             aria-label="Search onboarding queue"
           />
         }
@@ -388,6 +390,9 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                       </Link>
                       {o.isMsme && <MsmeBadge />}
                     </div>
+                    {o.contactEmail && (
+                      <div className="text-muted text-caption">{o.contactEmail}</div>
+                    )}
                     <div className="flex flex-wrap gap-x-2">
                       {o.stalled && <StatusText variant="warn">Stalled</StatusText>}
                       {o.reviewDecision === 'CANCELLED' && (
