@@ -28,6 +28,7 @@ import { MsmeBadge, useCategoryLabel } from '@/components/vendors/vendor-badges'
 import {
   useCancelOnboarding,
   useOnboardingQueue,
+  useResendInvite,
   type OnboardingTab,
 } from '@/lib/api/vendors';
 import { formatDate, humanise } from '@/lib/format';
@@ -161,6 +162,8 @@ function CancelInviteDialog({
 export default function OnboardingQueuePage(): React.JSX.Element {
   const [tab, setTab] = useState<OnboardingTab>('my_review');
   const [cancelling, setCancelling] = useState<OnboardingListItem | null>(null);
+  const resend = useResendInvite();
+  const toast = useToastStore((s) => s.push);
   const [search, setSearch] = useState('');
   const filters = useFilters();
   const canReview = useHasPermission(PERMISSIONS.VENDOR_ONBOARDING_REVIEW);
@@ -243,9 +246,23 @@ export default function OnboardingQueuePage(): React.JSX.Element {
 
   const { sorted: rows, sort, toggle } = useSort(filtered, SORT);
   const narrowed = search.trim() !== '' || filters.activeCount > 0;
-  // The actions column only exists when a shown row can be withdrawn; an
+  // The actions column only exists when a shown row has an action; an
   // always-empty column would add a blank line to every stacked phone card.
-  const anyCancel = rows.some((o) => o.canCancel);
+  const anyAction = rows.some((o) => o.canCancel || o.canResendInvite);
+
+  const resendInvite = (o: OnboardingListItem): void => {
+    resend.mutate(
+      { onboardingId: o.id },
+      {
+        onSuccess: ({ email }) =>
+          toast(
+            `Invitation re-sent to ${email} — the previous link no longer works`,
+            'success',
+          ),
+        onError: (e) => toast(e.message || 'Could not re-send the invitation', 'error'),
+      },
+    );
+  };
 
   return (
     <div>
@@ -303,12 +320,12 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                 numeric
               />
               <SortableHead label="SLA" sortKey="sla" sort={sort} onSort={toggle} />
-              {anyCancel && <th className="px-3 py-2.5 text-caption font-medium" />}
+              {anyAction && <th className="px-3 py-2.5 text-caption font-medium" />}
             </tr>
           </thead>
           <tbody>
             <TableState
-              colSpan={anyCancel ? 8 : 7}
+              colSpan={anyAction ? 8 : 7}
               isLoading={isLoading}
               error={isError ? error : undefined}
               isEmpty={rows.length === 0}
@@ -424,8 +441,22 @@ export default function OnboardingQueuePage(): React.JSX.Element {
                       )}
                     </div>
                   </td>
-                  {anyCancel && (
-                    <td className="px-3 py-3.5 text-right">
+                  {anyAction && (
+                    <td className="whitespace-nowrap px-3 py-3.5 text-right">
+                      {o.canResendInvite && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => resendInvite(o)}
+                          disabled={
+                            resend.isPending && resend.variables?.onboardingId === o.id
+                          }
+                        >
+                          {resend.isPending && resend.variables?.onboardingId === o.id
+                            ? 'Sending…'
+                            : 'Resend invite'}
+                        </Button>
+                      )}
                       {o.canCancel && (
                         <Button
                           variant="ghost"

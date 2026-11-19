@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import { Button, Input, PasswordInput } from '@/components/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -105,8 +105,7 @@ export default function LoginPage(): React.JSX.Element {
           </label>
           <label className="text-text flex flex-col gap-1 text-caption font-medium">
             Password
-            <Input
-              type="password"
+            <PasswordInput
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

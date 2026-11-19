@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Input } from '@/components/ui';
+import { Button, Input, PasswordInput } from '@/components/ui';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -94,8 +94,7 @@ export default function AcceptInvitePage(): React.JSX.Element {
             <form onSubmit={submit} className="mt-6 flex flex-col gap-3">
               <label className="flex flex-col gap-1 text-caption font-medium text-text">
                 New password
-                <Input
-                  type="password"
+                <PasswordInput
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -104,8 +103,7 @@ export default function AcceptInvitePage(): React.JSX.Element {
               </label>
               <label className="flex flex-col gap-1 text-caption font-medium text-text">
                 Confirm password
-                <Input
-                  type="password"
+                <PasswordInput
                   autoComplete="new-password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}

@@ -1,5 +1,6 @@
 'use client';
 
+import { Eye, EyeOff } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from '../lib/cn';
@@ -43,6 +44,43 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ),
 );
 Input.displayName = 'Input';
+
+/**
+ * Password field with a show/hide toggle, so people can check what they typed
+ * before submitting — mistyped passwords are the commonest sign-in failure.
+ * The toggle is a real button (keyboard reachable, labelled for screen
+ * readers) and never submits the form.
+ */
+export type PasswordInputProps = Omit<InputProps, 'type'>;
+
+export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
+  ({ className, disabled, ...props }, ref) => {
+    const [visible, setVisible] = React.useState(false);
+    const Icon = visible ? EyeOff : Eye;
+    return (
+      <div className="relative">
+        <input
+          ref={ref}
+          type={visible ? 'text' : 'password'}
+          disabled={disabled}
+          className={cn(controlClass, 'pr-10', className)}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          disabled={disabled}
+          aria-label={visible ? 'Hide password' : 'Show password'}
+          aria-pressed={visible}
+          className="text-muted hover:text-text focus-visible:text-accent absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-sm focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          <Icon className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    );
+  },
+);
+PasswordInput.displayName = 'PasswordInput';
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 

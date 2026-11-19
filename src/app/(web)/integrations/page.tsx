@@ -5,6 +5,7 @@ import {
   DataState,
   Field,
   Input,
+  PasswordInput,
   PageHeader,
   Pill,
   SandboxBanner,
@@ -181,9 +182,8 @@ export default function IntegrationsPage(): React.JSX.Element {
                 <Input id="cred-key" value={key} onChange={(e) => setKey(e.target.value)} />
               </Field>
               <Field label="Secret value" htmlFor="cred-value">
-                <Input
+                <PasswordInput
                   id="cred-value"
-                  type="password"
                   autoComplete="off"
                   value={value}
                   onChange={(e) => setValue(e.target.value)}

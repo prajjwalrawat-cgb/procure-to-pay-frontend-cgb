@@ -32,7 +32,9 @@ export const vendorKeys = {
   vendor360: (id: string) => ['vendors', '360', id] as const,
 };
 
-export function useVendorList(tab: VendorTab): UseQueryResult<AllPages<VendorListResponse>> {
+export function useVendorList(
+  tab: VendorTab,
+): UseQueryResult<AllPages<VendorListResponse>> {
   return useQuery({
     queryKey: vendorKeys.list(tab),
     queryFn: () => fetchAllPages<VendorListResponse>(`/vendors?tab=${tab}`),
@@ -132,6 +134,19 @@ export function useCancelOnboarding(): ReturnType<
         body: JSON.stringify({ reason: input.reason }),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: vendorKeys.all }),
+  });
+}
+
+/** Re-send the invitation email with a fresh link (the old link stops working). */
+export function useResendInvite(): ReturnType<
+  typeof useMutation<{ email: string }, Error, { onboardingId: string }>
+> {
+  return useMutation({
+    mutationFn: (input: { onboardingId: string }) =>
+      apiFetch<{ email: string }>(
+        `/vendors/onboarding/${input.onboardingId}/resend-invite`,
+        { method: 'POST' },
+      ),
   });
 }
 
