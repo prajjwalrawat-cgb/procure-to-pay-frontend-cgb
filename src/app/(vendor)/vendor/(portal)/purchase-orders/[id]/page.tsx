@@ -67,8 +67,13 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
   const onAcknowledge = (): void => {
     acknowledge.mutate(undefined, {
       onSuccess: () => pushToast('Purchase order acknowledged.', 'success'),
-      // 409 = already acknowledged; onSettled refetch shows the acked state.
-      onError: () => pushToast('This purchase order was already acknowledged.', 'info'),
+      // 409 = already acknowledged, or the order is no longer ISSUED (e.g. the
+      // buyer cancelled it meanwhile); onSettled refetch shows the real state.
+      onError: (e) =>
+        pushToast(
+          (e as Error).message || 'This purchase order can no longer be acknowledged.',
+          'info',
+        ),
     });
   };
 
@@ -168,7 +173,9 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
             </Button>
             {/* Once acknowledged, the status and the banner below say so; a
                 disabled "Acknowledged" button beside them was a third copy. */}
-            {po.acknowledgedAt ? null : (
+            {/* Only an ISSUED order can be acknowledged — never a cancelled,
+                received or closed one. */}
+            {po.acknowledgedAt || po.status !== 'ISSUED' ? null : (
               <Button
                 variant="primary"
                 size="sm"
@@ -182,7 +189,13 @@ export default function VendorPurchaseOrderDetailPage(): React.JSX.Element {
         }
       />
 
-      {po.acknowledgedAt && (
+      {po.status === 'CANCELLED' && (
+        <div className="mb-5 rounded-sm bg-danger-bg px-3 py-2 text-caption text-danger">
+          The buyer has cancelled this purchase order. Do not supply or invoice against it.
+        </div>
+      )}
+
+      {po.status !== 'CANCELLED' && po.acknowledgedAt && (
         <div className="mb-5 rounded-sm bg-success-bg px-3 py-2 text-caption text-success">
           You acknowledged this purchase order on {fmtDateTime(po.acknowledgedAt)}.
         </div>
