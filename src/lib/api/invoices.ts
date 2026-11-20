@@ -29,7 +29,9 @@ export const invoiceKeys = {
   ref: (kind: string, id: string) => ['refs', kind, id] as const,
 };
 
-export function useInvoices(tab: InvoiceTab): UseQueryResult<AllPages<InvoiceListResponse>> {
+export function useInvoices(
+  tab: InvoiceTab,
+): UseQueryResult<AllPages<InvoiceListResponse>> {
   return useQuery({
     queryKey: invoiceKeys.list(tab),
     queryFn: () => fetchAllPages<InvoiceListResponse>(`/invoices?tab=${tab}`),
@@ -120,6 +122,21 @@ export function useRetryOcr(invoiceId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => apiFetch(`/invoices/${invoiceId}/ocr/retry`, { method: 'POST' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: invoiceKeys.all });
+    },
+  });
+}
+
+/**
+ * Accept a low-confidence / failed OCR read as-is and run the 3-way match.
+ * The invoice keeps its lines (and their PO-line links).
+ */
+export function useConfirmOcr(invoiceId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiFetch<{ ok: true }>(`/invoices/${invoiceId}/confirm-ocr`, { method: 'POST' }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },

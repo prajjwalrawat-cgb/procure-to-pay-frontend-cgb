@@ -35,6 +35,7 @@ import { useDecide } from '@/lib/api/inbox';
 import {
   useAddComment,
   useAttachTaxInvoice,
+  useConfirmOcr,
   useInvoice,
   useResolveAndRoute,
   useRetryOcr,
@@ -54,6 +55,7 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   const { data, isLoading, error, refetch } = useInvoice(id);
   const route = useResolveAndRoute(id);
   const retryOcr = useRetryOcr(id);
+  const confirmOcr = useConfirmOcr(id);
   // Paired with the commented-out Re-run match button below.
   // const runMatch = useRunMatch(id);
   const addComment = useAddComment(id);
@@ -104,6 +106,9 @@ export default function InvoiceDetailPage(): React.JSX.Element {
   // Mirrors the server guard: past these two, lines exist and may have been
   // corrected by hand, and re-extracting would overwrite that work.
   const retryable = data.status === 'OCR_PENDING' || data.status === 'OCR_FAILED';
+  /** Parked for a person to check the read: confirm it, or type the lines in. */
+  const awaitingOcrReview =
+    canIntake && (data.status === 'OCR_LOW_CONFIDENCE' || data.status === 'OCR_FAILED');
   // A payment made outside a run can be recorded against an approved invoice
   // with something still owing — unless a run already holds it, in which case
   // that run is committed to paying its amount.
@@ -451,6 +456,43 @@ export default function InvoiceDetailPage(): React.JSX.Element {
                       </span>
                     </div>
                   )}
+                  {/* Low confidence parks the invoice for a person: without a
+                      way to vouch for the read here it could never reach the
+                      match, and so never be routed for approval. */}
+                  {awaitingOcrReview &&
+                    (data.lines.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <Button
+                          size="sm"
+                          onClick={() =>
+                            confirmOcr.mutate(undefined, {
+                              onSuccess: () =>
+                                toast('Confirmed — 3-way match has run', 'success'),
+                              onError: (e) =>
+                                toast(
+                                  (e as Error).message || 'Could not confirm the invoice',
+                                  'error',
+                                ),
+                            })
+                          }
+                          disabled={confirmOcr.isPending}
+                        >
+                          {confirmOcr.isPending ? 'Confirming…' : 'Confirm & run match'}
+                        </Button>
+                        <span className="text-micro text-muted">
+                          Check the lines and amounts against the PDF first. The match
+                          still checks them against the PO.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-micro">
+                        No lines could be read.{' '}
+                        <Link href="/invoices/intake" className="text-accent hover:underline">
+                          Enter them by hand in invoice intake
+                        </Link>
+                        .
+                      </div>
+                    ))}
                 </div>
               ))}
             <div className="flex flex-col gap-2">
