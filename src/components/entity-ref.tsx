@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState } from 'react';
 
 import { useRefCard } from '@/lib/api/invoices';
@@ -7,9 +8,18 @@ import { inrCompact, statusLabel } from '@/lib/format';
 
 type Kind = 'vendor' | 'po' | 'grn' | 'invoice';
 
+/** Where each kind of record lives in the buyer app. */
+const HREF: Record<Kind, (id: string) => string> = {
+  vendor: (id) => `/vendors/${id}`,
+  po: (id) => `/purchase-orders/${id}`,
+  grn: (id) => `/goods-receipt/${id}`,
+  invoice: (id) => `/invoices/${id}`,
+};
+
 /**
  * A referenced entity with a lazy hover-preview card (Master Context §6).
  * Card fetches after a 300ms hover delay and is cached 5 min by TanStack Query.
+ * Clicking it opens the record itself — hover previews, click navigates.
  */
 export function EntityRef({
   kind,
@@ -47,11 +57,20 @@ export function EntityRef({
       onMouseLeave={onLeave}
       data-ref={`${kind}:${id}`}
     >
-      <span className="text-accent-2 hover:text-accent cursor-default font-medium underline-offset-2 hover:underline">
+      <Link
+        href={HREF[kind](id)}
+        // Several list rows expand on click; following the link must not also
+        // toggle the row underneath it.
+        onClick={(e) => {
+          e.stopPropagation();
+          onLeave();
+        }}
+        className="font-medium text-accent-2 underline-offset-2 hover:text-accent hover:underline"
+      >
         {children}
-      </span>
+      </Link>
       {open && data && (
-        <span className="border-line bg-panel absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border p-3 text-caption shadow-lg">
+        <span className="absolute left-0 top-full z-50 mt-1 w-64 rounded-lg border border-line bg-panel p-3 text-caption shadow-lg">
           <HoverBody data={data} />
         </span>
       )}
@@ -64,20 +83,20 @@ function HoverBody({ data }: { data: Record<string, unknown> }): React.JSX.Eleme
   if (kind === 'vendor') {
     return (
       <span className="flex flex-col gap-1.5">
-        <span className="text-ink font-semibold">{String(data.name)}</span>
-        <span className="text-muted flex items-center justify-between">
+        <span className="font-semibold text-ink">{String(data.name)}</span>
+        <span className="flex items-center justify-between text-muted">
           <span>Risk score</span>
           <span className="font-numeric text-text">
             {data.riskScore != null ? String(data.riskScore) : '—'}
           </span>
         </span>
-        <span className="text-muted flex items-center justify-between">
+        <span className="flex items-center justify-between text-muted">
           <span>FYTD spend</span>
           <span className="font-numeric text-text">
             {inrCompact(String(data.fytdSpend ?? '0'))}
           </span>
         </span>
-        <span className="text-muted flex items-center justify-between">
+        <span className="flex items-center justify-between text-muted">
           <span>On-time (OTIF)</span>
           <span className="font-numeric text-text">
             {data.onTimePct != null ? `${String(data.onTimePct)}%` : '—'}
@@ -89,7 +108,7 @@ function HoverBody({ data }: { data: Record<string, unknown> }): React.JSX.Eleme
   if (kind === 'po') {
     return (
       <span className="flex flex-col gap-1">
-        <span className="text-ink font-semibold">{String(data.number)}</span>
+        <span className="font-semibold text-ink">{String(data.number)}</span>
         <span className="text-muted">{String(data.vendorName)}</span>
         <span className="font-numeric text-text">
           {inrCompact(String(data.total ?? '0'))}
@@ -101,7 +120,7 @@ function HoverBody({ data }: { data: Record<string, unknown> }): React.JSX.Eleme
   if (kind === 'grn') {
     return (
       <span className="flex flex-col gap-1">
-        <span className="text-ink font-semibold">{String(data.number)}</span>
+        <span className="font-semibold text-ink">{String(data.number)}</span>
         <span className="text-muted">
           QC: {data.qcStatus ? statusLabel(String(data.qcStatus)) : '—'}
         </span>
@@ -110,7 +129,7 @@ function HoverBody({ data }: { data: Record<string, unknown> }): React.JSX.Eleme
   }
   return (
     <span className="flex flex-col gap-1">
-      <span className="text-ink font-semibold">{String(data.number)}</span>
+      <span className="font-semibold text-ink">{String(data.number)}</span>
       <span className="text-muted">{String(data.vendorName ?? '')}</span>
       <span className="font-numeric text-text">
         {inrCompact(String(data.grossAmount ?? '0'))}
