@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Button,
   CommandPalette,
   TopNav,
   type CommandRoute,
@@ -98,10 +97,13 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
       <TopNav
         brand={
           <Link href="/vendor" className="flex items-center gap-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-accent text-white">
+            {/* Same mark and on-rail colours as the buyer shell. The brand used
+                to be text-ink — dark text on the dark red rail, so "Supplier"
+                was all but invisible. */}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-marigold text-marigold-on">
               <span className="text-caption font-bold">P</span>
             </span>
-            <span className="hidden text-body font-semibold tracking-heading text-ink sm:inline">
+            <span className="hidden text-body font-semibold tracking-heading text-on-rail sm:inline">
               Supplier
             </span>
           </Link>
@@ -113,12 +115,19 @@ export function VendorShell({ children }: { children: ReactNode }): React.JSX.El
         searchPlaceholder="Search orders, invoices, RFQs…"
         right={
           <>
-            <span className="hidden text-caption text-muted sm:inline">
+            <span className="hidden max-w-[16rem] truncate text-body-sm font-medium text-on-rail sm:inline">
               {user?.name ?? 'Vendor'}
             </span>
-            <Button variant="secondary" size="sm" onClick={() => void logout()}>
+            {/* Styled for the rail rather than the page: the secondary Button
+                is dark text meant for a light surface, and read as an empty
+                outline here. */}
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="duration-hover h-8 shrink-0 rounded-sm border border-white/30 bg-white/10 px-3 text-body-sm font-medium text-on-rail transition-colors hover:border-white/50 hover:bg-rail-hover"
+            >
               Log out
-            </Button>
+            </button>
           </>
         }
       />
