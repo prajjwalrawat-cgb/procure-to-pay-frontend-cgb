@@ -167,6 +167,22 @@ export function useReturnForInfo(
   });
 }
 
+/** Undo a rejection: the application goes back to the vendor as returned for info. */
+export function useReopenOnboarding(
+  onboardingId: string,
+): ReturnType<typeof useMutation<{ ok: true }, Error, { reason: string }>> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { reason: string }) =>
+      apiFetch<{ ok: true }>(`/vendors/onboarding/${onboardingId}/reopen`, {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    // The queue's status column changes too, not just this dossier.
+    onSuccess: () => void qc.invalidateQueries({ queryKey: vendorKeys.all }),
+  });
+}
+
 export function useVerifyDocument(
   onboardingId: string,
 ): ReturnType<

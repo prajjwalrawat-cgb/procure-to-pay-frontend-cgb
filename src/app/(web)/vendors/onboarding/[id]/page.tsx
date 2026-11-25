@@ -39,6 +39,7 @@ import {
   useOnboardingDetail,
   useOverrideBank,
   useRenameVendor,
+  useReopenOnboarding,
   useReturnForInfo,
   useReviewScreening,
   useVerifyDocument,
@@ -348,6 +349,79 @@ function RenameVendorDialog({
   );
 }
 
+/**
+ * Undo a rejection. The application goes back to the vendor exactly as a
+ * "Return for info" would have sent it, so they can correct it and resubmit,
+ * and it then runs through the approval chain again from the start.
+ */
+function ReopenOnboardingDialog({
+  open,
+  onboardingId,
+  vendorName,
+  onClose,
+}: {
+  open: boolean;
+  onboardingId: string;
+  vendorName: string;
+  onClose: () => void;
+}): React.JSX.Element {
+  const [reason, setReason] = useState('');
+  const reopen = useReopenOnboarding(onboardingId);
+  const toast = useToastStore((s) => s.push);
+  const trimmed = reason.trim();
+
+  const submit = (): void => {
+    reopen.mutate(
+      { reason: trimmed },
+      {
+        onSuccess: () => {
+          toast('Reopened — sent back to the vendor', 'success');
+          setReason('');
+          onClose();
+        },
+        onError: (e) => toast(e.message || 'Could not reopen the onboarding', 'error'),
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogTitle>Reopen rejected onboarding</DialogTitle>
+        <DialogDescription>
+          This overturns the rejection and sends {vendorName}&apos;s application back to
+          them, as if it had been returned for info. They can change their answers and
+          upload new documents, then resubmit — it goes through the full approval chain
+          again. The rejection and this reopen are both kept in the audit log.
+        </DialogDescription>
+        <div className="mt-4">
+          <Field label="What the vendor needs to fix (shown to them)" htmlFor="reopen-reason">
+            <Textarea
+              id="reopen-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Please re-upload the cancelled cheque for the correct bank account."
+              rows={4}
+            />
+          </Field>
+        </div>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={submit}
+            disabled={reopen.isPending || trimmed.length < 10}
+          >
+            {reopen.isPending ? 'Reopening…' : 'Reopen & send to vendor'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function OnboardingReviewPage(): React.JSX.Element {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -362,12 +436,16 @@ export default function OnboardingReviewPage(): React.JSX.Element {
   const [comment, setComment] = useState('');
   const [bankReason, setBankReason] = useState('');
   const [renaming, setRenaming] = useState(false);
+  const [reopening, setReopening] = useState(false);
   // The dossier is readable by anyone with VENDOR_ONBOARDING_READ (finance
   // watches the pipeline), so each write control is gated on its own
   // permission. The decision panel is gated server-side by `canReview`.
   const canRename = useHasPermission(PERMISSIONS.VENDOR_UPDATE);
   const canVerifyDocs = useHasPermission(PERMISSIONS.VENDOR_DOC_VERIFY);
   const canReviewScreening = useHasPermission(PERMISSIONS.VENDOR_SCREENING_REVIEW);
+  // Overturning a rejection is admin-only — the same authority as withdrawing
+  // an invite (the API enforces it on the same permission).
+  const canReopen = useHasPermission(PERMISSIONS.VENDOR_ONBOARDING_CANCEL);
   const { isSimulated } = useProviderLiveness();
   // Any provider behind a screening or document check answering from a
   // sandbox makes every derived green signal on this page unearned.
@@ -897,6 +975,20 @@ export default function OnboardingReviewPage(): React.JSX.Element {
               ) : (
                 <NotYourTurn data={data} />
               )}
+              {data.reviewDecision === 'REJECTED' && canReopen && (
+                <div className="mt-3 border-t border-line pt-3">
+                  <p className="mb-2 text-caption text-muted">
+                    Rejected by mistake, or should it have been returned for info?
+                  </p>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => setReopening(true)}
+                  >
+                    Reopen & send back to vendor
+                  </Button>
+                </div>
+              )}
               <p className="mt-4 border-t border-line pt-3 text-caption text-muted">
                 Review SLA: {data.slaTargetHours}h
                 {data.slaBreachAt && `, due ${fmtDate(data.slaBreachAt)}`}
@@ -915,6 +1007,14 @@ export default function OnboardingReviewPage(): React.JSX.Element {
           currentName={data.vendorName}
           currentLegalName={data.legalEntityName}
           onClose={() => setRenaming(false)}
+        />
+      )}
+      {reopening && (
+        <ReopenOnboardingDialog
+          open={reopening}
+          onboardingId={data.id}
+          vendorName={data.vendorName}
+          onClose={() => setReopening(false)}
         />
       )}
     </div>

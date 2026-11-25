@@ -133,6 +133,7 @@ const STATUS_LABELS: Record<string, string> = {
   SUSPENDED: 'Suspended',
   BLACKLISTED: 'Blacklisted',
   ARCHIVED: 'Archived',
+  // REJECTED is already mapped above ('Rejected') and statusVariant renders it red.
 };
 
 /**
